@@ -208,10 +208,13 @@ planItinerary(constraints: TripConstraints): Promise<ItineraryResult>
 | dailySlackMinutes | number | ✔ | 120 | 0 이상 — 소프트(미달만 불이익) | `120` |
 | departureBufferMinutes | number | ✔ | 120 | 하드 제약. P0 UI에서는 120 고정(WF-05) | `120` |
 
-성공 응답 (`ok: true`):
+응답은 **3분기 판별 유니온**이다(PR #16): `ok:true·status:"planned"` / `ok:true·status:"empty"` / `ok:false`.
+
+성공 응답 (`ok: true, status: "planned"`):
 
 | 필드 | 타입 | 설명 |
 |---|---|---|
+| status | `"planned"` | 선택된 일정이 있는 정상 상태 |
 | days | DayPlan[] | 일자별 일정 |
 | days[].date | string | `YYYY-MM-DD` |
 | days[].rides | TrainRide[] | 열차번호·출발/도착역·시각 |
@@ -228,13 +231,20 @@ planItinerary(constraints: TripConstraints): Promise<ItineraryResult>
 | reason.constraintType | `"REQUIRED_PLACE" \| "PINNED_DATE"` | |
 | reason.targetId | string | 문제 장소 — 사용자 문구에 이름으로 표시 |
 
-주의: 후보가 전멸해도 사용자 제약 위반이 아니면 `ok: true` + 빈 days + rejectedPlaces로 반환한다(WF-11 '조건 만족 일정 없음'은 이 상태의 표현).
+빈 결과 응답 (`ok: true, status: "empty"`) — 정상 처리됐지만 조건을 만족하는 일정 없음:
+
+| 필드 | 타입 | 설명 |
+|---|---|---|
+| status | `"empty"` | comparisonKeys·metrics 미포함 — 허위 값 금지(PR #16) |
+| days | `[]` | |
+| rejectedPlaces | CandidateRejection[] | '일정 없음' 화면의 사유 목록(WF-11) |
 
 성공 예시(발췌):
 
 ```json
 {
   "ok": true,
+  "status": "planned",
   "days": [
     {
       "date": "2026-08-12",
