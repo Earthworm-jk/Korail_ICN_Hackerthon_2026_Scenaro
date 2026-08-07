@@ -399,13 +399,13 @@ MVP는 수익모델을 검증하지 않는다. 다음은 심사와 후속 실증
 
 ### 제출·기획 원천
 
-- [프로젝트 개요 — 참가신청서 제출 문안](https://app.notion.com/p/3b104e705cc481edb3b3f25b06207577)
-- [참가 동기 — 참가신청서 제출 문안](https://app.notion.com/p/3b204e705cc48168a1f1e5fbf5f1ae9f)
-- [성과 및 기대 효과 — 참가신청서 제출 문안](https://app.notion.com/p/3b204e705cc481f7bbbfe4edbacf585c)
-- [기존 서비스 기획 · PRD](https://app.notion.com/p/3af04e705cc481ceab85fe15ea81eed3)
-- [본선 보완 계획](https://app.notion.com/p/3b504e705cc48083af67f3e1f4e16e3c)
-- [MVP 개발 추천안](https://app.notion.com/p/3b504e705cc480da97beffb19c9280f4)
-- [요구사항 정의서 로그](https://app.notion.com/p/3b504e705cc4805182d7fb5fd649c187)
+- [프로젝트 개요 — 참가신청서 제출 문안](https://app.notion.com/p/ff5af2c27c7183a69c9c01faaab41af0)
+- [참가 동기 — 참가신청서 제출 문안](https://app.notion.com/p/a5baf2c27c718307abb08174263b464c)
+- [성과 및 기대 효과 — 참가신청서 제출 문안](https://app.notion.com/p/80faf2c27c71833da6f481a8bbcc2fec)
+- [기존 서비스 기획 · PRD](https://app.notion.com/p/3b5af2c27c7180fa9d14c0a0e1fb4ac6)
+- [본선 보완 계획](https://app.notion.com/p/3b5af2c27c718101ae74d919109d2363)
+- [MVP 개발 추천안](https://app.notion.com/p/3b5af2c27c718123a35ac4e7f84e1c86)
+- [요구사항 정의서 로그](https://app.notion.com/p/3b5af2c27c7181cdb49de3193b062f44)
 
 ### 최종 결정과 구현 명세
 
