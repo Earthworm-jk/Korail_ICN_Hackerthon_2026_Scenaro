@@ -21,15 +21,18 @@ export type ActivityWindowDetail =
   | "CONSERVATIVE_BUFFER_MISMATCH"
   | "UNVERIFIED_HOURS";
 
-export type RejectionReason =
+// 후보 하나의 자동 제외 사유 (rejectedPlaces 전용) — 정의서 v0.4 REQ-ITIN-005
+export type CandidateRejection =
   | { code: "TRAIN_UNAVAILABLE"; placeId: string }
   | { code: "DEPARTURE_DEADLINE_EXCEEDED"; placeId: string }
-  | { code: "ACTIVITY_WINDOW_MISMATCH"; placeId: string; detail: ActivityWindowDetail }
-  | {
-      code: "USER_CONSTRAINT_INFEASIBLE";
-      constraintType: "REQUIRED_PLACE" | "PINNED_DATE";
-      targetId: string;
-    };
+  | { code: "ACTIVITY_WINDOW_MISMATCH"; placeId: string; detail: ActivityWindowDetail };
+
+// 전체 재계산 실패 사유 (ok:false 전용) — 후보 제외가 아니라 요청 실패
+export type ConstraintFailure = {
+  code: "USER_CONSTRAINT_INFEASIBLE";
+  constraintType: "REQUIRED_PLACE" | "PINNED_DATE";
+  targetId: string;
+};
 
 // #3 최종 결정 + PR #9 리뷰: 가중합·상수 점수 없이 키들을 순서대로 비교(사전식).
 // 관련성도 관계 유형별 '개수 벡터'로 비교해 임의 가중치를 원천 제거한다.
@@ -76,8 +79,8 @@ export type ItineraryResult =
   | {
       ok: true;
       days: DayPlan[];
-      rejectedPlaces: RejectionReason[]; // 숨기지 않고 사유와 함께 (REQ-ITIN-005)
+      rejectedPlaces: CandidateRejection[]; // 숨기지 않고 사유와 함께 (REQ-ITIN-005)
       comparisonKeys: ComparisonKeys; // '왜 이 일정인가' 표시 재사용 (#3)
       metrics: ItineraryMetrics; // 편집 전후 비교(diff)는 앱 계층이 metrics로 계산 (PR #9 리뷰)
     }
-  | { ok: false; reason: RejectionReason }; // UI는 기존 일정 유지 (REQ-EDIT-005)
+  | { ok: false; reason: ConstraintFailure }; // UI는 기존 일정 유지. 후보 전멸은 ok:true+빈 일정

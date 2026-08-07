@@ -7,9 +7,8 @@ import type { ComparisonKeys } from "./types";
 
 export type Candidate = {
   keys: ComparisonKeys;
-  // 타이브레이커용 지표
-  transferCount: number;
-  totalRailMinutes: number;
+  // 타이브레이커용 지표 — 비교 키에 포함된 환승·이동시간은 동점 시점에 이미 같으므로
+  // 반복하지 않는다 (정의서 v0.4 REQ-ITIN-008)
   departureSlackMinutes: number; // 출국 전 여유 — 클수록 우선
   stableId: string; // 장소 ID·열차번호 결합 등 사전순 최종 기준
 };
@@ -30,9 +29,7 @@ export function compareCandidates(a: Candidate, b: Candidate): number {
   if (a.keys.slackSatisfied !== b.keys.slackSatisfied)
     return a.keys.slackSatisfied ? -1 : 1;
 
-  // 2. 결정적 타이브레이커: 환승 적음 → 이동시간 짧음 → 출국 여유 큼 → 사전순
-  if (a.transferCount !== b.transferCount) return a.transferCount - b.transferCount;
-  if (a.totalRailMinutes !== b.totalRailMinutes) return a.totalRailMinutes - b.totalRailMinutes;
+  // 2. 결정적 타이브레이커: 출국 여유 큼 → 사전순
   if (a.departureSlackMinutes !== b.departureSlackMinutes)
     return b.departureSlackMinutes - a.departureSlackMinutes;
   return a.stableId.localeCompare(b.stableId, "en");
