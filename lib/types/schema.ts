@@ -61,10 +61,14 @@ export const Place = z.object({
   reasonText: LocalizedText, // 사전 작성 추천 사유 (REQ-DATA-005)
 });
 
+// 권역은 역에만 저장하고 장소는 nearestStationId로 파생한다 — 단일 진실 (이슈 #6 8일차 잔여)
+export const RegionId = z.enum(["gangwon", "seoul_metro", "honam"]);
+
 export const Station = z.object({
   id: z.string(),
   name: LocalizedText,
   lineType: z.enum(["KTX", "ITX", "일반"]),
+  regionId: RegionId,
 });
 
 export const TrainLeg = z.object({
