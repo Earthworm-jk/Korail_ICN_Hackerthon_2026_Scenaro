@@ -63,7 +63,7 @@ getCandidatePlaces(selection: {
 //   relation: "selected_work" | "actor_other_work",  // §2 파생(상호 배타)
 //   badge?: "CONSERVATIVE_BUFFER_MISMATCH"           // 방문 가능성 직접 확인 필요
 //         | "UNVERIFIED_HOURS"                       // 운영시간 확인 필요
-// }  // ActivityWindowDetail과 동일 열거값 — 화면 배지 2종(WIREFRAMES S3)과 1:1
+// }  // ActivityWindowDetail과 동일 열거값 — 화면 배지 2종(WIREFRAME_GUIDE WF-04·§7.4)과 1:1
 // REQ-SRCH-005·006·007. 정렬은 UI에서 (관련성 / officialSourceCount 토글)
 
 // lib/actions/itinerary.ts
