@@ -1,0 +1,34 @@
+[
+  {
+    "id": "work-goblin",
+    "title": {
+      "ko": "도깨비",
+      "en": "Guardian: The Lonely and Great God"
+    },
+    "year": 2016
+  },
+  {
+    "id": "work-yumi-cells",
+    "title": {
+      "ko": "유미의 세포들",
+      "en": "Yumi's Cells"
+    },
+    "year": 2021
+  },
+  {
+    "id": "work-little-women",
+    "title": {
+      "ko": "작은 아씨들",
+      "en": "Little Women"
+    },
+    "year": 2022
+  },
+  {
+    "id": "work-the-king",
+    "title": {
+      "ko": "더 킹: 영원의 군주",
+      "en": "The King: Eternal Monarch"
+    },
+    "year": 2020
+  }
+]

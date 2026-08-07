@@ -1,0 +1,4 @@
+[
+  { "id": "station-gangneung", "name": { "ko": "강릉역", "en": "Gangneung Station" }, "lineType": "KTX" },
+  { "id": "station-seoul", "name": { "ko": "서울역", "en": "Seoul Station" }, "lineType": "KTX" }
+]
