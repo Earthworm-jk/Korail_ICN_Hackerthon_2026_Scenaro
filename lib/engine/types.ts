@@ -78,9 +78,16 @@ export type DayPlan = {
 export type ItineraryResult =
   | {
       ok: true;
+      status: "planned"; // 선택된 일정이 있는 정상 상태
       days: DayPlan[];
       rejectedPlaces: CandidateRejection[]; // 숨기지 않고 사유와 함께 (REQ-ITIN-005)
       comparisonKeys: ComparisonKeys; // '왜 이 일정인가' 표시 재사용 (#3)
       metrics: ItineraryMetrics; // 편집 전후 비교(diff)는 앱 계층이 metrics로 계산 (PR #9 리뷰)
     }
-  | { ok: false; reason: ConstraintFailure }; // UI는 기존 일정 유지. 후보 전멸은 ok:true+빈 일정
+  | {
+      ok: true;
+      status: "empty"; // 정상 처리됐지만 조건을 만족하는 일정 없음 — 허위 metrics 금지 (PR #16 리뷰)
+      days: [];
+      rejectedPlaces: CandidateRejection[];
+    }
+  | { ok: false; reason: ConstraintFailure }; // 사용자 제약 위반 — UI는 기존 일정 유지

@@ -205,16 +205,24 @@ type ItineraryMetrics = {
 type ItineraryResult =
   | {
       ok: true;
+      status: "planned";            // 선택된 일정이 있는 정상 상태
       days: DayPlan[];              // 장소·열차편(시각·역)·추정 이동 라벨 포함
       rejectedPlaces: CandidateRejection[];  // 엔진이 자동 제외한 후보 3종 (REQ-ITIN-005)
       comparisonKeys: ComparisonKeys;     // '왜 이 일정인가' 화면 재사용 (#3)
       metrics: ItineraryMetrics;
     }
+  | {
+      ok: true;
+      status: "empty";              // 정상 처리, 조건을 만족하는 일정 없음
+      days: [];
+      rejectedPlaces: CandidateRejection[];
+    }
   | { ok: false; reason: ConstraintFailure };     // UI는 기존 일정 유지 (REQ-EDIT-005)
-
-후보가 전멸해도 사용자 제약 위반이 아니면 `ok: false`가 아니라 **`ok: true` + 빈 일정 +
-rejectedPlaces**로 반환한다 — '조건을 만족하는 일정 없음' 화면 상태(PRD 9.2)의 근거.
 ```
+
+후보가 전멸해도 사용자 제약 위반이 아니면 `ok: false`가 아니라 **`status: "empty"`**로
+반환한다 — '조건을 만족하는 일정 없음' 화면 상태(PRD 9.2)의 근거. empty 상태에는 선택된
+일정이 없으므로 comparisonKeys·metrics를 포함하지 않는다(허위 값 금지, PR #16 리뷰).
 
 ## 8. 회귀 프리셋 3개 (기존 Python 시나리오 정답값 이식)
 
