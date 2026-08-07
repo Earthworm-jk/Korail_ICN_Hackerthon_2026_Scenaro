@@ -60,7 +60,7 @@ function generateItinerary(c: TripConstraints, repos: Repos): ItineraryResult;
 
 ## 3. 시드 데이터 스키마 (Zod 요약)
 
-Python 파이프라인이 생성하고, 앱 기동 시 Zod로 검증한다(REQ-DATA-004). 스키마가 곧 데이터 명세다.
+Python 파이프라인이 생성하고, Repository 초기화 시(Planner 요청 처리 전에) Zod로 검증한다(REQ-DATA-004, 정의서 v0.5). 스키마가 곧 데이터 명세다.
 
 ```ts
 const OpeningHours = z.discriminatedUnion("type", [
@@ -154,7 +154,7 @@ type CandidateRejection =
   | { code: "DEPARTURE_DEADLINE_EXCEEDED"; placeId: string }
   | { code: "ACTIVITY_WINDOW_MISMATCH"; placeId: string; detail: ActivityWindowDetail };
 
-// 전체 재계산 실패 사유 (ok:false 전용) — 후보 제외가 아니라 요청 실패다(정의서 v0.4)
+// 전체 재계산 실패 사유 (ok:false 전용) — 후보 제외가 아니라 요청 실패다(정의서 v0.5)
 type ConstraintFailure = {
   code: "USER_CONSTRAINT_INFEASIBLE";
   constraintType: "REQUIRED_PLACE" | "PINNED_DATE"; targetId: string;
@@ -186,7 +186,7 @@ type ComparisonKeys = {
 ```
 
 동점 타이브레이커(결정성 보장): **출국 전 여유 큼 → 장소 ID·열차번호 사전순.**
-비교 키에 이미 포함된 환승·이동시간은 동점 시점에 같으므로 반복하지 않는다(정의서 v0.4).
+비교 키에 이미 포함된 환승·이동시간은 동점 시점에 같으므로 반복하지 않는다(정의서 v0.5).
 
 ## 7. 출력 타입 (PR #9 리뷰 C — diff는 앱 계층 책임)
 
@@ -226,7 +226,7 @@ type ItineraryResult =
 
 ## 8. 회귀 프리셋 3개 (기존 Python 시나리오 정답값 이식)
 
-공통 fixture: 김고은 / 작품 4편 / 촬영지 14곳 시드(가안 — #1 수동 검증 완료 시 확정), 기준 항공편.
+공통 fixture(정의서 v0.5 ITIN-003과 동일): 김고은 / 작품 4편 / 촬영지 14곳 시드(가안 — #1 수동 검증 완료 시 확정), 기준 입국 2026-08-12 10:00 / 출국 2026-08-14 18:00 / 시간표 스냅샷 2026-08-07.
 
 | 프리셋 | 조작 | 기대 결과 |
 |---|---|---|

@@ -8,7 +8,7 @@ import type { ComparisonKeys } from "./types";
 export type Candidate = {
   keys: ComparisonKeys;
   // 타이브레이커용 지표 — 비교 키에 포함된 환승·이동시간은 동점 시점에 이미 같으므로
-  // 반복하지 않는다 (정의서 v0.4 REQ-ITIN-008)
+  // 반복하지 않는다 (정의서 v0.5 REQ-ITIN-008)
   departureSlackMinutes: number; // 출국 전 여유 — 클수록 우선
   stableId: string; // 장소 ID·열차번호 결합 등 사전순 최종 기준
 };

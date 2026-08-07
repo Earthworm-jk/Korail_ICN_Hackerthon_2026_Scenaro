@@ -21,7 +21,7 @@ export type ActivityWindowDetail =
   | "CONSERVATIVE_BUFFER_MISMATCH"
   | "UNVERIFIED_HOURS";
 
-// 후보 하나의 자동 제외 사유 (rejectedPlaces 전용) — 정의서 v0.4 REQ-ITIN-005
+// 후보 하나의 자동 제외 사유 (rejectedPlaces 전용) — 정의서 v0.5 REQ-ITIN-005
 export type CandidateRejection =
   | { code: "TRAIN_UNAVAILABLE"; placeId: string }
   | { code: "DEPARTURE_DEADLINE_EXCEEDED"; placeId: string }
