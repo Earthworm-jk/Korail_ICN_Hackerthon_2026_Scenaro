@@ -46,13 +46,17 @@ function generateItinerary(c: TripConstraints, repos: Repos): ItineraryResult;
 ### 관계 유형은 시드가 아니라 constraints에서 파생한다 (PR #9 리뷰 B)
 
 장소–선택의 관계는 무엇을 선택했는지에 따라 달라지므로 시드에 정적으로 저장하지 않는다.
+**판정은 순서가 있으며 두 분류는 상호 배타적이다** — 한 장소는 정확히 하나의 분류에만 속한다.
 
 ```
-place.workIds ∩ selectedWorkIds ≠ ∅            → selected_work
-selectedActorId가 있고
-place.workIds ∩ actor(selectedActorId).workIds ≠ ∅ → actor_other_work
-둘 다 아님                                        → 후보 아님 (NFR-ACCU-001)
+1) place.workIds ∩ selectedWorkIds ≠ ∅              → selected_work (여기서 판정 종료)
+2) 1)이 아니고, selectedActorId가 있으며
+   place.workIds ∩ actor(selectedActorId).workIds ≠ ∅ → actor_other_work
+3) 둘 다 아님                                         → 후보 아님 (NFR-ACCU-001)
 ```
+
+선택 작품에도 연결되고 배우의 다른 작품에도 연결된 장소는 1)에서 `selected_work`로
+확정되며 `actor_other_work`로 중복 분류되지 않는다.
 
 ## 3. 시드 데이터 스키마 (Zod 요약)
 
@@ -167,6 +171,7 @@ type RejectionReason =
 ```ts
 type ComparisonKeys = {
   relevanceKey: {
+    // §2의 상호 배타 분류 기준 — 한 장소는 두 카운트 중 정확히 한쪽에만 집계된다
     selectedWorkPlaceCount: number;   // 1a) 높을수록 우선
     actorOtherWorkPlaceCount: number; // 1b) 1a 동점일 때, 높을수록 우선
   };
