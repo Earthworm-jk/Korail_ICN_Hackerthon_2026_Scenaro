@@ -5,6 +5,7 @@
 - [씬나로 MVP PRD](docs/PRD.md)
 - [일정 엔진 명세](docs/ENGINE_SPEC.md)
 - [와이어프레임 가이드](docs/WIREFRAME_GUIDE.md)
+- [최종 MVP 와이어프레임 개선 요청서](docs/WIREFRAME_MVP_FEEDBACK.md)
 - [팀 Git·GitHub 규칙](docs/TEAM_RULES.md)
 
 ## 개발
