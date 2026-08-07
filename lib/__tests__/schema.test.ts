@@ -16,8 +16,11 @@ describe("시드 스키마 검증 (REQ-DATA-004)", () => {
     const workIds = new Set(repos.works.map((w) => w.id));
     for (const p of repos.places) {
       expect(stationIds.has(p.nearestStationId)).toBe(true);
-      // 시드 확장 중에는 작품이 먼저 없을 수 있으므로 하나 이상 매칭만 요구
-      expect(p.workIds.some((w) => workIds.has(w))).toBe(true);
+      // 기동 시 데이터 불일치 즉시 실패 계약 — 모든 참조가 존재해야 한다
+      expect(p.workIds.every((w) => workIds.has(w)), p.id).toBe(true);
+    }
+    for (const a of repos.actors) {
+      expect(a.workIds.every((w) => workIds.has(w)), a.id).toBe(true);
     }
   });
 });

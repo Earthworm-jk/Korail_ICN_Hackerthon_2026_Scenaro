@@ -2,7 +2,7 @@
 
 ## 개발
 
-- Node 26 / pnpm (`packageManager` 필드로 고정, `corepack enable` 권장)
+- Node 24 LTS / pnpm (`packageManager` 필드로 고정, `corepack enable` 권장)
 - `pnpm install` → `pnpm dev` (http://localhost:3000)
 - `pnpm test` — 엔진·스키마·번역 키 테스트 (Vitest)
 - `pnpm typecheck` — tsc --noEmit
