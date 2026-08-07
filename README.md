@@ -1,5 +1,11 @@
 # Korail_ICN_Hackerthon_2026_Scenaro
 
+## 문서
+
+- [씬나로 MVP PRD](docs/PRD.md)
+- [일정 엔진 명세](docs/ENGINE_SPEC.md)
+- [팀 Git·GitHub 규칙](docs/TEAM_RULES.md)
+
 ## 개발
 
 - Node 24 LTS / pnpm (`packageManager` 필드로 고정, `corepack enable` 권장)
