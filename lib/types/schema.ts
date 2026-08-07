@@ -7,8 +7,15 @@ import { z } from "zod";
 
 export const LocalizedText = z.object({ ko: z.string(), en: z.string() });
 
-// #3 최종 결정: 시드에는 점수가 아니라 관계 유형을 저장, 점수는 엔진 상수에서 파생
+// 관계 유형은 시드에 저장하지 않고 constraints에서 파생한다 (ENGINE_SPEC §2, PR #9 리뷰)
 export const RelationType = z.enum(["selected_work", "actor_other_work"]);
+
+// PR #9 리뷰: 부분 누락을 Zod에서 원천 차단하기 위한 통합 객체
+export const AccessEstimate = z.object({
+  minutes: z.number(),
+  source: z.string(),
+  verifiedAt: z.string(),
+});
 
 // #5 최종 결정: 출처 없는 운영시간을 만들지 않는다. unverified는 자동 일정 제외 대상
 export const OpeningHours = z.discriminatedUnion("type", [
@@ -44,12 +51,9 @@ export const Work = z.object({
 export const Place = z.object({
   id: z.string(),
   name: LocalizedText, // #4: 데모 시드는 en 필수
-  workIds: z.array(z.string()),
-  relationType: RelationType,
+  workIds: z.array(z.string()), // 관계 유형은 저장하지 않음 — ENGINE_SPEC §2 파생 규칙
   nearestStationId: z.string(),
-  accessMinutes: z.number(), // #5: 역→장소 접근시간 추정
-  accessSource: z.string(),
-  accessVerifiedAt: z.string(),
+  accessEstimate: AccessEstimate, // #5: 역→장소 접근시간 추정(왕복 동일 적용 — 역 허브 모델)
   openingHours: OpeningHours,
   stayMinutes: z.number(),
   verificationLevel: z.enum(["원본확인", "교차확인", "TourAPI대조"]),

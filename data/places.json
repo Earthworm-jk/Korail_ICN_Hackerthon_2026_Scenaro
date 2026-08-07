@@ -1,17 +1,30 @@
 [
   {
     "id": "place-yeongjin-beach",
-    "name": { "ko": "영진해변", "en": "Yeongjin Beach" },
-    "workIds": ["work-goblin"],
-    "relationType": "selected_work",
+    "name": {
+      "ko": "영진해변",
+      "en": "Yeongjin Beach"
+    },
+    "workIds": [
+      "work-goblin"
+    ],
     "nearestStationId": "station-gangneung",
-    "accessMinutes": 25,
-    "accessSource": "SAMPLE — 시드 구축 시 실측·출처로 교체",
-    "accessVerifiedAt": "2026-08-07",
-    "openingHours": { "type": "always_open", "source": "SAMPLE — 시드 구축 시 공식 출처로 교체", "verifiedAt": "2026-08-07" },
+    "openingHours": {
+      "type": "always_open",
+      "source": "SAMPLE — 시드 구축 시 공식 출처로 교체",
+      "verifiedAt": "2026-08-07"
+    },
     "stayMinutes": 60,
     "verificationLevel": "원본확인",
     "officialSourceCount": 1,
-    "reasonText": { "ko": "도깨비 방파제 장면 촬영지 (샘플)", "en": "Filming site of the Guardian breakwater scene (sample)" }
+    "reasonText": {
+      "ko": "도깨비 방파제 장면 촬영지 (샘플)",
+      "en": "Filming site of the Guardian breakwater scene (sample)"
+    },
+    "accessEstimate": {
+      "minutes": 25,
+      "source": "SAMPLE — 시드 구축 시 실측·출처로 교체",
+      "verifiedAt": "2026-08-07"
+    }
   }
 ]

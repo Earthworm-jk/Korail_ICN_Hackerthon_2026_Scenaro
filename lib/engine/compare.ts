@@ -16,9 +16,11 @@ export type Candidate = {
 
 /** a가 b보다 우선이면 음수. Array.prototype.sort 규약. */
 export function compareCandidates(a: Candidate, b: Candidate): number {
-  // 1. 사전식 키 (서열: 관련성 → 방문 장소 수 → 이동시간 → 환승 → 여유 충족)
-  if (a.keys.relevanceScore !== b.keys.relevanceScore)
-    return b.keys.relevanceScore - a.keys.relevanceScore;
+  // 1. 사전식 키 (서열: 관련성[개수 벡터] → 방문 장소 수 → 이동시간 → 환승 → 여유 충족)
+  if (a.keys.relevanceKey.selectedWorkPlaceCount !== b.keys.relevanceKey.selectedWorkPlaceCount)
+    return b.keys.relevanceKey.selectedWorkPlaceCount - a.keys.relevanceKey.selectedWorkPlaceCount;
+  if (a.keys.relevanceKey.actorOtherWorkPlaceCount !== b.keys.relevanceKey.actorOtherWorkPlaceCount)
+    return b.keys.relevanceKey.actorOtherWorkPlaceCount - a.keys.relevanceKey.actorOtherWorkPlaceCount;
   if (a.keys.visitablePlaceCount !== b.keys.visitablePlaceCount)
     return b.keys.visitablePlaceCount - a.keys.visitablePlaceCount;
   if (a.keys.totalRailMinutes !== b.keys.totalRailMinutes)

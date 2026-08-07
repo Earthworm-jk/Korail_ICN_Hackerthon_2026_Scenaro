@@ -4,7 +4,7 @@ import { compareCandidates, type Candidate } from "../engine/compare";
 function cand(partial: Partial<Candidate> & { stableId: string }): Candidate {
   return {
     keys: {
-      relevanceScore: 5,
+      relevanceKey: { selectedWorkPlaceCount: 3, actorOtherWorkPlaceCount: 1 },
       visitablePlaceCount: 3,
       totalRailMinutes: 120,
       transferCount: 1,
@@ -19,10 +19,16 @@ function cand(partial: Partial<Candidate> & { stableId: string }): Candidate {
 }
 
 describe("사전식 비교 (#3 — 가중합 아님)", () => {
-  it("관련성이 다르면 뒤 키와 무관하게 관련성이 이긴다", () => {
-    const high = cand({ stableId: "a", keys: { relevanceScore: 5, totalRailMinutes: 999 } as never });
-    const low = cand({ stableId: "b", keys: { relevanceScore: 3, totalRailMinutes: 1 } as never });
+  it("관련성 벡터가 다르면 뒤 키와 무관하게 관련성이 이긴다", () => {
+    const high = cand({ stableId: "a", keys: { relevanceKey: { selectedWorkPlaceCount: 3, actorOtherWorkPlaceCount: 0 }, totalRailMinutes: 999 } as never });
+    const low = cand({ stableId: "b", keys: { relevanceKey: { selectedWorkPlaceCount: 2, actorOtherWorkPlaceCount: 9 }, totalRailMinutes: 1 } as never });
     expect(compareCandidates(high, low)).toBeLessThan(0);
+  });
+
+  it("선택 작품 개수 동점이면 배우 타출연작 개수로 비교한다", () => {
+    const moreOther = cand({ stableId: "a", keys: { relevanceKey: { selectedWorkPlaceCount: 2, actorOtherWorkPlaceCount: 2 } } as never });
+    const lessOther = cand({ stableId: "b", keys: { relevanceKey: { selectedWorkPlaceCount: 2, actorOtherWorkPlaceCount: 1 } } as never });
+    expect(compareCandidates(moreOther, lessOther)).toBeLessThan(0);
   });
 
   it("여유시간은 충족 여부만 본다 — 초과 가점 없음", () => {
