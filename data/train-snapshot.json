@@ -1,0 +1,9 @@
+[
+  {
+    "trainNo": "801",
+    "fromStationId": "station-seoul",
+    "toStationId": "station-gangneung",
+    "departAt": "2026-08-12T07:01:00+09:00",
+    "arriveAt": "2026-08-12T08:59:00+09:00"
+  }
+]

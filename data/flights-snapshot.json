@@ -1,0 +1,8 @@
+[
+  {
+    "flightNo": "SAMPLE-001",
+    "direction": "arrival",
+    "scheduledAt": "2026-08-12T10:00:00+09:00",
+    "terminal": "T1"
+  }
+]
