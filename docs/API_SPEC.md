@@ -59,8 +59,11 @@ getCandidatePlaces(selection: {
   selectedActorId?: string;
   selectedWorkIds: string[];
 }): Promise<PlaceCandidate[]>;
-// PlaceCandidate = PlaceT + { relation: "selected_work" | "actor_other_work",  // §2 파생(상호 배타)
-//                             badge?: "CHECK_REQUIRED" }                        // #5 애매·미확인 배지
+// PlaceCandidate = PlaceT + {
+//   relation: "selected_work" | "actor_other_work",  // §2 파생(상호 배타)
+//   badge?: "CONSERVATIVE_BUFFER_MISMATCH"           // 방문 가능성 직접 확인 필요
+//         | "UNVERIFIED_HOURS"                       // 운영시간 확인 필요
+// }  // ActivityWindowDetail과 동일 열거값 — 화면 배지 2종(WIREFRAMES S3)과 1:1
 // REQ-SRCH-005·006·007. 정렬은 UI에서 (관련성 / officialSourceCount 토글)
 
 // lib/actions/itinerary.ts
@@ -69,10 +72,19 @@ planItinerary(constraints: TripConstraints): Promise<ItineraryResult>;
 // 편집 3동작 = constraints 필드 변경 후 재호출. diff는 UI가 이전 metrics와 비교(REQ-EDIT-004)
 
 // lib/actions/flights.ts
-getFlightInfo(flightNo: string, direction: "arrival" | "departure"): Promise<{
-  flight: FlightT;
-  source: "live" | "snapshot";   // 폴백 여부를 UI에 표시
-}>;
+type FlightInfo = {
+  flightNo: string;
+  direction: "arrival" | "departure";
+  scheduledAt: string;           // 예정 시각
+  estimatedAt?: string;          // 변경(예상) 시각 — live 조회 시
+  status?: string;               // 운항 상태 문구 — live 조회 시
+  terminal?: string;
+};
+getFlightInfo(flightNo: string, direction: "arrival" | "departure"): Promise<
+  | { ok: true; flight: FlightInfo; source: "live" | "snapshot" }  // 폴백 여부 UI 표시
+  | { ok: false; reason: "FLIGHT_NOT_FOUND" }                      // 미검색 편명 — 수동 시각 입력 유도
+>;
+// 시드 FlightT는 스냅샷 최소 필드이며, live 응답은 FlightInfo로 정규화한다
 ```
 
 ### 3.3 오류 계약
@@ -90,3 +102,5 @@ getFlightInfo(flightNo: string, direction: "arrival" | "departure"): Promise<{
 | getCandidatePlaces | REQ-SRCH-005·006·007, REQ-DATA-002 |
 | planItinerary | REQ-ITIN-001..008, REQ-EDIT-001..006 |
 | getFlightInfo | REQ-SRCH-001, REQ-DATA-003, NFR-DEMO-001 |
+
+참고: 요구사항 정의서의 구 표기 GET /flights는 v0.4에서 getFlightInfo(API_SPEC)로 동기화 완료.
