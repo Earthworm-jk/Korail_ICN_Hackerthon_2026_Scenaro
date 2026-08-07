@@ -23,6 +23,13 @@ describe("시드 스키마 검증 (REQ-DATA-004)", () => {
       expect(a.workIds.every((w) => workIds.has(w)), a.id).toBe(true);
     }
   });
+
+  it("장소의 권역은 최근접역에서 파생 가능하다 — 역마다 regionId 존재", () => {
+    const repos = loadRepositories();
+    for (const s of repos.stations) {
+      expect(s.regionId, s.id).toBeTruthy();
+    }
+  });
 });
 
 describe("접근시간 버퍼 규칙 (#5)", () => {
