@@ -146,7 +146,7 @@ export default function PlannerWizard() {
   }, [candidateData, selectedPlaceIds, arrival.at, departure.at, exitOffset, departureBuffer, selectedActors, selectedWorks, saveStub]);
 
   const baseDays: DayPlan[] | null =
-    result?.ok && result.status === "planned" ? result.days : null;
+    result?.status === "planned" ? result.days : null;
   const mockAlternatives = useMemo(
     () => (baseDays ? buildMockAlternatives(baseDays) : []),
     [baseDays],
@@ -525,7 +525,7 @@ export default function PlannerWizard() {
                   </div>
                 );
               })}
-              {!reopened && result?.ok && result.status === "planned" && result.rejectedPlaces.length > 0 && (
+              {!reopened && result?.status === "planned" && result.rejectedPlaces.length > 0 && (
                 <div className="rounded-lg border border-amber-200 bg-amber-50 p-4">
                   <h3 className="text-sm font-medium text-amber-800">{tr("step4.rejectedTitle")}</h3>
                   <ul className="mt-2 space-y-1 text-sm text-amber-800">
@@ -541,7 +541,7 @@ export default function PlannerWizard() {
             </div>
           )}
 
-          {!planning && result && result.ok && result.status === "empty" && (
+          {!planning && result && result.status === "empty" && (
             <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-4">
               <h3 className="font-medium text-amber-800">{tr("step4.emptyTitle")}</h3>
               <p className="mt-1 text-sm text-amber-700">{tr("step4.emptyDesc")}</p>
@@ -554,12 +554,6 @@ export default function PlannerWizard() {
                   ))}
                 </ul>
               )}
-            </div>
-          )}
-
-          {!planning && result && !result.ok && (
-            <div className="mt-4 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">
-              {tr("step4.failTitle")}
             </div>
           )}
 
