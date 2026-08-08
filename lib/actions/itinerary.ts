@@ -12,8 +12,8 @@ import { loadRepositories } from "../repositories/json";
 export type PlanRequest = {
   arrivalAt: string;
   departureAt: string;
-  airportExitOffsetMin: number;
-  departureBufferMinutes: number;
+  airportReadyAt: string; // 공항 출발 가능 시각 (#14 차단 2 — 절대 시각)
+  airportArrivalDeadline: string; // 공항 도착 마감 시각 (#14 차단 2 — 절대 시각)
   selectedActorIds: string[];
   selectedWorkIds: string[];
   excludedPlaceIds: string[];
@@ -32,13 +32,13 @@ export async function planItinerary(request: PlanRequest): Promise<PlanActionRes
   const constraints: TripConstraints = {
     arrivalAt: request.arrivalAt,
     departureAt: request.departureAt,
-    airportExitOffsetMin: request.airportExitOffsetMin,
+    airportReadyAt: request.airportReadyAt,
     selectedActorIds: request.selectedActorIds,
     selectedWorkIds: request.selectedWorkIds,
     excludedPlaceIds: request.excludedPlaceIds,
     maxPlacesPerDay: DEFAULT_MAX_PLACES_PER_DAY,
     dailySlackMinutes: DEFAULT_DAILY_SLACK_MINUTES,
-    departureBufferMinutes: request.departureBufferMinutes,
+    airportArrivalDeadline: request.airportArrivalDeadline,
   };
   const parsed = TripConstraintsSchema.safeParse(constraints);
   if (!parsed.success) {

@@ -280,5 +280,31 @@
       "ko": "서울 도심에서 도깨비의 장면을 따라 걷기 좋은 상시 개방 외부 촬영지예요.",
       "en": "An always-open outdoor filming location in central Seoul associated with Guardian."
     }
+  },
+  {
+    "id": "place-gyeonggijeon-shrine",
+    "name": { "ko": "경기전", "en": "Gyeonggijeon Shrine" },
+    "workIds": ["work-the-king"],
+    "nearestStationId": "station-jeonju",
+    "accessEstimate": {
+      "minutes": 20,
+      "source": "카카오맵 자동차 길찾기 전주역→경기전 16분·5.5km의 5분 올림값 (2026-08-08; 실시간 교통·교통수단 보장 아님)",
+      "verifiedAt": "2026-08-08"
+    },
+    "openingHours": {
+      "type": "hours",
+      "open": "09:00",
+      "close": "20:00",
+      "lastEntry": "19:00",
+      "source": "한국관광공사 VISITKOREA 8월 09:00~20:00·폐관 1시간 전 입장 마감·연중무휴 안내 https://english.visitkorea.or.kr/svc/whereToGo/locIntrdn/rgnContentsView.do?vcontsId=108728",
+      "verifiedAt": "2026-08-08"
+    },
+    "stayMinutes": 60,
+    "verificationLevel": "교차확인",
+    "officialSourceCount": 2,
+    "reasonText": {
+      "ko": "더 킹: 영원의 군주에 등장하는 전주의 역사 촬영지예요.",
+      "en": "A historic Jeonju filming location featured in The King: Eternal Monarch."
+    }
   }
 ]

@@ -1,6 +1,6 @@
 # 씬나로 일정 엔진 명세 v0.3
 
-> 근거: 이슈 #2(편집·사유 코드), #3(점수·사전식 비교), #5(운영시간) 최종 결정 + PR #9 리뷰 반영.
+> 근거: 이슈 #2(편집·사유 코드), #3(점수·사전식 비교), #5·#43(운영시간) 최종 결정 + PR #9 리뷰 반영.
 > 상위 문서: PRD v0.2, 요구사항 정의서 v0.5.
 
 ## 1. 원칙
@@ -25,7 +25,7 @@ Planner
 type TripConstraints = {
   arrivalAt: string;            // ISO, 입국편 도착
   departureAt: string;          // ISO, 출국편 출발
-  airportExitOffsetMin: 90 | 120 | number; // 착륙 후 출발 가능시점 (REQ-SRCH-002)
+  airportReadyAt: string;       // ISO, 공항 출발 가능 시각 — 절대 시각 입력 (#14 차단 2)
   airportStationId?: string;    // 공항철도 출발·도착역(생략 시 Station.isAirport)
   gatewayStationId?: string;    // 관문역(생략 시 Station.isGateway·gatewayPriority)
   selectedActorIds?: string[];  // 배우 중심 탐색(복수 가능)
@@ -34,7 +34,7 @@ type TripConstraints = {
   excludedPlaceIds: string[];   // 사용자 제외 — 하드 제약
   maxPlacesPerDay: number;      // 내부 기본값 3 — 사용자 설정 UI 없음 (#14 ver.0.4)
   dailySlackMinutes: number;    // 일반 여유(소프트), 기본 120
-  departureBufferMinutes: number; // 출국 안전 버퍼(하드), 기본 120 — #3 결정으로 필드 분리
+  airportArrivalDeadline: string; // ISO, 공항 도착 마감 시각(하드) — 절대 시각 입력 (#14 차단 2)
 };
 
 // 단일 진입점 (REQ-EDIT-001·002·006 공통, #2 결정)
@@ -76,7 +76,7 @@ const OpeningHours = z.discriminatedUnion("type", [
     closedDays: z.array(z.enum(["sun", "mon", "tue", "wed", "thu", "fri", "sat"])).optional(),
     source: z.string(), verifiedAt: z.string(),
   }),
-  z.object({ type: z.literal("unverified") }),    // 자동 일정 제외 대상 (#5)
+  z.object({ type: z.literal("unverified") }),    // 자동 제외하지 않고 경고 대상 (#43)
 ]);
 
 // PR #9 리뷰 1: 부분 누락을 Zod에서 원천 차단하기 위해 통합 객체로
@@ -118,7 +118,7 @@ const Station = z.object({
 1. 입력 검증           — Zod. 실패는 예외(사유 코드 아님)
 2. 후보 장소 수집       — §2 파생 규칙으로 selected_work / actor_other_work 후보만
 3. 하드 필터           — 아래 5.의 제약 위반 장소·후보 제거, 사유 코드 기록
-4. 일자 슬롯 구성       — 입국+airportExitOffset ... 출국-departureBuffer 사이,
+4. 일자 슬롯 구성       — airportReadyAt ... airportArrivalDeadline 사이,
                          maxPlacesPerDay·일자별 dailySlackMinutes 반영
 5. 열차 선택           — 공항철도를 포함한 시간표 스냅샷에서 연결 가능한 편 탐색
 6. 후보 일정 생성·비교   — 사전식 비교(아래 6.)로 최선 일정 선택
@@ -134,7 +134,7 @@ const Station = z.object({
 
 공항↔관문역은 지역 내 이동 추정과 다르다. `airportStationId`에서 출발해 공항철도
 스냅샷 leg를 실제 열차 구간처럼 탐색하고, 귀환도 공항역 도착 시각이
-`departureAt - departureBufferMinutes` 이하여야 한다. 다른 열차번호로 갈아탈 때는 최소
+`airportArrivalDeadline` 이하여야 한다. 다른 열차번호로 갈아탈 때는 최소
 15분의 환승 간격을 적용한다.
 
 `dailySlackMinutes`는 출국 전 잔여시간의 대리값으로 쓰지 않는다. 각 방문일을 KST 0시 기준으로
@@ -146,7 +146,7 @@ const Station = z.object({
 | 제약 | 사유 코드 |
 |---|---|
 | 연결 가능한 열차 존재 | TRAIN_UNAVAILABLE |
-| 출국 역산: 마지막 방문의 역 복귀 + 열차 + 공항 이동 + departureBufferMinutes ≤ 출국 시각 | DEPARTURE_DEADLINE_EXCEEDED |
+| 출국 역산: 마지막 방문의 역 복귀 + 열차 + 공항 이동 완료 ≤ airportArrivalDeadline | DEPARTURE_DEADLINE_EXCEEDED |
 | 사용자 제외 장소 미포함 | (후보 수집 단계에서 제거, 코드 불필요 — 사용자 직접 제외는 rejectedPlaces에 넣지 않는다) |
 
 ### 운영시간 판정식 (PR #9 리뷰 A — open·stayMinutes 포함)
@@ -201,9 +201,10 @@ type ComparisonKeys = {
     actorOtherWorkPlaceCount: number; // 1b) 1a 동점일 때, 높을수록 우선
   };
   visitablePlaceCount: number;        // 2) 높을수록 우선
-  totalRailMinutes: number;           // 3) 낮을수록 우선
-  transferCount: number;              // 4) 낮을수록 우선
-  slackSatisfied: boolean;            // 5) 충족 우선 (미달만 불이익, 초과 가점 없음)
+  activityWarningCount: number;       // 3) 낮을수록 우선 (#43)
+  totalRailMinutes: number;           // 4) 낮을수록 우선
+  transferCount: number;              // 5) 낮을수록 우선
+  slackSatisfied: boolean;            // 6) 충족 우선 (미달만 불이익, 초과 가점 없음)
 };
 ```
 

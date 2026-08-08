@@ -12,6 +12,8 @@
  *
  * 오류 표기: [파일][엔티티 종류:ID 또는 #배열인덱스][필드 경로] 메시지
  */
+import "server-only";
+
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { z } from "zod";
