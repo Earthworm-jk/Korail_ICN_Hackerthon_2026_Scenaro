@@ -9,6 +9,8 @@
  * 항공 어댑터가 스냅샷 모드로 동작해야 한다(NFR-DEMO-001 오프라인 데모,
  * REQ-DATA-003 폴백). 공백·빈 문자열 키는 없는 것으로 정규화한다.
  */
+import "server-only";
+
 import { z } from "zod";
 
 const EnvSchema = z.object({
