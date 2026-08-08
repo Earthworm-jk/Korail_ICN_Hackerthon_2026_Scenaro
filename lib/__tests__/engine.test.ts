@@ -76,17 +76,31 @@ function leg(
   return { trainNo, fromStationId, toStationId, departAt, arriveAt };
 }
 
-function constraints(overrides: Partial<TripConstraints> = {}): TripConstraints {
+function kstIso(ms: number): string {
+  const p = (n: number) => String(n).padStart(2, "0");
+  const kst = new Date(ms + 9 * 3_600_000);
+  return `${kst.getUTCFullYear()}-${p(kst.getUTCMonth() + 1)}-${p(kst.getUTCDate())}T${p(kst.getUTCHours())}:${p(kst.getUTCMinutes())}:${p(kst.getUTCSeconds())}+09:00`;
+}
+const addMinutes = (iso: string, minutes: number) => kstIso(Date.parse(iso) + minutes * 60_000);
+
+// #14 차단 2(절대 시각 전환) 후에도 기존 시나리오 의미(도착 +60분 출발, 출국 -120분 마감)를
+// 보존하기 위해 항공편 시각에서 경계를 파생한다 — departureAt만 바꾸는 테스트도 마감이 따라온다
+function constraints(
+  { exitOffsetMin = 60, departureBufferMin = 120, ...overrides }:
+    Partial<TripConstraints> & { exitOffsetMin?: number; departureBufferMin?: number } = {},
+): TripConstraints {
+  const arrivalAt = overrides.arrivalAt ?? "2026-08-12T06:00:00+09:00";
+  const departureAt = overrides.departureAt ?? "2026-08-12T22:00:00+09:00";
   return {
-    arrivalAt: "2026-08-12T06:00:00+09:00",
-    departureAt: "2026-08-12T22:00:00+09:00",
-    airportExitOffsetMin: 60,
+    arrivalAt,
+    departureAt,
+    airportReadyAt: addMinutes(arrivalAt, exitOffsetMin),
+    airportArrivalDeadline: addMinutes(departureAt, -departureBufferMin),
     selectedActorIds: ["actor-a", "actor-b"],
     selectedWorkIds: ["work-1"],
     excludedPlaceIds: [],
     maxPlacesPerDay: 3,
     dailySlackMinutes: 60,
-    departureBufferMinutes: 120,
     ...overrides,
   };
 }
@@ -172,7 +186,7 @@ describe("generateItinerary", () => {
   it("열차는 탈 수 있어도 출국 안전 버퍼를 침범하면 마감 초과를 반환한다", () => {
     const result = generateItinerary(constraints({
       departureAt: "2026-08-12T19:30:00+09:00",
-      departureBufferMinutes: 120,
+      departureBufferMin: 120,
     }), repositories());
 
     expect(result.status).toBe("empty");

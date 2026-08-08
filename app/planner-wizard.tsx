@@ -65,8 +65,23 @@ export default function PlannerWizard() {
   // step 1 — 여행 조건
   const [arrival, setArrival] = useState<FlightField>({ flightNo: "", at: "2026-08-12T10:00", notFound: false });
   const [departure, setDeparture] = useState<FlightField>({ flightNo: "", at: "2026-08-14T18:00", notFound: false });
-  const [exitOffset, setExitOffset] = useState(120);
-  const [departureBuffer, setDepartureBuffer] = useState(120);
+  // #14 차단 2: 주 입력은 절대 시각 — 항공편 시각에서 파생한 기본 제안값을 두되,
+  // 사용자가 직접 수정하면(touched) 항공편 변경에도 덮어쓰지 않는다.
+  // 파생 여유는 #3 확정 기본값 유지: 입국 +120분, 출국 안전 버퍼 120분(PRD §8.1) — 표현만 절대 시각
+  const [airportReady, setAirportReady] = useState({ at: "2026-08-12T12:00", touched: false });
+  const [airportDeadline, setAirportDeadline] = useState({ at: "2026-08-14T16:00", touched: false });
+
+  const deriveLocal = (at: string, minutes: number) =>
+    toLocalInput(new Date(Date.parse(fromLocalInput(at)) + minutes * 60_000).toISOString());
+
+  const setArrivalAtInput = useCallback((at: string) => {
+    setArrival((f) => ({ ...f, at }));
+    if (at) setAirportReady((r) => (r.touched ? r : { ...r, at: deriveLocal(at, 120) }));
+  }, []);
+  const setDepartureAtInput = useCallback((at: string) => {
+    setDeparture((f) => ({ ...f, at }));
+    if (at) setAirportDeadline((d) => (d.touched ? d : { ...d, at: deriveLocal(at, -120) }));
+  }, []);
 
   // step 2 — 검색·복수 선택
   const [query, setQuery] = useState("");
@@ -90,8 +105,9 @@ export default function PlannerWizard() {
     const inputs = tripInputsFromConstraints(c);
     setArrival((f) => ({ ...f, at: inputs.arrivalAt }));
     setDeparture((f) => ({ ...f, at: inputs.departureAt }));
-    setExitOffset(inputs.exitOffsetMin);
-    setDepartureBuffer(inputs.departureBufferMinutes);
+    // 저장 당시 절대 시각을 그대로 복원 — 이후 항공편 변경이 파생 기본값으로 덮지 않게 touched 고정
+    setAirportReady({ at: inputs.airportReadyAt, touched: true });
+    setAirportDeadline({ at: inputs.airportArrivalDeadline, touched: true });
     setSelectedActors(record.context.actors);
     setSelectedWorks(record.context.works);
     const data = await getCandidatePlaces({
@@ -115,11 +131,12 @@ export default function PlannerWizard() {
     if (!field.flightNo.trim()) return;
     const res = await getFlightInfo(field.flightNo, direction);
     if (res.ok) {
-      setField({ ...field, at: toLocalInput(res.flight.scheduledAt), notFound: false });
+      setField({ ...field, notFound: false });
+      (direction === "arrival" ? setArrivalAtInput : setDepartureAtInput)(toLocalInput(res.flight.scheduledAt));
     } else {
       setField({ ...field, notFound: true });
     }
-  }, [arrival, departure]);
+  }, [arrival, departure, setArrivalAtInput, setDepartureAtInput]);
 
   const runSearch = useCallback(async (value: string) => {
     setQuery(value);
@@ -143,12 +160,12 @@ export default function PlannerWizard() {
   const currentConstraints = useCallback(() => {
     if (!candidateData) return null;
     return constraintsFromTripInputs(
-      { arrivalAt: arrival.at, departureAt: departure.at, exitOffsetMin: exitOffset, departureBufferMinutes: departureBuffer },
+      { arrivalAt: arrival.at, departureAt: departure.at, airportReadyAt: airportReady.at, airportArrivalDeadline: airportDeadline.at },
       selectedActors.map((a) => a.id),
       selectedWorks.map((w) => w.id),
       excludedPlaceIdsFrom(candidateData.candidates, selectedPlaceIds),
     );
-  }, [candidateData, selectedPlaceIds, arrival.at, departure.at, exitOffset, departureBuffer, selectedActors, selectedWorks]);
+  }, [candidateData, selectedPlaceIds, arrival.at, departure.at, airportReady.at, airportDeadline.at, selectedActors, selectedWorks]);
 
   const plan = useCallback(async () => {
     const constraints = currentConstraints();
@@ -230,13 +247,22 @@ export default function PlannerWizard() {
     set(list.some((x) => x.id === item.id) ? list.filter((x) => x.id !== item.id) : [...list, item]);
   };
 
-  // PR #30 리뷰 ③: 필수값·입출국 순서는 1단계에서 막는다 (와이어프레임 계약)
+  // PR #30 리뷰 ③ + #14 차단 2: 필수값·입출국 순서·공항 경계 순서를 1단계에서 막는다
+  const ms = (at: string) => Date.parse(fromLocalInput(at));
   const step1Error: MessageKey | null =
-    !arrival.at || !departure.at
+    !arrival.at || !departure.at || !airportReady.at || !airportDeadline.at
       ? "step1.errRequired"
-      : Date.parse(fromLocalInput(departure.at)) <= Date.parse(fromLocalInput(arrival.at))
+      : ms(departure.at) <= ms(arrival.at)
         ? "step1.errOrder"
-        : null;
+        : ms(airportReady.at) < ms(arrival.at)
+          ? "step1.errReadyRange"
+          : ms(airportDeadline.at) > ms(departure.at) || ms(airportDeadline.at) <= ms(airportReady.at)
+            ? "step1.errDeadlineRange"
+            : null;
+  const readySlackMin =
+    arrival.at && airportReady.at ? Math.round((ms(airportReady.at) - ms(arrival.at)) / 60_000) : null;
+  const deadlineSlackMin =
+    departure.at && airportDeadline.at ? Math.round((ms(departure.at) - ms(airportDeadline.at)) / 60_000) : null;
 
   return (
     <div className="mx-auto max-w-3xl p-6">
@@ -302,46 +328,41 @@ export default function PlannerWizard() {
                   type="datetime-local"
                   className="mt-1 w-full rounded border px-2 py-1 text-sm"
                   value={field.at}
-                  onChange={(e) => setField({ ...field, at: e.target.value })}
+                  onChange={(e) =>
+                    (direction === "arrival" ? setArrivalAtInput : setDepartureAtInput)(e.target.value)
+                  }
                 />
               </div>
             ))}
           </div>
           <div className="mt-4 grid gap-4 sm:grid-cols-2">
             <div className="rounded-lg border p-4">
-              <label className="text-sm font-medium">{tr("step1.exitOffset")}</label>
-              <div className="mt-2 flex gap-2">
-                {[90, 120].map((v) => (
-                  <button
-                    key={v}
-                    className={`rounded border px-3 py-1 text-sm ${exitOffset === v ? "border-blue-600 bg-blue-50 text-blue-700" : ""}`}
-                    onClick={() => setExitOffset(v)}
-                  >
-                    {v}{tr("step1.minutes")}
-                  </button>
-                ))}
-                <input
-                  type="number"
-                  min={0}
-                  className="w-24 rounded border px-2 py-1 text-sm"
-                  placeholder={tr("step1.exitOffsetCustom")}
-                  onChange={(e) => setExitOffset(Number(e.target.value) || 0)}
-                />
-              </div>
+              <label className="text-sm font-medium">{tr("step1.airportReady")}</label>
+              <input
+                type="datetime-local"
+                className="mt-2 w-full rounded border px-2 py-1 text-sm"
+                value={airportReady.at}
+                onChange={(e) => setAirportReady({ at: e.target.value, touched: true })}
+              />
+              {readySlackMin !== null && readySlackMin >= 0 && (
+                <p className="mt-1 text-xs text-gray-500">
+                  {tr("step1.slackAfterArrival")}: {readySlackMin}{tr("step1.minutes")}
+                </p>
+              )}
             </div>
             <div className="rounded-lg border p-4">
-              <label className="text-sm font-medium">{tr("step1.departureBuffer")}</label>
-              <div className="mt-2 flex gap-2">
-                {[90, 120, 180].map((v) => (
-                  <button
-                    key={v}
-                    className={`rounded border px-3 py-1 text-sm ${departureBuffer === v ? "border-blue-600 bg-blue-50 text-blue-700" : ""}`}
-                    onClick={() => setDepartureBuffer(v)}
-                  >
-                    {v}{tr("step1.minutes")}
-                  </button>
-                ))}
-              </div>
+              <label className="text-sm font-medium">{tr("step1.airportDeadline")}</label>
+              <input
+                type="datetime-local"
+                className="mt-2 w-full rounded border px-2 py-1 text-sm"
+                value={airportDeadline.at}
+                onChange={(e) => setAirportDeadline({ at: e.target.value, touched: true })}
+              />
+              {deadlineSlackMin !== null && deadlineSlackMin >= 0 && (
+                <p className="mt-1 text-xs text-gray-500">
+                  {tr("step1.slackBeforeDeparture")}: {deadlineSlackMin}{tr("step1.minutes")}
+                </p>
+              )}
             </div>
           </div>
           <div className="mt-4 flex items-center justify-end gap-3">

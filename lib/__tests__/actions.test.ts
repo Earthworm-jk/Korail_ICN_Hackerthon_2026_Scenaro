@@ -12,8 +12,8 @@ function validRequest(): PlanRequest {
   return {
     arrivalAt: "2026-08-12T10:00:00+09:00",
     departureAt: "2026-08-14T18:00:00+09:00",
-    airportExitOffsetMin: 120,
-    departureBufferMinutes: 120,
+    airportReadyAt: "2026-08-12T12:00:00+09:00",
+    airportArrivalDeadline: "2026-08-14T16:00:00+09:00",
     selectedActorIds: [ACTOR],
     selectedWorkIds: [],
     excludedPlaceIds: [],
@@ -90,6 +90,29 @@ describe("잘못된 시각 요청 (PR #30 리뷰 ③ — throw 없이 INVALID_RE
     const at = "2026-08-12T10:00:00+09:00";
     const res = await planItinerary({ ...validRequest(), arrivalAt: at, departureAt: at });
     expect(res).toMatchObject({ ok: false, code: "INVALID_REQUEST" });
+  });
+
+  // #14 차단 2: 절대 시각 경계 순서 — arrivalAt <= airportReadyAt < airportArrivalDeadline <= departureAt
+  it("공항 출발 시각이 입국 도착보다 이르면 INVALID_REQUEST — airportReadyAt 필드 오류", async () => {
+    const res = await planItinerary({ ...validRequest(), airportReadyAt: "2026-08-12T09:00:00+09:00" });
+    expect(res).toMatchObject({ ok: false, code: "INVALID_REQUEST" });
+    if (!res.ok) expect(Object.keys(res.fieldErrors)).toContain("airportReadyAt");
+  });
+
+  it("공항 도착 마감이 출국 시각보다 늦으면 INVALID_REQUEST — airportArrivalDeadline 필드 오류", async () => {
+    const res = await planItinerary({ ...validRequest(), airportArrivalDeadline: "2026-08-14T19:00:00+09:00" });
+    expect(res).toMatchObject({ ok: false, code: "INVALID_REQUEST" });
+    if (!res.ok) expect(Object.keys(res.fieldErrors)).toContain("airportArrivalDeadline");
+  });
+
+  it("공항 도착 마감이 공항 출발 이전이면 INVALID_REQUEST", async () => {
+    const res = await planItinerary({
+      ...validRequest(),
+      airportReadyAt: "2026-08-13T12:00:00+09:00",
+      airportArrivalDeadline: "2026-08-13T11:00:00+09:00",
+    });
+    expect(res).toMatchObject({ ok: false, code: "INVALID_REQUEST" });
+    if (!res.ok) expect(Object.keys(res.fieldErrors)).toContain("airportArrivalDeadline");
   });
 
   it("배우·작품 모두 미선택인 요청도 throw하지 않고 INVALID_REQUEST", async () => {

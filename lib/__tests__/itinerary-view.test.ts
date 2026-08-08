@@ -11,6 +11,7 @@ import {
 } from "../itinerary-view";
 import {
   constraintsFromTripInputs,
+  SAVED_SCHEMA_VERSION,
   tripInputsFromConstraints,
   type SavedItineraryStub,
 } from "../saved-itineraries-stub";
@@ -33,13 +34,13 @@ const plannedB: ItineraryResult = { ...plannedA, days: [dayB] };
 const empty: ItineraryResult = { status: "empty", days: [], rejectedPlaces: [{ code: "TRAIN_UNAVAILABLE", placeId: "p1" }], warnings: [] };
 
 const constraintsA = constraintsFromTripInputs(
-  { arrivalAt: "2026-08-12T10:00", departureAt: "2026-08-14T18:00", exitOffsetMin: 120, departureBufferMinutes: 120 },
+  { arrivalAt: "2026-08-12T10:00", departureAt: "2026-08-14T18:00", airportReadyAt: "2026-08-12T12:00", airportArrivalDeadline: "2026-08-14T16:00" },
   ["actor-kim-goeun"], ["work-goblin"], ["place-x"],
 );
 
 const recordA: SavedItineraryStub = {
   id: "stub-1", title: "A", savedAt: "2026-08-08T18:00:00.000Z",
-  days: [dayA], constraints: constraintsA, schemaVersion: 1, snapshotVersion: "unversioned",
+  days: [dayA], constraints: constraintsA, schemaVersion: SAVED_SCHEMA_VERSION, snapshotVersion: "unversioned",
   context: { actors: [{ id: "actor-kim-goeun", name: { ko: "김고은", en: "Kim Go-eun" } }], works: [] },
 };
 

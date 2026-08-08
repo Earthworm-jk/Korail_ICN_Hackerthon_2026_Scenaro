@@ -1,7 +1,7 @@
-# 씬나로 API 명세 v0.1
+# 씬나로 API 명세 v0.2
 
 > 원칙: **앱이 실제로 호출하는 것만 수록한다.** (지난 프로젝트 요구사항·API v1.3에서 검증된 원칙)
-> 상위 문서: PRD §7·§8, 엔진 명세 v0.2, 요구사항 정의서 v0.3.
+> 상위 문서: PRD v0.2, 엔진 명세 v0.3, 요구사항 정의서 v0.5.
 
 ## 1. 계층 구조
 
@@ -72,17 +72,29 @@ getCandidatePlaces(selection: {
 planItinerary(request: PlanRequest): Promise<PlanActionResult>;
 // 생성과 편집 재계산 모두 이 액션 하나 (#2 단일 진입점).
 // 편집 2동작(#14 ver.0.4 — 방문일 변경 제외) = 촬영지 선택 변경·항공 시각 변경 후 재호출.
-// diff는 UI가 이전 metrics와 비교(REQ-EDIT-004)
+// 별도 전후 diff를 만들지 않고 성공한 갱신 일정을 표시한다.
 //
-// PlanRequest = 여행 조건 + 선택 배우·작품 + 제외 장소 (사용자 설정 없는 내부 기본값은
-//   Action이 채운다 — maxPlacesPerDay, dailySlackMinutes)
+// PlanRequest — 필드 확정 (PR #42, #14 차단 2 절대 시각 전환):
+type PlanRequest = {
+  arrivalAt: string;              // ISO(오프셋 포함), 입국편 도착
+  departureAt: string;            // ISO(오프셋 포함), 출국편 출발
+  airportReadyAt: string;         // ISO — 공항 출발 가능 시각 (절대 시각, #14 차단 2)
+  airportArrivalDeadline: string; // ISO — 공항 도착 마감 시각 (하드, #14 차단 2)
+  selectedActorIds: string[];
+  selectedWorkIds: string[];
+  excludedPlaceIds: string[];
+};
+// 경계 순서 계약: arrivalAt <= airportReadyAt < airportArrivalDeadline <= departureAt
+//   위반 시 INVALID_REQUEST + fieldErrors(필드 경로별 첫 오류 메시지)
+// 사용자 설정 없는 내부 기본값은 Action이 채운다 — maxPlacesPerDay, dailySlackMinutes
 // PlanActionResult (PR #30 리뷰 ③ — Action 계층의 입력 검증 래퍼):
 //   { ok: true;  result: ItineraryResult }
 //   { ok: false; code: "INVALID_REQUEST"; fieldErrors: Record<string, string> }
 // Action의 ok는 "요청이 유효했는가"이며, 엔진 ItineraryResult에는 ok가 없다 —
 // 계산 결과는 ENGINE_SPEC §7의 status 2분기(#14 ver.0.4 — 필수·고정일 제거로 실패 분기 소멸):
-//   { status: "planned", days, rejectedPlaces, comparisonKeys, metrics }
-//   { status: "empty",   days: [], rejectedPlaces }  // 조건을 만족하는 일정 없음
+// #43: 운영시간 밖·미확인 배치는 자동 제외하지 않고 warnings에 담는다.
+//   { status: "planned", days, rejectedPlaces, warnings, comparisonKeys, metrics }
+//   { status: "empty",   days: [], rejectedPlaces, warnings }
 // empty는 정상 응답이며 comparisonKeys·metrics를 포함하지 않는다(허위 값 금지)
 
 // lib/actions/flights.ts
@@ -101,13 +113,14 @@ getFlightInfo(flightNo: string, direction: "arrival" | "departure"): Promise<
 // 시드 FlightT는 스냅샷 최소 필드이며, live 응답은 FlightInfo로 정규화한다
 ```
 
-### 3.3 오류 계약
+### 3.3 빈 결과·오류 계약
 
 - 일정 계산에 실패 응답은 없다 — 후보가 전멸하면 `status: "empty"` 정상 응답이며
-  "조건을 만족하는 일정 없음" 화면 상태(PRD 9.2)의 근거다 (#14 ver.0.4로 사용자 제약
-  실패 분기 소멸). 편집 실패 시 기존 일정 유지(REQ-EDIT-005)는 앱 계층 오류 처리 몫
+  최초 생성에서는 빈 상태를 표시하고 편집 재계산 중에는 기존 일정을 유지한다.
+- 방문일 고정과 필수 방문 입력이 없으므로 `USER_CONSTRAINT_INFEASIBLE` 오류 계약은 사용하지 않는다.
 - 입력 스키마 위반은 예외가 아니다 — Action이 safeParse 후 `INVALID_REQUEST`로 반환하고
-  UI는 1단계 검증 화면으로 안내한다(1단계 검증을 우회한 요청에서만 발생해야 정상)
+  UI는 1단계 검증 화면으로 안내한다(1단계 검증을 우회한 요청에서만 발생해야 정상).
+  입출국 순서·공항 경계 순서(3.2의 경계 순서 계약) 위반도 같은 경로로 필드별 오류를 담는다
 - 시드 스키마 위반은 Repository 초기화 실패(`SeedValidationError`) — 기동 단계에서만
   발생해야 정상(REQ-DATA-004, PR #29)
 - 외부 API 실패는 폴백으로 흡수하고 `source: "snapshot"`으로 알린다 — 사용자에게 오류를
