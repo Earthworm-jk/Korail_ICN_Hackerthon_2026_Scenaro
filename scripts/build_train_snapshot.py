@@ -5,7 +5,7 @@
 `data/train-snapshot.json`을 재생성한다. 앱은 이 스냅샷만 읽는다.
 
 키 계약:
-  - 환경변수 `TRAIN_API_KEY` (없으면 `AIRPORT_API_KEY`로 폴백 — 같은 포털 계정 키면 동작)
+  - 환경변수 `TRAIN_API_KEY`. `AIRPORT_API_KEY` 폴백은 --source tago에서만(같은 data.go.kr 계정 키)
   - 키는 이 스크립트 실행 환경에만 둔다. 코드·저장소·앱 .env.local(NEXT_PUBLIC 아님이어도)에
     커밋하지 않는다. 실행 예:
       TRAIN_API_KEY='...' python3 scripts/build_train_snapshot.py --dry-run
@@ -148,6 +148,16 @@ def get_json(base: str, op: str, key: str, params: dict[str, str], timeout: floa
     raise last_error or ApiError("모든 키 형태 실패")
 
 
+def require_items(payload: dict, context: str) -> list[dict]:
+    """PR #50 리뷰 차단 반영: 정상(resultCode 00) 빈 응답도 기록 금지 사유로 중단한다.
+    데모 대상 OD×날짜는 매 호출 열차가 있어야 정상 — 빈 응답은 잘못된 역·날짜·쿼리이거나
+    포털 일시 장애이므로, 조용히 진행해 기존 KTX 구간을 지우는 대신 스냅샷 불변으로 실패한다."""
+    items = items_of(payload)
+    if not items:
+        raise ApiError(f"[방어] 정상 응답이지만 결과 0건: {context} — 기존 스냅샷을 변경하지 않습니다")
+    return items
+
+
 def items_of(payload: dict) -> list[dict]:
     items = payload.get("response", {}).get("body", {}).get("items", [])
     if isinstance(items, dict):  # 포털 XML→JSON 변환형: {"item": [...]}
@@ -195,7 +205,8 @@ def fetch_tago_legs(key: str) -> list[Leg]:
                     "depPlaceId": node_ids[a_name], "arrPlaceId": node_ids[b_name],
                     "depPlandTime": date,
                 })
-                for item in items_of(payload):
+                items = require_items(payload, f"{a_name}→{b_name} {date}")
+                for item in items:
                     legs.append(Leg(
                         trainNo=str(item.get("trainno")).zfill(5),
                         fromStationId=a_id,
@@ -225,7 +236,8 @@ def fetch_korail_legs(key: str) -> list[Leg]:
                     "cond[run_ymd::GTE]": date, "cond[run_ymd::LTE]": date,
                     "cond[dptre_stn_nm::EQ]": a_name, "cond[arvl_stn_nm::EQ]": b_name,
                 })
-                for item in items_of(payload):
+                items = require_items(payload, f"{a_name}→{b_name} {date}")
+                for item in items:
                     legs.append(Leg(
                         trainNo=str(item["trn_no"]).zfill(5),
                         fromStationId=a_id,
@@ -237,14 +249,22 @@ def fetch_korail_legs(key: str) -> list[Leg]:
 
 
 def main() -> int:
+    return main_with_args(sys.argv[1:])
+
+
+def main_with_args(argv: list[str], service_key: str | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--source", choices=["korail", "tago"], default="korail")  # 팀 방향: 코레일 주 데이터
     parser.add_argument("--dry-run", action="store_true", help="파일을 쓰지 않고 요약만 출력")
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
 
-    key = os.environ.get("TRAIN_API_KEY") or os.environ.get("AIRPORT_API_KEY") or ""
+    # korail은 openapis.korail.com 전용 키 필요 — data.go.kr 항공 키 폴백은 tago에서만 (PR #50 리뷰)
+    key = service_key or os.environ.get("TRAIN_API_KEY") or ""
+    if not key and args.source == "tago":
+        key = os.environ.get("AIRPORT_API_KEY") or ""
     if not key:
-        print("오류: TRAIN_API_KEY(또는 AIRPORT_API_KEY) 환경변수가 필요합니다.", file=sys.stderr)
+        need = "TRAIN_API_KEY" if args.source == "korail" else "TRAIN_API_KEY(또는 AIRPORT_API_KEY)"
+        print(f"오류: {need} 환경변수가 필요합니다.", file=sys.stderr)
         return 2
 
     existing = json.loads(SNAPSHOT_PATH.read_text(encoding="utf-8"))
