@@ -130,7 +130,7 @@ export default function PlannerWizard() {
     const field = direction === "arrival" ? arrival : departure;
     const setField = direction === "arrival" ? setArrival : setDeparture;
     if (!field.flightNo.trim()) return;
-    const res = await getFlightInfo(field.flightNo, direction);
+    const res = await getFlightInfo(field.flightNo, direction, field.at); // 날짜부 → searchday (#46)
     if (res.ok) {
       setField({ ...field, notFound: false, source: res.source, status: res.flight.status });
       // live 조회는 변경(예상) 시각이 있으면 그 값을 쓴다 — 예선 약속(지연 반영) 서사

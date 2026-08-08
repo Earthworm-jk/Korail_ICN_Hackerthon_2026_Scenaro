@@ -84,7 +84,7 @@ describe("lookupLiveFlight — 주입 fetch로 호출 경로 검증", () => {
   });
 
   it("성공 시 FlightInfo로 정규화한다 (예정·변경 시각, 상태, 터미널)", async () => {
-    const result = await lookupLiveFlight("KE852", "arrival", {
+    const result = await lookupLiveFlight("KE852", "arrival", "20260812", {
       serviceKey: KEY,
       fetchImpl: async () => payload([
         { flightId: "KE852Y", scheduleDateTime: "202608120025", estimatedDateTime: "202608120105", remark: "지연", terminalid: "P03", codeshare: "Master" },
@@ -102,7 +102,7 @@ describe("lookupLiveFlight — 주입 fetch로 호출 경로 검증", () => {
 
   it("인증키 오류면 반대 형태 키로 1회 재시도한다", async () => {
     const usedKeys: string[] = [];
-    const result = await lookupLiveFlight("KE852", "arrival", {
+    const result = await lookupLiveFlight("KE852", "arrival", "20260812", {
       serviceKey: KEY,
       fetchImpl: async (url) => {
         const key = new URL(url).search.match(/serviceKey=([^&]*)/)![1];
@@ -121,7 +121,7 @@ describe("lookupLiveFlight — 주입 fetch로 호출 경로 검증", () => {
   it("키 오류가 아닌 API 오류는 재시도 없이 throw — 호출부 스냅샷 폴백 경로", async () => {
     let calls = 0;
     await expect(
-      lookupLiveFlight("KE852", "arrival", {
+      lookupLiveFlight("KE852", "arrival", "20260812", {
         serviceKey: KEY,
         fetchImpl: async () => { calls += 1; return payload([], "22", "LIMITED NUMBER OF SERVICE REQUESTS EXCEEDS"); },
       }),
@@ -131,7 +131,7 @@ describe("lookupLiveFlight — 주입 fetch로 호출 경로 검증", () => {
 
   it("타임아웃이면 throw — 5초 예산은 시도 전체에 하나로 적용", async () => {
     await expect(
-      lookupLiveFlight("KE852", "arrival", {
+      lookupLiveFlight("KE852", "arrival", "20260812", {
         serviceKey: KEY,
         timeoutMs: 20,
         fetchImpl: (_url, { signal }) =>
@@ -142,15 +142,36 @@ describe("lookupLiveFlight — 주입 fetch로 호출 경로 검증", () => {
     ).rejects.toThrow();
   });
 
-  it("응답을 방향별로 캐시해 재조회 시 fetch를 다시 부르지 않는다", async () => {
+  it("searchday·flight_id 필터를 쿼리에 싣는다 (#46 상세조회 계약)", async () => {
+    let seenUrl = "";
+    await lookupLiveFlight("ke852", "arrival", "20260812", {
+      serviceKey: KEY,
+      fetchImpl: async (url) => { seenUrl = url; return payload([{ flightId: "KE852", scheduleDateTime: "202608120025" }]); },
+    });
+    expect(seenUrl).toContain("StatusOfPassengerFlightsDeOdp/getPassengerArrivalsDeOdp");
+    expect(seenUrl).toContain("searchday=20260812");
+    expect(seenUrl).toContain("flight_id=KE852");
+  });
+
+  it("200 + 빈 결과는 오류가 아니라 NOT_FOUND — 폴백과 구분 (#46)", async () => {
+    const result = await lookupLiveFlight("ZZ999", "arrival", "20260812", {
+      serviceKey: KEY,
+      fetchImpl: async () => payload([]),
+    });
+    expect(result).toEqual({ ok: false, reason: "NOT_FOUND" });
+  });
+
+  it("편명·날짜별로 캐시해 같은 조회는 fetch를 다시 부르지 않는다", async () => {
     let calls = 0;
     const deps = {
       serviceKey: KEY,
       fetchImpl: async () => { calls += 1; return payload([{ flightId: "KE852", scheduleDateTime: "202608120025" }]); },
     };
-    await lookupLiveFlight("KE852", "arrival", deps);
-    const again = await lookupLiveFlight("KE076", "arrival", deps);
-    expect(calls).toBe(1);
-    expect(again).toEqual({ ok: false, reason: "NOT_FOUND" });
+    await lookupLiveFlight("KE852", "arrival", "20260812", deps);
+    const cachedAgain = await lookupLiveFlight("KE852", "arrival", "20260812", deps);
+    const other = await lookupLiveFlight("KE076", "arrival", "20260812", deps);
+    expect(cachedAgain.ok).toBe(true); // 같은 편·같은 날 재조회는 캐시
+    expect(calls).toBe(2); // 다른 편명은 별도 호출
+    expect(other).toEqual({ ok: false, reason: "NOT_FOUND" });
   });
 });

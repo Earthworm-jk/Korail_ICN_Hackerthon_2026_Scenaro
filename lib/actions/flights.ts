@@ -1,12 +1,17 @@
 "use server";
 /**
- * 항공편 조회 (REQ-SRCH-001, API_SPEC 3.2)
- * live 모드(키 존재)면 실호출 1건을 시도하고, 5초 초과·오류 시 스냅샷으로 폴백한다
- * (REQ-DATA-003, NFR-DEMO-001). 사용자에게 오류를 던지지 않는다 — source로 폴백 여부만 알린다.
+ * 항공편 조회 (#46, REQ-SRCH-001, API_SPEC 3.2)
+ *
+ * 흐름(#46 확정):
+ * - 키 없음 → 외부 호출 없이 즉시 스냅샷
+ * - 키 있음 → 상세조회 실호출 1건 (searchday D-3~D+6, 조회 버튼에서만 — 일정 계산 중 재호출 없음)
+ * - 5초 초과·네트워크·non-2xx·파싱 오류 → 스냅샷 폴백 (사용자에게 오류를 던지지 않음)
+ * - live 정상 응답 + 해당 편명 없음 → FLIGHT_NOT_FOUND (오류 폴백과 구분, 스냅샷 미확인)
+ * - 스냅샷에도 없으면 FLIGHT_NOT_FOUND → 직접 시각 입력 유지
  */
 import { flightMode } from "../env";
 import { loadRepositories } from "../repositories/json";
-import { lookupLiveFlight } from "../adapters/flights-live";
+import { lookupLiveFlight, toSearchday } from "../adapters/flights-live";
 
 export type FlightInfo = {
   flightNo: string;
@@ -20,6 +25,8 @@ export type FlightInfo = {
 export async function getFlightInfo(
   flightNo: string,
   direction: "arrival" | "departure",
+  /** 조회 날짜(YYYY-MM-DD 또는 datetime-local) — 없으면 라이브 조회 없이 스냅샷만 */
+  date?: string,
 ): Promise<
   | { ok: true; flight: FlightInfo; source: "live" | "snapshot" }
   | { ok: false; reason: "FLIGHT_NOT_FOUND" }
@@ -27,13 +34,15 @@ export async function getFlightInfo(
   const q = flightNo.trim();
   if (!q) return { ok: false, reason: "FLIGHT_NOT_FOUND" };
 
-  if (flightMode() === "live") {
+  const searchday = toSearchday(date);
+  if (flightMode() === "live" && searchday) {
     try {
-      const live = await lookupLiveFlight(q, direction);
+      const live = await lookupLiveFlight(q, direction, searchday);
       if (live.ok) return { ok: true, flight: live.flight, source: "live" };
-      // 실호출은 성공했지만 미검색 — 데모 스냅샷 편명일 수 있으므로 스냅샷도 확인한다
+      // live가 정상적으로 "없다"고 답함 — 스냅샷을 확인하지 않고 미검색으로 구분 (#46)
+      return { ok: false, reason: "FLIGHT_NOT_FOUND" };
     } catch {
-      // 타임아웃·네트워크·키 오류 — 스냅샷 폴백 (API_SPEC 3.3: 오류를 사용자에게 던지지 않음)
+      // 타임아웃·네트워크·키·파싱 오류 — 스냅샷 폴백 (API_SPEC 3.3)
     }
   }
 
