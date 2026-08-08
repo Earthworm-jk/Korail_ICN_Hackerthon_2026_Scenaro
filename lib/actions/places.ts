@@ -53,9 +53,15 @@ export async function getCandidatePlaces(selection: {
     else detailsByPlace.set(r.placeId, [detail]);
   }
 
+  // PR #65 리뷰 1 — 카드 표시·배우 필터 판정 모두 "선택한 배우·작품 관계"만 사용한다 (#51).
+  // 무관 작품의 관계가 섞이면 미등장/미확인 판정이 오염되고 카드에도 계약 밖 정보가 노출된다.
+  const relevantWorkIds = new Set([...selectedWorkIds, ...actorWorkIds]);
+
   const candidates: PlaceCandidate[] = [];
   for (const place of repos.places) {
-    const relationDetails = detailsByPlace.get(place.id) ?? [];
+    const relationDetails = (detailsByPlace.get(place.id) ?? []).filter((d) =>
+      relevantWorkIds.has(d.workId),
+    );
     if (place.workIds.some((id) => selectedWorkIds.has(id))) {
       candidates.push({ ...place, relation: "selected_work", relationDetails });
     } else if (place.workIds.some((id) => actorWorkIds.has(id))) {

@@ -71,8 +71,11 @@ getCandidatePlaces(selection: {
 //         | "UNVERIFIED_HOURS"                       // 운영시간 확인 필요
 // }  // ActivityWindowDetail과 동일 열거값 — 화면 배지 2종(WIREFRAMES S3)과 1:1
 // RelationDetail = WorkPlaceRelation의 workId·episodeLabel?·sceneNote?·featuredActorIds?·actorPresenceReviewed?
+//   — 선택 작품 ∪ 선택 배우 출연작 관계만 포함 (무관 작품 관계 미노출, PR #65 리뷰 1)
 // REQ-SRCH-005·006·007. 정렬은 UI에서 (관련성 / officialSourceCount 토글).
-// #51 배우 선택 필터는 표시 레벨(lib/candidates.ts splitByActorPresence) — 엔진·초기 선택(#43) 무관
+// #51 배우 선택 필터는 표시 레벨(lib/candidates.ts splitByActorPresence) — 판정 순서
+//   confirmed → unreviewed → absent. 배우 모드의 미등장·미확인 후보는 최초 로드에서
+//   초기 미선택(initialSelectedIds, PR #65 리뷰 2)이며 재열람 복원은 excluded 목록 기준(#35)
 
 // lib/actions/itinerary.ts
 planItinerary(request: PlanRequest): Promise<PlanActionResult>;

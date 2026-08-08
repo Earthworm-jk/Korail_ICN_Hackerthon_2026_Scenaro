@@ -13,7 +13,7 @@ import {
   type PlaceCandidate,
 } from "@/lib/actions/places";
 import { planItinerary } from "@/lib/actions/itinerary";
-import { excludedPlaceIdsFrom, initialCandidateIds, splitByActorPresence } from "@/lib/candidates";
+import { excludedPlaceIdsFrom, initialCandidateIds, initialSelectedIds, splitByActorPresence } from "@/lib/candidates";
 import { sortCandidatePlaces } from "@/lib/place-ranking";
 import { getFlightInfo } from "@/lib/actions/flights";
 import { t, type Locale, type MessageKey } from "@/lib/i18n/messages";
@@ -125,6 +125,8 @@ export default function PlannerWizard({ stationFacilities }: {
     });
     setCandidateData(data);
     const excluded = new Set(c.excludedPlaceIds);
+    // 재열람에는 배우 필터 초기 미선택(#65 리뷰 2)을 적용하지 않는다 — 저장 당시 선택
+    // (excluded의 여집합)이 단일 기준이라, 사용자가 직접 담았던 별도 구분 후보를 잃지 않는다
     setSelectedPlaceIds(new Set(initialCandidateIds(data.candidates).filter((id) => !excluded.has(id))));
     dispatchView({ type: "REOPEN", record });
     setStep(4);
@@ -163,8 +165,11 @@ export default function PlannerWizard({ stationFacilities }: {
       selectedWorkIds: selectedWorks.map((w) => w.id),
     });
     setCandidateData(data);
-    // #43 확정: 미확인 후보도 선택 가능 — 초기 선택은 전체 후보, 엔진이 경고와 함께 배치
-    setSelectedPlaceIds(new Set(initialCandidateIds(data.candidates)));
+    // #43(운영시간 미확인 포함 전체 선택)은 유지하되, 배우 선택 모드의 미등장·미확인 장면
+    // 후보(#51 별도 구분)는 초기 미선택 — 사용자가 별도 영역에서 직접 선택 (PR #65 리뷰 2)
+    setSelectedPlaceIds(new Set(
+      initialSelectedIds(data.candidates, new Set(selectedActors.map((a) => a.id))),
+    ));
     setStep(3);
   }, [selectedActors, selectedWorks]);
 

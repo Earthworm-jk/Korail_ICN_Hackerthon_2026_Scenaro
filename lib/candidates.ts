@@ -27,17 +27,26 @@ type PresenceInput = Pick<PlaceCandidate, "relation" | "relationDetails">;
 /**
  * 배우 선택 모드에서 후보의 장면 등장 상태.
  * null = 필터 비대상(배우 미선택이거나 선택 작품 유래 후보 — 작품 선택은 장면 배우와 무관).
+ *
+ * relationDetails는 액션이 선택 작품 ∪ 선택 배우 출연작 관계만 내려준다는 전제이며(PR #65 리뷰 1),
+ * 판정 순서는 confirmed → unreviewed → absent다: 미검토 관계가 하나라도 남아 있으면
+ * 미등장(absent)을 단정하지 않는다.
  */
 export function actorPresence(
   candidate: PresenceInput,
   selectedActorIds: ReadonlySet<string>,
 ): ActorPresence | null {
   if (selectedActorIds.size === 0 || candidate.relation === "selected_work") return null;
-  const reviewed = candidate.relationDetails.filter((d) => d.actorPresenceReviewed === true);
-  if (reviewed.some((d) => d.featuredActorIds?.some((id) => selectedActorIds.has(id)))) {
+  const details = candidate.relationDetails;
+  if (details.some((d) =>
+    d.actorPresenceReviewed === true && d.featuredActorIds?.some((id) => selectedActorIds.has(id)),
+  )) {
     return "confirmed";
   }
-  return reviewed.length > 0 ? "absent" : "unreviewed";
+  if (details.length === 0 || details.some((d) => d.actorPresenceReviewed !== true)) {
+    return "unreviewed";
+  }
+  return "absent";
 }
 
 /**
@@ -56,4 +65,16 @@ export function splitByActorPresence<T extends PresenceInput>(
     else primary.push(candidate);
   }
   return { primary, separated };
+}
+
+/**
+ * 최초 후보 로드의 초기 선택 — 배우 선택 모드에서 별도 구분(미등장·미확인)은 초기 미선택이다
+ * (#51 합의 "기본 추천 제외", PR #65 리뷰 2). 사용자는 별도 영역에서 직접 선택할 수 있다.
+ * 재열람 복원은 이 함수를 쓰지 않는다 — 저장 당시 선택은 excluded 목록이 단일 기준 (#35).
+ */
+export function initialSelectedIds<T extends PresenceInput & { id: string }>(
+  candidates: T[],
+  selectedActorIds: ReadonlySet<string>,
+): string[] {
+  return splitByActorPresence(candidates, selectedActorIds).primary.map((c) => c.id);
 }

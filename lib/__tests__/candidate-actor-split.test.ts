@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { actorPresence, splitByActorPresence } from "../candidates";
+import { actorPresence, initialSelectedIds, splitByActorPresence } from "../candidates";
 import { formatEpisodeLabel } from "../episode-label";
 import { getCandidatePlaces, type PlaceCandidate } from "../actions/places";
 
@@ -37,6 +37,54 @@ describe("actorPresence", () => {
       kimSet,
     )).toBe("absent");
     expect(actorPresence(cand("actor_other_work", [{ workId: "w" }]), kimSet)).toBe("unreviewed");
+  });
+
+  // PR #65 리뷰 1 — 판정 순서 confirmed → unreviewed → absent
+  it("한 장소 복수 관계: 미검토 관계가 남아 있으면 미등장을 단정하지 않는다", () => {
+    // 관련 관계 = [미검토, 검토·미등장] → absent가 아니라 unreviewed
+    expect(actorPresence(
+      cand("actor_other_work", [
+        { workId: "w1" },
+        { workId: "w2", featuredActorIds: [], actorPresenceReviewed: true },
+      ]),
+      kimSet,
+    )).toBe("unreviewed");
+    // 등장 확정이 하나라도 있으면 나머지 상태와 무관하게 confirmed
+    expect(actorPresence(
+      cand("actor_other_work", [
+        { workId: "w1" },
+        { workId: "w2", featuredActorIds: [KIM], actorPresenceReviewed: true },
+      ]),
+      kimSet,
+    )).toBe("confirmed");
+    // 관련 관계가 전부 검토됐고 선택 배우가 없을 때만 absent
+    expect(actorPresence(
+      cand("actor_other_work", [
+        { workId: "w1", featuredActorIds: ["actor-other"], actorPresenceReviewed: true },
+        { workId: "w2", featuredActorIds: [], actorPresenceReviewed: true },
+      ]),
+      kimSet,
+    )).toBe("absent");
+    // 관련 관계가 없으면 모름 — unreviewed
+    expect(actorPresence(cand("actor_other_work", []), kimSet)).toBe("unreviewed");
+  });
+
+  it("복수 배우: 한 명이라도 등장 확정이면 confirmed, 아니면 미검토 우선", () => {
+    const twoActors = new Set([KIM, "actor-b"]);
+    expect(actorPresence(
+      cand("actor_other_work", [
+        { workId: "w1", featuredActorIds: ["actor-b"], actorPresenceReviewed: true },
+      ]),
+      twoActors,
+    )).toBe("confirmed");
+    // A는 미등장 확정, B의 출연작 관계는 미검토 → 전체 absent가 아니라 unreviewed
+    expect(actorPresence(
+      cand("actor_other_work", [
+        { workId: "w1", featuredActorIds: [], actorPresenceReviewed: true },
+        { workId: "w2" },
+      ]),
+      twoActors,
+    )).toBe("unreviewed");
   });
 });
 
@@ -88,6 +136,43 @@ describe("실시드 배우 선택 화면 회귀 (김고은)", () => {
     const { primary } = splitByActorPresence(candidates, kimSet);
     // 경기전은 김고은 미등장 확정이지만 선택 작품(더 킹) 유래라 기본 목록 유지
     expect(primary.map((c) => c.id)).toContain("place-gyeonggijeon-shrine");
+  });
+
+  // PR #65 리뷰 1 — relationDetails는 선택 작품 ∪ 선택 배우 출연작 관계만
+  it("후보 관계 정보에 선택과 무관한 작품 관계가 섞이지 않는다", async () => {
+    const { candidates } = await getCandidatePlaces({
+      selectedActorIds: [],
+      selectedWorkIds: ["work-little-women"],
+    });
+    expect(candidates.length).toBeGreaterThan(0);
+    for (const c of candidates) {
+      for (const d of c.relationDetails) {
+        expect(d.workId, `${c.id}에 무관 작품 관계: ${d.workId}`).toBe("work-little-women");
+      }
+    }
+  });
+
+  // PR #65 리뷰 2 — 배우 모드 초기 선택은 기본 목록만, 별도 구분은 초기 미선택
+  it("배우 선택 모드의 초기 선택에 미등장·미확인 후보가 들어가지 않는다", async () => {
+    const { candidates } = await getCandidatePlaces({ selectedActorIds: [KIM], selectedWorkIds: [] });
+    const initial = new Set(initialSelectedIds(candidates, kimSet));
+    expect(initial.size).toBe(8);
+    for (const id of [
+      "place-samyang-ranch", "place-deoksugung-stone-wall-road",
+      "place-gyeonggijeon-shrine", "place-yeongjin-beach",
+    ]) {
+      expect(initial.has(id), `${id}는 초기 미선택이어야 한다`).toBe(false);
+    }
+    // 배우 미선택이면 기존 전체 선택(#43) 그대로
+    expect(initialSelectedIds(candidates, new Set())).toHaveLength(candidates.length);
+  });
+
+  it("선택 작품 유래(selected_work) 후보는 배우 모드에서도 초기 선택을 유지한다", async () => {
+    const { candidates } = await getCandidatePlaces({
+      selectedActorIds: [KIM],
+      selectedWorkIds: ["work-the-king"],
+    });
+    expect(initialSelectedIds(candidates, kimSet)).toContain("place-gyeonggijeon-shrine");
   });
 
   it("후보 카드 표시용 회차·장면이 관계 값 그대로 내려온다", async () => {
