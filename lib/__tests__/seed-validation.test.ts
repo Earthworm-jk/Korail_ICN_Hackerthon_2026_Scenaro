@@ -155,6 +155,34 @@ describe("시드 의미 검증 (#20)", () => {
     expect(issues.some((m) => m.includes("[TrainLeg:802]") && m.includes("departAt < arriveAt"))).toBe(true);
     expect(issues.some((m) => m.includes("[TrainLeg:803]") && m.includes("ISO"))).toBe(true);
   });
+
+  // PR #29 리뷰(차단): Date.parse 기반 검증이 통과시키던 세 케이스를 계약으로 고정
+  it("일시는 오프셋 포함 ISO만 허용 — 날짜 전용·오프셋 누락·실존하지 않는 달력 일시 거절", () => {
+    for (const bad of ["2026-08-12", "2026-08-12T10:00:00", "2026-02-30T10:00:00+09:00"]) {
+      const raw = baseSeed();
+      raw.trainLegs[0].departAt = bad;
+      const issues = issuesOf(raw);
+      expect(
+        issues.some((m) => m.includes("[TrainLeg:801][departAt]") && m.includes("ISO")),
+        bad,
+      ).toBe(true);
+    }
+  });
+
+  it("오프셋은 Z와 +09:00 표기를 모두 허용한다", () => {
+    const raw = baseSeed();
+    raw.trainLegs[0].departAt = "2026-08-11T22:00:00Z"; // = 2026-08-12T07:00:00+09:00
+    expect(() => parseRepositories(raw as RawSeedFiles)).not.toThrow();
+  });
+
+  it("빈 문자열 ID·참조는 거절한다 (PR #29 리뷰)", () => {
+    const raw = baseSeed();
+    raw.actors[0].id = "";
+    raw.places[0].nearestStationId = "";
+    const issues = issuesOf(raw);
+    expect(issues.some((m) => m.includes("[actors.json][Actor:#0][id]"))).toBe(true);
+    expect(issues.some((m) => m.includes("[places.json][Place:place-1][nearestStationId]"))).toBe(true);
+  });
 });
 
 describe("중복 키 검증 (#20 — 복합 키)", () => {
@@ -175,6 +203,18 @@ describe("중복 키 검증 (#20 — 복합 키)", () => {
     expect(() => parseRepositories(raw as RawSeedFiles)).not.toThrow();
 
     raw.trainLegs.push(baseSeed().trainLegs[0]);
+    const issues = issuesOf(raw);
+    expect(issues.some((m) => m.includes("[TrainLeg:801]") && m.includes("중복 키"))).toBe(true);
+  });
+
+  // PR #29 리뷰: 오프셋 표기가 달라도 같은 시각이면 중복
+  it("같은 시각의 Z·+09:00 표기 차이는 중복 판정을 빠져나가지 못한다", () => {
+    const raw = baseSeed();
+    raw.trainLegs.push({
+      ...baseSeed().trainLegs[0],
+      departAt: "2026-08-11T22:00:00Z", // = 2026-08-12T07:00:00+09:00
+      arriveAt: "2026-08-12T00:00:00Z",
+    });
     const issues = issuesOf(raw);
     expect(issues.some((m) => m.includes("[TrainLeg:801]") && m.includes("중복 키"))).toBe(true);
   });

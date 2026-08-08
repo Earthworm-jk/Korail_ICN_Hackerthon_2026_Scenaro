@@ -53,7 +53,12 @@ type Spec = {
   dupKeyOf: (item: Record<string, unknown>) => string;
 };
 
-const str = (v: unknown): string | undefined => (typeof v === "string" ? v : undefined);
+const str = (v: unknown): string | undefined =>
+  typeof v === "string" && v.length > 0 ? v : undefined;
+
+// PR #29 리뷰: 오프셋 강제로 Z·+09:00 표기가 모두 유효하므로, 같은 시각의 다른 표기가
+// 중복 판정을 빠져나가지 않도록 일시를 UTC로 정규화해 비교한다
+const utc = (v: unknown): string => new Date(Date.parse(String(v))).toISOString();
 
 const SPECS: Record<SeedKey, Spec> = {
   actors: {
@@ -75,12 +80,12 @@ const SPECS: Record<SeedKey, Spec> = {
   trainLegs: {
     file: "train-snapshot.json", kind: "TrainLeg", schema: TrainLeg,
     idOf: (t) => str(t.trainNo),
-    dupKeyOf: (t) => `${t.trainNo}|${t.fromStationId}|${t.toStationId}|${t.departAt}`,
+    dupKeyOf: (t) => `${t.trainNo}|${t.fromStationId}|${t.toStationId}|${utc(t.departAt)}`,
   },
   flights: {
     file: "flights-snapshot.json", kind: "Flight", schema: Flight,
     idOf: (f) => str(f.flightNo),
-    dupKeyOf: (f) => `${f.flightNo}|${f.direction}|${f.scheduledAt}`,
+    dupKeyOf: (f) => `${f.flightNo}|${f.direction}|${utc(f.scheduledAt)}`,
   },
 };
 

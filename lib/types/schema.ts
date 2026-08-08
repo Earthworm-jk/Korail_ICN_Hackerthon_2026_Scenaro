@@ -17,9 +17,16 @@ export const IsoDate = z
 
 export const HHmm = z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, "HH:mm 형식이어야 합니다");
 
-export const IsoDateTime = z
-  .string()
-  .refine((v) => !Number.isNaN(Date.parse(v)), "유효한 ISO 일시여야 합니다");
+// PR #29 리뷰(차단): Date.parse는 ISO 전용 파서가 아니어서 날짜 전용·오프셋 누락·실존하지
+// 않는 달력 일시까지 통과시킨다. 오프셋 없는 값은 실행 환경 시간대로 해석되어 정렬·출국
+// 역산의 결정성을 깨므로, 오프셋(Z 또는 +HH:mm) 포함 실존 ISO 일시만 허용한다.
+export const IsoDateTime = z.iso.datetime({
+  offset: true,
+  error: "오프셋 포함 ISO 일시여야 합니다",
+});
+
+// PR #29 리뷰: 빈 문자열 ID·참조는 시드 정규화 전에 로드 단계에서 차단한다
+export const NonEmptyId = z.string().min(1, "빈 문자열 ID·참조는 허용되지 않습니다");
 
 export const LocalizedText = z.object({ ko: z.string(), en: z.string() });
 
@@ -71,22 +78,22 @@ export const OpeningHours = z
   });
 
 export const Actor = z.object({
-  id: z.string(),
+  id: NonEmptyId,
   name: LocalizedText,
-  workIds: z.array(z.string()),
+  workIds: z.array(NonEmptyId),
 });
 
 export const Work = z.object({
-  id: z.string(),
+  id: NonEmptyId,
   title: LocalizedText,
   year: z.number().optional(),
 });
 
 export const Place = z.object({
-  id: z.string(),
+  id: NonEmptyId,
   name: LocalizedText, // #4: 데모 시드는 en 필수
-  workIds: z.array(z.string()), // 관계 유형은 저장하지 않음 — ENGINE_SPEC §2 파생 규칙
-  nearestStationId: z.string(),
+  workIds: z.array(NonEmptyId), // 관계 유형은 저장하지 않음 — ENGINE_SPEC §2 파생 규칙
+  nearestStationId: NonEmptyId,
   accessEstimate: AccessEstimate, // #5: 역→장소 접근시간 추정(왕복 동일 적용 — 역 허브 모델)
   openingHours: OpeningHours,
   stayMinutes: z.number().int().positive(), // 양의 정수 (#20)
@@ -99,7 +106,7 @@ export const Place = z.object({
 export const RegionId = z.enum(["gangwon", "seoul_metro", "honam"]);
 
 export const Station = z.object({
-  id: z.string(),
+  id: NonEmptyId,
   name: LocalizedText,
   lineType: z.enum(["KTX", "ITX", "AREX", "일반"]),
   regionId: RegionId,
@@ -110,9 +117,9 @@ export const Station = z.object({
 
 export const TrainLeg = z
   .object({
-    trainNo: z.string(),
-    fromStationId: z.string(),
-    toStationId: z.string(),
+    trainNo: NonEmptyId,
+    fromStationId: NonEmptyId,
+    toStationId: NonEmptyId,
     departAt: IsoDateTime,
     arriveAt: IsoDateTime,
   })
@@ -127,7 +134,7 @@ export const TrainLeg = z
   });
 
 export const Flight = z.object({
-  flightNo: z.string(),
+  flightNo: NonEmptyId,
   direction: z.enum(["arrival", "departure"]),
   scheduledAt: IsoDateTime,
   terminal: z.string().optional(),
