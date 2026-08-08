@@ -20,10 +20,11 @@
 
 | 항목 | 값 |
 |---|---|
-| 엔드포인트 | `https://apis.data.go.kr/B551177/StatusOfPassengerFlightsDSOdp` (상세 오퍼레이션은 구현 시 확정) |
+| 엔드포인트 | `https://apis.data.go.kr/B551177/StatusOfPassengerFlightsDSOdp` — `getPassengerArrivalsDSOdp` / `getPassengerDeparturesDSOdp` (2026-08-08 실측 확정) |
 | 인증 | `AIRPORT_API_KEY` (.env.local, 커밋 금지) |
 | 사용 필드 | 편명, 예정/변경 시각, 운항 상태, 터미널 |
 | 타임아웃·폴백 | **5초 초과 또는 오류 시 `data/flights-snapshot.json`으로 자동 전환**, UI에 스냅샷 기준임을 표시 |
+| 호출 특성 | 편명·날짜 필터 파라미터 없음(실측) — 전체 목록(약 2MB·3일 구간) 1회 수신 후 로컬 매칭, 방향별 5분 캐시. 단일 발급 키는 원형 우선·인증 오류 시 반대 인코딩형 1회 재시도 (`lib/adapters/flights-live.ts`) |
 | 호출 시점 | 데모 중 입국편 확인 1회. 오프라인 모드에서는 호출하지 않음(NFR-DEMO-001) |
 
 ### 2.2 런타임에 호출하지 않는 것 (명시)
