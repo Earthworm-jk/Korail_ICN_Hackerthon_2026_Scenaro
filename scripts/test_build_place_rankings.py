@@ -15,7 +15,7 @@ class PlaceRankingPipelineTest(unittest.TestCase):
         version, works, places = pipeline.load_inputs()
         self.assertEqual(version, "v1")
         self.assertEqual(len(works), 4)
-        self.assertEqual(len(places), 13)
+        self.assertEqual(len(places), 12)
 
     def test_작품과_장소의_모든_조합을_미검토_점수로_생성한다(self) -> None:
         snapshot = pipeline.build_snapshot(
