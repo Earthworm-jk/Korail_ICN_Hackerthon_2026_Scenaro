@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>SCENARO 理쒖쥌 MVP ??댁뼱?꾨젅??v0.6</title>
+  <title>SCENARO 최종 MVP 와이어프레임 v0.6</title>
 </head>
 <body>
 <div id="scenaro-wireframe">
@@ -532,8 +532,6 @@
     #scenaro-wireframe .sc-experience-reason { margin: 10px 0 0; color: var(--sc-text); font-size: 13px; line-height: 1.55; }
     #scenaro-wireframe .sc-experience-meta { display: flex; flex-wrap: wrap; gap: 6px 12px; margin-top: 8px; color: var(--sc-muted); font-size: 12px; }
     #scenaro-wireframe .sc-experience-actions { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 11px; }
-    #scenaro-wireframe .sc-experience-detail { display: none; margin-top: 10px; padding: 10px; border-radius: 8px; background: var(--sc-surface); color: var(--sc-muted); font-size: 12px; line-height: 1.55; }
-    #scenaro-wireframe .sc-experience-detail.is-open { display: block; }
     #scenaro-wireframe .sc-experience-notice { margin: 10px 0 0; color: var(--sc-muted); font-size: 12px; }
     #scenaro-wireframe .sc-experience-status { display: none; margin: 8px 0 16px 76px; padding: 12px 14px; border: 1px solid var(--sc-line); border-radius: 10px; background: var(--sc-subtle); color: var(--sc-muted); font-size: 12px; }
     #scenaro-wireframe .sc-experience-status.is-open { display: block; }
@@ -685,219 +683,217 @@
         <div class="sc-mark" aria-hidden="true">S</div>
         <div class="sc-brand-copy">
           <strong>SCENARO</strong>
-          <span>K-肄섑뀗痢?湲곕컲 吏??泥좊룄 ?ы뻾</span>
+          <span>K-콘텐츠 기반 지역 철도 여행</span>
         </div>
       </div>
       <div class="sc-header-actions">
-        <select id="language-select" class="sc-header-select" aria-label="?몄뼱 ?좏깮"><option value="ko">?쒓뎅??/option><option value="en">English</option></select>
-        <button type="button" class="sc-demo sc-demo-button" id="demo-state-toggle" aria-expanded="false">?곹깭 ?쒖뿰</button>
-        <button type="button" class="sc-button sc-button-quiet" id="my-trips-button">???쇱젙</button>
+        <select id="language-select" class="sc-header-select" aria-label="언어 선택"><option value="ko">한국어</option><option value="en">English</option></select>
+        <button type="button" class="sc-demo sc-demo-button" id="demo-state-toggle" aria-expanded="false">상태 시연</button>
+        <button type="button" class="sc-button sc-button-quiet" id="my-trips-button">내 일정</button>
       </div>
     </header>
     <div class="sc-demo-panel" id="demo-state-panel">
-      <span>?붿옄??寃?섏슜 ?곹깭:</span>
-      <button type="button" class="sc-button" data-demo-state="generation-fail">理쒖큹 ?앹꽦 遺덇?</button>
-      <button type="button" class="sc-button" data-demo-state="recalc-fail">?ш퀎???ㅽ뙣</button>
-      <button type="button" class="sc-button" data-demo-state="save-fail">????ㅽ뙣</button>
-      <button type="button" class="sc-button" data-demo-state="offline-fallback">??났 議고쉶 ?대갚</button>
-      <button type="button" class="sc-button" data-demo-state="experience-none">泥댄뿕 異붿쿇 ?놁쓬</button>
-      <button type="button" class="sc-button" data-demo-state="experience-unavailable">泥댄뿕 ?곗씠???놁쓬</button>
-      <button type="button" class="sc-button" data-demo-state="clear">?뺤긽 ?곹깭</button>
+      <span>디자인 검수용 상태:</span>
+      <button type="button" class="sc-button" data-demo-state="generation-fail">최초 생성 불가</button>
+      <button type="button" class="sc-button" data-demo-state="recalc-fail">재계산 실패</button>
+      <button type="button" class="sc-button" data-demo-state="save-fail">저장 실패</button>
+      <button type="button" class="sc-button" data-demo-state="offline-fallback">항공 조회 폴백</button>
+      <button type="button" class="sc-button" data-demo-state="experience-none">체험 추천 없음</button>
+      <button type="button" class="sc-button" data-demo-state="experience-unavailable">체험 데이터 없음</button>
+      <button type="button" class="sc-button" data-demo-state="clear">정상 상태</button>
     </div>
 
-    <nav class="sc-stepper" aria-label="?쇱젙 ?앹꽦 ?④퀎">
-      <button type="button" class="sc-step" data-screen-target="1" aria-current="step"><span class="sc-step-number">1</span><span>?ы뻾 議곌굔</span></button>
-      <button type="button" class="sc-step" data-screen-target="2"><span class="sc-step-number">2</span><span>K-肄섑뀗痢?/span></button>
-      <button type="button" class="sc-step" data-screen-target="3"><span class="sc-step-number">3</span><span>珥ъ쁺吏</span></button>
-      <button type="button" class="sc-step" data-screen-target="4"><span class="sc-step-number">4</span><span>?쇱젙 寃곌낵</span></button>
+    <nav class="sc-stepper" aria-label="일정 생성 단계">
+      <button type="button" class="sc-step" data-screen-target="1" aria-current="step"><span class="sc-step-number">1</span><span>여행 조건</span></button>
+      <button type="button" class="sc-step" data-screen-target="2"><span class="sc-step-number">2</span><span>K-콘텐츠</span></button>
+      <button type="button" class="sc-step" data-screen-target="3"><span class="sc-step-number">3</span><span>촬영지</span></button>
+      <button type="button" class="sc-step" data-screen-target="4"><span class="sc-step-number">4</span><span>일정 결과</span></button>
     </nav>
 
     <div class="sc-layout">
-      <aside class="sc-summary" aria-label="?좏깮 ?붿빟">
-        <h3>?좏깮 ?붿빟</h3>
+      <aside class="sc-summary" aria-label="선택 요약">
+        <h3>선택 요약</h3>
         <div class="sc-summary-list">
-          <div class="sc-summary-item"><span>?ы뻾 湲곌컙</span><strong>10.01??0.04 쨌 3諛?4??/strong></div>
-          <div class="sc-summary-item"><span>?ъ슜 媛???쒓컙</span><strong id="summary-window">10.01 12:00??0.04 16:30</strong></div>
-          <div class="sc-summary-item"><span>?좏깮 肄섑뀗痢?/span><div class="sc-summary-chips" id="summary-content"><span class="sc-chip">怨듭쑀</span><span class="sc-chip">?꾧묠鍮?/span></div></div>
-          <div class="sc-summary-item"><span>?좏깮 ?μ냼</span><strong id="summary-required">寃쏀룷? ?대?</strong></div>
+          <div class="sc-summary-item"><span>여행 기간</span><strong>10.01–10.04 · 3박 4일</strong></div>
+          <div class="sc-summary-item"><span>사용 가능 시간</span><strong id="summary-window">10.01 12:00–10.04 16:30</strong></div>
+          <div class="sc-summary-item"><span>선택 콘텐츠</span><div class="sc-summary-chips" id="summary-content"><span class="sc-chip">공유</span><span class="sc-chip">도깨비</span></div></div>
+          <div class="sc-summary-item"><span>선택 장소</span><strong id="summary-required">경포대 해변</strong></div>
         </div>
       </aside>
 
       <main class="sc-main">
         <section class="sc-screen is-active" data-screen="1">
           <div class="sc-screen-heading">
-            <h2>怨듯빆?먯꽌 異쒕컻?섍퀬 ?뚯븘???쒓컙???뺥빐二쇱꽭??/h2>
-            <p>??났?몄쓣 議고쉶???덉젙 ?쒓컖??遺덈윭?????ㅼ젣 ?대룞 ?쒖옉쨌蹂듦? ?쒓컖???좏깮?⑸땲??</p>
+            <h2>공항에서 출발하고 돌아올 시간을 정해주세요</h2>
+            <p>항공편을 조회해 예정 시각을 불러온 뒤 실제 이동 시작·복귀 시각을 선택합니다.</p>
           </div>
           <div class="sc-grid-two">
             <article class="sc-panel">
-              <div class="sc-panel-title"><h3>?낃뎅</h3><span class="sc-mode">ICN ?몄쿇怨듯빆</span></div>
+              <div class="sc-panel-title"><h3>입국</h3><span class="sc-mode">ICN 인천공항</span></div>
               <div class="sc-flight-fields">
-                <div class="sc-field-compact"><label for="arrival-flight-number">?몃챸</label><input id="arrival-flight-number" class="sc-text-input" type="text" value="KE123"></div>
-                <div class="sc-field-compact"><label for="arrival-flight-date">?꾩갑??/label><input id="arrival-flight-date" class="sc-text-input" type="date" value="2025-10-01"></div>
-                <div class="sc-flight-lookup"><button type="button" class="sc-button" data-flight-lookup="arrival">?낃뎅??議고쉶</button><span class="sc-flight-lookup-status" id="arrival-lookup-status" role="status">議고쉶 ??/span></div>
+                <div class="sc-field-compact"><label for="arrival-flight-number">편명</label><input id="arrival-flight-number" class="sc-text-input" type="text" value="KE123"></div>
+                <div class="sc-field-compact"><label for="arrival-flight-date">도착일</label><input id="arrival-flight-date" class="sc-text-input" type="date" value="2025-10-01"></div>
+                <div class="sc-flight-lookup"><button type="button" class="sc-button" data-flight-lookup="arrival">입국편 조회</button><span class="sc-flight-lookup-status" id="arrival-lookup-status" role="status">조회 전</span></div>
                 <div class="sc-flight-result">
-                  <div class="sc-field-compact"><label for="arrival-flight-time">?먮룞 ?낅젰???꾩갑 ?쒓컖</label><input id="arrival-flight-time" class="sc-text-input" type="time" value="10:00" readonly></div>
-                  <button type="button" class="sc-button sc-button-quiet" data-flight-edit="arrival">吏곸젒 ?섏젙</button>
-                  <div class="sc-flight-result-meta"><span>?곕???<strong id="arrival-terminal">??/strong></span><span>?댄빆 ?곹깭 <strong id="arrival-operation-status">??/strong></span></div>
+                  <div class="sc-field-compact"><label for="arrival-flight-time">자동 입력된 도착 시각</label><input id="arrival-flight-time" class="sc-text-input" type="time" value="10:00" readonly></div>
+                  <button type="button" class="sc-button sc-button-quiet" data-flight-edit="arrival">직접 수정</button>
+                  <div class="sc-flight-result-meta"><span>터미널 <strong id="arrival-terminal">—</strong></span><span>운항 상태 <strong id="arrival-operation-status">—</strong></span></div>
                 </div>
               </div>
               <div class="sc-field">
-                <label for="airport-leave-time">??났???꾩갑 ??怨듯빆?먯꽌 紐??쒖뿉 異쒕컻?좉퉴??</label>
+                <label for="airport-leave-time">항공편 도착 후 공항에서 몇 시에 출발할까요?</label>
                 <input id="airport-leave-time" class="sc-time-input" type="time" value="12:00">
-                <span class="sc-help">?낃뎅?ъ궗? ?섑븯臾??섎졊 ?쒓컙??怨좊젮???좏깮?댁＜?몄슂.</span>
+                <span class="sc-help">입국심사와 수하물 수령 시간을 고려해 선택해주세요.</span>
               </div>
-              <div class="sc-derived" id="arrival-derived">?꾩갑 ???ъ쑀 2?쒓컙</div>
+              <div class="sc-derived" id="arrival-derived">도착 후 여유 2시간</div>
             </article>
             <article class="sc-panel">
-              <div class="sc-panel-title"><h3>異쒓뎅</h3><span class="sc-mode">ICN ?몄쿇怨듯빆</span></div>
+              <div class="sc-panel-title"><h3>출국</h3><span class="sc-mode">ICN 인천공항</span></div>
               <div class="sc-flight-fields">
-                <div class="sc-field-compact"><label for="departure-flight-number">?몃챸</label><input id="departure-flight-number" class="sc-text-input" type="text" value="KE124"></div>
-                <div class="sc-field-compact"><label for="departure-flight-date">異쒕컻??/label><input id="departure-flight-date" class="sc-text-input" type="date" value="2025-10-04"></div>
-                <div class="sc-flight-lookup"><button type="button" class="sc-button" data-flight-lookup="departure">異쒓뎅??議고쉶</button><span class="sc-flight-lookup-status" id="departure-lookup-status" role="status">議고쉶 ??/span></div>
+                <div class="sc-field-compact"><label for="departure-flight-number">편명</label><input id="departure-flight-number" class="sc-text-input" type="text" value="KE124"></div>
+                <div class="sc-field-compact"><label for="departure-flight-date">출발일</label><input id="departure-flight-date" class="sc-text-input" type="date" value="2025-10-04"></div>
+                <div class="sc-flight-lookup"><button type="button" class="sc-button" data-flight-lookup="departure">출국편 조회</button><span class="sc-flight-lookup-status" id="departure-lookup-status" role="status">조회 전</span></div>
                 <div class="sc-flight-result">
-                  <div class="sc-field-compact"><label for="departure-flight-time">?먮룞 ?낅젰??異쒕컻 ?쒓컖</label><input id="departure-flight-time" class="sc-text-input" type="time" value="19:30" readonly></div>
-                  <button type="button" class="sc-button sc-button-quiet" data-flight-edit="departure">吏곸젒 ?섏젙</button>
-                  <div class="sc-flight-result-meta"><span>?곕???<strong id="departure-terminal">??/strong></span><span>?댄빆 ?곹깭 <strong id="departure-operation-status">??/strong></span></div>
+                  <div class="sc-field-compact"><label for="departure-flight-time">자동 입력된 출발 시각</label><input id="departure-flight-time" class="sc-text-input" type="time" value="19:30" readonly></div>
+                  <button type="button" class="sc-button sc-button-quiet" data-flight-edit="departure">직접 수정</button>
+                  <div class="sc-flight-result-meta"><span>터미널 <strong id="departure-terminal">—</strong></span><span>운항 상태 <strong id="departure-operation-status">—</strong></span></div>
                 </div>
               </div>
               <div class="sc-field">
-                <label for="airport-return-time">異쒓뎅??怨듯빆??紐??쒓퉴吏 ?꾩갑?좉퉴??</label>
+                <label for="airport-return-time">출국일 공항에 몇 시까지 도착할까요?</label>
                 <input id="airport-return-time" class="sc-time-input" type="time" value="16:30">
-                <span class="sc-help">?좏깮???쒓컖源뚯? 怨듯빆???꾩갑?섎룄濡??쇱젙??怨꾩궛?⑸땲??</span>
+                <span class="sc-help">선택한 시각까지 공항에 도착하도록 일정을 계산합니다.</span>
               </div>
-              <div class="sc-derived" id="departure-derived">??났??異쒕컻 ???ъ쑀 3?쒓컙</div>
+              <div class="sc-derived" id="departure-derived">항공편 출발 전 여유 3시간</div>
             </article>
           </div>
-          <div class="sc-note" id="flight-data-notice">??났?몄씠 議고쉶?섏? ?딆쑝硫???λ맂 ?뺣낫 ?먮뒗 吏곸젒 ?낅젰???ъ슜?⑸땲?? 怨듯빆 異쒕컻 媛???쒓컖怨?怨듯빆 ?꾩갑 留덇컧 ?쒓컖? ?쇱젙 ?붿쭊???쒖옉쨌蹂듦? ?쒖빟?쇰줈 ?꾨떖?⑸땲??</div>
-          <div class="sc-actions"><button type="button" class="sc-button sc-button-primary" data-next="2">?ㅼ쓬: K-肄섑뀗痢??좏깮</button></div>
+          <div class="sc-note" id="flight-data-notice">항공편이 조회되지 않으면 저장된 정보 또는 직접 입력을 사용합니다. 공항 출발 가능 시각과 공항 도착 마감 시각은 일정 엔진의 시작·복귀 제약으로 전달됩니다.</div>
+          <div class="sc-actions"><button type="button" class="sc-button sc-button-primary" data-next="2">다음: K-콘텐츠 선택</button></div>
         </section>
 
         <section class="sc-screen" data-screen="2">
           <div class="sc-screen-heading">
-            <h2>醫뗭븘?섎뒗 諛곗슦???묓뭹??寃?됲븯?몄슂</h2>
-            <p>?대쫫 ?쇰?留??낅젰?대룄 寃???꾨낫媛 ?섑??⑸땲??</p>
+            <h2>좋아하는 배우나 작품을 검색하세요</h2>
+            <p>이름 일부만 입력해도 검색 후보가 나타납니다.</p>
           </div>
           <div class="sc-search-row">
-            <input id="content-search" class="sc-search-input" type="search" aria-label="諛곗슦 ?먮뒗 ?묓뭹 寃?? placeholder="諛곗슦 ?먮뒗 ?묓뭹 寃??(?? 怨? ?꾧묠)" autocomplete="off" aria-autocomplete="list" aria-controls="content-suggestions" aria-expanded="false">
-            <div id="content-suggestions" class="sc-suggestions" role="listbox" aria-label="寃???쒖븞"></div>
+            <input id="content-search" class="sc-search-input" type="search" aria-label="배우 또는 작품 검색" placeholder="배우 또는 작품 검색 (예: 공, 도깨)" autocomplete="off" aria-autocomplete="list" aria-controls="content-suggestions" aria-expanded="false">
+            <div id="content-suggestions" class="sc-suggestions" role="listbox" aria-label="검색 제안"></div>
           </div>
-          <div class="sc-selected-box"><strong>?좏깮??諛곗슦쨌?묓뭹</strong><div class="sc-summary-chips" id="selected-content" style="margin-top:10px"><span class="sc-help">?꾩쭅 ?좏깮????ぉ???놁뒿?덈떎.</span></div></div>
-          <div class="sc-actions"><button type="button" class="sc-button" data-next="1">?댁쟾</button><button type="button" class="sc-button sc-button-primary" data-next="3">?ㅼ쓬: 珥ъ쁺吏 ?좏깮</button></div>
+          <div class="sc-selected-box"><strong>선택한 배우·작품</strong><div class="sc-summary-chips" id="selected-content" style="margin-top:10px"><span class="sc-help">아직 선택한 항목이 없습니다.</span></div></div>
+          <div class="sc-actions"><button type="button" class="sc-button" data-next="1">이전</button><button type="button" class="sc-button sc-button-primary" data-next="3">다음: 촬영지 선택</button></div>
         </section>
 
         <section class="sc-screen" data-screen="3">
           <div class="sc-screen-heading">
-            <h2>?꾨낫瑜??뺤씤?섍퀬 媛怨??띠? ?μ냼瑜??좏깮?섏꽭??/h2>
-            <p>?μ냼瑜??좏깮?섎㈃ 吏?꾩뿉???꾩튂媛 媛뺤“?⑸땲??</p>
+            <h2>후보를 확인하고 가고 싶은 장소를 선택하세요</h2>
+            <p>장소를 선택하면 지도에서 위치가 강조됩니다.</p>
           </div>
           <div class="sc-capacity-alert" id="place-capacity-alert" role="status" aria-live="polite" hidden>
             <strong id="place-capacity-title"></strong>
-            <span>?μ냼瑜?以꾩씠嫄곕굹 ?ы뻾 ?쒓컙???섎젮二쇱꽭?? ?쇱젙 ?앹꽦 ???ㅼ젣 ?댁감 ?쒓컙?쒖? ?댁쁺?쒓컙?쇰줈 ?ㅼ떆 ?뺤씤?⑸땲??</span>
+            <span>장소를 줄이거나 여행 시간을 늘려주세요. 일정 생성 시 실제 열차 시간표와 운영시간으로 다시 확인합니다.</span>
           </div>
-          <div class="sc-state-banner" id="generation-failure"><strong>?꾩옱 議곌굔?쇰줈 ?쇱젙??留뚮뱾 ???놁뒿?덈떎.</strong><br><span>?댁슜 媛?ν븳 ?댁감媛 ?놁뼱 珥ъ쁺吏 ?좏깮? ?좎??덉뒿?덈떎. ??났???쒓컖 ?먮뒗 ?ы뻾 ?좎쭨瑜?議곗젙?댁＜?몄슂.</span></div>
-          <div class="sc-generation" id="generation-loading" role="status" aria-live="polite"><span class="sc-spinner" aria-hidden="true"></span><strong>?댁감 ?쒓컙?쒖? ?댁쁺?쒓컙???뺤씤?섍퀬 ?덉뼱??</strong><span class="sc-help">以묐났 ?낅젰??留됯퀬 寃利앸맂 ?쇱젙留?蹂댁뿬?쒕┰?덈떎.</span></div>
+          <div class="sc-state-banner" id="generation-failure"><strong>현재 조건으로 일정을 만들 수 없습니다.</strong><br><span>이용 가능한 열차가 없어 촬영지 선택은 유지했습니다. 항공편 시각 또는 여행 날짜를 조정해주세요.</span></div>
+          <div class="sc-generation" id="generation-loading" role="status" aria-live="polite"><span class="sc-spinner" aria-hidden="true"></span><strong>열차 시간표와 운영시간을 확인하고 있어요.</strong><span class="sc-help">중복 입력을 막고 검증된 일정만 보여드립니다.</span></div>
           <div class="sc-place-layout">
             <div class="sc-place-list">
               <div class="sc-place">
-                <div class="sc-place-thumb" aria-hidden="true">役?/div>
-                <div class="sc-place-copy"><strong>寃쏀룷? ?대?</strong><span>?꾧묠鍮?쨌 ?곌껐?? 媛뺣쫱??쨌 ?묎렐 ??25遺?異붿젙)</span><span>?곸떆 媛쒕갑 쨌 ?쒓뎅愿愿묎났??쨌 2026.07.20 ?뺤씤</span></div>
-                <button type="button" class="sc-required" data-place="寃쏀룷? ?대?" data-map-marker="gyeongpo" aria-pressed="true">???좏깮??/button>
+                <div class="sc-place-thumb" aria-hidden="true">海</div>
+                <div class="sc-place-copy"><strong>경포대 해변</strong><span>도깨비 · 연결역: 강릉역 · 접근 약 25분(추정)</span><span>상시 개방 · 한국관광공사 · 2026.07.20 확인</span></div>
+                <button type="button" class="sc-required" data-place="경포대 해변" data-map-marker="gyeongpo" aria-pressed="true">✓ 선택됨</button>
               </div>
               <div class="sc-place">
-                <div class="sc-place-thumb" aria-hidden="true">??/div>
-                <div class="sc-place-copy"><strong>二쇰Ц吏??댁븞?꾨줈</strong><span>?꾧묠鍮?쨌 ?곌껐?? 媛뺣쫱??쨌 ?묎렐 ??45遺?異붿젙)</span><span>?곸떆 媛쒕갑 쨌 ?쒓뎅愿愿묎났??쨌 2026.07.18 ?뺤씤</span></div>
-                <button type="button" class="sc-required" data-place="二쇰Ц吏??댁븞?꾨줈" data-map-marker="jumunjin" aria-pressed="false">?좏깮</button>
+                <div class="sc-place-thumb" aria-hidden="true">松</div>
+                <div class="sc-place-copy"><strong>주문진 해안도로</strong><span>도깨비 · 연결역: 강릉역 · 접근 약 45분(추정)</span><span>상시 개방 · 한국관광공사 · 2026.07.18 확인</span></div>
+                <button type="button" class="sc-required" data-place="주문진 해안도로" data-map-marker="jumunjin" aria-pressed="false">선택</button>
               </div>
               <div class="sc-place">
-                <div class="sc-place-thumb" aria-hidden="true">櫻?/div>
-                <div class="sc-place-copy"><strong>?뺤닔沅??뚮떞湲?/strong><span>?꾧묠鍮?쨌 ?곌껐?? ?쒖슱??쨌 ?묎렐 ??15遺?異붿젙)</span><span>?곸떆 媛쒕갑 쨌 ?쒖슱愿愿?怨듭떇 ?뺣낫 쨌 2026.08.08 ?뺤씤</span></div>
-                <button type="button" class="sc-required" data-place="?뺤닔沅??뚮떞湲? data-map-marker="seoul-place" aria-pressed="true">???좏깮??/button>
+                <div class="sc-place-thumb" aria-hidden="true">塔</div>
+                <div class="sc-place-copy"><strong>덕수궁 돌담길</strong><span>도깨비 · 연결역: 서울역 · 접근 약 15분(추정)</span><span>상시 개방 · 서울관광 공식 정보 · 2026.08.08 확인</span></div>
+                <button type="button" class="sc-required" data-place="덕수궁 돌담길" data-map-marker="seoul-place" aria-pressed="true">✓ 선택됨</button>
               </div>
               <div class="sc-place">
-                <div class="sc-place-thumb" aria-hidden="true">??/div>
-                <div class="sc-place-copy"><strong>?愿???쇱뼇紐⑹옣</strong><span>?꾧묠鍮?쨌 ?곌껐?? 吏꾨???쨌 ?묎렐 ??50遺?異붿젙)</span><span>09:00??7:30 쨌 ?댁쁺?쒓컙 ?뺤씤 ?꾩슂</span></div>
-                <button type="button" class="sc-required" data-place="?愿???쇱뼇紐⑹옣" data-map-marker="samyang" aria-pressed="false">?좏깮</button>
+                <div class="sc-place-thumb" aria-hidden="true">牧</div>
+                <div class="sc-place-copy"><strong>대관령 삼양목장</strong><span>도깨비 · 연결역: 진부역 · 접근 약 50분(추정)</span><span>09:00–17:30 · 운영시간 확인 필요</span></div>
+                <button type="button" class="sc-required" data-place="대관령 삼양목장" data-map-marker="samyang" aria-pressed="false">선택</button>
               </div>
             </div>
             <aside class="sc-map-panel">
-              <div class="sc-map-heading"><h3>珥ъ쁺吏 ?꾩튂</h3><div class="sc-map-heading-actions"><span class="sc-mode">??쒕?援?吏??/span><button type="button" class="sc-map-filter" id="selected-place-filter" aria-pressed="false">?좏깮???μ냼留?蹂닿린</button></div></div>
-              <svg class="sc-korea-map" data-map-kind="places" viewBox="0 0 360 430" role="img" aria-label="?몄쿇怨듯빆, ?쒖슱怨?媛뺣쫱 珥ъ쁺吏????듭쟻???꾩튂"><title>珥ъ쁺吏 ?꾩튂</title><desc>Natural Earth ?쒕컲??寃쎄퀎 ?꾩뿉 怨듯빆, 泥좊룄??낵 珥ъ쁺吏瑜??쒖떆??吏??/desc><path class="sc-map-land sc-map-land-north" d="M287.905,51.803L292.751,59.995L279.598,57.19L264.572,72.991L254.236,88.784L255.545,121.851L237.646,131.954L231.494,139.992L218.443,153.415L195.39,160.858L180.368,172.974L179.284,192.407L175.245,197.346L189.019,204.601L208.624,224.093L203.641,234.789L188.904,237.696L164.44,239.831L150.954,259.666L135.502,258.106L133.336,262.079L116.525,253.736L112.348,261.973L102.201,265.606L100.981,257.367L92.014,253.349L82.707,246.338L92.186,226.917L100.353,221.717L97.27,213.607L106.053,189.54L103.786,182.212L83.583,177.316L67.249,165.236L95.438,136.148L133.588,111.554L157.371,78.793L173.803,93.315L203.734,94.996L198.326,70.527L251.789,50.399L265.552,24Z"></path><path class="sc-map-land sc-map-land-south" d="M133.336,262.079L135.502,258.106L150.954,259.666L164.44,239.831L188.904,237.696L203.641,234.789L208.624,224.093L238.505,275.94L247.073,304.076L247.345,353.502L234.298,376.832L202.952,384.949L175.282,402.406L144.101,406L140.23,383.084L146.645,351.27L131.35,306.612L157.061,299.33Z"></path><circle class="sc-map-point sc-map-point-airport" cx="142.58" cy="274.59" r="7"></circle><text x="132" y="292" text-anchor="end">?몄쿇怨듯빆</text><circle class="sc-map-point sc-map-point-station" cx="160.95" cy="270.68" r="7"></circle><text x="160" y="250" text-anchor="middle">?쒖슱??/text><circle class="sc-map-point sc-map-point-station" cx="227.65" cy="261.43" r="7"></circle><text x="244" y="281">媛뺣쫱??/text><circle class="sc-map-point sc-map-point-place" cx="227.92" cy="260.09" r="6"></circle><text x="250" y="252">寃쏀룷?</text><circle class="sc-map-point sc-map-point-place" cx="225.22" cy="255.84" r="6"></circle><text x="218" y="233" text-anchor="end">二쇰Ц吏?/text></svg>
-              <div class="sc-map-legend"><span><i class="sc-map-swatch is-place"></i>珥ъ쁺吏</span><span>?멸렐 ??? ?μ냼 移대뱶?먯꽌 ?뺤씤</span></div>
-              <div class="sc-map-source">??쒕?援?寃쎄퀎: Natural Earth 쨌 ?꾩튂: OpenStreetMap 諛?寃利??쒕뱶</div>
+              <div class="sc-map-heading"><h3>촬영지 위치</h3><div class="sc-map-heading-actions"><span class="sc-mode">대한민국 지도</span><button type="button" class="sc-map-filter" id="selected-place-filter" aria-pressed="false">선택한 장소만 보기</button></div></div>
+              <svg class="sc-korea-map" data-map-kind="places" viewBox="0 0 360 430" role="img" aria-label="인천공항, 서울과 강릉 촬영지의 대략적인 위치"><title>촬영지 위치</title><desc>Natural Earth 한반도 경계 위에 공항, 철도역과 촬영지를 표시한 지도</desc><path class="sc-map-land sc-map-land-north" d="M287.905,51.803L292.751,59.995L279.598,57.19L264.572,72.991L254.236,88.784L255.545,121.851L237.646,131.954L231.494,139.992L218.443,153.415L195.39,160.858L180.368,172.974L179.284,192.407L175.245,197.346L189.019,204.601L208.624,224.093L203.641,234.789L188.904,237.696L164.44,239.831L150.954,259.666L135.502,258.106L133.336,262.079L116.525,253.736L112.348,261.973L102.201,265.606L100.981,257.367L92.014,253.349L82.707,246.338L92.186,226.917L100.353,221.717L97.27,213.607L106.053,189.54L103.786,182.212L83.583,177.316L67.249,165.236L95.438,136.148L133.588,111.554L157.371,78.793L173.803,93.315L203.734,94.996L198.326,70.527L251.789,50.399L265.552,24Z"></path><path class="sc-map-land sc-map-land-south" d="M133.336,262.079L135.502,258.106L150.954,259.666L164.44,239.831L188.904,237.696L203.641,234.789L208.624,224.093L238.505,275.94L247.073,304.076L247.345,353.502L234.298,376.832L202.952,384.949L175.282,402.406L144.101,406L140.23,383.084L146.645,351.27L131.35,306.612L157.061,299.33Z"></path><circle class="sc-map-point sc-map-point-airport" cx="142.58" cy="274.59" r="7"></circle><text x="132" y="292" text-anchor="end">인천공항</text><circle class="sc-map-point sc-map-point-station" cx="160.95" cy="270.68" r="7"></circle><text x="160" y="250" text-anchor="middle">서울역</text><circle class="sc-map-point sc-map-point-station" cx="227.65" cy="261.43" r="7"></circle><text x="244" y="281">강릉역</text><circle class="sc-map-point sc-map-point-place" cx="227.92" cy="260.09" r="6"></circle><text x="250" y="252">경포대</text><circle class="sc-map-point sc-map-point-place" cx="225.22" cy="255.84" r="6"></circle><text x="218" y="233" text-anchor="end">주문진</text></svg>
+              <div class="sc-map-legend"><span><i class="sc-map-swatch is-place"></i>촬영지</span><span>인근 역은 장소 카드에서 확인</span></div>
+              <div class="sc-map-source">대한민국 경계: Natural Earth · 위치: OpenStreetMap 및 검증 시드</div>
             </aside>
           </div>
-          <div class="sc-actions"><button type="button" class="sc-button" data-next="2">?댁쟾</button><button type="button" class="sc-button sc-button-primary" id="generate-itinerary">?쇱젙 留뚮뱾湲?/button></div>
+          <div class="sc-actions"><button type="button" class="sc-button" data-next="2">이전</button><button type="button" class="sc-button sc-button-primary" id="generate-itinerary">일정 만들기</button></div>
         </section>
 
         <section class="sc-screen" data-screen="4">
           <div class="sc-state-banner" id="result-state-banner"></div>
-          <div class="sc-data-notice"><strong>?곗씠??湲곗?</strong> ?댁감쨌怨듯빆 吏꾩엯?맞룹눋?곸? ?뺣낫??寃利??ㅻ깄??湲곗??낅땲?? ??났??議고쉶媛 遺덇??ν븯硫???λ맂 ?뺣낫 ?먮뒗 吏곸젒 ?낅젰???ъ슜?섎ŉ, ?ㅼ젣 ?덉빟 ???댁넚???몄꽦???ㅼ떆 ?뺤씤?댁빞 ?⑸땲??</div>
+          <div class="sc-data-notice"><strong>데이터 기준</strong> 열차·공항 진입편·촬영지 정보는 검증 스냅샷 기준입니다. 항공편 조회가 불가능하면 저장된 정보 또는 직접 입력을 사용하며, 실제 예약 전 운송사 편성을 다시 확인해야 합니다.</div>
           <div class="sc-screen-heading">
-            <h2>異붿쿇 ?쇱젙</h2>
-            <p>怨듯빆 ?대룞遺??泥좊룄쨌珥ъ쁺吏源뚯? ???먮쫫?쇰줈 蹂댁뿬二쇰ŉ, 異쒕컻 ?쒓컖??諛붽씀硫?愿???쇱젙 ?쒓컖???④퍡 議곗젙?⑸땲??</p>
+            <h2>추천 일정</h2>
+            <p>공항 이동부터 철도·촬영지까지 한 흐름으로 보여주며, 출발 시각을 바꾸면 관련 일정 시각도 함께 조정됩니다.</p>
           </div>
           <div class="sc-result-grid">
             <div class="sc-panel">
               <div class="sc-day">
-                <div class="sc-day-title"><strong>DAY 1 쨌 10??1??/strong><span class="sc-mode" id="day1-route-label">怨듯빆 ???쒖슱 ??媛뺣쫱</span></div>
+                <div class="sc-day-title"><strong>DAY 1 · 10월 1일</strong><span class="sc-mode" id="day1-route-label">공항 → 서울 → 강릉</span></div>
                 <div class="sc-timeline">
-                  <div class="sc-event is-airport"><time class="sc-event-time" id="result-arrival-flight-time">10:00</time><div class="sc-event-axis"><span class="sc-event-dot">??/span></div><div class="sc-event-copy"><strong>?몄쿇怨듯빆 ?꾩갑</strong><span id="result-airport-ready-copy">?낃뎅?ъ궗쨌?섑븯臾??섎졊 ??12:00遺???대룞 媛??/span></div></div>
-                  <div class="sc-event is-airport"><time class="sc-event-time" id="result-airport-leave">12:00</time><div class="sc-event-axis"><span class="sc-event-dot">??/span></div><div class="sc-event-copy"><strong>?몄쿇怨듯빆 異쒕컻</strong><span>?ъ슜?먭? ?좏깮???ㅼ젣 異쒕컻 ?쒓컖</span><button type="button" class="sc-connection-toggle sc-train-toggle" data-connection-toggle="outbound-airport-modes" aria-expanded="false"><span data-connection-label>怨듯빆 吏꾩엯 寃쎈줈 쨌 ?쒖슱 寃쎌쑀 泥좊룄??/span><b>竊?/b></button><div class="sc-connection-detail" id="outbound-airport-modes"><strong>?좏깮 ?μ냼? ?곌껐?섎뒗 寃利?寃쎈줈</strong><div class="sc-mode-options" data-mode-group="outbound"><button type="button" class="sc-mode-option" data-mode="rail" data-label="?쒖슱 寃쎌쑀 泥좊룄?? aria-pressed="true"><strong>怨듯빆泥좊룄 ???쒖슱 珥ъ쁺吏 ??KTX</strong><span>?쒖슱 ?꾧묠鍮?珥ъ쁺吏 ?ы븿 ??異붿쿇</span></button><button type="button" class="sc-mode-option" data-mode="bus" data-label="媛뺣쫱 吏곹뻾?? aria-pressed="false"><strong>寃利?怨듯빆踰꾩뒪 ??媛뺣쫱 沅뚯뿭</strong><span>?쒖슱 ?고쉶 ?놁씠 媛뺣쫱遺??諛⑸Ц 쨌 ?댄썑 沅뚯뿭? KTX</span></button></div><div class="sc-alternative-note">寃利앸맂 ?댄뻾 ?ㅻ깄?룹씠 ?덈뒗 寃쎈줈留??좏깮吏濡??쒓났?섎ŉ, ?좏깮?섎㈃ ?꾩껜 ?쇱젙???ㅼ떆 寃利앸맗?덈떎.</div></div></div></div>
-                  <div class="sc-event is-external" id="outbound-access-event"><time class="sc-event-time" id="outbound-access-time">12:18</time><div class="sc-event-axis"><span class="sc-event-dot">A</span></div><div class="sc-event-copy"><strong id="outbound-access-title">怨듯빆泥좊룄 쨌 ?몄쿇怨듯빆 ???쒖슱??/strong><span id="outbound-access-copy">13:10 ?꾩갑 쨌 ?곕え ?ㅻ깄???덉떆</span><span class="sc-source">?몃? 援먰넻?뺣낫 쨌 ?ㅼ젣 ?댄뻾 ?ы솗??/span></div></div>
-                  <div class="sc-region-block" id="day1-seoul-region"><strong>?쒖슱??沅뚯뿭 쨌 ??1?쒓컙 50遺??쒖슜 媛??/strong><span>?좏깮???쒖슱 珥ъ쁺吏瑜?癒쇱? 諛⑸Ц????KTX濡?媛뺣쫱 沅뚯뿭???곌껐?⑸땲??</span><div class="sc-region-places"><span>?뺤닔沅??뚮떞湲?쨌 ?꾧묠鍮?쨌 ?묎렐 ??15遺?/span></div></div>
-                  <div class="sc-event" id="day1-rail-event"><time class="sc-event-time" data-train-time="day1">15:40</time><div class="sc-event-axis"><span class="sc-event-dot">K</span></div><div class="sc-event-copy"><strong>KTX 쨌 ?쒖슱????媛뺣쫱??/strong><span data-train-summary="day1">17:40 媛뺣쫱???꾩갑 쨌 ?쒖슱 珥ъ쁺吏 諛⑸Ц ???대룞</span><button type="button" class="sc-train-toggle" data-train-toggle="day1-options" aria-expanded="false">?ㅻⅨ 異쒕컻 ?쒓컙 <b>竊?/b></button><div class="sc-train-options" id="day1-options"><div class="sc-alternative-note">異쒕컻?몄쓣 ?좏깮?섎㈃ ???댁감瑜?湲곗??쇰줈 ?꾩껜 ?쇱젙??援먯껜?⑸땲??</div><button type="button" class="sc-train-option" data-train-group="day1" data-departure="15:40" data-arrival="17:40" data-utilization="18?쒓컙 20遺? aria-pressed="true"><strong>15:40</strong><span>異붿쿇 쨌 ?쒖슱 珥ъ쁺吏 1怨??ы븿</span></button><button type="button" class="sc-train-option" data-train-group="day1" data-departure="16:40" data-arrival="18:40" data-utilization="17?쒓컙 20遺? aria-pressed="false"><strong>16:40</strong><span>?쒖슱 ?쒖슜 +1?쒓컙 쨌 媛뺣쫱 ?쒖슜 ???쒓컙</span></button><button type="button" class="sc-train-option" data-train-group="day1" data-departure="17:40" data-arrival="19:40" data-utilization="16?쒓컙 20遺? aria-pressed="false"><strong>17:40</strong><span>?쒖슱 ?쒖슜 +2?쒓컙 쨌 媛뺣쫱 ?μ냼 1怨??쒖쇅</span></button></div></div></div>
+                  <div class="sc-event is-airport"><time class="sc-event-time" id="result-arrival-flight-time">10:00</time><div class="sc-event-axis"><span class="sc-event-dot">✈</span></div><div class="sc-event-copy"><strong>인천공항 도착</strong><span id="result-airport-ready-copy">입국심사·수하물 수령 후 12:00부터 이동 가능</span></div></div>
+                  <div class="sc-event is-airport"><time class="sc-event-time" id="result-airport-leave">12:00</time><div class="sc-event-axis"><span class="sc-event-dot">出</span></div><div class="sc-event-copy"><strong>인천공항 출발</strong><span>사용자가 선택한 실제 출발 시각</span><button type="button" class="sc-connection-toggle sc-train-toggle" data-connection-toggle="outbound-airport-modes" aria-expanded="false"><span data-connection-label>공항 진입 경로 · 서울 경유 철도형</span><b>＋</b></button><div class="sc-connection-detail" id="outbound-airport-modes"><strong>선택 장소와 연결되는 검증 경로</strong><div class="sc-mode-options" data-mode-group="outbound"><button type="button" class="sc-mode-option" data-mode="rail" data-label="서울 경유 철도형" aria-pressed="true"><strong>공항철도 → 서울 촬영지 → KTX</strong><span>서울 도깨비 촬영지 포함 시 추천</span></button><button type="button" class="sc-mode-option" data-mode="bus" data-label="강릉 직행형" aria-pressed="false"><strong>검증 공항버스 → 강릉 권역</strong><span>서울 우회 없이 강릉부터 방문 · 이후 권역은 KTX</span></button></div><div class="sc-alternative-note">검증된 운행 스냅샷이 있는 경로만 선택지로 제공하며, 선택하면 전체 일정이 다시 검증됩니다.</div></div></div></div>
+                  <div class="sc-event is-external" id="outbound-access-event"><time class="sc-event-time" id="outbound-access-time">12:18</time><div class="sc-event-axis"><span class="sc-event-dot">A</span></div><div class="sc-event-copy"><strong id="outbound-access-title">공항철도 · 인천공항 → 서울역</strong><span id="outbound-access-copy">13:10 도착 · 데모 스냅샷 예시</span><span class="sc-source">외부 교통정보 · 실제 운행 재확인</span></div></div>
+                  <div class="sc-region-block" id="day1-seoul-region"><strong>서울역 권역 · 약 1시간 50분 활용 가능</strong><span>선택한 서울 촬영지를 먼저 방문한 뒤 KTX로 강릉 권역을 연결합니다.</span><div class="sc-region-places"><span>덕수궁 돌담길 · 도깨비 · 접근 약 15분</span></div></div>
+                  <div class="sc-event" id="day1-rail-event"><time class="sc-event-time" data-train-time="day1">15:40</time><div class="sc-event-axis"><span class="sc-event-dot">K</span></div><div class="sc-event-copy"><strong>KTX · 서울역 → 강릉역</strong><span data-train-summary="day1">17:40 강릉역 도착 · 서울 촬영지 방문 후 이동</span><button type="button" class="sc-train-toggle" data-train-toggle="day1-options" aria-expanded="false">다른 출발 시간 <b>＋</b></button><div class="sc-train-options" id="day1-options"><div class="sc-alternative-note">출발편을 선택하면 이 열차를 기준으로 전체 일정이 교체됩니다.</div><button type="button" class="sc-train-option" data-train-group="day1" data-departure="15:40" data-arrival="17:40" data-utilization="18시간 20분" aria-pressed="true"><strong>15:40</strong><span>추천 · 서울 촬영지 1곳 포함</span></button><button type="button" class="sc-train-option" data-train-group="day1" data-departure="16:40" data-arrival="18:40" data-utilization="17시간 20분" aria-pressed="false"><strong>16:40</strong><span>서울 활용 +1시간 · 강릉 활용 −1시간</span></button><button type="button" class="sc-train-option" data-train-group="day1" data-departure="17:40" data-arrival="19:40" data-utilization="16시간 20분" aria-pressed="false"><strong>17:40</strong><span>서울 활용 +2시간 · 강릉 장소 1곳 제외</span></button></div></div></div>
                 </div>
-                <div class="sc-region-block"><strong>媛뺣쫱??沅뚯뿭 쨌 <span id="day1-region-duration">??18?쒓컙 20遺??쒖슜 媛??/span></strong><span>吏?????뺥솗???μ냼蹂??쒓컖? ?쒖떆?섏? ?딆뒿?덈떎. ??볦옣???묎렐?쒓컙? ?대룞?섎떒 誘명룷??異붿젙移섏엯?덈떎.</span><div class="sc-region-places"><span>寃쏀룷? ?대? 쨌 ?꾧묠鍮?쨌 ??25遺?/span><span>二쇰Ц吏??댁븞?꾨줈 쨌 ?꾧묠鍮?쨌 ??45遺?/span></div></div>
+                <div class="sc-region-block"><strong>강릉역 권역 · <span id="day1-region-duration">약 18시간 20분 활용 가능</span></strong><span>지역 내 정확한 장소별 시각은 표시하지 않습니다. 역–장소 접근시간은 이동수단 미포함 추정치입니다.</span><div class="sc-region-places"><span>경포대 해변 · 도깨비 · 약 25분</span><span>주문진 해안도로 · 도깨비 · 약 45분</span></div></div>
               </div>
               <div class="sc-day">
-                <div class="sc-day-title"><strong>DAY 2 쨌 10??2??/strong><span class="sc-mode">媛뺣쫱 泥대쪟</span></div>
-                <div class="sc-region-block" style="margin-left:0"><strong>媛뺣쫱??沅뚯뿭?먯꽌 ?좏깮 ?μ냼 諛⑸Ц</strong><span>寃쏀룷? ?대? 쨌 ?꾧묠鍮?쨌 ?곸떆 媛쒕갑 쨌 ?쒓뎅愿愿묎났??쨌 2026.07.20 ?뺤씤</span><span>二쇰Ц吏??댁븞?꾨줈 쨌 ?꾧묠鍮?쨌 ?곸떆 媛쒕갑 쨌 ?쒓뎅愿愿묎났??쨌 2026.07.18 ?뺤씤</span></div>
+                <div class="sc-day-title"><strong>DAY 2 · 10월 2일</strong><span class="sc-mode">강릉 체류</span></div>
+                <div class="sc-region-block" style="margin-left:0"><strong>강릉역 권역에서 선택 장소 방문</strong><span>경포대 해변 · 도깨비 · 상시 개방 · 한국관광공사 · 2026.07.20 확인</span><span>주문진 해안도로 · 도깨비 · 상시 개방 · 한국관광공사 · 2026.07.18 확인</span></div>
               </div>
               <div class="sc-day">
-                <div class="sc-day-title"><strong>DAY 3 쨌 10??3??/strong><span class="sc-mode">媛뺣쫱 ???쒖슱</span></div>
+                <div class="sc-day-title"><strong>DAY 3 · 10월 3일</strong><span class="sc-mode">강릉 → 서울</span></div>
                 <div class="sc-timeline">
-                  <div class="sc-event"><time class="sc-event-time" data-train-time="day3">12:00</time><div class="sc-event-axis"><span class="sc-event-dot">K</span></div><div class="sc-event-copy"><strong>KTX 쨌 媛뺣쫱?????쒖슱??/strong><span data-train-summary="day3">14:00 ?쒖슱???꾩갑 쨌 異붿쿇 ?꾩껜 ?쇱젙</span><button type="button" class="sc-train-toggle" data-train-toggle="day3-options" aria-expanded="false">?ㅻⅨ 異쒕컻 ?쒓컙 <b>竊?/b></button><div class="sc-train-options" id="day3-options"><div class="sc-alternative-note">媛??좏깮吏??紐⑤뱺 ?쒓컙?쑣룹슫?곸떆媛꽷룰났??蹂듦? 議곌굔???듦낵???꾩껜 ?쇱젙?낅땲??</div><button type="button" class="sc-train-option" data-train-group="day3" data-departure="12:00" data-arrival="14:00" aria-pressed="true"><strong>12:00</strong><span>異붿쿇 쨌 媛뺣쫱 ?쒖슜 湲곗?</span></button><button type="button" class="sc-train-option" data-train-group="day3" data-departure="13:00" data-arrival="15:00" aria-pressed="false"><strong>13:00</strong><span>媛뺣쫱 ?쒖슜 +1?쒓컙 쨌 ?쒖슱 ?쒖슜 ???쒓컙</span></button><button type="button" class="sc-train-option" data-train-group="day3" data-departure="14:00" data-arrival="16:00" aria-pressed="false"><strong>14:00</strong><span>媛뺣쫱 ?쒖슜 +2?쒓컙 쨌 ?쒖슱 ?μ냼 1怨??쒖쇅</span></button></div></div></div>
+                  <div class="sc-event"><time class="sc-event-time" data-train-time="day3">12:00</time><div class="sc-event-axis"><span class="sc-event-dot">K</span></div><div class="sc-event-copy"><strong>KTX · 강릉역 → 서울역</strong><span data-train-summary="day3">14:00 서울역 도착 · 추천 전체 일정</span><button type="button" class="sc-train-toggle" data-train-toggle="day3-options" aria-expanded="false">다른 출발 시간 <b>＋</b></button><div class="sc-train-options" id="day3-options"><div class="sc-alternative-note">각 선택지는 모든 시간표·운영시간·공항 복귀 조건을 통과한 전체 일정입니다.</div><button type="button" class="sc-train-option" data-train-group="day3" data-departure="12:00" data-arrival="14:00" aria-pressed="true"><strong>12:00</strong><span>추천 · 강릉 활용 기준</span></button><button type="button" class="sc-train-option" data-train-group="day3" data-departure="13:00" data-arrival="15:00" aria-pressed="false"><strong>13:00</strong><span>강릉 활용 +1시간 · 서울 활용 −1시간</span></button><button type="button" class="sc-train-option" data-train-group="day3" data-departure="14:00" data-arrival="16:00" aria-pressed="false"><strong>14:00</strong><span>강릉 활용 +2시간 · 서울 장소 1곳 제외</span></button></div></div></div>
                 </div>
-                <div class="sc-region-block"><strong>?쒖슱??沅뚯뿭 쨌 洹援?씪 怨듯빆 ?대룞 ?꾧퉴吏 ?쒖슜</strong><span>?뺤닔沅??뚮떞湲?쨌 ?꾧묠鍮?쨌 ?묎렐 ??15遺?異붿젙) 쨌 ?곸떆 媛쒕갑 쨌 2026.08.08 ?뺤씤</span></div>
+                <div class="sc-region-block"><strong>서울역 권역 · 귀국일 공항 이동 전까지 활용</strong><span>덕수궁 돌담길 · 도깨비 · 접근 약 15분(추정) · 상시 개방 · 2026.08.08 확인</span></div>
                 <section class="sc-experience-card" id="theme-experience-card" aria-labelledby="theme-experience-title">
                   <div class="sc-experience-heading">
-                    <div><strong id="theme-experience-title">?쒕났쨌?꾪넻臾명솕 泥댄뿕</strong><span class="sc-experience-zone-name" id="theme-experience-zone">?쒖슱 沅곴텗쨌?쒖삦 臾명솕 沅뚯뿭</span></div>
-                    <span class="sc-experience-badge" id="theme-experience-badge">AI ?곌퀎 異붿쿇</span>
+                    <div><strong id="theme-experience-title">한복·전통문화 체험</strong><span class="sc-experience-zone-name" id="theme-experience-zone">서울 궁궐·한옥 문화 권역</span></div>
+                    <span class="sc-experience-badge" id="theme-experience-badge">AI 연계 추천</span>
                   </div>
-                  <p class="sc-experience-reason" id="theme-experience-reason">?꾧묠鍮꾩쓽 怨좊젮?쒕? ?쒖궗? ?곌껐?섎뒗 ?꾪넻臾명솕 泥댄뿕 沅뚯뿭?낅땲??</p>
-                  <div class="sc-experience-meta"><span id="theme-experience-route">?꾩옱 ?쒖슱??沅뚯뿭 ?쇱젙怨??곌껐</span><span id="theme-experience-policy">?뱀젙 ?낆껜媛 ?꾨땶 怨듭떇 愿愿묒젙蹂?湲곕컲 沅뚯뿭</span></div>
+                  <p class="sc-experience-reason" id="theme-experience-reason">도깨비의 고려시대 서사와 연결되는 전통문화 체험 권역입니다.</p>
+                  <div class="sc-experience-meta"><span id="theme-experience-route">현재 서울역 권역 일정과 연결</span><span id="theme-experience-policy">특정 업체가 아닌 공식 관광정보 기반 권역</span></div>
                   <div class="sc-experience-actions">
-                    <button type="button" class="sc-button" data-experience-map-toggle aria-pressed="false" data-copy-ko-off="吏?꾩뿉??沅뚯뿭 蹂닿린" data-copy-ko-on="吏?꾩뿉??沅뚯뿭 ?④린湲? data-copy-en-off="Show zone on map" data-copy-en-on="Hide zone on map">吏?꾩뿉??沅뚯뿭 蹂닿린</button>
-                    <button type="button" class="sc-button" id="experience-detail-toggle" aria-expanded="false"><span>怨듭떇 愿愿묒젙蹂?湲곗? 蹂닿린</span> <b>竊?/b></button>
+                    <button type="button" class="sc-button" data-experience-map-toggle aria-pressed="false" data-copy-ko-off="지도에서 권역 보기" data-copy-ko-on="지도에서 권역 숨기기" data-copy-en-off="Show zone on map" data-copy-en-on="Hide zone on map">지도에서 권역 보기</button>
                   </div>
-                  <div class="sc-experience-detail" id="experience-detail"><strong id="theme-experience-source">愿愿묎났??룹??먯껜 怨듭떇 ?뺣낫 쨌 2026.08.08 ?뺤씤</strong><br><span id="theme-experience-source-note">??沅뚯뿭 ?덉쓽 媛쒕퀎 ?낆껜쨌媛寃㈑룹슫?곸떆媛꾩? 異붿쿇?섍굅??蹂댁쬆?섏? ?딆뒿?덈떎.</span></div>
-                  <p class="sc-experience-notice" id="theme-experience-notice">??二쇰? 泥댄뿕 ?쒖븞?대ŉ ?꾩옱 ?쇱젙?먮뒗 ?먮룞?쇰줈 ?ы븿?섏? ?딆뒿?덈떎.</p>
+                  <p class="sc-experience-notice" id="theme-experience-notice">※ 주변 체험 제안이며 현재 일정에는 자동으로 포함되지 않습니다.</p>
                 </section>
                 <div class="sc-experience-status" id="theme-experience-status" role="status"></div>
               </div>
               <div class="sc-day">
-                <div class="sc-day-title"><strong>DAY 4 쨌 10??4??/strong><span class="sc-mode">?쒖슱 ??怨듯빆</span></div>
+                <div class="sc-day-title"><strong>DAY 4 · 10월 4일</strong><span class="sc-mode">서울 → 공항</span></div>
                 <div class="sc-timeline">
-                  <div class="sc-event is-external"><time class="sc-event-time" id="return-transfer-departure">15:00</time><div class="sc-event-axis"><span class="sc-event-dot">A</span></div><div class="sc-event-copy"><strong>?쒖슱?먯꽌 ?몄쿇怨듯빆?쇰줈 異쒕컻</strong><span>16:30源뚯? 怨듯빆 ?꾩갑</span><button type="button" class="sc-connection-toggle sc-train-toggle" data-connection-toggle="return-airport-modes" aria-expanded="false"><span data-connection-label>洹援?寃쎈줈 쨌 怨듯빆泥좊룄</span><b>竊?/b></button><div class="sc-connection-detail" id="return-airport-modes"><strong>怨듯빆 ?꾩갑 留덇컧 ?덉뿉 媛?ν븳 寃利?寃쎈줈</strong><div class="sc-mode-options" data-mode-group="return"><button type="button" class="sc-mode-option" data-mode="rail" data-label="怨듯빆泥좊룄" data-departure="15:00" data-arrival="16:10" aria-pressed="true"><strong>怨듯빆泥좊룄 쨌 ?쒖슱?????몄쿇怨듯빆</strong><span>15:00 異쒕컻 쨌 16:10 ?꾩갑</span></button><button type="button" class="sc-mode-option" data-mode="bus" data-label="寃利?怨듯빆踰꾩뒪" data-departure="14:50" data-arrival="16:20" aria-pressed="false"><strong>寃利?怨듯빆踰꾩뒪 쨌 ?쒖슱 ???몄쿇怨듯빆</strong><span>14:50 異쒕컻 쨌 16:20 ?꾩갑 쨌 留덇컧 10遺???/span></button></div><div class="sc-alternative-note">?꾨줈 援ш컙? 寃利??ㅻ깄?룰낵 蹂댁닔???ъ쑀瑜??곸슜?섎ŉ ?ㅼ젣 ?덉빟 ???ы솗?몄씠 ?꾩슂?⑸땲??</div></div></div></div>
-                  <div class="sc-event is-airport"><time class="sc-event-time" id="result-airport-return">16:10</time><div class="sc-event-axis"><span class="sc-event-dot">??/span></div><div class="sc-event-copy"><strong>?몄쿇怨듯빆 ?꾩갑</strong><span id="result-airport-deadline">?ъ슜??吏??留덇컧 16:30 ?댁쟾</span></div></div>
-                  <div class="sc-event is-airport"><time class="sc-event-time" id="result-departure-flight-time">19:30</time><div class="sc-event-axis"><span class="sc-event-dot">??/span></div><div class="sc-event-copy"><strong>異쒓뎅 ??났??/strong><span>泥댄겕?맞룸낫?덇????ъ쑀 ?ы븿</span></div></div>
+                  <div class="sc-event is-external"><time class="sc-event-time" id="return-transfer-departure">15:00</time><div class="sc-event-axis"><span class="sc-event-dot">A</span></div><div class="sc-event-copy"><strong>서울에서 인천공항으로 출발</strong><span>16:30까지 공항 도착</span><button type="button" class="sc-connection-toggle sc-train-toggle" data-connection-toggle="return-airport-modes" aria-expanded="false"><span data-connection-label>귀국 경로 · 공항철도</span><b>＋</b></button><div class="sc-connection-detail" id="return-airport-modes"><strong>공항 도착 마감 안에 가능한 검증 경로</strong><div class="sc-mode-options" data-mode-group="return"><button type="button" class="sc-mode-option" data-mode="rail" data-label="공항철도" data-departure="15:00" data-arrival="16:10" aria-pressed="true"><strong>공항철도 · 서울역 → 인천공항</strong><span>15:00 출발 · 16:10 도착</span></button><button type="button" class="sc-mode-option" data-mode="bus" data-label="검증 공항버스" data-departure="14:50" data-arrival="16:20" aria-pressed="false"><strong>검증 공항버스 · 서울 → 인천공항</strong><span>14:50 출발 · 16:20 도착 · 마감 10분 전</span></button></div><div class="sc-alternative-note">도로 구간은 검증 스냅샷과 보수적 여유를 적용하며 실제 예약 전 재확인이 필요합니다.</div></div></div></div>
+                  <div class="sc-event is-airport"><time class="sc-event-time" id="result-airport-return">16:10</time><div class="sc-event-axis"><span class="sc-event-dot">入</span></div><div class="sc-event-copy"><strong>인천공항 도착</strong><span id="result-airport-deadline">사용자 지정 마감 16:30 이전</span></div></div>
+                  <div class="sc-event is-airport"><time class="sc-event-time" id="result-departure-flight-time">19:30</time><div class="sc-event-axis"><span class="sc-event-dot">✈</span></div><div class="sc-event-copy"><strong>출국 항공편</strong><span>체크인·보안검색 여유 포함</span></div></div>
                 </div>
               </div>
             </div>
 
             <aside class="sc-map-panel">
-              <div class="sc-map-heading"><h3>?꾩껜 ?대룞 ?숈꽑</h3><div class="sc-map-heading-actions"><span class="sc-mode">??쒕?援?吏??/span><button type="button" class="sc-map-filter" id="experience-map-toggle" data-experience-map-toggle aria-pressed="false" data-copy-ko-off="?뚮쭏泥댄뿕 蹂닿린" data-copy-ko-on="?뚮쭏泥댄뿕 ?④린湲? data-copy-en-off="Show experience" data-copy-en-on="Hide experience">?뚮쭏泥댄뿕 蹂닿린</button></div></div>
-              <svg class="sc-korea-map" data-map-kind="route" viewBox="0 0 360 430" role="img" aria-label="?몄쿇怨듯빆?먯꽌 ?쒖슱怨?媛뺣쫱??嫄곗퀜 ?ㅼ떆 ?몄쿇怨듯빆?쇰줈 ?뚯븘?ㅻ뒗 ?숈꽑"><title>?꾩껜 ?대룞 ?숈꽑</title><desc>Natural Earth ?쒕컲??寃쎄퀎 ?꾩뿉 怨듯빆, 泥좊룄??낵 珥ъ쁺吏 ?대룞 ?숈꽑???쒖떆??吏??/desc><path class="sc-map-land sc-map-land-north" d="M287.905,51.803L292.751,59.995L279.598,57.19L264.572,72.991L254.236,88.784L255.545,121.851L237.646,131.954L231.494,139.992L218.443,153.415L195.39,160.858L180.368,172.974L179.284,192.407L175.245,197.346L189.019,204.601L208.624,224.093L203.641,234.789L188.904,237.696L164.44,239.831L150.954,259.666L135.502,258.106L133.336,262.079L116.525,253.736L112.348,261.973L102.201,265.606L100.981,257.367L92.014,253.349L82.707,246.338L92.186,226.917L100.353,221.717L97.27,213.607L106.053,189.54L103.786,182.212L83.583,177.316L67.249,165.236L95.438,136.148L133.588,111.554L157.371,78.793L173.803,93.315L203.734,94.996L198.326,70.527L251.789,50.399L265.552,24Z"></path><path class="sc-map-land sc-map-land-south" d="M133.336,262.079L135.502,258.106L150.954,259.666L164.44,239.831L188.904,237.696L203.641,234.789L208.624,224.093L238.505,275.94L247.073,304.076L247.345,353.502L234.298,376.832L202.952,384.949L175.282,402.406L144.101,406L140.23,383.084L146.645,351.27L131.35,306.612L157.061,299.33Z"></path><path class="sc-map-route" d="M142.58,274.59C142.58,274.59,152.524,272.139,160.95,270.68C175.918,268.088,227.65,261.43,227.65,261.43C227.65,261.43,175.918,268.088,160.95,270.68C152.524,272.139,142.58,274.59,142.58,274.59"></path><circle class="sc-map-experience-zone" cx="160.95" cy="270.68" r="19"></circle><text class="sc-map-experience-label" id="experience-map-zone-label" x="178" y="304">沅곴텗쨌?쒖삦 臾명솕 沅뚯뿭</text><circle class="sc-map-point sc-map-point-airport" cx="142.58" cy="274.59" r="7"></circle><text x="132" y="292" text-anchor="end">?몄쿇怨듯빆</text><circle class="sc-map-point sc-map-point-station" cx="160.95" cy="270.68" r="7"></circle><text x="160" y="250" text-anchor="middle">?쒖슱??/text><circle class="sc-map-point sc-map-point-station" cx="227.65" cy="261.43" r="7"></circle><text x="245" y="282">媛뺣쫱??/text><circle class="sc-map-point sc-map-point-place" cx="227.92" cy="260.09" r="6"></circle><text x="252" y="252">珥ъ쁺吏</text></svg>
-              <div class="sc-map-legend"><span><i class="sc-map-swatch is-airport"></i>怨듯빆</span><span><i class="sc-map-swatch"></i>泥좊룄??/span><span><i class="sc-map-swatch is-place"></i>珥ъ쁺吏</span><span><i class="sc-map-swatch is-experience"></i><span id="experience-map-legend-label">?뚮쭏泥댄뿕 沅뚯뿭</span></span></div>
-              <div class="sc-validation" id="validation-copy">?꾩옱 ?좏깮??紐⑤뱺 ?대룞?몄? ?댁쁺?쒓컙쨌?좏깮 ?μ냼쨌怨듯빆 蹂듦? 議곌굔???듦낵?덉뒿?덈떎.</div>
-              <div class="sc-rejected" id="rejected-places"><strong>?대쾲 ?쇱젙???ы븿?섏? ?딆? ?μ냼</strong><span id="rejected-places-copy"></span></div>
-              <div class="sc-help-actions"><button type="button" class="sc-button" data-help-topic="transfer">?섏듅 ?뚰겕?ㅻ（</button><button type="button" class="sc-button" data-help-topic="luggage">吏?蹂닿? ?덈궡</button></div>
-              <div class="sc-map-source">??쒕?援?寃쎄퀎: Natural Earth 쨌 ?꾩튂: OpenStreetMap 諛?寃利??쒕뱶</div>
+              <div class="sc-map-heading"><h3>전체 이동 동선</h3><div class="sc-map-heading-actions"><span class="sc-mode">대한민국 지도</span><button type="button" class="sc-map-filter" id="experience-map-toggle" data-experience-map-toggle aria-pressed="false" data-copy-ko-off="테마체험 보기" data-copy-ko-on="테마체험 숨기기" data-copy-en-off="Show experience" data-copy-en-on="Hide experience">테마체험 보기</button></div></div>
+              <svg class="sc-korea-map" data-map-kind="route" viewBox="0 0 360 430" role="img" aria-label="인천공항에서 서울과 강릉을 거쳐 다시 인천공항으로 돌아오는 동선"><title>전체 이동 동선</title><desc>Natural Earth 한반도 경계 위에 공항, 철도역과 촬영지 이동 동선을 표시한 지도</desc><path class="sc-map-land sc-map-land-north" d="M287.905,51.803L292.751,59.995L279.598,57.19L264.572,72.991L254.236,88.784L255.545,121.851L237.646,131.954L231.494,139.992L218.443,153.415L195.39,160.858L180.368,172.974L179.284,192.407L175.245,197.346L189.019,204.601L208.624,224.093L203.641,234.789L188.904,237.696L164.44,239.831L150.954,259.666L135.502,258.106L133.336,262.079L116.525,253.736L112.348,261.973L102.201,265.606L100.981,257.367L92.014,253.349L82.707,246.338L92.186,226.917L100.353,221.717L97.27,213.607L106.053,189.54L103.786,182.212L83.583,177.316L67.249,165.236L95.438,136.148L133.588,111.554L157.371,78.793L173.803,93.315L203.734,94.996L198.326,70.527L251.789,50.399L265.552,24Z"></path><path class="sc-map-land sc-map-land-south" d="M133.336,262.079L135.502,258.106L150.954,259.666L164.44,239.831L188.904,237.696L203.641,234.789L208.624,224.093L238.505,275.94L247.073,304.076L247.345,353.502L234.298,376.832L202.952,384.949L175.282,402.406L144.101,406L140.23,383.084L146.645,351.27L131.35,306.612L157.061,299.33Z"></path><path class="sc-map-route" d="M142.58,274.59C142.58,274.59,152.524,272.139,160.95,270.68C175.918,268.088,227.65,261.43,227.65,261.43C227.65,261.43,175.918,268.088,160.95,270.68C152.524,272.139,142.58,274.59,142.58,274.59"></path><circle class="sc-map-experience-zone" cx="160.95" cy="270.68" r="19"></circle><text class="sc-map-experience-label" id="experience-map-zone-label" x="178" y="304">궁궐·한옥 문화 권역</text><circle class="sc-map-point sc-map-point-airport" cx="142.58" cy="274.59" r="7"></circle><text x="132" y="292" text-anchor="end">인천공항</text><circle class="sc-map-point sc-map-point-station" cx="160.95" cy="270.68" r="7"></circle><text x="160" y="250" text-anchor="middle">서울역</text><circle class="sc-map-point sc-map-point-station" cx="227.65" cy="261.43" r="7"></circle><text x="245" y="282">강릉역</text><circle class="sc-map-point sc-map-point-place" cx="227.92" cy="260.09" r="6"></circle><text x="252" y="252">촬영지</text></svg>
+              <div class="sc-map-legend"><span><i class="sc-map-swatch is-airport"></i>공항</span><span><i class="sc-map-swatch"></i>철도역</span><span><i class="sc-map-swatch is-place"></i>촬영지</span><span><i class="sc-map-swatch is-experience"></i><span id="experience-map-legend-label">테마체험 권역</span></span></div>
+              <div class="sc-validation" id="validation-copy">현재 선택한 모든 이동편은 운영시간·선택 장소·공항 복귀 조건을 통과했습니다.</div>
+              <div class="sc-rejected" id="rejected-places"><strong>이번 일정에 포함되지 않은 장소</strong><span id="rejected-places-copy"></span></div>
+              <div class="sc-help-actions"><button type="button" class="sc-button" data-help-topic="transfer">환승 워크스루</button><button type="button" class="sc-button" data-help-topic="luggage">짐 보관 안내</button></div>
+              <div class="sc-map-source">대한민국 경계: Natural Earth · 위치: OpenStreetMap 및 검증 시드</div>
             </aside>
           </div>
-          <div class="sc-save-row"><span class="sc-save-status" id="save-status">??λ릺吏 ?딆? ?쇱젙</span><button type="button" class="sc-button sc-button-primary" id="save-itinerary">?쇱젙 ???/button></div>
-          <div class="sc-actions"><button type="button" class="sc-button" data-next="3">珥ъ쁺吏 ?섏젙</button></div>
+          <div class="sc-save-row"><span class="sc-save-status" id="save-status">저장되지 않은 일정</span><button type="button" class="sc-button sc-button-primary" id="save-itinerary">일정 저장</button></div>
+          <div class="sc-actions"><button type="button" class="sc-button" data-next="3">촬영지 수정</button></div>
         </section>
       </main>
     </div>
@@ -905,46 +901,46 @@
 
   <div class="sc-modal-backdrop" id="auth-modal" role="dialog" aria-modal="true" aria-labelledby="auth-modal-title">
     <div class="sc-modal">
-      <div class="sc-modal-header"><div><h3 id="auth-modal-title">?쇱젙????ν븯?ㅻ㈃ 濡쒓렇?명빐二쇱꽭??/h3><p>濡쒓렇???꾧퉴吏 留뚮뱺 ?쇱젙? 洹몃?濡??좎??⑸땲??</p></div><button type="button" class="sc-button sc-modal-close" data-modal-close="auth-modal" aria-label="?リ린">횞</button></div>
+      <div class="sc-modal-header"><div><h3 id="auth-modal-title">일정을 저장하려면 로그인해주세요</h3><p>로그인 전까지 만든 일정은 그대로 유지됩니다.</p></div><button type="button" class="sc-button sc-modal-close" data-modal-close="auth-modal" aria-label="닫기">×</button></div>
       <div class="sc-auth-fields">
-        <label>?대찓??input id="auth-email" class="sc-text-input" type="email" value="demo@scenaro.kr"></label>
-        <label>鍮꾨?踰덊샇<input id="auth-password" class="sc-text-input" type="password" value="demo1234"></label>
+        <label>이메일<input id="auth-email" class="sc-text-input" type="email" value="demo@scenaro.kr"></label>
+        <label>비밀번호<input id="auth-password" class="sc-text-input" type="password" value="demo1234"></label>
       </div>
-      <div class="sc-actions"><button type="button" class="sc-button" id="signup-and-save">?뚯썝媛?낇븯怨????/button><button type="button" class="sc-button sc-button-primary" id="login-and-save">濡쒓렇?명븯怨????/button></div>
+      <div class="sc-actions"><button type="button" class="sc-button" id="signup-and-save">회원가입하고 저장</button><button type="button" class="sc-button sc-button-primary" id="login-and-save">로그인하고 저장</button></div>
     </div>
   </div>
 
   <div class="sc-modal-backdrop" id="trips-modal" role="dialog" aria-modal="true" aria-labelledby="trips-modal-title">
     <div class="sc-modal is-wide">
-      <div class="sc-modal-header"><div><h3 id="trips-modal-title">???쇱젙</h3><p id="account-state">??λ맂 ?쇱젙???ㅼ떆 ?댁뼱 ?꾩옱 議곌굔?쇰줈 ?뺤씤?????덉뒿?덈떎.</p></div><button type="button" class="sc-button sc-modal-close" data-modal-close="trips-modal" aria-label="?リ린">횞</button></div>
+      <div class="sc-modal-header"><div><h3 id="trips-modal-title">내 일정</h3><p id="account-state">저장된 일정을 다시 열어 현재 조건으로 확인할 수 있습니다.</p></div><button type="button" class="sc-button sc-modal-close" data-modal-close="trips-modal" aria-label="닫기">×</button></div>
       <div class="sc-trip-grid">
         <div class="sc-trip-list">
-          <button type="button" class="sc-trip-item" aria-pressed="true"><strong>媛뺣쫱쨌?쒖슱 3諛?4??/strong><span>怨듭쑀쨌?꾧묠鍮?쨌 10.01??0.04</span></button>
-          <button type="button" class="sc-trip-item" aria-pressed="false"><strong>遺?걔룰꼍二?2諛?3??/strong><span>源怨좎?쨌?묒? ?꾩뵪??쨌 11.12??1.14</span></button>
+          <button type="button" class="sc-trip-item" aria-pressed="true"><strong>강릉·서울 3박 4일</strong><span>공유·도깨비 · 10.01–10.04</span></button>
+          <button type="button" class="sc-trip-item" aria-pressed="false"><strong>부산·경주 2박 3일</strong><span>김고은·작은 아씨들 · 11.12–11.14</span></button>
         </div>
         <div class="sc-trip-detail">
-          <h4>媛뺣쫱쨌?쒖슱 3諛?4??/h4>
-          <ul><li>?몄쿇怨듯빆 ???쒖슱????媛뺣쫱??/li><li>寃쏀룷? ?대?쨌二쇰Ц吏??댁븞?꾨줈</li><li>理쒓렐 ?뺤씤 2026.08.08</li></ul>
-          <button type="button" class="sc-button sc-button-primary" id="reopen-trip">???쇱젙 ?ㅼ떆 ?닿린</button>
+          <h4>강릉·서울 3박 4일</h4>
+          <ul><li>인천공항 → 서울역 → 강릉역</li><li>경포대 해변·주문진 해안도로</li><li>최근 확인 2026.08.08</li></ul>
+          <button type="button" class="sc-button sc-button-primary" id="reopen-trip">이 일정 다시 열기</button>
         </div>
       </div>
-      <div class="sc-actions"><button type="button" class="sc-button" id="logout-button">濡쒓렇?꾩썐</button></div>
+      <div class="sc-actions"><button type="button" class="sc-button" id="logout-button">로그아웃</button></div>
     </div>
   </div>
 
   <div class="sc-modal-backdrop" id="help-modal" role="dialog" aria-modal="true" aria-labelledby="help-modal-title">
     <div class="sc-modal">
-      <div class="sc-modal-header"><div><h3 id="help-modal-title">?ы뻾 ?ㅽ뻾 ?꾩?</h3><p>?ㅼ젣 ?대룞 ???댁쁺?쒓컙怨??꾩옣 ?덈궡瑜??ㅼ떆 ?뺤씤?댁＜?몄슂.</p></div><button type="button" class="sc-button sc-modal-close" data-modal-close="help-modal" aria-label="?リ린">횞</button></div>
-      <div class="sc-help-tabs"><button type="button" class="sc-button" data-help-tab="transfer" aria-pressed="true">?섏듅</button><button type="button" class="sc-button" data-help-tab="luggage" aria-pressed="false">吏?蹂닿?</button></div>
+      <div class="sc-modal-header"><div><h3 id="help-modal-title">여행 실행 도움</h3><p>실제 이동 전 운영시간과 현장 안내를 다시 확인해주세요.</p></div><button type="button" class="sc-button sc-modal-close" data-modal-close="help-modal" aria-label="닫기">×</button></div>
+      <div class="sc-help-tabs"><button type="button" class="sc-button" data-help-tab="transfer" aria-pressed="true">환승</button><button type="button" class="sc-button" data-help-tab="luggage" aria-pressed="false">짐 보관</button></div>
       <div class="sc-help-panel is-open" data-help-panel="transfer">
-        <div class="sc-help-step"><b>1</b><div><strong>?몄쿇怨듯빆?먯꽌 怨듯빆泥좊룄 ?묒듅</strong><span>?꾩갑 ?곕??먯뿉??AREX ?쒖?瑜??곕씪 ?대룞?⑸땲??</span></div></div>
-        <div class="sc-help-step"><b>2</b><div><strong>?쒖슱??뿉??KTX ?밴컯???대룞</strong><span>?섏감 ??泥좊룄 ?섏듅 ?쒖?? ?꾧킅?먯쓽 ?댁감踰덊샇瑜??뺤씤?⑸땲??</span></div></div>
-        <div class="sc-help-step"><b>3</b><div><strong>?섏듅 ?ъ쑀 ?ы솗??/strong><span>?쒖뿰 ?뺣낫???ㅻ깄?룹씠硫??뱀씪 吏?걔룹듅媛뺤옣 蹂寃쎌쓣 ?뺤씤?댁빞 ?⑸땲??</span></div></div>
+        <div class="sc-help-step"><b>1</b><div><strong>인천공항에서 공항철도 탑승</strong><span>도착 터미널에서 AREX 표지를 따라 이동합니다.</span></div></div>
+        <div class="sc-help-step"><b>2</b><div><strong>서울역에서 KTX 승강장 이동</strong><span>하차 후 철도 환승 표지와 전광판의 열차번호를 확인합니다.</span></div></div>
+        <div class="sc-help-step"><b>3</b><div><strong>환승 여유 재확인</strong><span>시연 정보는 스냅샷이며 당일 지연·승강장 변경을 확인해야 합니다.</span></div></div>
       </div>
       <div class="sc-help-panel" data-help-panel="luggage">
-        <div class="sc-help-step"><b>1</b><div><strong>?몄쿇怨듯빆 蹂닿??쒖꽕</strong><span>?곕??먃룹슫?곸떆媛꽷룹닔?섎Ъ ?ш린 ?쒗븳??怨듭떇 ?덈궡?먯꽌 ?뺤씤?⑸땲??</span></div></div>
-        <div class="sc-help-step"><b>2</b><div><strong>?쒖슱??룰컯由됱뿭 蹂닿???/strong><span>???쒖꽕 ?꾩튂? ?붿뿬 蹂닿??⑥? ?꾩옣?먯꽌 ?щ씪吏????덉뒿?덈떎.</span></div></div>
-        <div class="sc-help-step"><b>3</b><div><strong>蹂닿? ???대룞?쒓컙 ?뺣낫</strong><span>李얜뒗 ?쒓컙??怨좊젮???댁감 異쒕컻蹂대떎 ?ъ쑀 ?덇쾶 ??쑝濡??뚯븘?듬땲??</span></div></div>
+        <div class="sc-help-step"><b>1</b><div><strong>인천공항 보관시설</strong><span>터미널·운영시간·수하물 크기 제한을 공식 안내에서 확인합니다.</span></div></div>
+        <div class="sc-help-step"><b>2</b><div><strong>서울역·강릉역 보관함</strong><span>역 시설 위치와 잔여 보관함은 현장에서 달라질 수 있습니다.</span></div></div>
+        <div class="sc-help-step"><b>3</b><div><strong>보관 후 이동시간 확보</strong><span>찾는 시간을 고려해 열차 출발보다 여유 있게 역으로 돌아옵니다.</span></div></div>
       </div>
     </div>
   </div>
@@ -955,16 +951,16 @@
       root.querySelectorAll('.sc-korea-map').forEach((map) => {
         map.setAttribute('viewBox', '80 215 220 205');
         map.setAttribute('aria-label', map.dataset.mapKind === 'places'
-          ? '??쒕?援?吏?꾩뿉 ?쒖떆??珥ъ쁺吏 ?꾨낫 ?꾩튂'
-          : '??쒕?援?吏?꾩뿉 ?쒖떆???꾩껜 ?대룞 ?숈꽑');
+          ? '대한민국 지도에 표시한 촬영지 후보 위치'
+          : '대한민국 지도에 표시한 전체 이동 동선');
         map.querySelector('desc').textContent = map.dataset.mapKind === 'places'
-          ? '??쒕?援?寃쎄퀎 ?꾩뿉 怨듯빆, 泥좊룄??낵 珥ъ쁺吏 ?꾨낫瑜??쒖떆??吏??
-          : '??쒕?援?寃쎄퀎 ?꾩뿉 怨듯빆, 泥좊룄??낵 珥ъ쁺吏 ?대룞 ?숈꽑???쒖떆??吏??;
+          ? '대한민국 경계 위에 공항, 철도역과 촬영지 후보를 표시한 지도'
+          : '대한민국 경계 위에 공항, 철도역과 촬영지 이동 동선을 표시한 지도';
       });
       const placesMap = root.querySelector('[data-map-kind="places"]');
-      placesMap.setAttribute('aria-label', '?좏깮 媛?ν븳 珥ъ쁺吏????듭쟻???꾩튂');
-      placesMap.querySelector('title').textContent = '珥ъ쁺吏 ?꾩튂';
-      placesMap.querySelector('desc').textContent = '??쒕?援?吏???꾩뿉 ?좏깮 媛?ν븳 珥ъ쁺吏留??쒖떆';
+      placesMap.setAttribute('aria-label', '선택 가능한 촬영지의 대략적인 위치');
+      placesMap.querySelector('title').textContent = '촬영지 위치';
+      placesMap.querySelector('desc').textContent = '대한민국 지도 위에 선택 가능한 촬영지만 표시';
       const placeMapPoints = [...placesMap.querySelectorAll('.sc-map-point-place')];
       ['gyeongpo', 'jumunjin'].forEach((key, index) => {
         const marker = placeMapPoints[index];
@@ -984,7 +980,7 @@
       namsanLabel.setAttribute('y', '299');
       namsanLabel.setAttribute('class', 'sc-place-label');
       namsanLabel.dataset.placeLabel = 'seoul-place';
-      namsanLabel.textContent = '?뺤닔沅?;
+      namsanLabel.textContent = '덕수궁';
       placesMap.append(namsanMarker, namsanLabel);
       const samyangMarker = document.createElementNS(svgNs, 'circle');
       samyangMarker.setAttribute('class', 'sc-map-point sc-map-point-place');
@@ -998,7 +994,7 @@
       samyangLabel.setAttribute('text-anchor', 'end');
       samyangLabel.setAttribute('class', 'sc-place-label');
       samyangLabel.dataset.placeLabel = 'samyang';
-      samyangLabel.textContent = '?쇱뼇紐⑹옣';
+      samyangLabel.textContent = '삼양목장';
       placesMap.append(samyangMarker, samyangLabel);
       root.querySelector('[data-map-kind="route"] .sc-map-point-place')?.classList.add('is-selected');
       const screens = [...root.querySelectorAll('[data-screen]')];
@@ -1020,8 +1016,8 @@
       const arrivalFlightDate = root.querySelector('#arrival-flight-date');
       const departureFlightDate = root.querySelector('#departure-flight-date');
       const flightSamples = {
-        arrival: { flightNo: 'KE123', time: '10:00', terminal: 'T1', status: '?덉젙' },
-        departure: { flightNo: 'KE124', time: '19:30', terminal: 'T1', status: '?덉젙' }
+        arrival: { flightNo: 'KE123', time: '10:00', terminal: 'T1', status: '예정' },
+        departure: { flightNo: 'KE124', time: '19:30', terminal: 'T1', status: '예정' }
       };
       const minutes = (value) => {
         const [hour, minute] = value.split(':').map(Number);
@@ -1030,20 +1026,20 @@
       const durationLabel = (value) => {
         const hours = Math.floor(value / 60);
         const mins = value % 60;
-        return mins ? `${hours}?쒓컙 ${mins}遺? : `${hours}?쒓컙`;
+        return mins ? `${hours}시간 ${mins}분` : `${hours}시간`;
       };
       const shortDate = (value) => value ? value.slice(5).replace('-', '.') : '';
       const updateAirportTimes = () => {
         const arrivalBuffer = Math.max(0, minutes(leaveInput.value) - minutes(arrivalFlightTime.value));
         const departureBuffer = Math.max(0, minutes(departureFlightTime.value) - minutes(returnInput.value));
-        root.querySelector('#arrival-derived').textContent = `?꾩갑 ???ъ쑀 ${durationLabel(arrivalBuffer)}`;
-        root.querySelector('#departure-derived').textContent = `??났??異쒕컻 ???ъ쑀 ${durationLabel(departureBuffer)}`;
-        root.querySelector('#summary-window').textContent = `${shortDate(arrivalFlightDate.value)} ${leaveInput.value}??{shortDate(departureFlightDate.value)} ${returnInput.value}`;
+        root.querySelector('#arrival-derived').textContent = `도착 후 여유 ${durationLabel(arrivalBuffer)}`;
+        root.querySelector('#departure-derived').textContent = `항공편 출발 전 여유 ${durationLabel(departureBuffer)}`;
+        root.querySelector('#summary-window').textContent = `${shortDate(arrivalFlightDate.value)} ${leaveInput.value}–${shortDate(departureFlightDate.value)} ${returnInput.value}`;
         root.querySelector('#result-airport-leave').textContent = leaveInput.value;
         root.querySelector('#result-arrival-flight-time').textContent = arrivalFlightTime.value;
-        root.querySelector('#result-airport-ready-copy').textContent = `?낃뎅?ъ궗쨌?섑븯臾??섎졊 ??${leaveInput.value}遺???대룞 媛??;
+        root.querySelector('#result-airport-ready-copy').textContent = `입국심사·수하물 수령 후 ${leaveInput.value}부터 이동 가능`;
         root.querySelector('#result-departure-flight-time').textContent = departureFlightTime.value;
-        root.querySelector('#result-airport-deadline').textContent = `?ъ슜??吏??留덇컧 ${returnInput.value} ?댁쟾`;
+        root.querySelector('#result-airport-deadline').textContent = `사용자 지정 마감 ${returnInput.value} 이전`;
       };
       [leaveInput, returnInput, arrivalFlightTime, departureFlightTime, arrivalFlightDate, departureFlightDate].forEach((input) => input.addEventListener('input', updateAirportTimes));
       root.querySelectorAll('[data-flight-lookup]').forEach((button) => {
@@ -1054,16 +1050,16 @@
           const timeInput = root.querySelector(`#${direction}-flight-time`);
           const lookupStatus = root.querySelector(`#${direction}-lookup-status`);
           const editButton = root.querySelector(`[data-flight-edit="${direction}"]`);
-          lookupStatus.textContent = '??났?곗씠??議고쉶 以묅?;
+          lookupStatus.textContent = '항공데이터 조회 중…';
           lookupStatus.className = 'sc-flight-lookup-status';
           button.disabled = true;
           setTimeout(() => {
             button.disabled = false;
             if (numberInput.value.trim().toUpperCase() !== sample.flightNo) {
-              lookupStatus.textContent = '議고쉶 寃곌낵 ?놁쓬 쨌 吏곸젒 ?낅젰?댁＜?몄슂';
+              lookupStatus.textContent = '조회 결과 없음 · 직접 입력해주세요';
               lookupStatus.classList.add('is-error');
               timeInput.readOnly = false;
-              editButton.textContent = '?낅젰 以?;
+              editButton.textContent = '입력 중';
               timeInput.focus();
               return;
             }
@@ -1072,9 +1068,9 @@
             timeInput.readOnly = true;
             root.querySelector(`#${direction}-terminal`).textContent = sample.terminal;
             root.querySelector(`#${direction}-operation-status`).textContent = sample.status;
-            lookupStatus.textContent = '議고쉶 ?꾨즺 쨌 ??났?곗씠??;
+            lookupStatus.textContent = '조회 완료 · 항공데이터';
             lookupStatus.classList.add('is-complete');
-            editButton.textContent = '吏곸젒 ?섏젙';
+            editButton.textContent = '직접 수정';
             updateAirportTimes();
           }, 350);
         });
@@ -1086,15 +1082,15 @@
           const lookupStatus = root.querySelector(`#${direction}-lookup-status`);
           if (timeInput.readOnly) {
             timeInput.readOnly = false;
-            button.textContent = '?먮룞媛??ъ슜';
-            lookupStatus.textContent = '吏곸젒 ?낅젰 以?;
+            button.textContent = '자동값 사용';
+            lookupStatus.textContent = '직접 입력 중';
             lookupStatus.className = 'sc-flight-lookup-status';
             timeInput.focus();
           } else if (timeInput.dataset.lookupValue) {
             timeInput.value = timeInput.dataset.lookupValue;
             timeInput.readOnly = true;
-            button.textContent = '吏곸젒 ?섏젙';
-            lookupStatus.textContent = '議고쉶 ?꾨즺 쨌 ??났?곗씠??;
+            button.textContent = '직접 수정';
+            lookupStatus.textContent = '조회 완료 · 항공데이터';
             lookupStatus.className = 'sc-flight-lookup-status is-complete';
             updateAirportTimes();
           }
@@ -1102,38 +1098,38 @@
       });
 
       const contentCatalog = [
-        { label: '怨듭쑀', type: '諛곗슦' },
-        { label: '源怨좎?', type: '諛곗슦' },
-        { label: '?먯삁吏?, type: '諛곗슦' },
-        { label: '?꾧묠鍮?, type: '?묓뭹' },
-        { label: '?묒? ?꾩뵪??, type: '?묓뭹' },
-        { label: '?뚮쵖', type: '?묓뭹' },
-        { label: '?щ옉??遺덉떆李?, type: '?묓뭹' },
-        { label: '??湲濡쒕━', type: '?묓뭹' }
+        { label: '공유', type: '배우' },
+        { label: '김고은', type: '배우' },
+        { label: '손예진', type: '배우' },
+        { label: '도깨비', type: '작품' },
+        { label: '작은 아씨들', type: '작품' },
+        { label: '파묘', type: '작품' },
+        { label: '사랑의 불시착', type: '작품' },
+        { label: '더 글로리', type: '작품' }
       ];
       const selectedActors = new Set();
       const selectedWorks = new Set();
       const searchInput = root.querySelector('#content-search');
       const suggestions = root.querySelector('#content-suggestions');
       const selectedItems = () => [
-        ...[...selectedActors].map((label) => ({ label, type: '諛곗슦' })),
-        ...[...selectedWorks].map((label) => ({ label, type: '?묓뭹' }))
+        ...[...selectedActors].map((label) => ({ label, type: '배우' })),
+        ...[...selectedWorks].map((label) => ({ label, type: '작품' }))
       ];
       const renderContent = () => {
         const selected = selectedItems();
         root.querySelector('#selected-content').innerHTML = selected.length
-          ? selected.map((item) => `<button type="button" class="sc-chip" data-remove-content="${item.label}" aria-label="${item.label} ?좏깮 ?댁젣">${item.label} 쨌 ${item.type} 횞</button>`).join('')
-          : '<span class="sc-help">?꾩쭅 ?좏깮????ぉ???놁뒿?덈떎.</span>';
+          ? selected.map((item) => `<button type="button" class="sc-chip" data-remove-content="${item.label}" aria-label="${item.label} 선택 해제">${item.label} · ${item.type} ×</button>`).join('')
+          : '<span class="sc-help">아직 선택한 항목이 없습니다.</span>';
         root.querySelector('#summary-content').innerHTML = selected.length
           ? selected.map((item) => `<span class="sc-chip">${item.label}</span>`).join('')
-          : '<span class="sc-help">?꾩쭅 ?좏깮 ?놁쓬</span>';
+          : '<span class="sc-help">아직 선택 없음</span>';
       };
       const closeSuggestions = () => {
         suggestions.classList.remove('is-open');
         searchInput.setAttribute('aria-expanded', 'false');
       };
       const chooseContent = (label, type) => {
-        if (type === '諛곗슦') selectedActors.add(label);
+        if (type === '배우') selectedActors.add(label);
         else selectedWorks.add(label);
         searchInput.value = '';
         closeSuggestions();
@@ -1147,7 +1143,7 @@
           : [];
         suggestions.innerHTML = matches.length
           ? matches.map((item) => `<button type="button" class="sc-suggestion" role="option" data-suggestion-label="${item.label}" data-suggestion-type="${item.type}"><strong>${item.label}</strong><span>${item.type}</span></button>`).join('')
-          : (query ? '<div class="sc-suggestion"><span>寃??寃곌낵媛 ?놁뒿?덈떎.</span></div>' : '');
+          : (query ? '<div class="sc-suggestion"><span>검색 결과가 없습니다.</span></div>' : '');
         suggestions.classList.toggle('is-open', Boolean(query));
         searchInput.setAttribute('aria-expanded', query ? 'true' : 'false');
       });
@@ -1167,12 +1163,12 @@
       const placeFilter = root.querySelector('#selected-place-filter');
       const renderRequired = () => {
         const required = [...root.querySelectorAll('.sc-required[aria-pressed="true"]')].map((button) => button.dataset.place);
-        root.querySelector('#summary-required').textContent = required.length ? required.join(', ') : '?놁쓬';
+        root.querySelector('#summary-required').textContent = required.length ? required.join(', ') : '없음';
         const visitCapacity = 3;
         const capacityAlert = root.querySelector('#place-capacity-alert');
         capacityAlert.hidden = required.length <= visitCapacity;
         root.querySelector('#place-capacity-title').textContent = required.length > visitCapacity
-          ? `?꾩옱 ?ы뻾 議곌굔?먯꽌???좏깮??${required.length}怨?以?理쒕? ${visitCapacity}怨노쭔 諛⑸Ц?????덉뼱??`
+          ? `현재 여행 조건에서는 선택한 ${required.length}곳 중 최대 ${visitCapacity}곳만 방문할 수 있어요.`
           : '';
         const selectedOnly = placeFilter.getAttribute('aria-pressed') === 'true';
         root.querySelectorAll('[data-place-marker]').forEach((marker) => {
@@ -1190,21 +1186,21 @@
         button.addEventListener('click', () => {
           const selected = button.getAttribute('aria-pressed') === 'true';
           button.setAttribute('aria-pressed', selected ? 'false' : 'true');
-          button.textContent = selected ? '?좏깮' : '???좏깮??;
+          button.textContent = selected ? '선택' : '✓ 선택됨';
           renderRequired();
         });
       });
       placeFilter.addEventListener('click', () => {
         const selectedOnly = placeFilter.getAttribute('aria-pressed') !== 'true';
         placeFilter.setAttribute('aria-pressed', String(selectedOnly));
-        placeFilter.textContent = selectedOnly ? '紐⑤뱺 ?μ냼 蹂닿린' : '?좏깮???μ냼留?蹂닿린';
+        placeFilter.textContent = selectedOnly ? '모든 장소 보기' : '선택한 장소만 보기';
         renderRequired();
       });
       renderRequired();
 
       const markUnsaved = () => {
         const saveStatus = root.querySelector('#save-status');
-        saveStatus.textContent = '蹂寃쎌궗??씠 ??λ릺吏 ?딆쓬';
+        saveStatus.textContent = '변경사항이 저장되지 않음';
         saveStatus.classList.remove('is-saved');
         saveStatus.classList.remove('is-error');
       };
@@ -1213,7 +1209,7 @@
         const banner = root.querySelector('#result-state-banner');
         const controls = [...root.querySelectorAll('.sc-mode-option, .sc-train-option')];
         controls.forEach((control) => { control.disabled = true; });
-        banner.textContent = '?좏깮??寃쎈줈瑜?湲곗??쇰줈 ?쒓컙?쑣룹슫?곸떆媛꽷룰났??留덇컧???ㅼ떆 ?뺤씤?섍퀬 ?덉뒿?덈떎.';
+        banner.textContent = '선택한 경로를 기준으로 시간표·운영시간·공항 마감을 다시 확인하고 있습니다.';
         banner.className = 'sc-state-banner is-loading';
         setTimeout(() => {
           applyChange();
@@ -1230,7 +1226,7 @@
         toggle.addEventListener('click', () => {
           const open = toggle.getAttribute('aria-expanded') === 'true';
           toggle.setAttribute('aria-expanded', open ? 'false' : 'true');
-          toggle.querySelector('b').textContent = open ? '竊? : '??;
+          toggle.querySelector('b').textContent = open ? '＋' : '−';
           detail.classList.toggle('is-open', !open);
         });
       });
@@ -1246,15 +1242,15 @@
               option.setAttribute('aria-pressed', 'true');
               const detail = group.closest('.sc-connection-detail');
               const toggle = root.querySelector(`[data-connection-toggle="${detail.id}"]`);
-              toggle.querySelector('[data-connection-label]').textContent = `${outbound ? '怨듯빆 吏꾩엯 寃쎈줈' : '洹援?寃쎈줈'} 쨌 ${option.dataset.label}`;
+              toggle.querySelector('[data-connection-label]').textContent = `${outbound ? '공항 진입 경로' : '귀국 경로'} · ${option.dataset.label}`;
               if (outbound) {
                 root.querySelector('#outbound-access-time').textContent = bus ? '12:20' : '12:18';
-                root.querySelector('#outbound-access-title').textContent = bus ? '寃利?怨듯빆踰꾩뒪 쨌 ?몄쿇怨듯빆 ??媛뺣쫱' : '怨듯빆泥좊룄 쨌 ?몄쿇怨듯빆 ???쒖슱??;
-                root.querySelector('#outbound-access-copy').textContent = bus ? '15:50 媛뺣쫱 ?꾩갑 쨌 寃利앸맂 ?ㅻ깄?룸쭔 ?ㅼ젣 ?쒕퉬?ㅼ뿉 ?몄텧' : '13:10 ?쒖슱???꾩갑 쨌 ?곕え ?ㅻ깄???덉떆';
+                root.querySelector('#outbound-access-title').textContent = bus ? '검증 공항버스 · 인천공항 → 강릉' : '공항철도 · 인천공항 → 서울역';
+                root.querySelector('#outbound-access-copy').textContent = bus ? '15:50 강릉 도착 · 검증된 스냅샷만 실제 서비스에 노출' : '13:10 서울역 도착 · 데모 스냅샷 예시';
                 root.querySelector('#day1-rail-event').classList.toggle('is-hidden', bus);
                 root.querySelector('#day1-seoul-region').classList.toggle('is-hidden', bus);
-                root.querySelector('#day1-route-label').textContent = bus ? '怨듯빆 ??媛뺣쫱 吏곹뻾' : '怨듯빆 ???쒖슱 ??媛뺣쫱';
-                root.querySelector('#day1-region-duration').textContent = bus ? '??20?쒓컙 10遺??쒖슜 媛?? : '??18?쒓컙 20遺??쒖슜 媛??;
+                root.querySelector('#day1-route-label').textContent = bus ? '공항 → 강릉 직행' : '공항 → 서울 → 강릉';
+                root.querySelector('#day1-region-duration').textContent = bus ? '약 20시간 10분 활용 가능' : '약 18시간 20분 활용 가능';
                 root.querySelector('[data-map-kind="route"] .sc-map-route').setAttribute('d', bus
                   ? 'M142.58,274.59C170,270 200,265 227.65,261.43C210,264 180,268 160.95,270.68C152,272 146,274 142.58,274.59'
                   : 'M142.58,274.59C142.58,274.59 152.524,272.139 160.95,270.68C175.918,268.088 227.65,261.43 227.65,261.43C227.65,261.43 175.918,268.088 160.95,270.68C152.524,272.139 142.58,274.59 142.58,274.59');
@@ -1263,8 +1259,8 @@
                 root.querySelector('#result-airport-return').textContent = option.dataset.arrival;
               }
             }, outbound
-              ? `${option.dataset.label}??湲곗??쇰줈 ?꾩껜 ?쇱젙??援먯껜?섏뿀?듬땲??`
-              : `${option.dataset.label} 洹援?寃쎈줈濡??꾩껜 ?쇱젙??援먯껜?섏뿀?듬땲??`);
+              ? `${option.dataset.label}을 기준으로 전체 일정이 교체되었습니다.`
+              : `${option.dataset.label} 귀국 경로로 전체 일정이 교체되었습니다.`);
           });
         });
       });
@@ -1274,7 +1270,7 @@
         toggle.addEventListener('click', () => {
           const open = toggle.getAttribute('aria-expanded') === 'true';
           toggle.setAttribute('aria-expanded', open ? 'false' : 'true');
-          toggle.querySelector('b').textContent = open ? '竊? : '??;
+          toggle.querySelector('b').textContent = open ? '＋' : '−';
           options.classList.toggle('is-open', !open);
         });
       });
@@ -1289,10 +1285,10 @@
             const departure = option.dataset.departure;
             root.querySelector(`[data-train-time="${group}"]`).textContent = departure;
             root.querySelector(`[data-train-summary="${group}"]`).textContent = group === 'day1'
-              ? `${option.dataset.arrival} 媛뺣쫱???꾩갑 쨌 ?꾩? ?쒖슜 ??${option.dataset.utilization}`
-              : `${option.dataset.arrival} ?쒖슱???꾩갑 쨌 ?좏깮???꾩껜 ?쇱젙`;
-            if (group === 'day1') root.querySelector('#day1-region-duration').textContent = `??${option.dataset.utilization} ?쒖슜 媛??;
-          }, `${option.dataset.departure} 異쒕컻?몄쓣 湲곗??쇰줈 ?꾩껜 寃利??쇱젙??援먯껜?섏뿀?듬땲??`);
+              ? `${option.dataset.arrival} 강릉역 도착 · 현지 활용 약 ${option.dataset.utilization}`
+              : `${option.dataset.arrival} 서울역 도착 · 선택한 전체 일정`;
+            if (group === 'day1') root.querySelector('#day1-region-duration').textContent = `약 ${option.dataset.utilization} 활용 가능`;
+          }, `${option.dataset.departure} 출발편을 기준으로 전체 검증 일정이 교체되었습니다.`);
         });
       });
 
@@ -1310,14 +1306,6 @@
         setExperienceMapVisible(button.getAttribute('aria-pressed') !== 'true');
       }));
 
-      const experienceDetailToggle = root.querySelector('#experience-detail-toggle');
-      experienceDetailToggle.addEventListener('click', () => {
-        const open = experienceDetailToggle.getAttribute('aria-expanded') === 'true';
-        experienceDetailToggle.setAttribute('aria-expanded', String(!open));
-        experienceDetailToggle.querySelector('b').textContent = open ? '竊? : '??;
-        root.querySelector('#experience-detail').classList.toggle('is-open', !open);
-      });
-
       const setExperienceState = (state) => {
         const card = root.querySelector('#theme-experience-card');
         const status = root.querySelector('#theme-experience-status');
@@ -1326,14 +1314,14 @@
         status.classList.toggle('is-open', state !== 'recommended');
         if (state === 'none') status.textContent = english
           ? 'No verified experience zone met the relevance threshold for this itinerary.'
-          : '?꾩옱 ?쇱젙?먯꽌??愿?⑤룄 湲곗????듦낵??寃利?泥댄뿕 沅뚯뿭???놁뒿?덈떎.';
+          : '현재 일정에서는 관련도 기준을 통과한 검증 체험 권역이 없습니다.';
         if (state === 'unavailable') status.textContent = english
           ? 'Experience recommendations are unavailable because the verified snapshot is missing.'
-          : '寃利앸맂 泥댄뿕 沅뚯뿭 ?ㅻ깄?룹씠 ?놁뼱 異붿쿇???쒓났?????놁뒿?덈떎.';
+          : '검증된 체험 권역 스냅샷이 없어 추천을 제공할 수 없습니다.';
         if (state !== 'recommended') setExperienceMapVisible(false);
       };
 
-      /* 吏?꾨뒗 ?ㅽ듃?뚰겕 ?놁씠 ??긽 蹂댁씠?꾨줉 ??SVG???뺤쟻?쇰줈 ?ы븿?덉뒿?덈떎.
+      /* 지도는 네트워크 없이 항상 보이도록 위 SVG에 정적으로 포함했습니다.
       const peninsula = {
         type: 'FeatureCollection',
         features: [
@@ -1342,11 +1330,11 @@
         ]
       };
       const locations = {
-        airport: { name: '?몄쿇怨듯빆', coords: [126.4417093, 37.4634593], type: 'airport', dx: -8, anchor: 'end', dy: 16 },
-        seoul: { name: '?쒖슱??, coords: [126.9725721, 37.5528527], type: 'station', dx: -8, anchor: 'end', dy: -8 },
-        gangneung: { name: '媛뺣쫱??, coords: [128.8993979, 37.76452], type: 'station', dx: -8, anchor: 'end', dy: 18 },
-        gyeongpo: { name: '寃쏀룷? ?대?', coords: [128.907, 37.795], type: 'place', dx: 9, anchor: 'start', dy: -8 },
-        jumunjin: { name: '二쇰Ц吏?, coords: [128.829, 37.892], type: 'place', dx: 9, anchor: 'start', dy: -6 }
+        airport: { name: '인천공항', coords: [126.4417093, 37.4634593], type: 'airport', dx: -8, anchor: 'end', dy: 16 },
+        seoul: { name: '서울역', coords: [126.9725721, 37.5528527], type: 'station', dx: -8, anchor: 'end', dy: -8 },
+        gangneung: { name: '강릉역', coords: [128.8993979, 37.76452], type: 'station', dx: -8, anchor: 'end', dy: 18 },
+        gyeongpo: { name: '경포대 해변', coords: [128.907, 37.795], type: 'place', dx: 9, anchor: 'start', dy: -8 },
+        jumunjin: { name: '주문진', coords: [128.829, 37.892], type: 'place', dx: 9, anchor: 'start', dy: -6 }
       };
       const drawMap = (svgNode) => {
         if (!window.d3) return;
@@ -1356,7 +1344,7 @@
         svg.selectAll('*').remove();
         svg.attr('viewBox', `0 0 ${width} ${height}`);
         svg.append('title').text(svgNode.getAttribute('aria-label'));
-        svg.append('desc').text('Natural Earth ?쒕컲??寃쎄퀎 ?꾩뿉 寃利앸맂 怨듯빆怨?泥좊룄?? 珥ъ쁺吏 ?꾩튂瑜??쒖떆??吏??);
+        svg.append('desc').text('Natural Earth 한반도 경계 위에 검증된 공항과 철도역, 촬영지 위치를 표시한 지도');
         const projection = d3.geoMercator().fitExtent([[34, 24], [width - 34, height - 24]], peninsula);
         const path = d3.geoPath(projection);
         svg.selectAll('path.sc-land')
@@ -1422,7 +1410,7 @@
         const panel = root.querySelector('#rejected-places');
         panel.classList.toggle('is-open', rejected.length > 0);
         root.querySelector('#rejected-places-copy').textContent = rejected.length
-          ? `${rejected.join(', ')} 쨌 ?꾩옱 ?댁감 ?쒓컙?쒖? ?댁쁺?쒓컙 ?덉뿉 諛곗튂?????놁뼱 ?쒖쇅?덉뒿?덈떎.`
+          ? `${rejected.join(', ')} · 현재 열차 시간표와 운영시간 안에 배치할 수 없어 제외했습니다.`
           : '';
       };
       root.querySelector('#generate-itinerary').addEventListener('click', () => {
@@ -1443,19 +1431,19 @@
       let authIntent = 'save';
       const performSave = () => {
         const status = root.querySelector('#save-status');
-        status.textContent = '???쇱젙????λ맖';
+        status.textContent = '내 일정에 저장됨';
         status.className = 'sc-save-status is-saved';
       };
       const requestAuth = (intent) => {
         authIntent = intent;
-        root.querySelector('#auth-modal-title').textContent = intent === 'save' ? '?쇱젙????ν븯?ㅻ㈃ 濡쒓렇?명빐二쇱꽭?? : '???쇱젙??蹂대젮硫?濡쒓렇?명빐二쇱꽭??;
+        root.querySelector('#auth-modal-title').textContent = intent === 'save' ? '일정을 저장하려면 로그인해주세요' : '내 일정을 보려면 로그인해주세요';
         openModal('auth-modal');
       };
       root.querySelector('#save-itinerary').addEventListener('click', () => authenticated ? performSave() : requestAuth('save'));
       root.querySelector('#my-trips-button').addEventListener('click', () => authenticated ? openModal('trips-modal') : requestAuth('trips'));
       const finishAuth = () => {
         authenticated = true;
-        root.querySelector('#my-trips-button').textContent = '吏?곷떂 쨌 ???쇱젙';
+        root.querySelector('#my-trips-button').textContent = '지영님 · 내 일정';
         closeModal('auth-modal');
         if (authIntent === 'save') performSave();
         else openModal('trips-modal');
@@ -1464,13 +1452,13 @@
       root.querySelector('#signup-and-save').addEventListener('click', finishAuth);
       root.querySelector('#logout-button').addEventListener('click', () => {
         authenticated = false;
-        root.querySelector('#my-trips-button').textContent = '???쇱젙';
+        root.querySelector('#my-trips-button').textContent = '내 일정';
         closeModal('trips-modal');
       });
       root.querySelector('#reopen-trip').addEventListener('click', () => {
         closeModal('trips-modal');
         showScreen(4);
-        root.querySelector('#result-state-banner').textContent = '??λ맂 ?쇱젙???ㅼ떆 ?댁뿀?듬땲?? ?꾩옱 ?ㅻ깄??湲곗??쇰줈 ?쒖떆?⑸땲??';
+        root.querySelector('#result-state-banner').textContent = '저장된 일정을 다시 열었습니다. 현재 스냅샷 기준으로 표시합니다.';
         root.querySelector('#result-state-banner').classList.add('is-open');
       });
       root.querySelectorAll('.sc-trip-item').forEach((item) => item.addEventListener('click', () => {
@@ -1499,28 +1487,28 @@
         root.querySelector('#result-state-banner').classList.remove('is-open');
         const saveStatus = root.querySelector('#save-status');
         saveStatus.className = 'sc-save-status';
-        saveStatus.textContent = '??λ릺吏 ?딆? ?쇱젙';
+        saveStatus.textContent = '저장되지 않은 일정';
         if (state === 'generation-fail') {
           showScreen(3);
           root.querySelector('#generation-failure').classList.add('is-open');
         } else if (state === 'recalc-fail') {
           showScreen(4);
           const banner = root.querySelector('#result-state-banner');
-          banner.innerHTML = '<strong>?쇱젙???ㅼ떆 怨꾩궛?섏? 紐삵뻽?듬땲??</strong><br><span>湲곗〈 ?쇱젙? 洹몃?濡??좎??덉뒿?덈떎. ???대Ⅸ ??났???먮뒗 ?ㅻⅨ ?댁감瑜??좏깮?댁＜?몄슂.</span>';
+          banner.innerHTML = '<strong>일정을 다시 계산하지 못했습니다.</strong><br><span>기존 일정은 그대로 유지했습니다. 더 이른 항공편 또는 다른 열차를 선택해주세요.</span>';
           banner.classList.add('is-open');
         } else if (state === 'save-fail') {
           showScreen(4);
-          saveStatus.textContent = '??μ뿉 ?ㅽ뙣?덉뒿?덈떎. ?곌껐???뺤씤?섍퀬 ?ㅼ떆 ?쒕룄?댁＜?몄슂.';
+          saveStatus.textContent = '저장에 실패했습니다. 연결을 확인하고 다시 시도해주세요.';
           saveStatus.classList.add('is-error');
         } else if (state === 'offline-fallback') {
           showScreen(1);
           ['arrival', 'departure'].forEach((direction) => {
             const lookupStatus = root.querySelector(`#${direction}-lookup-status`);
-            lookupStatus.textContent = '議고쉶 ?ㅽ뙣 쨌 吏곸젒 ?낅젰 ?ъ슜';
+            lookupStatus.textContent = '조회 실패 · 직접 입력 사용';
             lookupStatus.className = 'sc-flight-lookup-status is-error';
             root.querySelector(`#${direction}-flight-time`).readOnly = false;
           });
-          root.querySelector('#flight-data-notice').innerHTML = '<strong>??났 議고쉶瑜??ъ슜?????놁뒿?덈떎.</strong> ??λ맂 ?뺣낫 ?먮뒗 吏곸젒 ?낅젰?쇰줈 怨꾩냽?????덉쑝硫? ?댁감쨌珥ъ쁺吏 ?ㅻ깄?룹? 洹몃?濡??ъ슜?????덉뒿?덈떎.';
+          root.querySelector('#flight-data-notice').innerHTML = '<strong>항공 조회를 사용할 수 없습니다.</strong> 저장된 정보 또는 직접 입력으로 계속할 수 있으며, 열차·촬영지 스냅샷은 그대로 사용할 수 있습니다.';
         } else if (state === 'experience-none') {
           showScreen(4);
           setExperienceState('none');
@@ -1531,38 +1519,35 @@
           setExperienceState('recommended');
           ['arrival', 'departure'].forEach((direction) => {
             const lookupStatus = root.querySelector(`#${direction}-lookup-status`);
-            lookupStatus.textContent = '議고쉶 ??;
+            lookupStatus.textContent = '조회 전';
             lookupStatus.className = 'sc-flight-lookup-status';
             root.querySelector(`#${direction}-flight-time`).readOnly = true;
           });
-          root.querySelector('#flight-data-notice').textContent = '??났?몄씠 議고쉶?섏? ?딆쑝硫???λ맂 ?뺣낫 ?먮뒗 吏곸젒 ?낅젰???ъ슜?⑸땲?? 怨듯빆 異쒕컻 媛???쒓컖怨?怨듯빆 ?꾩갑 留덇컧 ?쒓컖? ?쇱젙 ?붿쭊???쒖옉쨌蹂듦? ?쒖빟?쇰줈 ?꾨떖?⑸땲??';
+          root.querySelector('#flight-data-notice').textContent = '항공편이 조회되지 않으면 저장된 정보 또는 직접 입력을 사용합니다. 공항 출발 가능 시각과 공항 도착 마감 시각은 일정 엔진의 시작·복귀 제약으로 전달됩니다.';
         }
       }));
 
       const coreTranslations = [
-        ['.sc-brand-copy span', 'K-肄섑뀗痢?湲곕컲 吏??泥좊룄 ?ы뻾', 'Regional rail trips inspired by K-content'],
-        ['[data-screen-target="1"] span:last-child', '?ы뻾 議곌굔', 'Trip details'],
-        ['[data-screen-target="2"] span:last-child', 'K-肄섑뀗痢?, 'K-content'],
-        ['[data-screen-target="3"] span:last-child', '珥ъ쁺吏', 'Locations'],
-        ['[data-screen-target="4"] span:last-child', '?쇱젙 寃곌낵', 'Itinerary'],
-        ['[data-screen="1"] h2', '怨듯빆?먯꽌 異쒕컻?섍퀬 ?뚯븘???쒓컙???뺥빐二쇱꽭??, 'Choose when to leave and return to the airport'],
-        ['[data-screen="2"] h2', '醫뗭븘?섎뒗 諛곗슦???묓뭹??寃?됲븯?몄슂', 'Search for actors or titles you love'],
-        ['[data-screen="3"] h2', '?꾨낫瑜??뺤씤?섍퀬 媛怨??띠? ?μ냼瑜??좏깮?섏꽭??, 'Choose the filming locations you want to visit'],
-        ['[data-screen="4"] .sc-screen-heading h2', '異붿쿇 ?쇱젙', 'Recommended itinerary'],
-        ['#generate-itinerary', '?쇱젙 留뚮뱾湲?, 'Build itinerary'],
-        ['#save-itinerary', '?쇱젙 ???, 'Save itinerary'],
-        ['#theme-experience-title', '?쒕났쨌?꾪넻臾명솕 泥댄뿕', 'Hanbok & traditional culture'],
-        ['#theme-experience-zone', '?쒖슱 沅곴텗쨌?쒖삦 臾명솕 沅뚯뿭', 'Seoul palace & hanok culture zone'],
-        ['#theme-experience-badge', 'AI ?곌퀎 異붿쿇', 'AI-matched suggestion'],
-        ['#theme-experience-reason', '?꾧묠鍮꾩쓽 怨좊젮?쒕? ?쒖궗? ?곌껐?섎뒗 ?꾪넻臾명솕 泥댄뿕 沅뚯뿭?낅땲??', 'A traditional culture zone related to the Goryeo-era narrative in Guardian: The Lonely and Great God.'],
-        ['#theme-experience-route', '?꾩옱 ?쒖슱??沅뚯뿭 ?쇱젙怨??곌껐', 'Connected to the current Seoul Station itinerary'],
-        ['#theme-experience-policy', '?뱀젙 ?낆껜媛 ?꾨땶 怨듭떇 愿愿묒젙蹂?湲곕컲 沅뚯뿭', 'An official tourism zone, not a specific business'],
-        ['#experience-detail-toggle span', '怨듭떇 愿愿묒젙蹂?湲곗? 蹂닿린', 'View official tourism basis'],
-        ['#theme-experience-source', '愿愿묎났??룹??먯껜 怨듭떇 ?뺣낫 쨌 2026.08.08 ?뺤씤', 'Official tourism and local-government sources 쨌 verified 2026.08.08'],
-        ['#theme-experience-source-note', '??沅뚯뿭 ?덉쓽 媛쒕퀎 ?낆껜쨌媛寃㈑룹슫?곸떆媛꾩? 異붿쿇?섍굅??蹂댁쬆?섏? ?딆뒿?덈떎.', 'Individual businesses, prices, and opening hours within this zone are not recommended or guaranteed.'],
-        ['#theme-experience-notice', '??二쇰? 泥댄뿕 ?쒖븞?대ŉ ?꾩옱 ?쇱젙?먮뒗 ?먮룞?쇰줈 ?ы븿?섏? ?딆뒿?덈떎.', '??This is a nearby experience suggestion and is not automatically added to the itinerary.'],
-        ['#experience-map-zone-label', '沅곴텗쨌?쒖삦 臾명솕 沅뚯뿭', 'Palace & hanok culture zone'],
-        ['#experience-map-legend-label', '?뚮쭏泥댄뿕 沅뚯뿭', 'Experience zone']
+        ['.sc-brand-copy span', 'K-콘텐츠 기반 지역 철도 여행', 'Regional rail trips inspired by K-content'],
+        ['[data-screen-target="1"] span:last-child', '여행 조건', 'Trip details'],
+        ['[data-screen-target="2"] span:last-child', 'K-콘텐츠', 'K-content'],
+        ['[data-screen-target="3"] span:last-child', '촬영지', 'Locations'],
+        ['[data-screen-target="4"] span:last-child', '일정 결과', 'Itinerary'],
+        ['[data-screen="1"] h2', '공항에서 출발하고 돌아올 시간을 정해주세요', 'Choose when to leave and return to the airport'],
+        ['[data-screen="2"] h2', '좋아하는 배우나 작품을 검색하세요', 'Search for actors or titles you love'],
+        ['[data-screen="3"] h2', '후보를 확인하고 가고 싶은 장소를 선택하세요', 'Choose the filming locations you want to visit'],
+        ['[data-screen="4"] .sc-screen-heading h2', '추천 일정', 'Recommended itinerary'],
+        ['#generate-itinerary', '일정 만들기', 'Build itinerary'],
+        ['#save-itinerary', '일정 저장', 'Save itinerary'],
+        ['#theme-experience-title', '한복·전통문화 체험', 'Hanbok & traditional culture'],
+        ['#theme-experience-zone', '서울 궁궐·한옥 문화 권역', 'Seoul palace & hanok culture zone'],
+        ['#theme-experience-badge', 'AI 연계 추천', 'AI-matched suggestion'],
+        ['#theme-experience-reason', '도깨비의 고려시대 서사와 연결되는 전통문화 체험 권역입니다.', 'A traditional culture zone related to the Goryeo-era narrative in Guardian: The Lonely and Great God.'],
+        ['#theme-experience-route', '현재 서울역 권역 일정과 연결', 'Connected to the current Seoul Station itinerary'],
+        ['#theme-experience-policy', '특정 업체가 아닌 공식 관광정보 기반 권역', 'An official tourism zone, not a specific business'],
+        ['#theme-experience-notice', '※ 주변 체험 제안이며 현재 일정에는 자동으로 포함되지 않습니다.', '※ This is a nearby experience suggestion and is not automatically added to the itinerary.'],
+        ['#experience-map-zone-label', '궁궐·한옥 문화 권역', 'Palace & hanok culture zone'],
+        ['#experience-map-legend-label', '테마체험 권역', 'Experience zone']
       ];
       root.querySelector('#language-select').addEventListener('change', (event) => {
         const english = event.target.value === 'en';
@@ -1573,7 +1558,7 @@
         });
         const status = root.querySelector('#theme-experience-status');
         if (status.classList.contains('is-open')) {
-          setExperienceState(status.textContent.includes('?ㅻ깄??) || status.textContent.includes('snapshot') ? 'unavailable' : 'none');
+          setExperienceState(status.textContent.includes('스냅샷') || status.textContent.includes('snapshot') ? 'unavailable' : 'none');
         }
         const mapVisible = root.querySelector('.sc-map-experience-zone').classList.contains('is-visible');
         setExperienceMapVisible(mapVisible);
