@@ -53,9 +53,27 @@
 
 스냅샷이 없거나 항목이 미검토이면 AI 점수를 건너뛰고 기존 관계·출처·ID 순서로 폴백한다.
 
-## 이번 준비 PR의 비범위
+## 오프라인 생성
 
-- OpenAI API 호출과 임베딩 생성
-- 실제 `place-rankings.json` 생성 및 사람 검토
-- #51 스키마·시드 연결
-- 화면의 AI 설명 표시
+`OPENAI_API_KEY`는 앱 `.env.local`이 아니라 이 명령을 실행하는 셸에만 둔다.
+
+```bash
+python scripts/build_place_rankings.py --dry-run
+python scripts/build_place_rankings.py
+```
+
+- 모델 기본값: `text-embedding-3-small`
+- 입력: `data/place-ranking-inputs.json`의 한국어 작품 4개 + 장소 12개
+- 비용 방어: 한 번에 최대 100개·총 50,000자까지만 호출
+- 출력: 모든 작품×장소 조합을 `reviewed: false`로 생성
+- API 실패·키 누락·응답 이상 시 기존 `place-rankings.json`을 변경하지 않음
+- 사람 검토 후에만 `reviewed: true`, `reviewedAt`, `reviewedBy`, `reason.ko/en`을 확정
+
+`badgeThreshold` 미만은 검토됐더라도 런타임 정렬에서 AI 점수 없음으로 취급한다.
+후보를 숨기지 않고 `officialSourceCount → placeId` 폴백을 사용한다.
+
+## 남은 범위
+
+- 실제 API 실행과 점수 분포 확인
+- 사람 검토를 거친 `place-rankings.json` 확정
+- 화면의 검토된 AI 설명 표시

@@ -76,6 +76,22 @@ describe("촬영지 후보 정렬 (#48)", () => {
     ]);
   });
 
+  it("검토됐어도 하한 미달이면 미탑재와 같게 출처·ID 폴백을 사용한다", () => {
+    const belowThreshold = {
+      ...snapshot,
+      rankings: [{
+        ...snapshot.rankings[0],
+        score: 0.69,
+        reason: undefined,
+      }],
+    };
+    expect(sortCandidatePlaces(candidates, "relevance", belowThreshold).map(({ id }) => id)).toEqual([
+      "place-b",
+      "place-a",
+      "place-c",
+    ]);
+  });
+
   it("공식 출처순은 AI 점수와 무관하게 기존 계약을 유지한다", () => {
     expect(sortCandidatePlaces(candidates, "official_sources", snapshot).map(({ id }) => id)).toEqual([
       "place-c",

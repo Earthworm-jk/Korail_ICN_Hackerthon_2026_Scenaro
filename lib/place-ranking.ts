@@ -83,8 +83,12 @@ export function sortCandidatePlaces<T extends RankablePlace>(
   snapshot?: PlaceRankingSnapshot,
 ): T[] {
   const scores = new Map<string, number>();
+  const scoreThreshold = snapshot?.meta.badgeThreshold ?? Infinity;
   for (const ranking of snapshot?.rankings ?? []) {
-    if (ranking.reviewed) scores.set(`${ranking.workId}|${ranking.placeId}`, ranking.score);
+    // #48 부분 스냅샷: 미검토·하한 미달은 모두 AI 점수 없음으로 취급한다.
+    if (ranking.reviewed && ranking.score >= scoreThreshold) {
+      scores.set(`${ranking.workId}|${ranking.placeId}`, ranking.score);
+    }
   }
 
   const scoreOf = (candidate: T): number =>
