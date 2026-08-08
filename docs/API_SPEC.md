@@ -67,13 +67,20 @@ getCandidatePlaces(selection: {
 // REQ-SRCH-005·006·007. 정렬은 UI에서 (관련성 / officialSourceCount 토글)
 
 // lib/actions/itinerary.ts
-planItinerary(constraints: TripConstraints): Promise<ItineraryResult>;
+planItinerary(request: PlanRequest): Promise<PlanActionResult>;
 // 생성과 편집 재계산 모두 이 액션 하나 (#2 단일 진입점).
-// 편집 2동작(촬영지 제외 / 항공편 시각 변경) = constraints 필드 변경 후 재호출.
+// 편집 2동작(#14 ver.0.4 — 방문일 변경 제외) = 촬영지 선택 변경·항공 시각 변경 후 재호출.
 // 별도 전후 diff를 만들지 않고 성공한 갱신 일정을 표시한다.
-// 반환은 ENGINE_SPEC §7의 두 분기:
-//   { ok: true, status: "planned", days, rejectedPlaces, warnings, comparisonKeys, metrics }
-//   { ok: true, status: "empty",   days: [], rejectedPlaces, warnings }
+//
+// PlanRequest = 여행 조건 + 선택 배우·작품 + 제외 장소 (사용자 설정 없는 내부 기본값은
+//   Action이 채운다 — maxPlacesPerDay, dailySlackMinutes)
+// PlanActionResult (PR #30 리뷰 ③ — Action 계층의 입력 검증 래퍼):
+//   { ok: true;  result: ItineraryResult }
+//   { ok: false; code: "INVALID_REQUEST"; fieldErrors: Record<string, string> }
+// Action의 ok는 "요청이 유효했는가"이며, 엔진 ItineraryResult에는 ok가 없다 —
+// 계산 결과는 ENGINE_SPEC §7의 status 2분기(#14 ver.0.4 — 필수·고정일 제거로 실패 분기 소멸):
+//   { status: "planned", days, rejectedPlaces, warnings, comparisonKeys, metrics }
+//   { status: "empty",   days: [], rejectedPlaces, warnings }
 // empty는 정상 응답이며 comparisonKeys·metrics를 포함하지 않는다(허위 값 금지)
 
 // lib/actions/flights.ts
@@ -94,10 +101,13 @@ getFlightInfo(flightNo: string, direction: "arrival" | "departure"): Promise<
 
 ### 3.3 빈 결과·오류 계약
 
-- 후보가 전멸하면 `ok: true, status: "empty"`로 반환한다. 최초 생성에서는 빈 상태를 표시하고,
-  편집 재계산 중에는 기존 일정을 유지한다.
+- 일정 계산에 실패 응답은 없다 — 후보가 전멸하면 `status: "empty"` 정상 응답이며
+  최초 생성에서는 빈 상태를 표시하고 편집 재계산 중에는 기존 일정을 유지한다.
 - 방문일 고정과 필수 방문 입력이 없으므로 `USER_CONSTRAINT_INFEASIBLE` 오류 계약은 사용하지 않는다.
-- 시드·입력 스키마 위반은 Zod 예외 → 개발 중에만 발생해야 정상(Repository 초기화 시 검증)
+- 입력 스키마 위반은 예외가 아니다 — Action이 safeParse 후 `INVALID_REQUEST`로 반환하고
+  UI는 1단계 검증 화면으로 안내한다(1단계 검증을 우회한 요청에서만 발생해야 정상)
+- 시드 스키마 위반은 Repository 초기화 실패(`SeedValidationError`) — 기동 단계에서만
+  발생해야 정상(REQ-DATA-004, PR #29)
 - 외부 API 실패는 폴백으로 흡수하고 `source: "snapshot"`으로 알린다 — 사용자에게 오류를
   던지지 않는다 (PRD 9.2)
 

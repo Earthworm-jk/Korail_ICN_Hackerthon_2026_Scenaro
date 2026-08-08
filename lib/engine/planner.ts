@@ -67,15 +67,8 @@ export function planItinerary(
   );
   const selectedWorkIds = new Set(constraints.selectedWorkIds);
   const excludedPlaceIds = new Set(constraints.excludedPlaceIds);
-  const requiredPlaceIds = new Set(constraints.requiredPlaceIds);
 
   assertReferences(constraints, repos, actorIds);
-
-  for (const placeId of requiredPlaceIds) {
-    if (excludedPlaceIds.has(placeId)) {
-      return infeasible("REQUIRED_PLACE", placeId);
-    }
-  }
 
   const rejectedPlaces: CandidateRejection[] = [];
   const candidates: CandidatePlace[] = [];
@@ -91,24 +84,12 @@ export function planItinerary(
         placeId: place.id,
         detail: "UNVERIFIED_HOURS",
       };
-      if (requiredPlaceIds.has(place.id)) return infeasible("REQUIRED_PLACE", place.id);
-      if (constraints.pinnedDates[place.id]) return infeasible("PINNED_DATE", place.id);
       rejectedPlaces.push(reason);
       continue;
     }
     candidates.push({ place, relation });
   }
 
-  for (const placeId of requiredPlaceIds) {
-    if (!candidates.some(({ place }) => place.id === placeId)) {
-      return infeasible("REQUIRED_PLACE", placeId);
-    }
-  }
-  for (const placeId of Object.keys(constraints.pinnedDates)) {
-    if (!candidates.some(({ place }) => place.id === placeId)) {
-      return infeasible("PINNED_DATE", placeId);
-    }
-  }
   candidates.sort((a, b) => {
     const byRelation = (a.relation === "selected_work" ? 0 : 1)
       - (b.relation === "selected_work" ? 0 : 1);
@@ -167,19 +148,13 @@ export function planItinerary(
         departureAt,
         deadline,
       );
-      if (schedule && satisfiesUserConstraints(schedule.state, constraints)) {
+      if (schedule) {
         complete.push(schedule);
       }
     }
   }
 
   if (complete.length === 0) {
-    for (const placeId of requiredPlaceIds) {
-      if (!hasVisited(frontier, placeId)) return infeasible("REQUIRED_PLACE", placeId);
-    }
-    for (const placeId of Object.keys(constraints.pinnedDates)) {
-      if (!hasVisited(frontier, placeId)) return infeasible("PINNED_DATE", placeId);
-    }
     for (const candidate of candidates) {
       const reason = completionFailure(
         initial,
@@ -191,7 +166,6 @@ export function planItinerary(
       if (reason) rejectedPlaces.push(reason);
     }
     return {
-      ok: true,
       status: "empty",
       days: [],
       rejectedPlaces: uniqueReasons(rejectedPlaces),
@@ -217,7 +191,6 @@ export function planItinerary(
   const totalRailMinutes = best.state.railMinutes + routeMinutes(best.returnRides);
   const totalTransferCount = best.state.transferCount + transferCount(best.returnRides);
   return {
-    ok: true,
     status: "planned",
     days: buildDays(best.state.visits, allRides),
     rejectedPlaces: uniqueReasons(rejectedPlaces),
@@ -259,7 +232,6 @@ function appendVisit(
   const buffered = findVisitWindow(
     place,
     stationArrival,
-    constraints.pinnedDates[place.id],
     true,
     deadline,
     dateAvailable,
@@ -268,7 +240,6 @@ function appendVisit(
     const withoutBuffer = findVisitWindow(
       place,
       stationArrival,
-      constraints.pinnedDates[place.id],
       false,
       deadline,
       dateAvailable,
@@ -321,7 +292,6 @@ function appendVisit(
 function findVisitWindow(
   place: PlaceT,
   stationArrival: number,
-  pinnedDate: string | undefined,
   includeBuffer: boolean,
   deadline: number,
   dateAvailable: (date: string) => boolean,
@@ -330,9 +300,7 @@ function findVisitWindow(
   const accessAndBufferMinutes = place.accessEstimate.minutes + buffer;
   const earliestPlaceArrival = stationArrival + accessAndBufferMinutes * MINUTE_MS;
   const startDate = koreaDate(earliestPlaceArrival);
-  const dates = pinnedDate
-    ? [pinnedDate]
-    : enumerateDates(startDate, koreaDate(deadline));
+  const dates = enumerateDates(startDate, koreaDate(deadline));
 
   for (const date of dates) {
     if (date < startDate || !dateAvailable(date) || isClosedDay(place, date)) continue;
@@ -534,11 +502,7 @@ function assertReferences(
   for (const workId of constraints.selectedWorkIds) {
     if (!knownWorks.has(workId)) throw new RangeError(`unknown work: ${workId}`);
   }
-  for (const placeId of [
-    ...constraints.requiredPlaceIds,
-    ...constraints.excludedPlaceIds,
-    ...Object.keys(constraints.pinnedDates),
-  ]) {
+  for (const placeId of constraints.excludedPlaceIds) {
     if (!knownPlaces.has(placeId)) throw new RangeError(`unknown place: ${placeId}`);
   }
   if (constraints.gatewayStationId
@@ -598,13 +562,6 @@ function pruneStates(states: PlannerState[]): PlannerState[] {
         || stableStateId(a).localeCompare(stableStateId(b), "en");
     })
     .slice(0, MAX_BEAM_SIZE);
-}
-
-function satisfiesUserConstraints(state: PlannerState, constraints: TripConstraints): boolean {
-  const visited = new Set(state.visits.map(({ place }) => place.id));
-  return constraints.requiredPlaceIds.every((id) => visited.has(id))
-    && Object.entries(constraints.pinnedDates).every(([id, date]) =>
-      state.visits.some(({ place, visitStart }) => place.id === id && koreaDate(visitStart) === date));
 }
 
 function buildDays(visits: ScheduledVisit[], rides: TrainLegT[]): DayPlan[] {
@@ -737,10 +694,6 @@ function stableStateId(state: PlannerState): string {
   ].join("/");
 }
 
-function hasVisited(states: PlannerState[], placeId: string): boolean {
-  return states.some((state) => state.visits.some(({ place }) => place.id === placeId));
-}
-
 function uniqueReasons(reasons: CandidateRejection[]): CandidateRejection[] {
   const seen = new Set<string>();
   return reasons.filter((reason) => {
@@ -751,12 +704,3 @@ function uniqueReasons(reasons: CandidateRejection[]): CandidateRejection[] {
   });
 }
 
-function infeasible(
-  constraintType: "REQUIRED_PLACE" | "PINNED_DATE",
-  targetId: string,
-): ItineraryResult {
-  return {
-    ok: false,
-    reason: { code: "USER_CONSTRAINT_INFEASIBLE", constraintType, targetId },
-  };
-}

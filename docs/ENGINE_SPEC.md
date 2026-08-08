@@ -32,7 +32,7 @@ type TripConstraints = {
   selectedActorId?: string;     // 기존 호출부 호환용 단수 입력
   selectedWorkIds: string[];    // 작품 중심(복수 가능)
   excludedPlaceIds: string[];   // 사용자 제외 — 하드 제약
-  maxPlacesPerDay: number;      // 여행 속도 (REQ-ITIN-001)
+  maxPlacesPerDay: number;      // 내부 기본값 3 — 사용자 설정 UI 없음 (#14 ver.0.4)
   dailySlackMinutes: number;    // 일반 여유(소프트), 기본 120
   departureBufferMinutes: number; // 출국 안전 버퍼(하드), 기본 120 — #3 결정으로 필드 분리
 };
@@ -227,7 +227,6 @@ type ItineraryMetrics = {
 
 type ItineraryResult =
   | {
-      ok: true;
       status: "planned";            // 선택된 일정이 있는 정상 상태
       days: DayPlan[];              // 장소·열차편(시각·역)·추정 이동 라벨 포함
       rejectedPlaces: CandidateRejection[];
@@ -236,7 +235,6 @@ type ItineraryResult =
       metrics: ItineraryMetrics;
     }
   | {
-      ok: true;
       status: "empty";              // 정상 처리, 조건을 만족하는 일정 없음
       days: [];
       rejectedPlaces: CandidateRejection[];
