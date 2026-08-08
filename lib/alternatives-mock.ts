@@ -51,6 +51,12 @@ function shiftedDays(
           arriveAt: shiftIso(item.arriveAt, minutes),
           departAt: shiftIso(item.departAt, minutes),
         })),
+      // mock 한계: 창 시각만 이동하고 availableMinutes는 재계산하지 않는다 (개발 플래그 전용)
+      regionWindows: day.regionWindows.map((window) => ({
+        ...window,
+        startAt: shiftIso(window.startAt, minutes),
+        endAt: shiftIso(window.endAt, minutes),
+      })),
     };
   });
 }

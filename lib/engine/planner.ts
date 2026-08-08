@@ -1,12 +1,14 @@
 import type { Repositories } from "../repositories/json";
 import { accessBufferMinutes, type PlaceT, type TrainLegT } from "../types/schema";
 import { compareCandidates, type Candidate } from "./compare";
+import { buildRegionWindows } from "./region-windows";
 import type {
   ActivityWindowDetail,
   CandidateRejection,
   DayPlan,
   ItineraryItem,
   ItineraryResult,
+  RegionWindow,
   TrainRide,
   TripConstraints,
 } from "./types";
@@ -189,9 +191,17 @@ export function planItinerary(
   const allRides = [...best.state.rides, ...best.returnRides];
   const totalRailMinutes = best.state.railMinutes + routeMinutes(best.returnRides);
   const totalTransferCount = best.state.transferCount + transferCount(best.returnRides);
+  // #33 — 역·권역 체류 창은 엔진이 확정 계산하고 UI는 포맷만 한다
+  const regionWindows = buildRegionWindows({
+    rides: allRides,
+    airportReadyAt: constraints.airportReadyAt,
+    airportArrivalDeadline: constraints.airportArrivalDeadline,
+    startStationId: endpointStationId,
+    stations: repos.stations,
+  });
   return {
     status: "planned",
-    days: buildDays(best.state.visits, allRides),
+    days: buildDays(best.state.visits, allRides, regionWindows),
     rejectedPlaces: uniqueReasons(rejectedPlaces),
     comparisonKeys: best.keys,
     metrics: {
@@ -563,12 +573,16 @@ function pruneStates(states: PlannerState[]): PlannerState[] {
     .slice(0, MAX_BEAM_SIZE);
 }
 
-function buildDays(visits: ScheduledVisit[], rides: TrainLegT[]): DayPlan[] {
+function buildDays(
+  visits: ScheduledVisit[],
+  rides: TrainLegT[],
+  regionWindows: RegionWindow[],
+): DayPlan[] {
   const days = new Map<string, DayPlan>();
   const getDay = (date: string): DayPlan => {
     const existing = days.get(date);
     if (existing) return existing;
-    const created: DayPlan = { date, items: [], rides: [] };
+    const created: DayPlan = { date, items: [], rides: [], regionWindows: [] };
     days.set(date, created);
     return created;
   };
@@ -585,12 +599,19 @@ function buildDays(visits: ScheduledVisit[], rides: TrainLegT[]): DayPlan[] {
     const item: TrainRide = { ...ride };
     getDay(koreaDate(Date.parse(ride.departAt))).rides.push(item);
   }
+  // #33 — 창은 KST 자정 분할되어 있으므로 시작 시각의 날짜에 단독 귀속된다
+  for (const window of regionWindows) {
+    getDay(koreaDate(Date.parse(window.startAt))).regionWindows.push(window);
+  }
   return [...days.values()]
     .sort((a, b) => a.date.localeCompare(b.date, "en"))
     .map((day) => ({
       ...day,
       items: day.items.sort((a, b) => Date.parse(a.arriveAt) - Date.parse(b.arriveAt)),
       rides: day.rides.sort((a, b) => Date.parse(a.departAt) - Date.parse(b.departAt)),
+      regionWindows: day.regionWindows.sort(
+        (a, b) => Date.parse(a.startAt) - Date.parse(b.startAt),
+      ),
     }));
 }
 

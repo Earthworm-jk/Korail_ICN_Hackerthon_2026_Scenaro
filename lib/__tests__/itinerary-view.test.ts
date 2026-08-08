@@ -19,8 +19,8 @@ import type { ItineraryResult } from "../engine/types";
 
 // PR #35 리뷰 3 — 저장→편집→재열람→재계산 상태 전이와 constraints 왕복을 고정한다
 
-const dayA = { date: "2026-08-12", rides: [], items: [] };
-const dayB = { date: "2026-08-13", rides: [], items: [] };
+const dayA = { date: "2026-08-12", rides: [], items: [], regionWindows: [] };
+const dayB = { date: "2026-08-13", rides: [], items: [], regionWindows: [] };
 
 const plannedA: ItineraryResult = {
   status: "planned", days: [dayA], rejectedPlaces: [],
