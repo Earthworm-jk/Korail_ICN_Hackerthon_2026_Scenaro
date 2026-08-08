@@ -8,7 +8,7 @@ import type { PlanRequest } from "./actions/itinerary";
 import type { ActorSummary, WorkSummary } from "./actions/search";
 import { fromKstLocalInput, toKstLocalInput } from "./kst-datetime";
 
-export const SAVED_SCHEMA_VERSION = 1;
+export const SAVED_SCHEMA_VERSION = 2; // v2: offset → 절대 시각(airportReadyAt·airportArrivalDeadline), #14 차단 2
 
 export type SavedItineraryStub = {
   id: string;
@@ -27,16 +27,16 @@ export type SavedItineraryStub = {
 export type TripInputFields = {
   arrivalAt: string; // datetime-local (KST)
   departureAt: string;
-  exitOffsetMin: number;
-  departureBufferMinutes: number;
+  airportReadyAt: string; // datetime-local (KST) — 공항 출발 가능 시각
+  airportArrivalDeadline: string; // datetime-local (KST) — 공항 도착 마감 시각
 };
 
 export function tripInputsFromConstraints(constraints: PlanRequest): TripInputFields {
   return {
     arrivalAt: toKstLocalInput(constraints.arrivalAt),
     departureAt: toKstLocalInput(constraints.departureAt),
-    exitOffsetMin: constraints.airportExitOffsetMin,
-    departureBufferMinutes: constraints.departureBufferMinutes,
+    airportReadyAt: toKstLocalInput(constraints.airportReadyAt),
+    airportArrivalDeadline: toKstLocalInput(constraints.airportArrivalDeadline),
   };
 }
 
@@ -49,8 +49,8 @@ export function constraintsFromTripInputs(
   return {
     arrivalAt: fromKstLocalInput(inputs.arrivalAt),
     departureAt: fromKstLocalInput(inputs.departureAt),
-    airportExitOffsetMin: inputs.exitOffsetMin,
-    departureBufferMinutes: inputs.departureBufferMinutes,
+    airportReadyAt: fromKstLocalInput(inputs.airportReadyAt),
+    airportArrivalDeadline: fromKstLocalInput(inputs.airportArrivalDeadline),
     selectedActorIds,
     selectedWorkIds,
     excludedPlaceIds,

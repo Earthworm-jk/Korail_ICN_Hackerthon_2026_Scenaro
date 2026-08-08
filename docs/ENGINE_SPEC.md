@@ -25,7 +25,7 @@ Planner
 type TripConstraints = {
   arrivalAt: string;            // ISO, 입국편 도착
   departureAt: string;          // ISO, 출국편 출발
-  airportExitOffsetMin: 90 | 120 | number; // 착륙 후 출발 가능시점 (REQ-SRCH-002)
+  airportReadyAt: string;       // ISO, 공항 출발 가능 시각 — 절대 시각 입력 (#14 차단 2, REQ-SRCH-002 개정)
   airportStationId?: string;    // 공항철도 출발·도착역(생략 시 Station.isAirport)
   gatewayStationId?: string;    // 관문역(생략 시 Station.isGateway·gatewayPriority)
   selectedActorIds?: string[];  // 배우 중심 탐색(복수 가능)
@@ -34,7 +34,7 @@ type TripConstraints = {
   excludedPlaceIds: string[];   // 사용자 제외 — 하드 제약
   maxPlacesPerDay: number;      // 내부 기본값 3 — 사용자 설정 UI 없음 (#14 ver.0.4)
   dailySlackMinutes: number;    // 일반 여유(소프트), 기본 120
-  departureBufferMinutes: number; // 출국 안전 버퍼(하드), 기본 120 — #3 결정으로 필드 분리
+  airportArrivalDeadline: string; // ISO, 공항 도착 마감 시각(하드) — 절대 시각 입력 (#14 차단 2)
 };
 
 // 단일 진입점 (REQ-EDIT-001·002·006 공통, #2 결정)
@@ -131,7 +131,7 @@ const Station = z.object({
 
 공항↔관문역은 지역 내 이동 추정과 다르다. `airportStationId`에서 출발해 공항철도
 스냅샷 leg를 실제 열차 구간처럼 탐색하고, 귀환도 공항역 도착 시각이
-`departureAt - departureBufferMinutes` 이하여야 한다. 다른 열차번호로 갈아탈 때는 최소
+`airportArrivalDeadline`(공항 도착 마감 시각) 이하여야 한다. 다른 열차번호로 갈아탈 때는 최소
 15분의 환승 간격을 적용한다.
 
 `dailySlackMinutes`는 출국 전 잔여시간의 대리값으로 쓰지 않는다. 각 방문일을 KST 0시 기준으로
@@ -143,7 +143,7 @@ const Station = z.object({
 | 제약 | 사유 코드 |
 |---|---|
 | 연결 가능한 열차 존재 | TRAIN_UNAVAILABLE |
-| 출국 역산: 마지막 방문의 역 복귀 + 열차 + 공항 이동 + departureBufferMinutes ≤ 출국 시각 | DEPARTURE_DEADLINE_EXCEEDED |
+| 출국 역산: 마지막 방문의 역 복귀 + 열차 + 공항 이동 완료 ≤ airportArrivalDeadline(공항 도착 마감) | DEPARTURE_DEADLINE_EXCEEDED |
 | 운영시간 판정(아래 판정식) | ACTIVITY_WINDOW_MISMATCH (+detail) |
 | 사용자 제외 장소 미포함 | (후보 수집 단계에서 제거, 코드 불필요 — 사용자 직접 제외는 rejectedPlaces에 넣지 않는다) |
 

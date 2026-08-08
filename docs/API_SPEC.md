@@ -74,8 +74,19 @@ planItinerary(request: PlanRequest): Promise<PlanActionResult>;
 // 편집 2동작(#14 ver.0.4 — 방문일 변경 제외) = 촬영지 선택 변경·항공 시각 변경 후 재호출.
 // diff는 UI가 이전 metrics와 비교(REQ-EDIT-004)
 //
-// PlanRequest = 여행 조건 + 선택 배우·작품 + 제외 장소 (사용자 설정 없는 내부 기본값은
-//   Action이 채운다 — maxPlacesPerDay, dailySlackMinutes)
+// PlanRequest — 필드 확정 (PR #42, #14 차단 2 절대 시각 전환):
+type PlanRequest = {
+  arrivalAt: string;              // ISO(오프셋 포함), 입국편 도착
+  departureAt: string;            // ISO(오프셋 포함), 출국편 출발
+  airportReadyAt: string;         // ISO — 공항 출발 가능 시각 (절대 시각, #14 차단 2)
+  airportArrivalDeadline: string; // ISO — 공항 도착 마감 시각 (하드, #14 차단 2)
+  selectedActorIds: string[];
+  selectedWorkIds: string[];
+  excludedPlaceIds: string[];
+};
+// 경계 순서 계약: arrivalAt <= airportReadyAt < airportArrivalDeadline <= departureAt
+//   위반 시 INVALID_REQUEST + fieldErrors(필드 경로별 첫 오류 메시지)
+// 사용자 설정 없는 내부 기본값은 Action이 채운다 — maxPlacesPerDay, dailySlackMinutes
 // PlanActionResult (PR #30 리뷰 ③ — Action 계층의 입력 검증 래퍼):
 //   { ok: true;  result: ItineraryResult }
 //   { ok: false; code: "INVALID_REQUEST"; fieldErrors: Record<string, string> }
@@ -107,7 +118,8 @@ getFlightInfo(flightNo: string, direction: "arrival" | "departure"): Promise<
   "조건을 만족하는 일정 없음" 화면 상태(PRD 9.2)의 근거다 (#14 ver.0.4로 사용자 제약
   실패 분기 소멸). 편집 실패 시 기존 일정 유지(REQ-EDIT-005)는 앱 계층 오류 처리 몫
 - 입력 스키마 위반은 예외가 아니다 — Action이 safeParse 후 `INVALID_REQUEST`로 반환하고
-  UI는 1단계 검증 화면으로 안내한다(1단계 검증을 우회한 요청에서만 발생해야 정상)
+  UI는 1단계 검증 화면으로 안내한다(1단계 검증을 우회한 요청에서만 발생해야 정상).
+  입출국 순서·공항 경계 순서(3.2의 경계 순서 계약) 위반도 같은 경로로 필드별 오류를 담는다
 - 시드 스키마 위반은 Repository 초기화 실패(`SeedValidationError`) — 기동 단계에서만
   발생해야 정상(REQ-DATA-004, PR #29)
 - 외부 API 실패는 폴백으로 흡수하고 `source: "snapshot"`으로 알린다 — 사용자에게 오류를

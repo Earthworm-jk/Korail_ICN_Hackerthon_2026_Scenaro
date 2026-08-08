@@ -3,7 +3,7 @@
 export type TripConstraints = {
   arrivalAt: string;
   departureAt: string;
-  airportExitOffsetMin: number; // 90 | 120 | 직접 설정 (REQ-SRCH-002)
+  airportReadyAt: string; // ISO — 공항 출발 가능 시각. 절대 시각 입력 (#14 차단 2, REQ-SRCH-002 개정)
   airportStationId?: string; // 공항철도 출발·도착역. 생략 시 isAirport 역을 사용한다.
   gatewayStationId?: string; // 생략하면 수도권 대표 관문역을 결정적으로 선택한다.
   selectedActorIds?: string[]; // 복수 배우 선택. selectedActorId와 합쳐서 처리한다.
@@ -13,7 +13,7 @@ export type TripConstraints = {
   excludedPlaceIds: string[];
   maxPlacesPerDay: number;
   dailySlackMinutes: number; // 일반 여유(소프트), 기본 120
-  departureBufferMinutes: number; // 출국 안전 버퍼(하드), 기본 120 — #3에서 필드 분리
+  airportArrivalDeadline: string; // ISO — 공항 도착 마감 시각(하드). offset 역산 대신 절대 시각 (#14 차단 2)
 };
 
 // PR #9 리뷰: 세 경우 모두 자동 일정에서 제외되며, detail로 상세를 구분한다.
