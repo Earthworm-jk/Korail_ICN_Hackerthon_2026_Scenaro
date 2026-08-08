@@ -1,0 +1,71 @@
+{
+  "inputRuleVersion": "v1",
+  "works": [
+    {
+      "workId": "work-goblin",
+      "text": "도깨비 — 2016년 현대 판타지 로맨스. 불멸의 삶을 끝내려는 도깨비 김신과 도깨비 신부 지은탁의 운명과 사랑을 다룬다."
+    },
+    {
+      "workId": "work-yumi-cells",
+      "text": "유미의 세포들 — 2021년 현대 로맨스. 평범한 직장인 유미의 일상과 사랑, 성장을 머릿속 세포들의 관점으로 그린다."
+    },
+    {
+      "workId": "work-little-women",
+      "text": "작은 아씨들 — 2022년 현대 미스터리 드라마. 가난하게 자란 세 자매가 거대한 돈과 권력의 사건에 휘말리며 성장한다."
+    },
+    {
+      "workId": "work-the-king",
+      "text": "더 킹: 영원의 군주 — 2020년 현대 판타지 로맨스. 대한제국 황제 이곤과 대한민국 형사 정태을이 평행세계를 오가며 차원의 문을 둘러싼 위기에 맞선다."
+    }
+  ],
+  "places": [
+    {
+      "placeId": "place-yeongjin-beach",
+      "text": "영진해변 — 바다와 방파제가 있는 강릉의 야외 해변. 도깨비 방파제로 알려진 바닷가 촬영지."
+    },
+    {
+      "placeId": "place-lala-muri",
+      "text": "라라무리 — 강릉 산지의 카페 공간. 도깨비 1화에서 어린 지은탁이 살던 집으로 등장."
+    },
+    {
+      "placeId": "place-eomma-son-makguksu",
+      "text": "엄마손막국수 — 강릉의 음식점. 유미의 세포들 6화에서 유미와 웅이 첫 주말 여행 중 식사한 장소."
+    },
+    {
+      "placeId": "place-skybay-hotel-gyeongpo",
+      "text": "스카이베이호텔 경포 — 경포 해변의 숙박 시설. 유미의 세포들 6화에서 유미와 웅의 첫 커플 주말 여행 숙소로 등장."
+    },
+    {
+      "placeId": "place-woljeongsa-temple",
+      "text": "월정사 — 오대산의 전통 사찰. 도깨비 9화에서 지은탁이 아르바이트를 마치고 집으로 가는 길로 등장."
+    },
+    {
+      "placeId": "place-woljeongsa-fir-forest",
+      "text": "월정사 전나무 숲길 — 오대산의 전나무 숲 산책로. 도깨비에서 김신이 집을 나온 지은탁을 따라가던 숲길."
+    },
+    {
+      "placeId": "place-samyang-ranch",
+      "text": "대관령 삼양목장 — 고원 초원과 목장 풍경의 야외 공간. 도깨비에서 김신이 중천의 들판을 걷는 장면에 등장."
+    },
+    {
+      "placeId": "place-balwangsan-cable-car",
+      "text": "모나파크 용평리조트 발왕산 관광케이블카 — 산악 리조트와 케이블카 공간. 도깨비에서 지은탁이 집을 나와 일하러 간 스키장으로 등장."
+    },
+    {
+      "placeId": "place-oak-valley-resort",
+      "text": "오크밸리 리조트 — 원주의 산악 휴양 리조트. 작은 아씨들 1화에서 오인혜의 친구 박효린의 집으로 등장."
+    },
+    {
+      "placeId": "place-seoullo-7017",
+      "text": "서울로7017 — 서울역 인근의 도심 보행길. 작은 아씨들 2화에서 오인주가 화영의 SNS 사진과 유서의 단서를 확인하는 장면에 등장."
+    },
+    {
+      "placeId": "place-deoksugung-stone-wall-road",
+      "text": "덕수궁 돌담길 — 서울 도심의 궁궐 돌담 보행길. 도깨비 1화와 14화에서 김신이 돌담길을 지나며 대화하는 장면에 등장."
+    },
+    {
+      "placeId": "place-gyeonggijeon-shrine",
+      "text": "경기전 — 전주한옥마을의 조선시대 역사 유적. 더 킹: 영원의 군주에서 이곤이 박물관을 방문하는 장면에 등장."
+    }
+  ]
+}
