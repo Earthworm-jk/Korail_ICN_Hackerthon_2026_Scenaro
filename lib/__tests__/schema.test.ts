@@ -30,6 +30,18 @@ describe("시드 스키마 검증 (REQ-DATA-004)", () => {
       expect(s.regionId, s.id).toBeTruthy();
     }
   });
+
+  it("김고은 데모 fixture는 폐쇄된 나주 후보 대신 경기전·전주역을 포함한 14곳이다", () => {
+    const repos = loadRepositories();
+    const gyeonggijeon = repos.places.find(({ id }) => id === "place-gyeonggijeon-shrine");
+
+    expect(repos.places).toHaveLength(14);
+    expect(gyeonggijeon?.workIds).toContain("work-the-king");
+    expect(gyeonggijeon?.nearestStationId).toBe("station-jeonju");
+    expect(repos.stations.some(({ id }) => id === "station-jeonju")).toBe(true);
+    expect(repos.places.some(({ id }) => id === "place-naju-image-theme-park")).toBe(false);
+    expect(repos.stations.some(({ id }) => id === "station-naju")).toBe(false);
+  });
 });
 
 describe("접근시간 버퍼 규칙 (#5)", () => {
