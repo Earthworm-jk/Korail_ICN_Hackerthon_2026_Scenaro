@@ -46,7 +46,7 @@ describe("시드 스키마 검증 (REQ-DATA-004)", () => {
     expect(repos.stations.some(({ id }) => id === "station-naju")).toBe(false);
   });
 
-  it("#51 데이터는 13개 작품–장소 관계와 검토된 데모 별칭을 제공한다 (강촌 제외)", () => {
+  it("#51 데이터는 13개 작품–장소 관계를 제공하고 장소 직접 검색 별칭은 노출하지 않는다", () => {
     const repos = loadRepositories();
     const relationKeys = new Set(
       repos.workPlaceRelations.map(({ workId, placeId }) => `${workId}|${placeId}`),
@@ -59,10 +59,9 @@ describe("시드 스키마 검증 (REQ-DATA-004)", () => {
     expect(relationKeys).toEqual(expectedKeys);
     expect(repos.workPlaceRelations).toHaveLength(13);
     expect(repos.workPlaceRelations.every(({ reviewed, sourceUrls }) => reviewed && sourceUrls.length > 0)).toBe(true);
-    expect(yeongjin?.searchAliases?.map(({ ko }) => ko)).toEqual([
-      "도깨비 방파제",
-      "주문진 도깨비 방사제",
-    ]);
+    expect(yeongjin?.name).toEqual({ ko: "영진해변", en: "Yeongjin Beach" });
+    expect(yeongjin?.searchAliases).toBeUndefined();
+    expect(yeongjin?.reasonText.ko).toContain("도깨비 방파제");
   });
 
   it("재확인 대상 2곳은 주소만 두고 임의 좌표를 만들지 않는다", () => {

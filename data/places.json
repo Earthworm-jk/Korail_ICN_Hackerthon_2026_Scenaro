@@ -23,19 +23,9 @@
     "verificationLevel": "교차확인",
     "officialSourceCount": 2,
     "reasonText": {
-      "ko": "도깨비의 대표적인 바닷가 장면을 떠올릴 수 있는 강릉 촬영지예요.",
-      "en": "A Gangneung filming location associated with an iconic seaside scene from Guardian."
+      "ko": "도깨비의 대표적인 바닷가 장면으로 알려진 ‘도깨비 방파제’ 촬영지예요.",
+      "en": "Yeongjin Beach is known as the breakwater filming location from an iconic seaside scene in Guardian."
     },
-    "searchAliases": [
-      {
-        "ko": "도깨비 방파제",
-        "en": "Goblin Breakwater"
-      },
-      {
-        "ko": "주문진 도깨비 방사제",
-        "en": "Jumunjin Goblin Breakwater"
-      }
-    ],
     "address": "강원도 강릉시 주문진읍 해안로 1609",
     "latitude": 37.8691601,
     "longitude": 128.8365243
