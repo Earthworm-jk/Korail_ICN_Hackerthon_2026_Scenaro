@@ -51,20 +51,39 @@ def yn(value: object) -> bool:
     return str(value).strip().upper() == "Y"
 
 
+def key_variants(key: str) -> list[str]:
+    """단일 발급 키의 Encoding/Decoding 양형 시도 — build_train_snapshot.py와 동일 규칙 (PR #59 리뷰)"""
+    variants = [key]
+    alt = urllib.parse.unquote(key) if "%" in key else urllib.parse.quote(key, safe="")
+    if alt != key:
+        variants.append(alt)
+    return variants
+
+
+def fetch_page(service_key: str, page: int) -> dict:
+    """한 페이지 조회. 키 인증 오류로 보이면 반대 인코딩형으로 1회 재시도한다."""
+    last_error: Exception | None = None
+    for variant in key_variants(service_key):
+        query = urllib.parse.urlencode({"pageNo": page, "numOfRows": PAGE_SIZE, "_type": "json"})
+        url = f"{API_BASE}?serviceKey={variant}&{query}"
+        with urllib.request.urlopen(url, timeout=30) as res:
+            raw = res.read().decode("utf-8")
+        if raw.lstrip().startswith("<"):  # 인증 실패는 XML(OpenAPI_ServiceResponse)로 내려온다
+            last_error = SystemExit(f"[진단] 키 인증 문제로 보임 — 반대 인코딩형으로 재시도: {raw[:120]}")
+            continue
+        body = json.loads(raw)["response"]
+        header = body.get("header", {})
+        if str(header.get("resultCode")) not in {"0", "00"}:
+            raise SystemExit(f"API 오류: {header.get('resultCode')} {header.get('resultMsg')}")
+        return body["body"]
+    raise last_error if last_error else SystemExit("키 인증 실패")
+
+
 def fetch_all(service_key: str) -> list[dict]:
     items: list[dict] = []
     page = 1
     while True:
-        query = urllib.parse.urlencode(
-            {"pageNo": page, "numOfRows": PAGE_SIZE, "_type": "json"}
-        )
-        url = f"{API_BASE}?serviceKey={service_key}&{query}"
-        with urllib.request.urlopen(url, timeout=30) as res:
-            body = json.loads(res.read().decode("utf-8"))["response"]
-        header = body.get("header", {})
-        if str(header.get("resultCode")) not in {"0", "00"}:
-            raise SystemExit(f"API 오류: {header.get('resultCode')} {header.get('resultMsg')}")
-        payload = body["body"]
+        payload = fetch_page(service_key, page)
         batch = payload["items"]["item"]
         if isinstance(batch, dict):  # data.go.kr는 1건이면 객체로 내려준다
             batch = [batch]
