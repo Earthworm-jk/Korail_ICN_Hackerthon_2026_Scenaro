@@ -1,30 +1,331 @@
 [
   {
     "id": "place-yeongjin-beach",
-    "name": {
-      "ko": "영진해변",
-      "en": "Yeongjin Beach"
-    },
-    "workIds": [
-      "work-goblin"
-    ],
+    "name": { "ko": "영진해변", "en": "Yeongjin Beach" },
+    "workIds": ["work-goblin"],
     "nearestStationId": "station-gangneung",
+    "accessEstimate": {
+      "minutes": 35,
+      "source": "데모 시드 수동 보수 추정 (#1, 2026-08-08; 실시간 교통 아님)",
+      "verifiedAt": "2026-08-08"
+    },
     "openingHours": {
       "type": "always_open",
-      "source": "SAMPLE — 시드 구축 시 공식 출처로 교체",
+      "source": "공공데이터포털 한국문화정보원 촬영지 데이터 (2026-08-07 다운로드)",
       "verifiedAt": "2026-08-07"
     },
     "stayMinutes": 60,
     "verificationLevel": "원본확인",
     "officialSourceCount": 1,
     "reasonText": {
-      "ko": "도깨비 방파제 장면 촬영지 (샘플)",
-      "en": "Filming site of the Guardian breakwater scene (sample)"
+      "ko": "도깨비의 대표적인 바닷가 장면을 떠올릴 수 있는 강릉 촬영지예요.",
+      "en": "A Gangneung filming location associated with an iconic seaside scene from Guardian."
+    }
+  },
+  {
+    "id": "place-lala-muri",
+    "name": { "ko": "라라무리", "en": "Lala Muri" },
+    "workIds": ["work-goblin"],
+    "nearestStationId": "station-gangneung",
+    "accessEstimate": {
+      "minutes": 35,
+      "source": "데모 시드 수동 보수 추정 (#1, 2026-08-08; 실시간 교통 아님)",
+      "verifiedAt": "2026-08-08"
     },
+    "openingHours": {
+      "type": "hours",
+      "open": "13:00",
+      "close": "20:00",
+      "source": "공공데이터포털 한국문화정보원 촬영지 데이터의 평일 보수값 (2026-08-07 다운로드; 방문 전 재확인 필요)",
+      "verifiedAt": "2026-08-07"
+    },
+    "stayMinutes": 60,
+    "verificationLevel": "원본확인",
+    "officialSourceCount": 1,
+    "reasonText": {
+      "ko": "도깨비 촬영 장면과 연결되는 강릉의 카페 촬영지예요.",
+      "en": "A cafe filming location in Gangneung connected to Guardian."
+    }
+  },
+  {
+    "id": "place-eomma-son-makguksu",
+    "name": { "ko": "엄마손막국수", "en": "Eomma Son Makguksu" },
+    "workIds": ["work-yumi-cells"],
+    "nearestStationId": "station-gangneung",
+    "accessEstimate": {
+      "minutes": 20,
+      "source": "데모 시드 수동 보수 추정 (#1, 2026-08-08; 실시간 교통 아님)",
+      "verifiedAt": "2026-08-08"
+    },
+    "openingHours": {
+      "type": "hours",
+      "open": "11:00",
+      "close": "20:00",
+      "source": "공공데이터포털 한국문화정보원 촬영지 데이터 (2026-08-07 다운로드; 계절 휴무는 방문 전 재확인 필요)",
+      "verifiedAt": "2026-08-07"
+    },
+    "stayMinutes": 60,
+    "verificationLevel": "원본확인",
+    "officialSourceCount": 1,
+    "reasonText": {
+      "ko": "유미의 세포들에 등장한 강릉의 식당 촬영지예요.",
+      "en": "A restaurant filming location in Gangneung featured in Yumi's Cells."
+    }
+  },
+  {
+    "id": "place-skybay-hotel-gyeongpo",
+    "name": { "ko": "스카이베이호텔 경포", "en": "Skybay Hotel Gyeongpo" },
+    "workIds": ["work-yumi-cells"],
+    "nearestStationId": "station-gangneung",
+    "accessEstimate": {
+      "minutes": 20,
+      "source": "데모 시드 수동 보수 추정 (#1, 2026-08-08; 실시간 교통 아님)",
+      "verifiedAt": "2026-08-08"
+    },
+    "openingHours": { "type": "unverified" },
+    "stayMinutes": 45,
+    "verificationLevel": "원본확인",
+    "officialSourceCount": 1,
+    "reasonText": {
+      "ko": "유미의 세포들 촬영지이지만 일반 방문 가능 시간은 확인이 필요해요.",
+      "en": "A Yumi's Cells location whose public visiting hours still require verification."
+    }
+  },
+  {
+    "id": "place-woljeongsa-temple",
+    "name": { "ko": "월정사", "en": "Woljeongsa Temple" },
+    "workIds": ["work-goblin"],
+    "nearestStationId": "station-jinbu",
     "accessEstimate": {
       "minutes": 25,
-      "source": "SAMPLE — 시드 구축 시 실측·출처로 교체",
+      "source": "데모 시드 수동 보수 추정 (#1, 2026-08-08; 실시간 교통 아님)",
+      "verifiedAt": "2026-08-08"
+    },
+    "openingHours": {
+      "type": "hours",
+      "open": "07:00",
+      "close": "18:00",
+      "source": "공공데이터포털 한국문화정보원 촬영지 데이터의 일출·일몰 범위를 보수적으로 고정 (2026-08-07 다운로드)",
       "verifiedAt": "2026-08-07"
+    },
+    "stayMinutes": 60,
+    "verificationLevel": "원본확인",
+    "officialSourceCount": 1,
+    "reasonText": {
+      "ko": "도깨비의 고즈넉한 분위기를 따라가 볼 수 있는 오대산 촬영지예요.",
+      "en": "An Odaesan filming location that evokes the quiet atmosphere of Guardian."
+    }
+  },
+  {
+    "id": "place-woljeongsa-fir-forest",
+    "name": { "ko": "월정사 전나무 숲길", "en": "Woljeongsa Fir Forest Trail" },
+    "workIds": ["work-goblin"],
+    "nearestStationId": "station-jinbu",
+    "accessEstimate": {
+      "minutes": 25,
+      "source": "데모 시드 수동 보수 추정 (#1, 2026-08-08; 실시간 교통 아님)",
+      "verifiedAt": "2026-08-08"
+    },
+    "openingHours": {
+      "type": "hours",
+      "open": "07:00",
+      "close": "18:00",
+      "source": "공공데이터포털 한국문화정보원 촬영지 데이터의 일출·일몰 범위를 보수적으로 고정 (2026-08-07 다운로드)",
+      "verifiedAt": "2026-08-07"
+    },
+    "stayMinutes": 60,
+    "verificationLevel": "원본확인",
+    "officialSourceCount": 1,
+    "reasonText": {
+      "ko": "월정사와 함께 둘러보기 좋은 도깨비 촬영 숲길이에요.",
+      "en": "A Guardian forest filming trail that pairs naturally with Woljeongsa Temple."
+    }
+  },
+  {
+    "id": "place-samyang-ranch",
+    "name": { "ko": "대관령 삼양목장", "en": "Daegwallyeong Samyang Ranch" },
+    "workIds": ["work-goblin"],
+    "nearestStationId": "station-jinbu",
+    "accessEstimate": {
+      "minutes": 45,
+      "source": "데모 시드 수동 보수 추정 (#1, 2026-08-08; 실시간 교통 아님)",
+      "verifiedAt": "2026-08-08"
+    },
+    "openingHours": {
+      "type": "hours",
+      "open": "09:00",
+      "close": "17:00",
+      "source": "대한민국 구석구석 여행기사 https://korean.visitkorea.or.kr/detail/rem_detail.do?cotid=d342bccd-c614-4850-8c91-83f28debe1e4",
+      "verifiedAt": "2026-08-08"
+    },
+    "stayMinutes": 120,
+    "verificationLevel": "교차확인",
+    "officialSourceCount": 2,
+    "reasonText": {
+      "ko": "도깨비의 넓은 초원 풍경을 경험할 수 있는 대관령 촬영지예요.",
+      "en": "A Daegwallyeong filming location known for the broad grassland scenery seen in Guardian."
+    }
+  },
+  {
+    "id": "place-balwangsan-cable-car",
+    "name": { "ko": "모나파크 용평리조트 발왕산 관광케이블카", "en": "Balwangsan Tourist Cable Car" },
+    "workIds": ["work-goblin"],
+    "nearestStationId": "station-jinbu",
+    "accessEstimate": {
+      "minutes": 30,
+      "source": "데모 시드 수동 보수 추정 (#1, 2026-08-08; 실시간 교통 아님)",
+      "verifiedAt": "2026-08-08"
+    },
+    "openingHours": {
+      "type": "hours",
+      "open": "09:00",
+      "close": "17:00",
+      "lastEntry": "16:00",
+      "closedDays": ["mon"],
+      "source": "모나용평 공식 발왕산 관광케이블카 안내 https://www.peakisland.co.kr/kor/convenience/leports/gondola.do",
+      "verifiedAt": "2026-08-08"
+    },
+    "stayMinutes": 120,
+    "verificationLevel": "교차확인",
+    "officialSourceCount": 2,
+    "reasonText": {
+      "ko": "도깨비 촬영 풍경과 발왕산 전망을 함께 즐길 수 있는 장소예요.",
+      "en": "A Guardian filming location combined with panoramic views from Balwangsan."
+    }
+  },
+  {
+    "id": "place-oak-valley-resort",
+    "name": { "ko": "오크밸리 리조트", "en": "Oak Valley Resort" },
+    "workIds": ["work-little-women"],
+    "nearestStationId": "station-manjong",
+    "accessEstimate": {
+      "minutes": 25,
+      "source": "데모 시드 수동 보수 추정 (#1, 2026-08-08; 실시간 교통 아님)",
+      "verifiedAt": "2026-08-08"
+    },
+    "openingHours": { "type": "unverified" },
+    "stayMinutes": 90,
+    "verificationLevel": "원본확인",
+    "officialSourceCount": 1,
+    "reasonText": {
+      "ko": "작은 아씨들 촬영지이지만 일반 방문 가능 시간은 확인이 필요해요.",
+      "en": "A Little Women location whose public visiting hours still require verification."
+    }
+  },
+  {
+    "id": "place-jukrim-catholic-church",
+    "name": { "ko": "죽림동성당", "en": "Jukrim-dong Catholic Church" },
+    "workIds": ["work-yumi-cells"],
+    "nearestStationId": "station-chuncheon",
+    "accessEstimate": {
+      "minutes": 15,
+      "source": "데모 시드 수동 보수 추정 (#1, 2026-08-08; 실시간 교통 아님)",
+      "verifiedAt": "2026-08-08"
+    },
+    "openingHours": { "type": "unverified" },
+    "stayMinutes": 45,
+    "verificationLevel": "원본확인",
+    "officialSourceCount": 1,
+    "reasonText": {
+      "ko": "유미의 세포들 촬영지이지만 종교시설 방문 가능 시간은 별도 확인이 필요해요.",
+      "en": "A Yumi's Cells church location whose visitor access hours require separate confirmation."
+    }
+  },
+  {
+    "id": "place-gangchon-rail-park",
+    "name": { "ko": "강촌레일파크", "en": "Gangchon Rail Park" },
+    "workIds": ["work-the-king"],
+    "nearestStationId": "station-chuncheon",
+    "accessEstimate": {
+      "minutes": 35,
+      "source": "데모 시드 수동 보수 추정 (#1, 2026-08-08; 실시간 교통 아님)",
+      "verifiedAt": "2026-08-08"
+    },
+    "openingHours": {
+      "type": "hours",
+      "open": "09:00",
+      "close": "17:00",
+      "source": "공공데이터포털 한국문화정보원 촬영지 데이터의 하절기 운영시간 (2026-08-07 다운로드; 회차는 방문 전 재확인 필요)",
+      "verifiedAt": "2026-08-07"
+    },
+    "stayMinutes": 120,
+    "verificationLevel": "원본확인",
+    "officialSourceCount": 1,
+    "reasonText": {
+      "ko": "더 킹: 영원의 군주 장면을 따라 레일바이크를 체험할 수 있는 촬영지예요.",
+      "en": "A The King: Eternal Monarch location where visitors can experience a rail bike route."
+    }
+  },
+  {
+    "id": "place-seoullo-7017",
+    "name": { "ko": "서울로7017", "en": "Seoullo 7017" },
+    "workIds": ["work-little-women"],
+    "nearestStationId": "station-seoul",
+    "accessEstimate": {
+      "minutes": 10,
+      "source": "데모 시드 수동 보수 추정 (#1, 2026-08-08; 실시간 교통 아님)",
+      "verifiedAt": "2026-08-08"
+    },
+    "openingHours": {
+      "type": "always_open",
+      "source": "서울시 미디어허브 24시간 개방 안내 https://mediahub.seoul.go.kr/archives/1282405",
+      "verifiedAt": "2026-08-08"
+    },
+    "stayMinutes": 45,
+    "verificationLevel": "교차확인",
+    "officialSourceCount": 2,
+    "reasonText": {
+      "ko": "작은 아씨들의 서울 도심 분위기를 서울역 가까이에서 느낄 수 있는 촬영지예요.",
+      "en": "A Little Women filming location offering a city walk close to Seoul Station."
+    }
+  },
+  {
+    "id": "place-deoksugung-stone-wall-road",
+    "name": { "ko": "덕수궁 돌담길", "en": "Deoksugung Stone Wall Road" },
+    "workIds": ["work-goblin"],
+    "nearestStationId": "station-seoul",
+    "accessEstimate": {
+      "minutes": 20,
+      "source": "데모 시드 수동 보수 추정 (#1, 2026-08-08; 실시간 교통 아님)",
+      "verifiedAt": "2026-08-08"
+    },
+    "openingHours": {
+      "type": "always_open",
+      "source": "공공데이터포털 한국문화정보원 촬영지 데이터 (2026-08-07 다운로드; 궁 내부 관람시간과 별개)",
+      "verifiedAt": "2026-08-07"
+    },
+    "stayMinutes": 45,
+    "verificationLevel": "원본확인",
+    "officialSourceCount": 1,
+    "reasonText": {
+      "ko": "서울 도심에서 도깨비의 장면을 따라 걷기 좋은 촬영지예요.",
+      "en": "A central Seoul walking location associated with Guardian."
+    }
+  },
+  {
+    "id": "place-naju-image-theme-park",
+    "name": { "ko": "나주영상테마파크", "en": "Naju Image Theme Park" },
+    "workIds": ["work-goblin"],
+    "nearestStationId": "station-naju",
+    "accessEstimate": {
+      "minutes": 45,
+      "source": "회귀 프리셋용 데모 시드 수동 보수 추정 (#1, 2026-08-08; 실시간 교통 아님)",
+      "verifiedAt": "2026-08-08"
+    },
+    "openingHours": {
+      "type": "hours",
+      "open": "09:00",
+      "close": "18:00",
+      "closedDays": ["mon"],
+      "source": "공공데이터포털 한국문화정보원 촬영지 데이터의 하절기 운영시간 (2026-08-07 다운로드)",
+      "verifiedAt": "2026-08-07"
+    },
+    "stayMinutes": 120,
+    "verificationLevel": "원본확인",
+    "officialSourceCount": 1,
+    "reasonText": {
+      "ko": "도깨비 촬영지로, 장거리 불가능 일정 회귀 테스트에 사용하는 후보예요.",
+      "en": "A Guardian location used as a long-distance infeasibility regression fixture."
     }
   }
 ]
