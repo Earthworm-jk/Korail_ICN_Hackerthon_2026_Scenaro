@@ -77,7 +77,7 @@ describe("실시드 배우 선택 화면 회귀 (김고은)", () => {
       .toBe("unreviewed");
     expect(separated.filter(({ status }) => status === "absent")).toHaveLength(3);
     expect(primary.map((c) => c.id)).not.toContain("place-samyang-ranch");
-    expect(primary).toHaveLength(9); // 등장 확정 9곳 (#26)
+    expect(primary).toHaveLength(8); // 등장 확정 8곳 (12곳 시드 — #61 죽림동성당 제외)
   });
 
   it("작품을 함께 선택하면 그 작품 유래 후보는 장면 배우와 무관하게 기본 목록에 남는다", async () => {
