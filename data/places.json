@@ -1,8 +1,13 @@
 [
   {
     "id": "place-yeongjin-beach",
-    "name": { "ko": "영진해변", "en": "Yeongjin Beach" },
-    "workIds": ["work-goblin"],
+    "name": {
+      "ko": "영진해변",
+      "en": "Yeongjin Beach"
+    },
+    "workIds": [
+      "work-goblin"
+    ],
     "nearestStationId": "station-gangneung",
     "accessEstimate": {
       "minutes": 35,
@@ -22,8 +27,14 @@
       "en": "A Gangneung filming location associated with an iconic seaside scene from Guardian."
     },
     "searchAliases": [
-      { "ko": "도깨비 방파제", "en": "Goblin Breakwater" },
-      { "ko": "주문진 도깨비 방사제", "en": "Jumunjin Goblin Breakwater" }
+      {
+        "ko": "도깨비 방파제",
+        "en": "Goblin Breakwater"
+      },
+      {
+        "ko": "주문진 도깨비 방사제",
+        "en": "Jumunjin Goblin Breakwater"
+      }
     ],
     "address": "강원도 강릉시 주문진읍 해안로 1609",
     "latitude": 37.8691601,
@@ -31,15 +42,22 @@
   },
   {
     "id": "place-lala-muri",
-    "name": { "ko": "라라무리", "en": "Lala Muri" },
-    "workIds": ["work-goblin"],
+    "name": {
+      "ko": "라라무리",
+      "en": "Lala Muri"
+    },
+    "workIds": [
+      "work-goblin"
+    ],
     "nearestStationId": "station-gangneung",
     "accessEstimate": {
       "minutes": 45,
       "source": "원천 CSV 좌표 오류 가능성으로 POI 재확인 전 사용하는 임시 보수값 (2026-08-08; 길찾기 미검증)",
       "verifiedAt": "2026-08-08"
     },
-    "openingHours": { "type": "unverified" },
+    "openingHours": {
+      "type": "unverified"
+    },
     "stayMinutes": 60,
     "verificationLevel": "원본확인",
     "officialSourceCount": 1,
@@ -51,15 +69,22 @@
   },
   {
     "id": "place-eomma-son-makguksu",
-    "name": { "ko": "엄마손막국수", "en": "Eomma Son Makguksu" },
-    "workIds": ["work-yumi-cells"],
+    "name": {
+      "ko": "엄마손막국수",
+      "en": "Eomma Son Makguksu"
+    },
+    "workIds": [
+      "work-yumi-cells"
+    ],
     "nearestStationId": "station-gangneung",
     "accessEstimate": {
       "minutes": 10,
       "source": "카카오맵 자동차 길찾기 강릉역→엄마손막국수 9분·2.5km의 5분 올림값 (2026-08-08; 실시간 교통·교통수단 보장 아님)",
       "verifiedAt": "2026-08-08"
     },
-    "openingHours": { "type": "unverified" },
+    "openingHours": {
+      "type": "unverified"
+    },
     "stayMinutes": 60,
     "verificationLevel": "원본확인",
     "officialSourceCount": 1,
@@ -73,15 +98,22 @@
   },
   {
     "id": "place-skybay-hotel-gyeongpo",
-    "name": { "ko": "스카이베이호텔 경포", "en": "Skybay Hotel Gyeongpo" },
-    "workIds": ["work-yumi-cells"],
+    "name": {
+      "ko": "스카이베이호텔 경포",
+      "en": "Skybay Hotel Gyeongpo"
+    },
+    "workIds": [
+      "work-yumi-cells"
+    ],
     "nearestStationId": "station-gangneung",
     "accessEstimate": {
       "minutes": 20,
       "source": "카카오맵 자동차 길찾기 강릉역→스카이베이호텔 경포 16분·6.8km의 5분 올림값 (2026-08-08; 공식 안내의 버스 20~40분·택시 10~15분 범위도 별도 확인)",
       "verifiedAt": "2026-08-08"
     },
-    "openingHours": { "type": "unverified" },
+    "openingHours": {
+      "type": "unverified"
+    },
     "stayMinutes": 45,
     "verificationLevel": "교차확인",
     "officialSourceCount": 2,
@@ -95,15 +127,22 @@
   },
   {
     "id": "place-woljeongsa-temple",
-    "name": { "ko": "월정사", "en": "Woljeongsa Temple" },
-    "workIds": ["work-goblin"],
+    "name": {
+      "ko": "월정사",
+      "en": "Woljeongsa Temple"
+    },
+    "workIds": [
+      "work-goblin"
+    ],
     "nearestStationId": "station-jinbu",
     "accessEstimate": {
       "minutes": 20,
       "source": "카카오맵 자동차 길찾기 진부역→월정사 19분·12.3km의 5분 올림값 (2026-08-08; 한국관광공사 안내 버스 약 45분은 별도 참고)",
       "verifiedAt": "2026-08-08"
     },
-    "openingHours": { "type": "unverified" },
+    "openingHours": {
+      "type": "unverified"
+    },
     "stayMinutes": 60,
     "verificationLevel": "교차확인",
     "officialSourceCount": 2,
@@ -117,8 +156,13 @@
   },
   {
     "id": "place-woljeongsa-fir-forest",
-    "name": { "ko": "월정사 전나무 숲길", "en": "Woljeongsa Fir Forest Trail" },
-    "workIds": ["work-goblin"],
+    "name": {
+      "ko": "월정사 전나무 숲길",
+      "en": "Woljeongsa Fir Forest Trail"
+    },
+    "workIds": [
+      "work-goblin"
+    ],
     "nearestStationId": "station-jinbu",
     "accessEstimate": {
       "minutes": 20,
@@ -145,8 +189,13 @@
   },
   {
     "id": "place-samyang-ranch",
-    "name": { "ko": "대관령 삼양목장", "en": "Samyang Roundhill" },
-    "workIds": ["work-goblin"],
+    "name": {
+      "ko": "대관령 삼양목장",
+      "en": "Samyang Roundhill"
+    },
+    "workIds": [
+      "work-goblin"
+    ],
     "nearestStationId": "station-jinbu",
     "accessEstimate": {
       "minutes": 35,
@@ -174,8 +223,13 @@
   },
   {
     "id": "place-balwangsan-cable-car",
-    "name": { "ko": "모나파크 용평리조트 발왕산 관광케이블카", "en": "Balwangsan Tourist Cable Car" },
-    "workIds": ["work-goblin"],
+    "name": {
+      "ko": "모나파크 용평리조트 발왕산 관광케이블카",
+      "en": "Balwangsan Tourist Cable Car"
+    },
+    "workIds": [
+      "work-goblin"
+    ],
     "nearestStationId": "station-jinbu",
     "accessEstimate": {
       "minutes": 20,
@@ -202,15 +256,22 @@
   },
   {
     "id": "place-oak-valley-resort",
-    "name": { "ko": "오크밸리 리조트", "en": "Oak Valley Resort" },
-    "workIds": ["work-little-women"],
+    "name": {
+      "ko": "오크밸리 리조트",
+      "en": "Oak Valley Resort"
+    },
+    "workIds": [
+      "work-little-women"
+    ],
     "nearestStationId": "station-manjong",
     "accessEstimate": {
       "minutes": 25,
       "source": "원천 CSV 좌표 오류 가능성으로 POI 재확인 전 사용하는 임시 보수값 (2026-08-08; 길찾기 미검증)",
       "verifiedAt": "2026-08-08"
     },
-    "openingHours": { "type": "unverified" },
+    "openingHours": {
+      "type": "unverified"
+    },
     "stayMinutes": 90,
     "verificationLevel": "교차확인",
     "officialSourceCount": 2,
@@ -222,8 +283,13 @@
   },
   {
     "id": "place-jukrim-catholic-church",
-    "name": { "ko": "죽림동성당", "en": "Jukrim-dong Cathedral" },
-    "workIds": ["work-yumi-cells"],
+    "name": {
+      "ko": "죽림동성당",
+      "en": "Jukrim-dong Cathedral"
+    },
+    "workIds": [
+      "work-yumi-cells"
+    ],
     "nearestStationId": "station-chuncheon",
     "accessEstimate": {
       "minutes": 10,
@@ -247,29 +313,14 @@
     "longitude": 127.72724
   },
   {
-    "id": "place-gangchon-rail-park",
-    "name": { "ko": "강촌레일파크", "en": "Gangchon Rail Park" },
-    "workIds": ["work-the-king"],
-    "nearestStationId": "station-chuncheon",
-    "accessEstimate": {
-      "minutes": 30,
-      "source": "카카오맵 자동차 길찾기 춘천역→옛 강촌역 26분·16.5km의 5분 올림값 (2026-08-08; 촬영 코스 확정 전 임시값)",
-      "verifiedAt": "2026-08-08"
-    },
-    "openingHours": { "type": "unverified" },
-    "stayMinutes": 120,
-    "verificationLevel": "원본확인",
-    "officialSourceCount": 1,
-    "reasonText": {
-      "ko": "더 킹: 영원의 군주 장면을 따라 레일바이크를 체험할 수 있는 촬영지예요.",
-      "en": "A The King: Eternal Monarch location where visitors can experience a rail bike route."
-    },
-    "address": "강원도 춘천시 남산면 서백길 57"
-  },
-  {
     "id": "place-seoullo-7017",
-    "name": { "ko": "서울로7017", "en": "Seoullo 7017" },
-    "workIds": ["work-little-women"],
+    "name": {
+      "ko": "서울로7017",
+      "en": "Seoullo 7017"
+    },
+    "workIds": [
+      "work-little-women"
+    ],
     "nearestStationId": "station-seoul",
     "accessEstimate": {
       "minutes": 10,
@@ -294,8 +345,13 @@
   },
   {
     "id": "place-deoksugung-stone-wall-road",
-    "name": { "ko": "덕수궁 돌담길", "en": "Deoksugung Stonewall Walkway" },
-    "workIds": ["work-goblin"],
+    "name": {
+      "ko": "덕수궁 돌담길",
+      "en": "Deoksugung Stonewall Walkway"
+    },
+    "workIds": [
+      "work-goblin"
+    ],
     "nearestStationId": "station-seoul",
     "accessEstimate": {
       "minutes": 20,
@@ -320,8 +376,13 @@
   },
   {
     "id": "place-gyeonggijeon-shrine",
-    "name": { "ko": "경기전", "en": "Gyeonggijeon Shrine" },
-    "workIds": ["work-the-king"],
+    "name": {
+      "ko": "경기전",
+      "en": "Gyeonggijeon Shrine"
+    },
+    "workIds": [
+      "work-the-king"
+    ],
     "nearestStationId": "station-jeonju",
     "accessEstimate": {
       "minutes": 20,

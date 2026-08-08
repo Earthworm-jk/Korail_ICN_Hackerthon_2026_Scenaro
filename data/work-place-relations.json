@@ -6,7 +6,9 @@
       "ko": "도깨비 방파제로 알려진 바닷가 촬영지",
       "en": "The seaside filming location commonly known as the Goblin Breakwater"
     },
-    "sourceUrls": ["https://www.data.go.kr/data/15111405/fileData.do"],
+    "sourceUrls": [
+      "https://www.data.go.kr/data/15111405/fileData.do"
+    ],
     "verifiedAt": "2026-08-08",
     "reviewed": true
   },
@@ -18,7 +20,9 @@
       "ko": "어린 지은탁이 살던 집으로 등장",
       "en": "Appears as the home where young Ji Eun-tak lives"
     },
-    "sourceUrls": ["https://www.data.go.kr/data/15111405/fileData.do"],
+    "sourceUrls": [
+      "https://www.data.go.kr/data/15111405/fileData.do"
+    ],
     "verifiedAt": "2026-08-08",
     "reviewed": true
   },
@@ -30,7 +34,9 @@
       "ko": "유미와 웅이 첫 주말 여행 중 식사한 장소",
       "en": "The restaurant where Yumi and Woong eat during their first weekend trip"
     },
-    "sourceUrls": ["https://www.data.go.kr/data/15111405/fileData.do"],
+    "sourceUrls": [
+      "https://www.data.go.kr/data/15111405/fileData.do"
+    ],
     "verifiedAt": "2026-08-08",
     "reviewed": true
   },
@@ -42,7 +48,9 @@
       "ko": "유미와 웅의 첫 커플 주말 여행 숙소",
       "en": "The hotel used for Yumi and Woong's first weekend trip as a couple"
     },
-    "sourceUrls": ["https://www.data.go.kr/data/15111405/fileData.do"],
+    "sourceUrls": [
+      "https://www.data.go.kr/data/15111405/fileData.do"
+    ],
     "verifiedAt": "2026-08-08",
     "reviewed": true
   },
@@ -54,7 +62,9 @@
       "ko": "지은탁이 아르바이트를 마치고 집으로 가는 길로 등장",
       "en": "Appears on Ji Eun-tak's route home after finishing her part-time job"
     },
-    "sourceUrls": ["https://www.data.go.kr/data/15111405/fileData.do"],
+    "sourceUrls": [
+      "https://www.data.go.kr/data/15111405/fileData.do"
+    ],
     "verifiedAt": "2026-08-08",
     "reviewed": true
   },
@@ -65,7 +75,9 @@
       "ko": "김신이 집을 나온 지은탁을 따라가던 숲길",
       "en": "The forest trail where Kim Shin follows Ji Eun-tak after she leaves home"
     },
-    "sourceUrls": ["https://www.data.go.kr/data/15111405/fileData.do"],
+    "sourceUrls": [
+      "https://www.data.go.kr/data/15111405/fileData.do"
+    ],
     "verifiedAt": "2026-08-08",
     "reviewed": true
   },
@@ -76,7 +88,9 @@
       "ko": "김신이 중천의 들판을 걷는 장면",
       "en": "The grassland scene where Kim Shin walks through the afterlife"
     },
-    "sourceUrls": ["https://www.data.go.kr/data/15111405/fileData.do"],
+    "sourceUrls": [
+      "https://www.data.go.kr/data/15111405/fileData.do"
+    ],
     "verifiedAt": "2026-08-08",
     "reviewed": true
   },
@@ -87,7 +101,9 @@
       "ko": "지은탁이 집을 나와 일하러 간 스키장",
       "en": "The ski resort where Ji Eun-tak goes to work after leaving home"
     },
-    "sourceUrls": ["https://www.data.go.kr/data/15111405/fileData.do"],
+    "sourceUrls": [
+      "https://www.data.go.kr/data/15111405/fileData.do"
+    ],
     "verifiedAt": "2026-08-08",
     "reviewed": true
   },
@@ -99,7 +115,9 @@
       "ko": "오인혜의 친구 박효린의 집으로 등장",
       "en": "Appears as the home of Oh In-hye's friend Park Hyo-rin"
     },
-    "sourceUrls": ["https://www.data.go.kr/data/15111405/fileData.do"],
+    "sourceUrls": [
+      "https://www.data.go.kr/data/15111405/fileData.do"
+    ],
     "verifiedAt": "2026-08-08",
     "reviewed": true
   },
@@ -111,19 +129,9 @@
       "ko": "유미가 친구의 결혼식에 참석한 성당",
       "en": "The cathedral where Yumi attends her friend's wedding"
     },
-    "sourceUrls": ["https://www.data.go.kr/data/15111405/fileData.do"],
-    "verifiedAt": "2026-08-08",
-    "reviewed": true
-  },
-  {
-    "workId": "work-the-king",
-    "placeId": "place-gangchon-rail-park",
-    "episodeLabel": "10화",
-    "sceneNote": {
-      "ko": "이림이 유경무와 만나는 장소",
-      "en": "The location where Lee Lim meets Yoo Kyung-moo"
-    },
-    "sourceUrls": ["https://www.data.go.kr/data/15111405/fileData.do"],
+    "sourceUrls": [
+      "https://www.data.go.kr/data/15111405/fileData.do"
+    ],
     "verifiedAt": "2026-08-08",
     "reviewed": true
   },
@@ -135,7 +143,9 @@
       "ko": "오인주가 화영의 SNS 사진과 유서의 단서를 확인하는 장면",
       "en": "The scene where Oh In-joo connects Hwa-young's social post with the note she left"
     },
-    "sourceUrls": ["https://www.data.go.kr/data/15111405/fileData.do"],
+    "sourceUrls": [
+      "https://www.data.go.kr/data/15111405/fileData.do"
+    ],
     "verifiedAt": "2026-08-08",
     "reviewed": true
   },
@@ -147,7 +157,9 @@
       "ko": "김신이 돌담길을 지나며 대화하는 장면",
       "en": "Scenes where Kim Shin walks along the stonewall road while talking"
     },
-    "sourceUrls": ["https://www.data.go.kr/data/15111405/fileData.do"],
+    "sourceUrls": [
+      "https://www.data.go.kr/data/15111405/fileData.do"
+    ],
     "verifiedAt": "2026-08-08",
     "reviewed": true
   },
@@ -158,7 +170,9 @@
       "ko": "이곤이 박물관을 방문하는 장면",
       "en": "The scene where Lee Gon visits the museum"
     },
-    "sourceUrls": ["https://www.data.go.kr/data/15111405/fileData.do"],
+    "sourceUrls": [
+      "https://www.data.go.kr/data/15111405/fileData.do"
+    ],
     "verifiedAt": "2026-08-08",
     "reviewed": true
   }
