@@ -50,22 +50,27 @@ describe("getFlightInfo 분기 (#46)", () => {
     expect(result).toMatchObject({ ok: true, source: "snapshot" });
   });
 
-  // PR #47 리뷰(차단): 데모 편명은 실조회·오프라인 폴백이 같은 편으로 성립해야 한다 (#46 완료 기준)
-  it("데모 편명 KE852 — live 오류(네트워크 단절) 시 스냅샷 폴백이 적중한다", async () => {
+  // PR #47 리뷰(차단): 데모 편명은 실조회·오프라인 폴백이 같은 편·같은 날짜로 성립해야 한다 (#46 완료 기준)
+  // 데모 입국편 AF264(에어프랑스 파리발, 8/12 09:35 실측) — 지연 시 KTX 13:55→16:11로 밀리는
+  // 재계산 서사가 가능하도록 아침 도착편으로 선정 (KE852 21:40은 지연 효과가 화면에 안 보임)
+  it("데모 편명 AF264 — live 오류(네트워크 단절) 시 스냅샷 폴백이 적중하고 날짜가 데모 조회일과 같다", async () => {
     mockedMode.mockReturnValue("live");
     mockedLookup.mockRejectedValue(new Error("network unreachable"));
-    const result = await getFlightInfo("KE852", "arrival", "2026-08-14");
+    const result = await getFlightInfo("AF264", "arrival", "2026-08-12");
     expect(result).toMatchObject({
       ok: true,
       source: "snapshot",
-      flight: { flightNo: "KE852", direction: "arrival", scheduledAt: "2026-08-14T21:30:00+09:00" },
+      flight: { flightNo: "AF264", direction: "arrival", scheduledAt: "2026-08-12T09:35:00+09:00" },
     });
+    // 폴백이 요청 날짜와 다른 날의 시각으로 입국일을 덮어쓰지 않는다 (PR #47 리뷰)
+    if (result.ok) expect(result.flight.scheduledAt.startsWith("2026-08-12")).toBe(true);
   });
 
-  it("데모 편명 KE852 — 키 제거(snapshot 모드)에서도 외부 호출 없이 조회된다", async () => {
-    const result = await getFlightInfo("KE852", "arrival", "2026-08-14");
+  it("데모 편명 AF264 — 키 제거(snapshot 모드)에서도 외부 호출 없이 같은 날짜로 조회된다", async () => {
+    const result = await getFlightInfo("AF264", "arrival", "2026-08-12");
     expect(mockedLookup).not.toHaveBeenCalled();
     expect(result).toMatchObject({ ok: true, source: "snapshot" });
+    if (result.ok) expect(result.flight.scheduledAt.startsWith("2026-08-12")).toBe(true);
   });
 
   it("오류 폴백인데 스냅샷에도 없으면 FLIGHT_NOT_FOUND — 직접 입력 유지", async () => {

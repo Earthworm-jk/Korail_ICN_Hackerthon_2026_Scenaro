@@ -1,8 +1,8 @@
 [
   {
-    "flightNo": "KE852",
+    "flightNo": "AF264",
     "direction": "arrival",
-    "scheduledAt": "2026-08-14T21:30:00+09:00",
+    "scheduledAt": "2026-08-12T09:35:00+09:00",
     "terminal": "T2"
   },
   {
