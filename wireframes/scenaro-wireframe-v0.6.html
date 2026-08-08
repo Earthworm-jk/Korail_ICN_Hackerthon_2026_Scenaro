@@ -1,0 +1,1586 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SCENARO 理쒖쥌 MVP ??댁뼱?꾨젅??v0.6</title>
+</head>
+<body>
+<div id="scenaro-wireframe">
+  <style>
+    #scenaro-wireframe {
+      --sc-blue: light-dark(#005bac, #69b7ff);
+      --sc-blue-soft: light-dark(#eaf3ff, #17283a);
+      --sc-airport: light-dark(#008f98, #56d4da);
+      --sc-airport-soft: light-dark(#e8f8f8, #153235);
+      --sc-orange: light-dark(#d97706, #ffb85c);
+      --sc-orange-soft: light-dark(#fff4df, #382918);
+      --sc-green: light-dark(#198754, #67d69b);
+      --sc-red: light-dark(#c0392b, #ff8175);
+      --sc-text: light-dark(#17212b, #edf3f8);
+      --sc-muted: light-dark(#637083, #9eacba);
+      --sc-line: light-dark(#dce3eb, #34404c);
+      --sc-surface: light-dark(#ffffff, #151b22);
+      --sc-subtle: light-dark(#f5f8fb, #1c242d);
+      --sc-shadow: light-dark(rgba(18, 44, 70, .12), rgba(0, 0, 0, .35));
+      color: var(--sc-text);
+      font-family: Pretendard, "Noto Sans KR", system-ui, sans-serif;
+    }
+    #scenaro-wireframe * { box-sizing: border-box; }
+    #scenaro-wireframe button,
+    #scenaro-wireframe input { font: inherit; }
+    #scenaro-wireframe button { color: inherit; }
+    #scenaro-wireframe .sc-app {
+      background: var(--sc-surface);
+      border: 1px solid var(--sc-line);
+      border-radius: 18px;
+      box-shadow: 0 18px 50px var(--sc-shadow);
+      overflow: hidden;
+    }
+    #scenaro-wireframe .sc-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 18px 22px;
+      border-bottom: 1px solid var(--sc-line);
+      background: var(--sc-surface);
+    }
+    #scenaro-wireframe .sc-brand { display: flex; align-items: center; gap: 10px; }
+    #scenaro-wireframe .sc-mark {
+      display: grid;
+      place-items: center;
+      width: 34px;
+      height: 34px;
+      border-radius: 10px;
+      background: var(--sc-blue);
+      color: light-dark(#ffffff, #08131d);
+      font-weight: 500;
+    }
+    #scenaro-wireframe .sc-brand-copy strong { display: block; font-weight: 500; letter-spacing: .03em; }
+    #scenaro-wireframe .sc-brand-copy span { display: block; color: var(--sc-muted); font-size: 12px; margin-top: 2px; }
+    #scenaro-wireframe .sc-header-actions { display: flex; align-items: center; gap: 8px; }
+    #scenaro-wireframe .sc-demo {
+      padding: 5px 9px;
+      border-radius: 999px;
+      background: var(--sc-orange-soft);
+      color: var(--sc-orange);
+      font-size: 12px;
+    }
+    #scenaro-wireframe .sc-button {
+      min-height: 40px;
+      padding: 9px 14px;
+      border: 1px solid var(--sc-line);
+      border-radius: 10px;
+      background: var(--sc-surface);
+      cursor: pointer;
+      font-weight: 500;
+    }
+    #scenaro-wireframe .sc-button:hover { border-color: var(--sc-blue); }
+    #scenaro-wireframe .sc-button-primary {
+      border-color: var(--sc-blue);
+      background: var(--sc-blue);
+      color: light-dark(#ffffff, #07131e);
+    }
+    #scenaro-wireframe .sc-button-quiet { background: transparent; }
+    #scenaro-wireframe .sc-stepper {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      border-bottom: 1px solid var(--sc-line);
+      background: var(--sc-subtle);
+    }
+    #scenaro-wireframe .sc-step {
+      min-height: 58px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      border: 0;
+      border-right: 1px solid var(--sc-line);
+      background: transparent;
+      cursor: pointer;
+      color: var(--sc-muted);
+    }
+    #scenaro-wireframe .sc-step:last-child { border-right: 0; }
+    #scenaro-wireframe .sc-step[aria-current="step"] { color: var(--sc-blue); background: var(--sc-blue-soft); font-weight: 500; }
+    #scenaro-wireframe .sc-step-number {
+      display: grid;
+      place-items: center;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      border: 1px solid currentColor;
+      font-size: 12px;
+    }
+    #scenaro-wireframe .sc-layout { display: grid; grid-template-columns: 220px minmax(0, 1fr); min-height: 650px; }
+    #scenaro-wireframe .sc-summary {
+      padding: 22px 18px;
+      border-right: 1px solid var(--sc-line);
+      background: var(--sc-subtle);
+    }
+    #scenaro-wireframe .sc-summary h3,
+    #scenaro-wireframe .sc-screen h2,
+    #scenaro-wireframe .sc-panel h3 { margin: 0; font-weight: 500; }
+    #scenaro-wireframe .sc-summary h3 { margin-bottom: 18px; }
+    #scenaro-wireframe .sc-summary-list { display: grid; gap: 16px; }
+    #scenaro-wireframe .sc-summary-item span { display: block; color: var(--sc-muted); font-size: 12px; margin-bottom: 4px; }
+    #scenaro-wireframe .sc-summary-item strong { font-weight: 500; }
+    #scenaro-wireframe .sc-summary-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+    #scenaro-wireframe .sc-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 5px 8px;
+      border-radius: 999px;
+      background: var(--sc-blue-soft);
+      color: var(--sc-blue);
+      font-size: 12px;
+    }
+    #scenaro-wireframe .sc-main { min-width: 0; }
+    #scenaro-wireframe .sc-screen { display: none; padding: 28px; }
+    #scenaro-wireframe .sc-screen.is-active { display: block; }
+    #scenaro-wireframe .is-hidden { display: none !important; }
+    #scenaro-wireframe .sc-screen-heading { margin-bottom: 24px; }
+    #scenaro-wireframe .sc-screen-heading h2 { margin-bottom: 7px; }
+    #scenaro-wireframe .sc-screen-heading p { margin: 0; color: var(--sc-muted); }
+    #scenaro-wireframe .sc-grid-two { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
+    #scenaro-wireframe .sc-panel {
+      padding: 18px;
+      border: 1px solid var(--sc-line);
+      border-radius: 14px;
+      background: var(--sc-surface);
+    }
+    #scenaro-wireframe .sc-panel-title { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 16px; }
+    #scenaro-wireframe .sc-mode {
+      display: inline-flex;
+      padding: 4px 8px;
+      border-radius: 999px;
+      font-size: 12px;
+      background: var(--sc-airport-soft);
+      color: var(--sc-airport);
+    }
+    #scenaro-wireframe .sc-flight-time {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 12px 0 16px;
+      border-bottom: 1px solid var(--sc-line);
+      margin-bottom: 16px;
+    }
+    #scenaro-wireframe .sc-flight-time span { color: var(--sc-muted); }
+    #scenaro-wireframe .sc-flight-fields {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+      padding-bottom: 16px;
+      margin-bottom: 16px;
+      border-bottom: 1px solid var(--sc-line);
+    }
+    #scenaro-wireframe .sc-flight-lookup {
+      grid-column: 1 / -1;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    #scenaro-wireframe .sc-flight-lookup .sc-button { flex: 1 1 150px; }
+    #scenaro-wireframe .sc-flight-lookup-status { color: var(--sc-muted); font-size: 12px; }
+    #scenaro-wireframe .sc-flight-lookup-status.is-complete { color: var(--sc-airport); }
+    #scenaro-wireframe .sc-flight-lookup-status.is-error { color: var(--sc-red); }
+    #scenaro-wireframe .sc-flight-result {
+      grid-column: 1 / -1;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 10px 14px;
+      align-items: end;
+      padding: 12px;
+      border-radius: 10px;
+      background: var(--sc-airport-soft);
+    }
+    #scenaro-wireframe .sc-flight-result-meta {
+      grid-column: 1 / -1;
+      display: flex;
+      gap: 8px 14px;
+      flex-wrap: wrap;
+      color: var(--sc-airport);
+      font-size: 12px;
+    }
+    #scenaro-wireframe .sc-text-input[readonly] { background: var(--sc-subtle); color: var(--sc-muted); }
+    #scenaro-wireframe .sc-field-compact { display: grid; gap: 5px; }
+    #scenaro-wireframe .sc-field-compact label { color: var(--sc-muted); font-size: 12px; }
+    #scenaro-wireframe .sc-text-input {
+      width: 100%;
+      min-height: 42px;
+      padding: 9px 10px;
+      color: var(--sc-text);
+      background: var(--sc-surface);
+      border: 1px solid var(--sc-line);
+      border-radius: 9px;
+    }
+    #scenaro-wireframe .sc-field { display: grid; gap: 7px; }
+    #scenaro-wireframe .sc-field label { font-weight: 500; }
+    #scenaro-wireframe .sc-time-input,
+    #scenaro-wireframe .sc-search-input {
+      width: 100%;
+      min-height: 44px;
+      padding: 10px 12px;
+      color: var(--sc-text);
+      background: var(--sc-surface);
+      border: 1px solid var(--sc-line);
+      border-radius: 10px;
+    }
+    #scenaro-wireframe .sc-help { color: var(--sc-muted); font-size: 12px; }
+    #scenaro-wireframe .sc-derived {
+      margin-top: 12px;
+      padding: 10px 12px;
+      border-radius: 10px;
+      background: var(--sc-airport-soft);
+      color: var(--sc-airport);
+    }
+    #scenaro-wireframe .sc-note {
+      margin-top: 18px;
+      padding: 12px 14px;
+      border-left: 3px solid var(--sc-orange);
+      background: var(--sc-orange-soft);
+      color: var(--sc-text);
+    }
+    #scenaro-wireframe .sc-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 24px; }
+    #scenaro-wireframe .sc-search-row { position: relative; margin-bottom: 18px; }
+    #scenaro-wireframe .sc-suggestions {
+      position: absolute;
+      z-index: 8;
+      top: calc(100% + 6px);
+      left: 0;
+      right: 0;
+      display: none;
+      overflow: hidden;
+      border: 1px solid var(--sc-line);
+      border-radius: 10px;
+      background: var(--sc-surface);
+      box-shadow: 0 10px 24px color-mix(in srgb, var(--sc-text) 12%, transparent);
+    }
+    #scenaro-wireframe .sc-suggestions.is-open { display: grid; }
+    #scenaro-wireframe .sc-suggestion {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 11px 13px;
+      border: 0;
+      border-bottom: 1px solid var(--sc-line);
+      color: var(--sc-text);
+      background: var(--sc-surface);
+      text-align: left;
+      cursor: pointer;
+    }
+    #scenaro-wireframe .sc-suggestion:last-child { border-bottom: 0; }
+    #scenaro-wireframe .sc-suggestion:hover,
+    #scenaro-wireframe .sc-suggestion:focus-visible { background: var(--sc-blue-soft); }
+    #scenaro-wireframe .sc-suggestion span { color: var(--sc-muted); }
+    #scenaro-wireframe .sc-section-label { margin: 18px 0 10px; font-weight: 500; }
+    #scenaro-wireframe .sc-choice-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+    #scenaro-wireframe .sc-choice {
+      min-height: 92px;
+      padding: 12px;
+      text-align: left;
+      border: 1px solid var(--sc-line);
+      border-radius: 12px;
+      background: var(--sc-surface);
+      cursor: pointer;
+    }
+    #scenaro-wireframe .sc-choice[aria-pressed="true"] { border-color: var(--sc-blue); box-shadow: inset 0 0 0 1px var(--sc-blue); background: var(--sc-blue-soft); }
+    #scenaro-wireframe .sc-choice-type { display: block; color: var(--sc-muted); font-size: 12px; margin-bottom: 18px; }
+    #scenaro-wireframe .sc-choice-name { display: block; font-weight: 500; }
+    #scenaro-wireframe .sc-selected-box { margin-top: 18px; padding: 14px; background: var(--sc-subtle); border-radius: 12px; }
+    #scenaro-wireframe .sc-capacity-alert {
+      display: grid;
+      gap: 4px;
+      margin-bottom: 14px;
+      padding: 12px 14px;
+      border-left: 3px solid var(--sc-orange);
+      border-radius: 8px;
+      background: var(--sc-orange-soft);
+    }
+    #scenaro-wireframe .sc-capacity-alert[hidden] { display: none; }
+    #scenaro-wireframe .sc-capacity-alert strong { color: var(--sc-orange); }
+    #scenaro-wireframe .sc-capacity-alert span { color: var(--sc-muted); font-size: 12px; }
+    #scenaro-wireframe .sc-place-layout { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(260px, .75fr); gap: 18px; }
+    #scenaro-wireframe .sc-place-list { display: grid; gap: 10px; }
+    #scenaro-wireframe .sc-place {
+      display: grid;
+      grid-template-columns: 48px minmax(0, 1fr) auto;
+      gap: 12px;
+      align-items: center;
+      padding: 13px;
+      border: 1px solid var(--sc-line);
+      border-radius: 12px;
+    }
+    #scenaro-wireframe .sc-place-thumb {
+      display: grid;
+      place-items: center;
+      width: 48px;
+      height: 48px;
+      border-radius: 9px;
+      background: linear-gradient(145deg, var(--sc-blue-soft), var(--sc-airport-soft));
+      color: var(--sc-blue);
+    }
+    #scenaro-wireframe .sc-place-copy strong { display: block; font-weight: 500; margin-bottom: 4px; }
+    #scenaro-wireframe .sc-place-copy span { display: block; color: var(--sc-muted); font-size: 12px; margin-top: 2px; }
+    #scenaro-wireframe .sc-required {
+      min-height: 40px;
+      padding: 8px 10px;
+      border: 1px solid var(--sc-line);
+      border-radius: 10px;
+      background: var(--sc-surface);
+      cursor: pointer;
+    }
+    #scenaro-wireframe .sc-required[aria-pressed="true"] { border-color: var(--sc-orange); background: var(--sc-orange-soft); color: var(--sc-orange); }
+    #scenaro-wireframe .sc-region { display: grid; gap: 0; padding: 12px 0; }
+    #scenaro-wireframe .sc-region-stop { display: grid; grid-template-columns: 24px 1fr; gap: 10px; min-height: 82px; }
+    #scenaro-wireframe .sc-region-rail { position: relative; display: flex; justify-content: center; }
+    #scenaro-wireframe .sc-region-rail::after { content: ""; position: absolute; top: 18px; bottom: -10px; width: 2px; background: var(--sc-line); }
+    #scenaro-wireframe .sc-region-stop:last-child .sc-region-rail::after { display: none; }
+    #scenaro-wireframe .sc-region-dot { position: relative; z-index: 1; width: 14px; height: 14px; margin-top: 3px; border-radius: 50%; background: var(--sc-blue); box-shadow: 0 0 0 4px var(--sc-blue-soft); }
+    #scenaro-wireframe .sc-region-copy strong { display: block; font-weight: 500; }
+    #scenaro-wireframe .sc-region-copy span { color: var(--sc-muted); font-size: 12px; }
+    #scenaro-wireframe .sc-result-grid { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(320px, .85fr); gap: 18px; }
+    #scenaro-wireframe .sc-day { margin-bottom: 18px; }
+    #scenaro-wireframe .sc-day:last-child { margin-bottom: 0; }
+    #scenaro-wireframe .sc-day-title { display: flex; align-items: center; justify-content: space-between; padding-bottom: 10px; border-bottom: 1px solid var(--sc-line); }
+    #scenaro-wireframe .sc-day-title strong { font-weight: 500; }
+    #scenaro-wireframe .sc-timeline { padding-top: 10px; }
+    #scenaro-wireframe .sc-event { display: grid; grid-template-columns: 54px 28px minmax(0, 1fr); gap: 8px; min-height: 62px; }
+    #scenaro-wireframe .sc-event-time { color: var(--sc-muted); font-variant-numeric: tabular-nums; }
+    #scenaro-wireframe .sc-event-axis { position: relative; display: flex; justify-content: center; }
+    #scenaro-wireframe .sc-event-axis::after { content: ""; position: absolute; top: 17px; bottom: -4px; width: 2px; background: var(--sc-line); }
+    #scenaro-wireframe .sc-event:last-child .sc-event-axis::after { display: none; }
+    #scenaro-wireframe .sc-event-dot { position: relative; z-index: 1; display: grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; background: var(--sc-blue-soft); color: var(--sc-blue); }
+    #scenaro-wireframe .sc-event.is-airport .sc-event-dot { background: var(--sc-airport-soft); color: var(--sc-airport); }
+    #scenaro-wireframe .sc-event.is-external .sc-event-dot { background: var(--sc-orange-soft); color: var(--sc-orange); }
+    #scenaro-wireframe .sc-event-copy strong { display: block; font-weight: 500; }
+    #scenaro-wireframe .sc-event-copy span { display: block; color: var(--sc-muted); font-size: 12px; margin-top: 3px; }
+    #scenaro-wireframe .sc-source { display: inline-flex; margin-top: 5px; color: var(--sc-orange); font-size: 12px; }
+    #scenaro-wireframe .sc-connection-toggle { width: 100%; display: flex; justify-content: space-between; align-items: center; margin-top: 8px; }
+    #scenaro-wireframe .sc-connection-detail { display: none; margin-top: 10px; padding: 12px; background: var(--sc-orange-soft); border-radius: 10px; }
+    #scenaro-wireframe .sc-connection-detail.is-open { display: block; }
+    #scenaro-wireframe .sc-mode-options { display: grid; gap: 8px; margin-top: 10px; }
+    #scenaro-wireframe .sc-mode-option {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      width: 100%;
+      padding: 10px;
+      text-align: left;
+      border: 1px solid var(--sc-line);
+      border-radius: 9px;
+      background: var(--sc-surface);
+      cursor: pointer;
+    }
+    #scenaro-wireframe .sc-mode-option[aria-pressed="true"] { border-color: var(--sc-orange); background: var(--sc-orange-soft); }
+    #scenaro-wireframe .sc-mode-option span { color: var(--sc-muted); font-size: 12px; }
+    #scenaro-wireframe .sc-train-toggle {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      min-height: 36px;
+      margin-top: 8px;
+      padding: 7px 10px;
+      border: 1px solid var(--sc-blue);
+      border-radius: 9px;
+      background: var(--sc-blue-soft);
+      color: var(--sc-blue);
+      cursor: pointer;
+    }
+    #scenaro-wireframe .sc-train-options { display: none; gap: 7px; margin-top: 9px; }
+    #scenaro-wireframe .sc-train-options.is-open { display: grid; }
+    #scenaro-wireframe .sc-train-option {
+      display: grid;
+      grid-template-columns: 58px minmax(0, 1fr);
+      gap: 10px;
+      padding: 9px 10px;
+      text-align: left;
+      border: 1px solid var(--sc-line);
+      border-radius: 9px;
+      background: var(--sc-surface);
+      cursor: pointer;
+    }
+    #scenaro-wireframe .sc-train-option[aria-pressed="true"] { border-color: var(--sc-blue); background: var(--sc-blue-soft); }
+    #scenaro-wireframe .sc-train-option span { color: var(--sc-muted); font-size: 12px; }
+    #scenaro-wireframe .sc-map-panel {
+      min-width: 0;
+      padding: 18px;
+      border: 1px solid var(--sc-line);
+      border-radius: 14px;
+      background: var(--sc-surface);
+    }
+    #scenaro-wireframe .sc-map-heading { display: flex; align-items: center; justify-content: space-between; gap: 8px 10px; margin-bottom: 8px; flex-wrap: wrap; }
+    #scenaro-wireframe .sc-map-heading h3 { margin: 0; font-weight: 500; white-space: nowrap; }
+    #scenaro-wireframe .sc-map-heading-actions { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; justify-content: flex-end; }
+    #scenaro-wireframe .sc-map-filter {
+      min-height: 30px;
+      padding: 5px 8px;
+      border: 1px solid var(--sc-line);
+      border-radius: 8px;
+      background: var(--sc-surface);
+      color: var(--sc-text);
+      cursor: pointer;
+      font-size: 12px;
+    }
+    #scenaro-wireframe .sc-map-filter[aria-pressed="true"] { border-color: var(--sc-blue); background: var(--sc-blue-soft); color: var(--sc-blue); }
+    #scenaro-wireframe .sc-korea-map { display: block; width: 100%; min-height: 430px; }
+    #scenaro-wireframe .sc-korea-map .sc-map-land { stroke: var(--sc-line); stroke-width: 1.4; }
+    #scenaro-wireframe .sc-korea-map .sc-map-land-north { display: none; }
+    #scenaro-wireframe .sc-korea-map .sc-map-land-south { fill: var(--sc-blue-soft); }
+    #scenaro-wireframe .sc-korea-map .sc-map-route { fill: none; stroke: var(--sc-orange); stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+    #scenaro-wireframe .sc-korea-map .sc-map-point { stroke: var(--sc-surface); stroke-width: 3; }
+    #scenaro-wireframe .sc-korea-map .sc-map-point-airport { fill: var(--sc-airport); }
+    #scenaro-wireframe .sc-korea-map .sc-map-point-station { fill: var(--sc-blue); }
+    #scenaro-wireframe .sc-korea-map .sc-map-point-place { fill: var(--sc-orange); opacity: .28; transition: opacity .18s ease, stroke-width .18s ease; }
+    #scenaro-wireframe [data-map-kind="places"] .sc-map-point-airport,
+    #scenaro-wireframe [data-map-kind="places"] .sc-map-point-airport + text,
+    #scenaro-wireframe [data-map-kind="places"] .sc-map-point-station,
+    #scenaro-wireframe [data-map-kind="places"] .sc-map-point-station + text { display: none; }
+    #scenaro-wireframe .sc-korea-map .sc-map-point-place.is-selected { opacity: 1; stroke-width: 5; }
+    #scenaro-wireframe .sc-korea-map .sc-place-label { opacity: .38; transition: opacity .18s ease, font-weight .18s ease; }
+    #scenaro-wireframe .sc-korea-map .sc-place-label.is-selected { opacity: 1; font-weight: 500; }
+    #scenaro-wireframe .sc-korea-map .is-filtered-out { display: none; }
+    #scenaro-wireframe .sc-korea-map text { fill: var(--sc-text); font-size: 12px; font-weight: 500; }
+    #scenaro-wireframe .sc-map-source { color: var(--sc-muted); font-size: 12px; margin-top: 8px; }
+    #scenaro-wireframe .sc-map-legend { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 8px; color: var(--sc-muted); font-size: 12px; }
+    #scenaro-wireframe .sc-map-legend span { display: inline-flex; align-items: center; gap: 5px; }
+    #scenaro-wireframe .sc-map-swatch { width: 9px; height: 9px; border-radius: 50%; background: var(--sc-blue); }
+    #scenaro-wireframe .sc-map-swatch.is-airport { background: var(--sc-airport); }
+    #scenaro-wireframe .sc-map-swatch.is-place { background: var(--sc-orange); }
+    #scenaro-wireframe .sc-map-swatch.is-experience { background: var(--sc-green); }
+    #scenaro-wireframe .sc-map-experience-zone,
+    #scenaro-wireframe .sc-map-experience-label { display: none; }
+    #scenaro-wireframe .sc-map-experience-zone.is-visible,
+    #scenaro-wireframe .sc-map-experience-label.is-visible { display: block; }
+    #scenaro-wireframe .sc-map-experience-zone {
+      fill: color-mix(in srgb, var(--sc-green) 16%, transparent);
+      stroke: var(--sc-green);
+      stroke-width: 2;
+      stroke-dasharray: 5 4;
+    }
+    #scenaro-wireframe .sc-map-experience-label { fill: var(--sc-green); }
+    #scenaro-wireframe .sc-time-options { display: grid; gap: 10px; margin-top: 14px; }
+    #scenaro-wireframe .sc-time-option {
+      display: grid;
+      grid-template-columns: 58px minmax(0, 1fr);
+      gap: 12px;
+      padding: 13px;
+      text-align: left;
+      border: 1px solid var(--sc-line);
+      border-radius: 11px;
+      background: var(--sc-surface);
+      cursor: pointer;
+    }
+    #scenaro-wireframe .sc-time-option[aria-pressed="true"] { border-color: var(--sc-blue); background: var(--sc-blue-soft); box-shadow: inset 0 0 0 1px var(--sc-blue); }
+    #scenaro-wireframe .sc-time-option strong { font-weight: 500; }
+    #scenaro-wireframe .sc-time-option span { display: block; color: var(--sc-muted); font-size: 12px; margin-top: 3px; }
+    #scenaro-wireframe .sc-validation {
+      margin-top: 14px;
+      padding: 12px;
+      border-radius: 10px;
+      background: var(--sc-airport-soft);
+      color: var(--sc-airport);
+    }
+    #scenaro-wireframe .sc-save-row { display: flex; justify-content: space-between; gap: 10px; align-items: center; margin-top: 18px; padding-top: 18px; border-top: 1px solid var(--sc-line); }
+    #scenaro-wireframe .sc-save-status { color: var(--sc-muted); }
+    #scenaro-wireframe .sc-save-status.is-saved { color: var(--sc-green); }
+    #scenaro-wireframe .sc-save-status.is-error { color: var(--sc-red); }
+    #scenaro-wireframe .sc-header-select {
+      min-height: 36px;
+      padding: 6px 28px 6px 9px;
+      border: 1px solid var(--sc-line);
+      border-radius: 9px;
+      color: var(--sc-text);
+      background: var(--sc-surface);
+    }
+    #scenaro-wireframe .sc-demo-button { border: 0; cursor: pointer; }
+    #scenaro-wireframe .sc-demo-panel {
+      display: none;
+      padding: 10px 18px;
+      border-bottom: 1px solid var(--sc-line);
+      background: var(--sc-orange-soft);
+    }
+    #scenaro-wireframe .sc-demo-panel.is-open { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+    #scenaro-wireframe .sc-demo-panel span { color: var(--sc-muted); font-size: 12px; margin-right: 4px; }
+    #scenaro-wireframe .sc-demo-panel .sc-button { min-height: 32px; padding: 5px 9px; font-size: 12px; }
+    #scenaro-wireframe .sc-region-block {
+      margin: 8px 0 16px 76px;
+      padding: 12px 14px;
+      border-left: 3px solid var(--sc-orange);
+      border-radius: 8px;
+      background: var(--sc-orange-soft);
+    }
+    #scenaro-wireframe .sc-region-block strong { display: block; margin-bottom: 5px; font-weight: 500; }
+    #scenaro-wireframe .sc-region-block span { display: block; color: var(--sc-muted); font-size: 12px; }
+    #scenaro-wireframe .sc-region-places { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 9px; }
+    #scenaro-wireframe .sc-region-places span { padding: 4px 7px; border-radius: 999px; background: var(--sc-surface); color: var(--sc-text); }
+    #scenaro-wireframe .sc-experience-card {
+      margin: 8px 0 16px 76px;
+      padding: 14px;
+      border: 1px solid color-mix(in srgb, var(--sc-green) 42%, var(--sc-line));
+      border-radius: 11px;
+      background: color-mix(in srgb, var(--sc-green) 8%, var(--sc-surface));
+    }
+    #scenaro-wireframe .sc-experience-card.is-hidden { display: none; }
+    #scenaro-wireframe .sc-experience-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+    #scenaro-wireframe .sc-experience-heading strong { display: block; font-weight: 500; }
+    #scenaro-wireframe .sc-experience-zone-name { display: block; margin-top: 4px; color: var(--sc-green); font-size: 12px; font-weight: 500; }
+    #scenaro-wireframe .sc-experience-badge { flex: 0 0 auto; padding: 4px 7px; border-radius: 999px; color: var(--sc-green); background: var(--sc-surface); font-size: 11px; font-weight: 500; }
+    #scenaro-wireframe .sc-experience-reason { margin: 10px 0 0; color: var(--sc-text); font-size: 13px; line-height: 1.55; }
+    #scenaro-wireframe .sc-experience-meta { display: flex; flex-wrap: wrap; gap: 6px 12px; margin-top: 8px; color: var(--sc-muted); font-size: 12px; }
+    #scenaro-wireframe .sc-experience-actions { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 11px; }
+    #scenaro-wireframe .sc-experience-detail { display: none; margin-top: 10px; padding: 10px; border-radius: 8px; background: var(--sc-surface); color: var(--sc-muted); font-size: 12px; line-height: 1.55; }
+    #scenaro-wireframe .sc-experience-detail.is-open { display: block; }
+    #scenaro-wireframe .sc-experience-notice { margin: 10px 0 0; color: var(--sc-muted); font-size: 12px; }
+    #scenaro-wireframe .sc-experience-status { display: none; margin: 8px 0 16px 76px; padding: 12px 14px; border: 1px solid var(--sc-line); border-radius: 10px; background: var(--sc-subtle); color: var(--sc-muted); font-size: 12px; }
+    #scenaro-wireframe .sc-experience-status.is-open { display: block; }
+    #scenaro-wireframe .sc-alternative-note { padding: 9px 10px; color: var(--sc-airport); background: var(--sc-airport-soft); font-size: 12px; }
+    #scenaro-wireframe .sc-rejected {
+      display: none;
+      margin-top: 14px;
+      padding: 12px;
+      border: 1px solid var(--sc-line);
+      border-radius: 10px;
+      background: var(--sc-subtle);
+    }
+    #scenaro-wireframe .sc-rejected.is-open { display: block; }
+    #scenaro-wireframe .sc-rejected strong { font-weight: 500; }
+    #scenaro-wireframe .sc-rejected span { display: block; margin-top: 5px; color: var(--sc-muted); font-size: 12px; }
+    #scenaro-wireframe .sc-help-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 14px; }
+    #scenaro-wireframe .sc-state-banner {
+      display: none;
+      margin-bottom: 14px;
+      padding: 13px 14px;
+      border-radius: 10px;
+      background: var(--sc-orange-soft);
+      color: var(--sc-orange);
+    }
+    #scenaro-wireframe .sc-state-banner.is-open { display: block; }
+    #scenaro-wireframe .sc-state-banner.is-loading {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: var(--sc-blue-soft);
+      color: var(--sc-blue);
+    }
+    #scenaro-wireframe .sc-state-banner.is-loading::before {
+      content: "";
+      width: 16px;
+      height: 16px;
+      flex: 0 0 auto;
+      border: 2px solid color-mix(in srgb, var(--sc-blue) 24%, transparent);
+      border-top-color: var(--sc-blue);
+      border-radius: 50%;
+      animation: sc-spin .8s linear infinite;
+    }
+    #scenaro-wireframe .sc-data-notice {
+      margin-bottom: 14px;
+      padding: 11px 13px;
+      border: 1px solid var(--sc-line);
+      border-radius: 10px;
+      background: var(--sc-subtle);
+      color: var(--sc-muted);
+      font-size: 12px;
+      line-height: 1.55;
+    }
+    #scenaro-wireframe .sc-data-notice strong { color: var(--sc-text); font-weight: 500; }
+    #scenaro-wireframe button:disabled { cursor: wait; opacity: .58; }
+    #scenaro-wireframe .sc-generation {
+      display: none;
+      place-items: center;
+      gap: 10px;
+      min-height: 190px;
+      margin-top: 14px;
+      border: 1px solid var(--sc-line);
+      border-radius: 12px;
+      background: var(--sc-subtle);
+      text-align: center;
+    }
+    #scenaro-wireframe .sc-generation.is-open { display: grid; }
+    #scenaro-wireframe .sc-spinner { width: 28px; height: 28px; border: 3px solid var(--sc-line); border-top-color: var(--sc-blue); border-radius: 50%; animation: sc-spin .8s linear infinite; }
+    @keyframes sc-spin { to { transform: rotate(360deg); } }
+    #scenaro-wireframe .sc-modal-backdrop {
+      position: fixed;
+      z-index: 100;
+      inset: 0;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 18px;
+      background: light-dark(rgba(20, 31, 43, .48), rgba(0, 0, 0, .66));
+    }
+    #scenaro-wireframe .sc-modal-backdrop.is-open { display: flex; }
+    #scenaro-wireframe .sc-modal {
+      width: min(620px, 100%);
+      max-height: 86vh;
+      overflow: auto;
+      padding: 20px;
+      border: 1px solid var(--sc-line);
+      border-radius: 16px;
+      background: var(--sc-surface);
+      box-shadow: 0 18px 50px var(--sc-shadow);
+    }
+    #scenaro-wireframe .sc-modal.is-wide { width: min(850px, 100%); }
+    #scenaro-wireframe .sc-modal-header { display: flex; justify-content: space-between; gap: 12px; align-items: flex-start; margin-bottom: 18px; }
+    #scenaro-wireframe .sc-modal-header h3 { margin: 0; font-weight: 500; }
+    #scenaro-wireframe .sc-modal-header p { margin: 5px 0 0; color: var(--sc-muted); }
+    #scenaro-wireframe .sc-modal-close { min-width: 40px; padding: 7px; }
+    #scenaro-wireframe .sc-auth-fields { display: grid; gap: 12px; }
+    #scenaro-wireframe .sc-auth-fields label { display: grid; gap: 6px; font-weight: 500; }
+    #scenaro-wireframe .sc-trip-grid { display: grid; grid-template-columns: minmax(220px, .8fr) minmax(0, 1.2fr); gap: 16px; }
+    #scenaro-wireframe .sc-trip-list { display: grid; gap: 8px; }
+    #scenaro-wireframe .sc-trip-item { padding: 12px; text-align: left; border: 1px solid var(--sc-line); border-radius: 10px; background: var(--sc-surface); cursor: pointer; }
+    #scenaro-wireframe .sc-trip-item[aria-pressed="true"] { border-color: var(--sc-blue); background: var(--sc-blue-soft); }
+    #scenaro-wireframe .sc-trip-item span { display: block; margin-top: 4px; color: var(--sc-muted); font-size: 12px; }
+    #scenaro-wireframe .sc-trip-detail { padding: 14px; border-left: 1px solid var(--sc-line); }
+    #scenaro-wireframe .sc-trip-detail h4 { margin: 0 0 10px; font-weight: 500; }
+    #scenaro-wireframe .sc-trip-detail ul { margin: 0 0 16px; padding-left: 20px; color: var(--sc-muted); }
+    #scenaro-wireframe .sc-help-tabs { display: flex; gap: 8px; margin-bottom: 14px; }
+    #scenaro-wireframe .sc-help-panel { display: none; }
+    #scenaro-wireframe .sc-help-panel.is-open { display: block; }
+    #scenaro-wireframe .sc-help-step { display: grid; grid-template-columns: 30px minmax(0,1fr); gap: 10px; padding: 11px 0; border-bottom: 1px solid var(--sc-line); }
+    #scenaro-wireframe .sc-help-step b { display: grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; background: var(--sc-blue-soft); color: var(--sc-blue); }
+    #scenaro-wireframe .sc-help-step span { color: var(--sc-muted); font-size: 12px; }
+    @media (max-width: 820px) {
+      #scenaro-wireframe .sc-layout { grid-template-columns: 1fr; }
+      #scenaro-wireframe .sc-summary { border-right: 0; border-bottom: 1px solid var(--sc-line); padding: 14px 18px; }
+      #scenaro-wireframe .sc-summary-list { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+      #scenaro-wireframe .sc-choice-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      #scenaro-wireframe .sc-place-layout,
+      #scenaro-wireframe .sc-result-grid { grid-template-columns: 1fr; }
+      #scenaro-wireframe .sc-trip-grid { grid-template-columns: 1fr; }
+      #scenaro-wireframe .sc-trip-detail { border-left: 0; border-top: 1px solid var(--sc-line); }
+    }
+    @media (max-width: 560px) {
+      #scenaro-wireframe .sc-header { align-items: flex-start; }
+      #scenaro-wireframe .sc-demo { display: none; }
+      #scenaro-wireframe .sc-stepper { grid-template-columns: repeat(2, 1fr); }
+      #scenaro-wireframe .sc-step { border-bottom: 1px solid var(--sc-line); }
+      #scenaro-wireframe .sc-layout { min-height: 0; }
+      #scenaro-wireframe .sc-summary-list { grid-template-columns: 1fr; }
+      #scenaro-wireframe .sc-screen { padding: 20px 16px; }
+      #scenaro-wireframe .sc-grid-two { grid-template-columns: 1fr; }
+      #scenaro-wireframe .sc-flight-fields { grid-template-columns: 1fr; }
+      #scenaro-wireframe .sc-choice-grid { grid-template-columns: 1fr; }
+      #scenaro-wireframe .sc-place { grid-template-columns: 42px minmax(0, 1fr); }
+      #scenaro-wireframe .sc-required { grid-column: 1 / -1; }
+      #scenaro-wireframe .sc-actions,
+      #scenaro-wireframe .sc-save-row { align-items: stretch; flex-direction: column; }
+      #scenaro-wireframe .sc-actions .sc-button,
+      #scenaro-wireframe .sc-save-row .sc-button { width: 100%; }
+      #scenaro-wireframe .sc-header-actions { flex-wrap: wrap; justify-content: flex-end; }
+      #scenaro-wireframe .sc-region-block { margin-left: 0; }
+      #scenaro-wireframe .sc-experience-card,
+      #scenaro-wireframe .sc-experience-status { margin-left: 0; }
+      #scenaro-wireframe .sc-help-actions { grid-template-columns: 1fr; }
+    }
+  </style>
+
+  <div class="sc-app">
+    <header class="sc-header">
+      <div class="sc-brand">
+        <div class="sc-mark" aria-hidden="true">S</div>
+        <div class="sc-brand-copy">
+          <strong>SCENARO</strong>
+          <span>K-肄섑뀗痢?湲곕컲 吏??泥좊룄 ?ы뻾</span>
+        </div>
+      </div>
+      <div class="sc-header-actions">
+        <select id="language-select" class="sc-header-select" aria-label="?몄뼱 ?좏깮"><option value="ko">?쒓뎅??/option><option value="en">English</option></select>
+        <button type="button" class="sc-demo sc-demo-button" id="demo-state-toggle" aria-expanded="false">?곹깭 ?쒖뿰</button>
+        <button type="button" class="sc-button sc-button-quiet" id="my-trips-button">???쇱젙</button>
+      </div>
+    </header>
+    <div class="sc-demo-panel" id="demo-state-panel">
+      <span>?붿옄??寃?섏슜 ?곹깭:</span>
+      <button type="button" class="sc-button" data-demo-state="generation-fail">理쒖큹 ?앹꽦 遺덇?</button>
+      <button type="button" class="sc-button" data-demo-state="recalc-fail">?ш퀎???ㅽ뙣</button>
+      <button type="button" class="sc-button" data-demo-state="save-fail">????ㅽ뙣</button>
+      <button type="button" class="sc-button" data-demo-state="offline-fallback">??났 議고쉶 ?대갚</button>
+      <button type="button" class="sc-button" data-demo-state="experience-none">泥댄뿕 異붿쿇 ?놁쓬</button>
+      <button type="button" class="sc-button" data-demo-state="experience-unavailable">泥댄뿕 ?곗씠???놁쓬</button>
+      <button type="button" class="sc-button" data-demo-state="clear">?뺤긽 ?곹깭</button>
+    </div>
+
+    <nav class="sc-stepper" aria-label="?쇱젙 ?앹꽦 ?④퀎">
+      <button type="button" class="sc-step" data-screen-target="1" aria-current="step"><span class="sc-step-number">1</span><span>?ы뻾 議곌굔</span></button>
+      <button type="button" class="sc-step" data-screen-target="2"><span class="sc-step-number">2</span><span>K-肄섑뀗痢?/span></button>
+      <button type="button" class="sc-step" data-screen-target="3"><span class="sc-step-number">3</span><span>珥ъ쁺吏</span></button>
+      <button type="button" class="sc-step" data-screen-target="4"><span class="sc-step-number">4</span><span>?쇱젙 寃곌낵</span></button>
+    </nav>
+
+    <div class="sc-layout">
+      <aside class="sc-summary" aria-label="?좏깮 ?붿빟">
+        <h3>?좏깮 ?붿빟</h3>
+        <div class="sc-summary-list">
+          <div class="sc-summary-item"><span>?ы뻾 湲곌컙</span><strong>10.01??0.04 쨌 3諛?4??/strong></div>
+          <div class="sc-summary-item"><span>?ъ슜 媛???쒓컙</span><strong id="summary-window">10.01 12:00??0.04 16:30</strong></div>
+          <div class="sc-summary-item"><span>?좏깮 肄섑뀗痢?/span><div class="sc-summary-chips" id="summary-content"><span class="sc-chip">怨듭쑀</span><span class="sc-chip">?꾧묠鍮?/span></div></div>
+          <div class="sc-summary-item"><span>?좏깮 ?μ냼</span><strong id="summary-required">寃쏀룷? ?대?</strong></div>
+        </div>
+      </aside>
+
+      <main class="sc-main">
+        <section class="sc-screen is-active" data-screen="1">
+          <div class="sc-screen-heading">
+            <h2>怨듯빆?먯꽌 異쒕컻?섍퀬 ?뚯븘???쒓컙???뺥빐二쇱꽭??/h2>
+            <p>??났?몄쓣 議고쉶???덉젙 ?쒓컖??遺덈윭?????ㅼ젣 ?대룞 ?쒖옉쨌蹂듦? ?쒓컖???좏깮?⑸땲??</p>
+          </div>
+          <div class="sc-grid-two">
+            <article class="sc-panel">
+              <div class="sc-panel-title"><h3>?낃뎅</h3><span class="sc-mode">ICN ?몄쿇怨듯빆</span></div>
+              <div class="sc-flight-fields">
+                <div class="sc-field-compact"><label for="arrival-flight-number">?몃챸</label><input id="arrival-flight-number" class="sc-text-input" type="text" value="KE123"></div>
+                <div class="sc-field-compact"><label for="arrival-flight-date">?꾩갑??/label><input id="arrival-flight-date" class="sc-text-input" type="date" value="2025-10-01"></div>
+                <div class="sc-flight-lookup"><button type="button" class="sc-button" data-flight-lookup="arrival">?낃뎅??議고쉶</button><span class="sc-flight-lookup-status" id="arrival-lookup-status" role="status">議고쉶 ??/span></div>
+                <div class="sc-flight-result">
+                  <div class="sc-field-compact"><label for="arrival-flight-time">?먮룞 ?낅젰???꾩갑 ?쒓컖</label><input id="arrival-flight-time" class="sc-text-input" type="time" value="10:00" readonly></div>
+                  <button type="button" class="sc-button sc-button-quiet" data-flight-edit="arrival">吏곸젒 ?섏젙</button>
+                  <div class="sc-flight-result-meta"><span>?곕???<strong id="arrival-terminal">??/strong></span><span>?댄빆 ?곹깭 <strong id="arrival-operation-status">??/strong></span></div>
+                </div>
+              </div>
+              <div class="sc-field">
+                <label for="airport-leave-time">??났???꾩갑 ??怨듯빆?먯꽌 紐??쒖뿉 異쒕컻?좉퉴??</label>
+                <input id="airport-leave-time" class="sc-time-input" type="time" value="12:00">
+                <span class="sc-help">?낃뎅?ъ궗? ?섑븯臾??섎졊 ?쒓컙??怨좊젮???좏깮?댁＜?몄슂.</span>
+              </div>
+              <div class="sc-derived" id="arrival-derived">?꾩갑 ???ъ쑀 2?쒓컙</div>
+            </article>
+            <article class="sc-panel">
+              <div class="sc-panel-title"><h3>異쒓뎅</h3><span class="sc-mode">ICN ?몄쿇怨듯빆</span></div>
+              <div class="sc-flight-fields">
+                <div class="sc-field-compact"><label for="departure-flight-number">?몃챸</label><input id="departure-flight-number" class="sc-text-input" type="text" value="KE124"></div>
+                <div class="sc-field-compact"><label for="departure-flight-date">異쒕컻??/label><input id="departure-flight-date" class="sc-text-input" type="date" value="2025-10-04"></div>
+                <div class="sc-flight-lookup"><button type="button" class="sc-button" data-flight-lookup="departure">異쒓뎅??議고쉶</button><span class="sc-flight-lookup-status" id="departure-lookup-status" role="status">議고쉶 ??/span></div>
+                <div class="sc-flight-result">
+                  <div class="sc-field-compact"><label for="departure-flight-time">?먮룞 ?낅젰??異쒕컻 ?쒓컖</label><input id="departure-flight-time" class="sc-text-input" type="time" value="19:30" readonly></div>
+                  <button type="button" class="sc-button sc-button-quiet" data-flight-edit="departure">吏곸젒 ?섏젙</button>
+                  <div class="sc-flight-result-meta"><span>?곕???<strong id="departure-terminal">??/strong></span><span>?댄빆 ?곹깭 <strong id="departure-operation-status">??/strong></span></div>
+                </div>
+              </div>
+              <div class="sc-field">
+                <label for="airport-return-time">異쒓뎅??怨듯빆??紐??쒓퉴吏 ?꾩갑?좉퉴??</label>
+                <input id="airport-return-time" class="sc-time-input" type="time" value="16:30">
+                <span class="sc-help">?좏깮???쒓컖源뚯? 怨듯빆???꾩갑?섎룄濡??쇱젙??怨꾩궛?⑸땲??</span>
+              </div>
+              <div class="sc-derived" id="departure-derived">??났??異쒕컻 ???ъ쑀 3?쒓컙</div>
+            </article>
+          </div>
+          <div class="sc-note" id="flight-data-notice">??났?몄씠 議고쉶?섏? ?딆쑝硫???λ맂 ?뺣낫 ?먮뒗 吏곸젒 ?낅젰???ъ슜?⑸땲?? 怨듯빆 異쒕컻 媛???쒓컖怨?怨듯빆 ?꾩갑 留덇컧 ?쒓컖? ?쇱젙 ?붿쭊???쒖옉쨌蹂듦? ?쒖빟?쇰줈 ?꾨떖?⑸땲??</div>
+          <div class="sc-actions"><button type="button" class="sc-button sc-button-primary" data-next="2">?ㅼ쓬: K-肄섑뀗痢??좏깮</button></div>
+        </section>
+
+        <section class="sc-screen" data-screen="2">
+          <div class="sc-screen-heading">
+            <h2>醫뗭븘?섎뒗 諛곗슦???묓뭹??寃?됲븯?몄슂</h2>
+            <p>?대쫫 ?쇰?留??낅젰?대룄 寃???꾨낫媛 ?섑??⑸땲??</p>
+          </div>
+          <div class="sc-search-row">
+            <input id="content-search" class="sc-search-input" type="search" aria-label="諛곗슦 ?먮뒗 ?묓뭹 寃?? placeholder="諛곗슦 ?먮뒗 ?묓뭹 寃??(?? 怨? ?꾧묠)" autocomplete="off" aria-autocomplete="list" aria-controls="content-suggestions" aria-expanded="false">
+            <div id="content-suggestions" class="sc-suggestions" role="listbox" aria-label="寃???쒖븞"></div>
+          </div>
+          <div class="sc-selected-box"><strong>?좏깮??諛곗슦쨌?묓뭹</strong><div class="sc-summary-chips" id="selected-content" style="margin-top:10px"><span class="sc-help">?꾩쭅 ?좏깮????ぉ???놁뒿?덈떎.</span></div></div>
+          <div class="sc-actions"><button type="button" class="sc-button" data-next="1">?댁쟾</button><button type="button" class="sc-button sc-button-primary" data-next="3">?ㅼ쓬: 珥ъ쁺吏 ?좏깮</button></div>
+        </section>
+
+        <section class="sc-screen" data-screen="3">
+          <div class="sc-screen-heading">
+            <h2>?꾨낫瑜??뺤씤?섍퀬 媛怨??띠? ?μ냼瑜??좏깮?섏꽭??/h2>
+            <p>?μ냼瑜??좏깮?섎㈃ 吏?꾩뿉???꾩튂媛 媛뺤“?⑸땲??</p>
+          </div>
+          <div class="sc-capacity-alert" id="place-capacity-alert" role="status" aria-live="polite" hidden>
+            <strong id="place-capacity-title"></strong>
+            <span>?μ냼瑜?以꾩씠嫄곕굹 ?ы뻾 ?쒓컙???섎젮二쇱꽭?? ?쇱젙 ?앹꽦 ???ㅼ젣 ?댁감 ?쒓컙?쒖? ?댁쁺?쒓컙?쇰줈 ?ㅼ떆 ?뺤씤?⑸땲??</span>
+          </div>
+          <div class="sc-state-banner" id="generation-failure"><strong>?꾩옱 議곌굔?쇰줈 ?쇱젙??留뚮뱾 ???놁뒿?덈떎.</strong><br><span>?댁슜 媛?ν븳 ?댁감媛 ?놁뼱 珥ъ쁺吏 ?좏깮? ?좎??덉뒿?덈떎. ??났???쒓컖 ?먮뒗 ?ы뻾 ?좎쭨瑜?議곗젙?댁＜?몄슂.</span></div>
+          <div class="sc-generation" id="generation-loading" role="status" aria-live="polite"><span class="sc-spinner" aria-hidden="true"></span><strong>?댁감 ?쒓컙?쒖? ?댁쁺?쒓컙???뺤씤?섍퀬 ?덉뼱??</strong><span class="sc-help">以묐났 ?낅젰??留됯퀬 寃利앸맂 ?쇱젙留?蹂댁뿬?쒕┰?덈떎.</span></div>
+          <div class="sc-place-layout">
+            <div class="sc-place-list">
+              <div class="sc-place">
+                <div class="sc-place-thumb" aria-hidden="true">役?/div>
+                <div class="sc-place-copy"><strong>寃쏀룷? ?대?</strong><span>?꾧묠鍮?쨌 ?곌껐?? 媛뺣쫱??쨌 ?묎렐 ??25遺?異붿젙)</span><span>?곸떆 媛쒕갑 쨌 ?쒓뎅愿愿묎났??쨌 2026.07.20 ?뺤씤</span></div>
+                <button type="button" class="sc-required" data-place="寃쏀룷? ?대?" data-map-marker="gyeongpo" aria-pressed="true">???좏깮??/button>
+              </div>
+              <div class="sc-place">
+                <div class="sc-place-thumb" aria-hidden="true">??/div>
+                <div class="sc-place-copy"><strong>二쇰Ц吏??댁븞?꾨줈</strong><span>?꾧묠鍮?쨌 ?곌껐?? 媛뺣쫱??쨌 ?묎렐 ??45遺?異붿젙)</span><span>?곸떆 媛쒕갑 쨌 ?쒓뎅愿愿묎났??쨌 2026.07.18 ?뺤씤</span></div>
+                <button type="button" class="sc-required" data-place="二쇰Ц吏??댁븞?꾨줈" data-map-marker="jumunjin" aria-pressed="false">?좏깮</button>
+              </div>
+              <div class="sc-place">
+                <div class="sc-place-thumb" aria-hidden="true">櫻?/div>
+                <div class="sc-place-copy"><strong>?뺤닔沅??뚮떞湲?/strong><span>?꾧묠鍮?쨌 ?곌껐?? ?쒖슱??쨌 ?묎렐 ??15遺?異붿젙)</span><span>?곸떆 媛쒕갑 쨌 ?쒖슱愿愿?怨듭떇 ?뺣낫 쨌 2026.08.08 ?뺤씤</span></div>
+                <button type="button" class="sc-required" data-place="?뺤닔沅??뚮떞湲? data-map-marker="seoul-place" aria-pressed="true">???좏깮??/button>
+              </div>
+              <div class="sc-place">
+                <div class="sc-place-thumb" aria-hidden="true">??/div>
+                <div class="sc-place-copy"><strong>?愿???쇱뼇紐⑹옣</strong><span>?꾧묠鍮?쨌 ?곌껐?? 吏꾨???쨌 ?묎렐 ??50遺?異붿젙)</span><span>09:00??7:30 쨌 ?댁쁺?쒓컙 ?뺤씤 ?꾩슂</span></div>
+                <button type="button" class="sc-required" data-place="?愿???쇱뼇紐⑹옣" data-map-marker="samyang" aria-pressed="false">?좏깮</button>
+              </div>
+            </div>
+            <aside class="sc-map-panel">
+              <div class="sc-map-heading"><h3>珥ъ쁺吏 ?꾩튂</h3><div class="sc-map-heading-actions"><span class="sc-mode">??쒕?援?吏??/span><button type="button" class="sc-map-filter" id="selected-place-filter" aria-pressed="false">?좏깮???μ냼留?蹂닿린</button></div></div>
+              <svg class="sc-korea-map" data-map-kind="places" viewBox="0 0 360 430" role="img" aria-label="?몄쿇怨듯빆, ?쒖슱怨?媛뺣쫱 珥ъ쁺吏????듭쟻???꾩튂"><title>珥ъ쁺吏 ?꾩튂</title><desc>Natural Earth ?쒕컲??寃쎄퀎 ?꾩뿉 怨듯빆, 泥좊룄??낵 珥ъ쁺吏瑜??쒖떆??吏??/desc><path class="sc-map-land sc-map-land-north" d="M287.905,51.803L292.751,59.995L279.598,57.19L264.572,72.991L254.236,88.784L255.545,121.851L237.646,131.954L231.494,139.992L218.443,153.415L195.39,160.858L180.368,172.974L179.284,192.407L175.245,197.346L189.019,204.601L208.624,224.093L203.641,234.789L188.904,237.696L164.44,239.831L150.954,259.666L135.502,258.106L133.336,262.079L116.525,253.736L112.348,261.973L102.201,265.606L100.981,257.367L92.014,253.349L82.707,246.338L92.186,226.917L100.353,221.717L97.27,213.607L106.053,189.54L103.786,182.212L83.583,177.316L67.249,165.236L95.438,136.148L133.588,111.554L157.371,78.793L173.803,93.315L203.734,94.996L198.326,70.527L251.789,50.399L265.552,24Z"></path><path class="sc-map-land sc-map-land-south" d="M133.336,262.079L135.502,258.106L150.954,259.666L164.44,239.831L188.904,237.696L203.641,234.789L208.624,224.093L238.505,275.94L247.073,304.076L247.345,353.502L234.298,376.832L202.952,384.949L175.282,402.406L144.101,406L140.23,383.084L146.645,351.27L131.35,306.612L157.061,299.33Z"></path><circle class="sc-map-point sc-map-point-airport" cx="142.58" cy="274.59" r="7"></circle><text x="132" y="292" text-anchor="end">?몄쿇怨듯빆</text><circle class="sc-map-point sc-map-point-station" cx="160.95" cy="270.68" r="7"></circle><text x="160" y="250" text-anchor="middle">?쒖슱??/text><circle class="sc-map-point sc-map-point-station" cx="227.65" cy="261.43" r="7"></circle><text x="244" y="281">媛뺣쫱??/text><circle class="sc-map-point sc-map-point-place" cx="227.92" cy="260.09" r="6"></circle><text x="250" y="252">寃쏀룷?</text><circle class="sc-map-point sc-map-point-place" cx="225.22" cy="255.84" r="6"></circle><text x="218" y="233" text-anchor="end">二쇰Ц吏?/text></svg>
+              <div class="sc-map-legend"><span><i class="sc-map-swatch is-place"></i>珥ъ쁺吏</span><span>?멸렐 ??? ?μ냼 移대뱶?먯꽌 ?뺤씤</span></div>
+              <div class="sc-map-source">??쒕?援?寃쎄퀎: Natural Earth 쨌 ?꾩튂: OpenStreetMap 諛?寃利??쒕뱶</div>
+            </aside>
+          </div>
+          <div class="sc-actions"><button type="button" class="sc-button" data-next="2">?댁쟾</button><button type="button" class="sc-button sc-button-primary" id="generate-itinerary">?쇱젙 留뚮뱾湲?/button></div>
+        </section>
+
+        <section class="sc-screen" data-screen="4">
+          <div class="sc-state-banner" id="result-state-banner"></div>
+          <div class="sc-data-notice"><strong>?곗씠??湲곗?</strong> ?댁감쨌怨듯빆 吏꾩엯?맞룹눋?곸? ?뺣낫??寃利??ㅻ깄??湲곗??낅땲?? ??났??議고쉶媛 遺덇??ν븯硫???λ맂 ?뺣낫 ?먮뒗 吏곸젒 ?낅젰???ъ슜?섎ŉ, ?ㅼ젣 ?덉빟 ???댁넚???몄꽦???ㅼ떆 ?뺤씤?댁빞 ?⑸땲??</div>
+          <div class="sc-screen-heading">
+            <h2>異붿쿇 ?쇱젙</h2>
+            <p>怨듯빆 ?대룞遺??泥좊룄쨌珥ъ쁺吏源뚯? ???먮쫫?쇰줈 蹂댁뿬二쇰ŉ, 異쒕컻 ?쒓컖??諛붽씀硫?愿???쇱젙 ?쒓컖???④퍡 議곗젙?⑸땲??</p>
+          </div>
+          <div class="sc-result-grid">
+            <div class="sc-panel">
+              <div class="sc-day">
+                <div class="sc-day-title"><strong>DAY 1 쨌 10??1??/strong><span class="sc-mode" id="day1-route-label">怨듯빆 ???쒖슱 ??媛뺣쫱</span></div>
+                <div class="sc-timeline">
+                  <div class="sc-event is-airport"><time class="sc-event-time" id="result-arrival-flight-time">10:00</time><div class="sc-event-axis"><span class="sc-event-dot">??/span></div><div class="sc-event-copy"><strong>?몄쿇怨듯빆 ?꾩갑</strong><span id="result-airport-ready-copy">?낃뎅?ъ궗쨌?섑븯臾??섎졊 ??12:00遺???대룞 媛??/span></div></div>
+                  <div class="sc-event is-airport"><time class="sc-event-time" id="result-airport-leave">12:00</time><div class="sc-event-axis"><span class="sc-event-dot">??/span></div><div class="sc-event-copy"><strong>?몄쿇怨듯빆 異쒕컻</strong><span>?ъ슜?먭? ?좏깮???ㅼ젣 異쒕컻 ?쒓컖</span><button type="button" class="sc-connection-toggle sc-train-toggle" data-connection-toggle="outbound-airport-modes" aria-expanded="false"><span data-connection-label>怨듯빆 吏꾩엯 寃쎈줈 쨌 ?쒖슱 寃쎌쑀 泥좊룄??/span><b>竊?/b></button><div class="sc-connection-detail" id="outbound-airport-modes"><strong>?좏깮 ?μ냼? ?곌껐?섎뒗 寃利?寃쎈줈</strong><div class="sc-mode-options" data-mode-group="outbound"><button type="button" class="sc-mode-option" data-mode="rail" data-label="?쒖슱 寃쎌쑀 泥좊룄?? aria-pressed="true"><strong>怨듯빆泥좊룄 ???쒖슱 珥ъ쁺吏 ??KTX</strong><span>?쒖슱 ?꾧묠鍮?珥ъ쁺吏 ?ы븿 ??異붿쿇</span></button><button type="button" class="sc-mode-option" data-mode="bus" data-label="媛뺣쫱 吏곹뻾?? aria-pressed="false"><strong>寃利?怨듯빆踰꾩뒪 ??媛뺣쫱 沅뚯뿭</strong><span>?쒖슱 ?고쉶 ?놁씠 媛뺣쫱遺??諛⑸Ц 쨌 ?댄썑 沅뚯뿭? KTX</span></button></div><div class="sc-alternative-note">寃利앸맂 ?댄뻾 ?ㅻ깄?룹씠 ?덈뒗 寃쎈줈留??좏깮吏濡??쒓났?섎ŉ, ?좏깮?섎㈃ ?꾩껜 ?쇱젙???ㅼ떆 寃利앸맗?덈떎.</div></div></div></div>
+                  <div class="sc-event is-external" id="outbound-access-event"><time class="sc-event-time" id="outbound-access-time">12:18</time><div class="sc-event-axis"><span class="sc-event-dot">A</span></div><div class="sc-event-copy"><strong id="outbound-access-title">怨듯빆泥좊룄 쨌 ?몄쿇怨듯빆 ???쒖슱??/strong><span id="outbound-access-copy">13:10 ?꾩갑 쨌 ?곕え ?ㅻ깄???덉떆</span><span class="sc-source">?몃? 援먰넻?뺣낫 쨌 ?ㅼ젣 ?댄뻾 ?ы솗??/span></div></div>
+                  <div class="sc-region-block" id="day1-seoul-region"><strong>?쒖슱??沅뚯뿭 쨌 ??1?쒓컙 50遺??쒖슜 媛??/strong><span>?좏깮???쒖슱 珥ъ쁺吏瑜?癒쇱? 諛⑸Ц????KTX濡?媛뺣쫱 沅뚯뿭???곌껐?⑸땲??</span><div class="sc-region-places"><span>?뺤닔沅??뚮떞湲?쨌 ?꾧묠鍮?쨌 ?묎렐 ??15遺?/span></div></div>
+                  <div class="sc-event" id="day1-rail-event"><time class="sc-event-time" data-train-time="day1">15:40</time><div class="sc-event-axis"><span class="sc-event-dot">K</span></div><div class="sc-event-copy"><strong>KTX 쨌 ?쒖슱????媛뺣쫱??/strong><span data-train-summary="day1">17:40 媛뺣쫱???꾩갑 쨌 ?쒖슱 珥ъ쁺吏 諛⑸Ц ???대룞</span><button type="button" class="sc-train-toggle" data-train-toggle="day1-options" aria-expanded="false">?ㅻⅨ 異쒕컻 ?쒓컙 <b>竊?/b></button><div class="sc-train-options" id="day1-options"><div class="sc-alternative-note">異쒕컻?몄쓣 ?좏깮?섎㈃ ???댁감瑜?湲곗??쇰줈 ?꾩껜 ?쇱젙??援먯껜?⑸땲??</div><button type="button" class="sc-train-option" data-train-group="day1" data-departure="15:40" data-arrival="17:40" data-utilization="18?쒓컙 20遺? aria-pressed="true"><strong>15:40</strong><span>異붿쿇 쨌 ?쒖슱 珥ъ쁺吏 1怨??ы븿</span></button><button type="button" class="sc-train-option" data-train-group="day1" data-departure="16:40" data-arrival="18:40" data-utilization="17?쒓컙 20遺? aria-pressed="false"><strong>16:40</strong><span>?쒖슱 ?쒖슜 +1?쒓컙 쨌 媛뺣쫱 ?쒖슜 ???쒓컙</span></button><button type="button" class="sc-train-option" data-train-group="day1" data-departure="17:40" data-arrival="19:40" data-utilization="16?쒓컙 20遺? aria-pressed="false"><strong>17:40</strong><span>?쒖슱 ?쒖슜 +2?쒓컙 쨌 媛뺣쫱 ?μ냼 1怨??쒖쇅</span></button></div></div></div>
+                </div>
+                <div class="sc-region-block"><strong>媛뺣쫱??沅뚯뿭 쨌 <span id="day1-region-duration">??18?쒓컙 20遺??쒖슜 媛??/span></strong><span>吏?????뺥솗???μ냼蹂??쒓컖? ?쒖떆?섏? ?딆뒿?덈떎. ??볦옣???묎렐?쒓컙? ?대룞?섎떒 誘명룷??異붿젙移섏엯?덈떎.</span><div class="sc-region-places"><span>寃쏀룷? ?대? 쨌 ?꾧묠鍮?쨌 ??25遺?/span><span>二쇰Ц吏??댁븞?꾨줈 쨌 ?꾧묠鍮?쨌 ??45遺?/span></div></div>
+              </div>
+              <div class="sc-day">
+                <div class="sc-day-title"><strong>DAY 2 쨌 10??2??/strong><span class="sc-mode">媛뺣쫱 泥대쪟</span></div>
+                <div class="sc-region-block" style="margin-left:0"><strong>媛뺣쫱??沅뚯뿭?먯꽌 ?좏깮 ?μ냼 諛⑸Ц</strong><span>寃쏀룷? ?대? 쨌 ?꾧묠鍮?쨌 ?곸떆 媛쒕갑 쨌 ?쒓뎅愿愿묎났??쨌 2026.07.20 ?뺤씤</span><span>二쇰Ц吏??댁븞?꾨줈 쨌 ?꾧묠鍮?쨌 ?곸떆 媛쒕갑 쨌 ?쒓뎅愿愿묎났??쨌 2026.07.18 ?뺤씤</span></div>
+              </div>
+              <div class="sc-day">
+                <div class="sc-day-title"><strong>DAY 3 쨌 10??3??/strong><span class="sc-mode">媛뺣쫱 ???쒖슱</span></div>
+                <div class="sc-timeline">
+                  <div class="sc-event"><time class="sc-event-time" data-train-time="day3">12:00</time><div class="sc-event-axis"><span class="sc-event-dot">K</span></div><div class="sc-event-copy"><strong>KTX 쨌 媛뺣쫱?????쒖슱??/strong><span data-train-summary="day3">14:00 ?쒖슱???꾩갑 쨌 異붿쿇 ?꾩껜 ?쇱젙</span><button type="button" class="sc-train-toggle" data-train-toggle="day3-options" aria-expanded="false">?ㅻⅨ 異쒕컻 ?쒓컙 <b>竊?/b></button><div class="sc-train-options" id="day3-options"><div class="sc-alternative-note">媛??좏깮吏??紐⑤뱺 ?쒓컙?쑣룹슫?곸떆媛꽷룰났??蹂듦? 議곌굔???듦낵???꾩껜 ?쇱젙?낅땲??</div><button type="button" class="sc-train-option" data-train-group="day3" data-departure="12:00" data-arrival="14:00" aria-pressed="true"><strong>12:00</strong><span>異붿쿇 쨌 媛뺣쫱 ?쒖슜 湲곗?</span></button><button type="button" class="sc-train-option" data-train-group="day3" data-departure="13:00" data-arrival="15:00" aria-pressed="false"><strong>13:00</strong><span>媛뺣쫱 ?쒖슜 +1?쒓컙 쨌 ?쒖슱 ?쒖슜 ???쒓컙</span></button><button type="button" class="sc-train-option" data-train-group="day3" data-departure="14:00" data-arrival="16:00" aria-pressed="false"><strong>14:00</strong><span>媛뺣쫱 ?쒖슜 +2?쒓컙 쨌 ?쒖슱 ?μ냼 1怨??쒖쇅</span></button></div></div></div>
+                </div>
+                <div class="sc-region-block"><strong>?쒖슱??沅뚯뿭 쨌 洹援?씪 怨듯빆 ?대룞 ?꾧퉴吏 ?쒖슜</strong><span>?뺤닔沅??뚮떞湲?쨌 ?꾧묠鍮?쨌 ?묎렐 ??15遺?異붿젙) 쨌 ?곸떆 媛쒕갑 쨌 2026.08.08 ?뺤씤</span></div>
+                <section class="sc-experience-card" id="theme-experience-card" aria-labelledby="theme-experience-title">
+                  <div class="sc-experience-heading">
+                    <div><strong id="theme-experience-title">?쒕났쨌?꾪넻臾명솕 泥댄뿕</strong><span class="sc-experience-zone-name" id="theme-experience-zone">?쒖슱 沅곴텗쨌?쒖삦 臾명솕 沅뚯뿭</span></div>
+                    <span class="sc-experience-badge" id="theme-experience-badge">AI ?곌퀎 異붿쿇</span>
+                  </div>
+                  <p class="sc-experience-reason" id="theme-experience-reason">?꾧묠鍮꾩쓽 怨좊젮?쒕? ?쒖궗? ?곌껐?섎뒗 ?꾪넻臾명솕 泥댄뿕 沅뚯뿭?낅땲??</p>
+                  <div class="sc-experience-meta"><span id="theme-experience-route">?꾩옱 ?쒖슱??沅뚯뿭 ?쇱젙怨??곌껐</span><span id="theme-experience-policy">?뱀젙 ?낆껜媛 ?꾨땶 怨듭떇 愿愿묒젙蹂?湲곕컲 沅뚯뿭</span></div>
+                  <div class="sc-experience-actions">
+                    <button type="button" class="sc-button" data-experience-map-toggle aria-pressed="false" data-copy-ko-off="吏?꾩뿉??沅뚯뿭 蹂닿린" data-copy-ko-on="吏?꾩뿉??沅뚯뿭 ?④린湲? data-copy-en-off="Show zone on map" data-copy-en-on="Hide zone on map">吏?꾩뿉??沅뚯뿭 蹂닿린</button>
+                    <button type="button" class="sc-button" id="experience-detail-toggle" aria-expanded="false"><span>怨듭떇 愿愿묒젙蹂?湲곗? 蹂닿린</span> <b>竊?/b></button>
+                  </div>
+                  <div class="sc-experience-detail" id="experience-detail"><strong id="theme-experience-source">愿愿묎났??룹??먯껜 怨듭떇 ?뺣낫 쨌 2026.08.08 ?뺤씤</strong><br><span id="theme-experience-source-note">??沅뚯뿭 ?덉쓽 媛쒕퀎 ?낆껜쨌媛寃㈑룹슫?곸떆媛꾩? 異붿쿇?섍굅??蹂댁쬆?섏? ?딆뒿?덈떎.</span></div>
+                  <p class="sc-experience-notice" id="theme-experience-notice">??二쇰? 泥댄뿕 ?쒖븞?대ŉ ?꾩옱 ?쇱젙?먮뒗 ?먮룞?쇰줈 ?ы븿?섏? ?딆뒿?덈떎.</p>
+                </section>
+                <div class="sc-experience-status" id="theme-experience-status" role="status"></div>
+              </div>
+              <div class="sc-day">
+                <div class="sc-day-title"><strong>DAY 4 쨌 10??4??/strong><span class="sc-mode">?쒖슱 ??怨듯빆</span></div>
+                <div class="sc-timeline">
+                  <div class="sc-event is-external"><time class="sc-event-time" id="return-transfer-departure">15:00</time><div class="sc-event-axis"><span class="sc-event-dot">A</span></div><div class="sc-event-copy"><strong>?쒖슱?먯꽌 ?몄쿇怨듯빆?쇰줈 異쒕컻</strong><span>16:30源뚯? 怨듯빆 ?꾩갑</span><button type="button" class="sc-connection-toggle sc-train-toggle" data-connection-toggle="return-airport-modes" aria-expanded="false"><span data-connection-label>洹援?寃쎈줈 쨌 怨듯빆泥좊룄</span><b>竊?/b></button><div class="sc-connection-detail" id="return-airport-modes"><strong>怨듯빆 ?꾩갑 留덇컧 ?덉뿉 媛?ν븳 寃利?寃쎈줈</strong><div class="sc-mode-options" data-mode-group="return"><button type="button" class="sc-mode-option" data-mode="rail" data-label="怨듯빆泥좊룄" data-departure="15:00" data-arrival="16:10" aria-pressed="true"><strong>怨듯빆泥좊룄 쨌 ?쒖슱?????몄쿇怨듯빆</strong><span>15:00 異쒕컻 쨌 16:10 ?꾩갑</span></button><button type="button" class="sc-mode-option" data-mode="bus" data-label="寃利?怨듯빆踰꾩뒪" data-departure="14:50" data-arrival="16:20" aria-pressed="false"><strong>寃利?怨듯빆踰꾩뒪 쨌 ?쒖슱 ???몄쿇怨듯빆</strong><span>14:50 異쒕컻 쨌 16:20 ?꾩갑 쨌 留덇컧 10遺???/span></button></div><div class="sc-alternative-note">?꾨줈 援ш컙? 寃利??ㅻ깄?룰낵 蹂댁닔???ъ쑀瑜??곸슜?섎ŉ ?ㅼ젣 ?덉빟 ???ы솗?몄씠 ?꾩슂?⑸땲??</div></div></div></div>
+                  <div class="sc-event is-airport"><time class="sc-event-time" id="result-airport-return">16:10</time><div class="sc-event-axis"><span class="sc-event-dot">??/span></div><div class="sc-event-copy"><strong>?몄쿇怨듯빆 ?꾩갑</strong><span id="result-airport-deadline">?ъ슜??吏??留덇컧 16:30 ?댁쟾</span></div></div>
+                  <div class="sc-event is-airport"><time class="sc-event-time" id="result-departure-flight-time">19:30</time><div class="sc-event-axis"><span class="sc-event-dot">??/span></div><div class="sc-event-copy"><strong>異쒓뎅 ??났??/strong><span>泥댄겕?맞룸낫?덇????ъ쑀 ?ы븿</span></div></div>
+                </div>
+              </div>
+            </div>
+
+            <aside class="sc-map-panel">
+              <div class="sc-map-heading"><h3>?꾩껜 ?대룞 ?숈꽑</h3><div class="sc-map-heading-actions"><span class="sc-mode">??쒕?援?吏??/span><button type="button" class="sc-map-filter" id="experience-map-toggle" data-experience-map-toggle aria-pressed="false" data-copy-ko-off="?뚮쭏泥댄뿕 蹂닿린" data-copy-ko-on="?뚮쭏泥댄뿕 ?④린湲? data-copy-en-off="Show experience" data-copy-en-on="Hide experience">?뚮쭏泥댄뿕 蹂닿린</button></div></div>
+              <svg class="sc-korea-map" data-map-kind="route" viewBox="0 0 360 430" role="img" aria-label="?몄쿇怨듯빆?먯꽌 ?쒖슱怨?媛뺣쫱??嫄곗퀜 ?ㅼ떆 ?몄쿇怨듯빆?쇰줈 ?뚯븘?ㅻ뒗 ?숈꽑"><title>?꾩껜 ?대룞 ?숈꽑</title><desc>Natural Earth ?쒕컲??寃쎄퀎 ?꾩뿉 怨듯빆, 泥좊룄??낵 珥ъ쁺吏 ?대룞 ?숈꽑???쒖떆??吏??/desc><path class="sc-map-land sc-map-land-north" d="M287.905,51.803L292.751,59.995L279.598,57.19L264.572,72.991L254.236,88.784L255.545,121.851L237.646,131.954L231.494,139.992L218.443,153.415L195.39,160.858L180.368,172.974L179.284,192.407L175.245,197.346L189.019,204.601L208.624,224.093L203.641,234.789L188.904,237.696L164.44,239.831L150.954,259.666L135.502,258.106L133.336,262.079L116.525,253.736L112.348,261.973L102.201,265.606L100.981,257.367L92.014,253.349L82.707,246.338L92.186,226.917L100.353,221.717L97.27,213.607L106.053,189.54L103.786,182.212L83.583,177.316L67.249,165.236L95.438,136.148L133.588,111.554L157.371,78.793L173.803,93.315L203.734,94.996L198.326,70.527L251.789,50.399L265.552,24Z"></path><path class="sc-map-land sc-map-land-south" d="M133.336,262.079L135.502,258.106L150.954,259.666L164.44,239.831L188.904,237.696L203.641,234.789L208.624,224.093L238.505,275.94L247.073,304.076L247.345,353.502L234.298,376.832L202.952,384.949L175.282,402.406L144.101,406L140.23,383.084L146.645,351.27L131.35,306.612L157.061,299.33Z"></path><path class="sc-map-route" d="M142.58,274.59C142.58,274.59,152.524,272.139,160.95,270.68C175.918,268.088,227.65,261.43,227.65,261.43C227.65,261.43,175.918,268.088,160.95,270.68C152.524,272.139,142.58,274.59,142.58,274.59"></path><circle class="sc-map-experience-zone" cx="160.95" cy="270.68" r="19"></circle><text class="sc-map-experience-label" id="experience-map-zone-label" x="178" y="304">沅곴텗쨌?쒖삦 臾명솕 沅뚯뿭</text><circle class="sc-map-point sc-map-point-airport" cx="142.58" cy="274.59" r="7"></circle><text x="132" y="292" text-anchor="end">?몄쿇怨듯빆</text><circle class="sc-map-point sc-map-point-station" cx="160.95" cy="270.68" r="7"></circle><text x="160" y="250" text-anchor="middle">?쒖슱??/text><circle class="sc-map-point sc-map-point-station" cx="227.65" cy="261.43" r="7"></circle><text x="245" y="282">媛뺣쫱??/text><circle class="sc-map-point sc-map-point-place" cx="227.92" cy="260.09" r="6"></circle><text x="252" y="252">珥ъ쁺吏</text></svg>
+              <div class="sc-map-legend"><span><i class="sc-map-swatch is-airport"></i>怨듯빆</span><span><i class="sc-map-swatch"></i>泥좊룄??/span><span><i class="sc-map-swatch is-place"></i>珥ъ쁺吏</span><span><i class="sc-map-swatch is-experience"></i><span id="experience-map-legend-label">?뚮쭏泥댄뿕 沅뚯뿭</span></span></div>
+              <div class="sc-validation" id="validation-copy">?꾩옱 ?좏깮??紐⑤뱺 ?대룞?몄? ?댁쁺?쒓컙쨌?좏깮 ?μ냼쨌怨듯빆 蹂듦? 議곌굔???듦낵?덉뒿?덈떎.</div>
+              <div class="sc-rejected" id="rejected-places"><strong>?대쾲 ?쇱젙???ы븿?섏? ?딆? ?μ냼</strong><span id="rejected-places-copy"></span></div>
+              <div class="sc-help-actions"><button type="button" class="sc-button" data-help-topic="transfer">?섏듅 ?뚰겕?ㅻ（</button><button type="button" class="sc-button" data-help-topic="luggage">吏?蹂닿? ?덈궡</button></div>
+              <div class="sc-map-source">??쒕?援?寃쎄퀎: Natural Earth 쨌 ?꾩튂: OpenStreetMap 諛?寃利??쒕뱶</div>
+            </aside>
+          </div>
+          <div class="sc-save-row"><span class="sc-save-status" id="save-status">??λ릺吏 ?딆? ?쇱젙</span><button type="button" class="sc-button sc-button-primary" id="save-itinerary">?쇱젙 ???/button></div>
+          <div class="sc-actions"><button type="button" class="sc-button" data-next="3">珥ъ쁺吏 ?섏젙</button></div>
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <div class="sc-modal-backdrop" id="auth-modal" role="dialog" aria-modal="true" aria-labelledby="auth-modal-title">
+    <div class="sc-modal">
+      <div class="sc-modal-header"><div><h3 id="auth-modal-title">?쇱젙????ν븯?ㅻ㈃ 濡쒓렇?명빐二쇱꽭??/h3><p>濡쒓렇???꾧퉴吏 留뚮뱺 ?쇱젙? 洹몃?濡??좎??⑸땲??</p></div><button type="button" class="sc-button sc-modal-close" data-modal-close="auth-modal" aria-label="?リ린">횞</button></div>
+      <div class="sc-auth-fields">
+        <label>?대찓??input id="auth-email" class="sc-text-input" type="email" value="demo@scenaro.kr"></label>
+        <label>鍮꾨?踰덊샇<input id="auth-password" class="sc-text-input" type="password" value="demo1234"></label>
+      </div>
+      <div class="sc-actions"><button type="button" class="sc-button" id="signup-and-save">?뚯썝媛?낇븯怨????/button><button type="button" class="sc-button sc-button-primary" id="login-and-save">濡쒓렇?명븯怨????/button></div>
+    </div>
+  </div>
+
+  <div class="sc-modal-backdrop" id="trips-modal" role="dialog" aria-modal="true" aria-labelledby="trips-modal-title">
+    <div class="sc-modal is-wide">
+      <div class="sc-modal-header"><div><h3 id="trips-modal-title">???쇱젙</h3><p id="account-state">??λ맂 ?쇱젙???ㅼ떆 ?댁뼱 ?꾩옱 議곌굔?쇰줈 ?뺤씤?????덉뒿?덈떎.</p></div><button type="button" class="sc-button sc-modal-close" data-modal-close="trips-modal" aria-label="?リ린">횞</button></div>
+      <div class="sc-trip-grid">
+        <div class="sc-trip-list">
+          <button type="button" class="sc-trip-item" aria-pressed="true"><strong>媛뺣쫱쨌?쒖슱 3諛?4??/strong><span>怨듭쑀쨌?꾧묠鍮?쨌 10.01??0.04</span></button>
+          <button type="button" class="sc-trip-item" aria-pressed="false"><strong>遺?걔룰꼍二?2諛?3??/strong><span>源怨좎?쨌?묒? ?꾩뵪??쨌 11.12??1.14</span></button>
+        </div>
+        <div class="sc-trip-detail">
+          <h4>媛뺣쫱쨌?쒖슱 3諛?4??/h4>
+          <ul><li>?몄쿇怨듯빆 ???쒖슱????媛뺣쫱??/li><li>寃쏀룷? ?대?쨌二쇰Ц吏??댁븞?꾨줈</li><li>理쒓렐 ?뺤씤 2026.08.08</li></ul>
+          <button type="button" class="sc-button sc-button-primary" id="reopen-trip">???쇱젙 ?ㅼ떆 ?닿린</button>
+        </div>
+      </div>
+      <div class="sc-actions"><button type="button" class="sc-button" id="logout-button">濡쒓렇?꾩썐</button></div>
+    </div>
+  </div>
+
+  <div class="sc-modal-backdrop" id="help-modal" role="dialog" aria-modal="true" aria-labelledby="help-modal-title">
+    <div class="sc-modal">
+      <div class="sc-modal-header"><div><h3 id="help-modal-title">?ы뻾 ?ㅽ뻾 ?꾩?</h3><p>?ㅼ젣 ?대룞 ???댁쁺?쒓컙怨??꾩옣 ?덈궡瑜??ㅼ떆 ?뺤씤?댁＜?몄슂.</p></div><button type="button" class="sc-button sc-modal-close" data-modal-close="help-modal" aria-label="?リ린">횞</button></div>
+      <div class="sc-help-tabs"><button type="button" class="sc-button" data-help-tab="transfer" aria-pressed="true">?섏듅</button><button type="button" class="sc-button" data-help-tab="luggage" aria-pressed="false">吏?蹂닿?</button></div>
+      <div class="sc-help-panel is-open" data-help-panel="transfer">
+        <div class="sc-help-step"><b>1</b><div><strong>?몄쿇怨듯빆?먯꽌 怨듯빆泥좊룄 ?묒듅</strong><span>?꾩갑 ?곕??먯뿉??AREX ?쒖?瑜??곕씪 ?대룞?⑸땲??</span></div></div>
+        <div class="sc-help-step"><b>2</b><div><strong>?쒖슱??뿉??KTX ?밴컯???대룞</strong><span>?섏감 ??泥좊룄 ?섏듅 ?쒖?? ?꾧킅?먯쓽 ?댁감踰덊샇瑜??뺤씤?⑸땲??</span></div></div>
+        <div class="sc-help-step"><b>3</b><div><strong>?섏듅 ?ъ쑀 ?ы솗??/strong><span>?쒖뿰 ?뺣낫???ㅻ깄?룹씠硫??뱀씪 吏?걔룹듅媛뺤옣 蹂寃쎌쓣 ?뺤씤?댁빞 ?⑸땲??</span></div></div>
+      </div>
+      <div class="sc-help-panel" data-help-panel="luggage">
+        <div class="sc-help-step"><b>1</b><div><strong>?몄쿇怨듯빆 蹂닿??쒖꽕</strong><span>?곕??먃룹슫?곸떆媛꽷룹닔?섎Ъ ?ш린 ?쒗븳??怨듭떇 ?덈궡?먯꽌 ?뺤씤?⑸땲??</span></div></div>
+        <div class="sc-help-step"><b>2</b><div><strong>?쒖슱??룰컯由됱뿭 蹂닿???/strong><span>???쒖꽕 ?꾩튂? ?붿뿬 蹂닿??⑥? ?꾩옣?먯꽌 ?щ씪吏????덉뒿?덈떎.</span></div></div>
+        <div class="sc-help-step"><b>3</b><div><strong>蹂닿? ???대룞?쒓컙 ?뺣낫</strong><span>李얜뒗 ?쒓컙??怨좊젮???댁감 異쒕컻蹂대떎 ?ъ쑀 ?덇쾶 ??쑝濡??뚯븘?듬땲??</span></div></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (() => {
+      const root = document.getElementById('scenaro-wireframe');
+      root.querySelectorAll('.sc-korea-map').forEach((map) => {
+        map.setAttribute('viewBox', '80 215 220 205');
+        map.setAttribute('aria-label', map.dataset.mapKind === 'places'
+          ? '??쒕?援?吏?꾩뿉 ?쒖떆??珥ъ쁺吏 ?꾨낫 ?꾩튂'
+          : '??쒕?援?吏?꾩뿉 ?쒖떆???꾩껜 ?대룞 ?숈꽑');
+        map.querySelector('desc').textContent = map.dataset.mapKind === 'places'
+          ? '??쒕?援?寃쎄퀎 ?꾩뿉 怨듯빆, 泥좊룄??낵 珥ъ쁺吏 ?꾨낫瑜??쒖떆??吏??
+          : '??쒕?援?寃쎄퀎 ?꾩뿉 怨듯빆, 泥좊룄??낵 珥ъ쁺吏 ?대룞 ?숈꽑???쒖떆??吏??;
+      });
+      const placesMap = root.querySelector('[data-map-kind="places"]');
+      placesMap.setAttribute('aria-label', '?좏깮 媛?ν븳 珥ъ쁺吏????듭쟻???꾩튂');
+      placesMap.querySelector('title').textContent = '珥ъ쁺吏 ?꾩튂';
+      placesMap.querySelector('desc').textContent = '??쒕?援?吏???꾩뿉 ?좏깮 媛?ν븳 珥ъ쁺吏留??쒖떆';
+      const placeMapPoints = [...placesMap.querySelectorAll('.sc-map-point-place')];
+      ['gyeongpo', 'jumunjin'].forEach((key, index) => {
+        const marker = placeMapPoints[index];
+        marker.dataset.placeMarker = key;
+        marker.nextElementSibling.dataset.placeLabel = key;
+        marker.nextElementSibling.classList.add('sc-place-label');
+      });
+      const svgNs = 'http://www.w3.org/2000/svg';
+      const namsanMarker = document.createElementNS(svgNs, 'circle');
+      namsanMarker.setAttribute('class', 'sc-map-point sc-map-point-place');
+      namsanMarker.setAttribute('cx', '172');
+      namsanMarker.setAttribute('cy', '281');
+      namsanMarker.setAttribute('r', '6');
+      namsanMarker.dataset.placeMarker = 'seoul-place';
+      const namsanLabel = document.createElementNS(svgNs, 'text');
+      namsanLabel.setAttribute('x', '179');
+      namsanLabel.setAttribute('y', '299');
+      namsanLabel.setAttribute('class', 'sc-place-label');
+      namsanLabel.dataset.placeLabel = 'seoul-place';
+      namsanLabel.textContent = '?뺤닔沅?;
+      placesMap.append(namsanMarker, namsanLabel);
+      const samyangMarker = document.createElementNS(svgNs, 'circle');
+      samyangMarker.setAttribute('class', 'sc-map-point sc-map-point-place');
+      samyangMarker.setAttribute('cx', '220');
+      samyangMarker.setAttribute('cy', '267');
+      samyangMarker.setAttribute('r', '6');
+      samyangMarker.dataset.placeMarker = 'samyang';
+      const samyangLabel = document.createElementNS(svgNs, 'text');
+      samyangLabel.setAttribute('x', '214');
+      samyangLabel.setAttribute('y', '286');
+      samyangLabel.setAttribute('text-anchor', 'end');
+      samyangLabel.setAttribute('class', 'sc-place-label');
+      samyangLabel.dataset.placeLabel = 'samyang';
+      samyangLabel.textContent = '?쇱뼇紐⑹옣';
+      placesMap.append(samyangMarker, samyangLabel);
+      root.querySelector('[data-map-kind="route"] .sc-map-point-place')?.classList.add('is-selected');
+      const screens = [...root.querySelectorAll('[data-screen]')];
+      const steps = [...root.querySelectorAll('[data-screen-target]')];
+      const showScreen = (number) => {
+        screens.forEach((screen) => screen.classList.toggle('is-active', screen.dataset.screen === String(number)));
+        steps.forEach((step) => {
+          if (step.dataset.screenTarget === String(number)) step.setAttribute('aria-current', 'step');
+          else step.removeAttribute('aria-current');
+        });
+      };
+      steps.forEach((step) => step.addEventListener('click', () => showScreen(step.dataset.screenTarget)));
+      root.querySelectorAll('[data-next]').forEach((button) => button.addEventListener('click', () => showScreen(button.dataset.next)));
+
+      const leaveInput = root.querySelector('#airport-leave-time');
+      const returnInput = root.querySelector('#airport-return-time');
+      const arrivalFlightTime = root.querySelector('#arrival-flight-time');
+      const departureFlightTime = root.querySelector('#departure-flight-time');
+      const arrivalFlightDate = root.querySelector('#arrival-flight-date');
+      const departureFlightDate = root.querySelector('#departure-flight-date');
+      const flightSamples = {
+        arrival: { flightNo: 'KE123', time: '10:00', terminal: 'T1', status: '?덉젙' },
+        departure: { flightNo: 'KE124', time: '19:30', terminal: 'T1', status: '?덉젙' }
+      };
+      const minutes = (value) => {
+        const [hour, minute] = value.split(':').map(Number);
+        return hour * 60 + minute;
+      };
+      const durationLabel = (value) => {
+        const hours = Math.floor(value / 60);
+        const mins = value % 60;
+        return mins ? `${hours}?쒓컙 ${mins}遺? : `${hours}?쒓컙`;
+      };
+      const shortDate = (value) => value ? value.slice(5).replace('-', '.') : '';
+      const updateAirportTimes = () => {
+        const arrivalBuffer = Math.max(0, minutes(leaveInput.value) - minutes(arrivalFlightTime.value));
+        const departureBuffer = Math.max(0, minutes(departureFlightTime.value) - minutes(returnInput.value));
+        root.querySelector('#arrival-derived').textContent = `?꾩갑 ???ъ쑀 ${durationLabel(arrivalBuffer)}`;
+        root.querySelector('#departure-derived').textContent = `??났??異쒕컻 ???ъ쑀 ${durationLabel(departureBuffer)}`;
+        root.querySelector('#summary-window').textContent = `${shortDate(arrivalFlightDate.value)} ${leaveInput.value}??{shortDate(departureFlightDate.value)} ${returnInput.value}`;
+        root.querySelector('#result-airport-leave').textContent = leaveInput.value;
+        root.querySelector('#result-arrival-flight-time').textContent = arrivalFlightTime.value;
+        root.querySelector('#result-airport-ready-copy').textContent = `?낃뎅?ъ궗쨌?섑븯臾??섎졊 ??${leaveInput.value}遺???대룞 媛??;
+        root.querySelector('#result-departure-flight-time').textContent = departureFlightTime.value;
+        root.querySelector('#result-airport-deadline').textContent = `?ъ슜??吏??留덇컧 ${returnInput.value} ?댁쟾`;
+      };
+      [leaveInput, returnInput, arrivalFlightTime, departureFlightTime, arrivalFlightDate, departureFlightDate].forEach((input) => input.addEventListener('input', updateAirportTimes));
+      root.querySelectorAll('[data-flight-lookup]').forEach((button) => {
+        button.addEventListener('click', () => {
+          const direction = button.dataset.flightLookup;
+          const sample = flightSamples[direction];
+          const numberInput = root.querySelector(`#${direction}-flight-number`);
+          const timeInput = root.querySelector(`#${direction}-flight-time`);
+          const lookupStatus = root.querySelector(`#${direction}-lookup-status`);
+          const editButton = root.querySelector(`[data-flight-edit="${direction}"]`);
+          lookupStatus.textContent = '??났?곗씠??議고쉶 以묅?;
+          lookupStatus.className = 'sc-flight-lookup-status';
+          button.disabled = true;
+          setTimeout(() => {
+            button.disabled = false;
+            if (numberInput.value.trim().toUpperCase() !== sample.flightNo) {
+              lookupStatus.textContent = '議고쉶 寃곌낵 ?놁쓬 쨌 吏곸젒 ?낅젰?댁＜?몄슂';
+              lookupStatus.classList.add('is-error');
+              timeInput.readOnly = false;
+              editButton.textContent = '?낅젰 以?;
+              timeInput.focus();
+              return;
+            }
+            timeInput.value = sample.time;
+            timeInput.dataset.lookupValue = sample.time;
+            timeInput.readOnly = true;
+            root.querySelector(`#${direction}-terminal`).textContent = sample.terminal;
+            root.querySelector(`#${direction}-operation-status`).textContent = sample.status;
+            lookupStatus.textContent = '議고쉶 ?꾨즺 쨌 ??났?곗씠??;
+            lookupStatus.classList.add('is-complete');
+            editButton.textContent = '吏곸젒 ?섏젙';
+            updateAirportTimes();
+          }, 350);
+        });
+      });
+      root.querySelectorAll('[data-flight-edit]').forEach((button) => {
+        button.addEventListener('click', () => {
+          const direction = button.dataset.flightEdit;
+          const timeInput = root.querySelector(`#${direction}-flight-time`);
+          const lookupStatus = root.querySelector(`#${direction}-lookup-status`);
+          if (timeInput.readOnly) {
+            timeInput.readOnly = false;
+            button.textContent = '?먮룞媛??ъ슜';
+            lookupStatus.textContent = '吏곸젒 ?낅젰 以?;
+            lookupStatus.className = 'sc-flight-lookup-status';
+            timeInput.focus();
+          } else if (timeInput.dataset.lookupValue) {
+            timeInput.value = timeInput.dataset.lookupValue;
+            timeInput.readOnly = true;
+            button.textContent = '吏곸젒 ?섏젙';
+            lookupStatus.textContent = '議고쉶 ?꾨즺 쨌 ??났?곗씠??;
+            lookupStatus.className = 'sc-flight-lookup-status is-complete';
+            updateAirportTimes();
+          }
+        });
+      });
+
+      const contentCatalog = [
+        { label: '怨듭쑀', type: '諛곗슦' },
+        { label: '源怨좎?', type: '諛곗슦' },
+        { label: '?먯삁吏?, type: '諛곗슦' },
+        { label: '?꾧묠鍮?, type: '?묓뭹' },
+        { label: '?묒? ?꾩뵪??, type: '?묓뭹' },
+        { label: '?뚮쵖', type: '?묓뭹' },
+        { label: '?щ옉??遺덉떆李?, type: '?묓뭹' },
+        { label: '??湲濡쒕━', type: '?묓뭹' }
+      ];
+      const selectedActors = new Set();
+      const selectedWorks = new Set();
+      const searchInput = root.querySelector('#content-search');
+      const suggestions = root.querySelector('#content-suggestions');
+      const selectedItems = () => [
+        ...[...selectedActors].map((label) => ({ label, type: '諛곗슦' })),
+        ...[...selectedWorks].map((label) => ({ label, type: '?묓뭹' }))
+      ];
+      const renderContent = () => {
+        const selected = selectedItems();
+        root.querySelector('#selected-content').innerHTML = selected.length
+          ? selected.map((item) => `<button type="button" class="sc-chip" data-remove-content="${item.label}" aria-label="${item.label} ?좏깮 ?댁젣">${item.label} 쨌 ${item.type} 횞</button>`).join('')
+          : '<span class="sc-help">?꾩쭅 ?좏깮????ぉ???놁뒿?덈떎.</span>';
+        root.querySelector('#summary-content').innerHTML = selected.length
+          ? selected.map((item) => `<span class="sc-chip">${item.label}</span>`).join('')
+          : '<span class="sc-help">?꾩쭅 ?좏깮 ?놁쓬</span>';
+      };
+      const closeSuggestions = () => {
+        suggestions.classList.remove('is-open');
+        searchInput.setAttribute('aria-expanded', 'false');
+      };
+      const chooseContent = (label, type) => {
+        if (type === '諛곗슦') selectedActors.add(label);
+        else selectedWorks.add(label);
+        searchInput.value = '';
+        closeSuggestions();
+        renderContent();
+        searchInput.focus();
+      };
+      searchInput.addEventListener('input', () => {
+        const query = searchInput.value.trim().toLocaleLowerCase('ko');
+        const matches = query
+          ? contentCatalog.filter((item) => item.label.toLocaleLowerCase('ko').includes(query)).slice(0, 6)
+          : [];
+        suggestions.innerHTML = matches.length
+          ? matches.map((item) => `<button type="button" class="sc-suggestion" role="option" data-suggestion-label="${item.label}" data-suggestion-type="${item.type}"><strong>${item.label}</strong><span>${item.type}</span></button>`).join('')
+          : (query ? '<div class="sc-suggestion"><span>寃??寃곌낵媛 ?놁뒿?덈떎.</span></div>' : '');
+        suggestions.classList.toggle('is-open', Boolean(query));
+        searchInput.setAttribute('aria-expanded', query ? 'true' : 'false');
+      });
+      suggestions.addEventListener('click', (event) => {
+        const option = event.target.closest('[data-suggestion-label]');
+        if (option) chooseContent(option.dataset.suggestionLabel, option.dataset.suggestionType);
+      });
+      root.querySelector('#selected-content').addEventListener('click', (event) => {
+        const chip = event.target.closest('[data-remove-content]');
+        if (!chip) return;
+        selectedActors.delete(chip.dataset.removeContent);
+        selectedWorks.delete(chip.dataset.removeContent);
+        renderContent();
+      });
+      renderContent();
+
+      const placeFilter = root.querySelector('#selected-place-filter');
+      const renderRequired = () => {
+        const required = [...root.querySelectorAll('.sc-required[aria-pressed="true"]')].map((button) => button.dataset.place);
+        root.querySelector('#summary-required').textContent = required.length ? required.join(', ') : '?놁쓬';
+        const visitCapacity = 3;
+        const capacityAlert = root.querySelector('#place-capacity-alert');
+        capacityAlert.hidden = required.length <= visitCapacity;
+        root.querySelector('#place-capacity-title').textContent = required.length > visitCapacity
+          ? `?꾩옱 ?ы뻾 議곌굔?먯꽌???좏깮??${required.length}怨?以?理쒕? ${visitCapacity}怨노쭔 諛⑸Ц?????덉뼱??`
+          : '';
+        const selectedOnly = placeFilter.getAttribute('aria-pressed') === 'true';
+        root.querySelectorAll('[data-place-marker]').forEach((marker) => {
+          const selected = root.querySelector(`.sc-required[data-map-marker="${marker.dataset.placeMarker}"]`)?.getAttribute('aria-pressed') === 'true';
+          marker.classList.toggle('is-selected', selected);
+          marker.classList.toggle('is-filtered-out', selectedOnly && !selected);
+        });
+        root.querySelectorAll('[data-place-label]').forEach((label) => {
+          const selected = root.querySelector(`.sc-required[data-map-marker="${label.dataset.placeLabel}"]`)?.getAttribute('aria-pressed') === 'true';
+          label.classList.toggle('is-selected', selected);
+          label.classList.toggle('is-filtered-out', selectedOnly && !selected);
+        });
+      };
+      root.querySelectorAll('.sc-required').forEach((button) => {
+        button.addEventListener('click', () => {
+          const selected = button.getAttribute('aria-pressed') === 'true';
+          button.setAttribute('aria-pressed', selected ? 'false' : 'true');
+          button.textContent = selected ? '?좏깮' : '???좏깮??;
+          renderRequired();
+        });
+      });
+      placeFilter.addEventListener('click', () => {
+        const selectedOnly = placeFilter.getAttribute('aria-pressed') !== 'true';
+        placeFilter.setAttribute('aria-pressed', String(selectedOnly));
+        placeFilter.textContent = selectedOnly ? '紐⑤뱺 ?μ냼 蹂닿린' : '?좏깮???μ냼留?蹂닿린';
+        renderRequired();
+      });
+      renderRequired();
+
+      const markUnsaved = () => {
+        const saveStatus = root.querySelector('#save-status');
+        saveStatus.textContent = '蹂寃쎌궗??씠 ??λ릺吏 ?딆쓬';
+        saveStatus.classList.remove('is-saved');
+        saveStatus.classList.remove('is-error');
+      };
+
+      const runValidatedChange = (applyChange, successCopy) => {
+        const banner = root.querySelector('#result-state-banner');
+        const controls = [...root.querySelectorAll('.sc-mode-option, .sc-train-option')];
+        controls.forEach((control) => { control.disabled = true; });
+        banner.textContent = '?좏깮??寃쎈줈瑜?湲곗??쇰줈 ?쒓컙?쑣룹슫?곸떆媛꽷룰났??留덇컧???ㅼ떆 ?뺤씤?섍퀬 ?덉뒿?덈떎.';
+        banner.className = 'sc-state-banner is-loading';
+        setTimeout(() => {
+          applyChange();
+          controls.forEach((control) => { control.disabled = false; });
+          banner.textContent = successCopy;
+          banner.className = 'sc-state-banner is-open';
+          markUnsaved();
+          setTimeout(() => banner.classList.remove('is-open'), 1400);
+        }, 550);
+      };
+
+      root.querySelectorAll('[data-connection-toggle]').forEach((toggle) => {
+        const detail = root.querySelector(`#${toggle.dataset.connectionToggle}`);
+        toggle.addEventListener('click', () => {
+          const open = toggle.getAttribute('aria-expanded') === 'true';
+          toggle.setAttribute('aria-expanded', open ? 'false' : 'true');
+          toggle.querySelector('b').textContent = open ? '竊? : '??;
+          detail.classList.toggle('is-open', !open);
+        });
+      });
+
+      root.querySelectorAll('[data-mode-group]').forEach((group) => {
+        group.querySelectorAll('.sc-mode-option').forEach((option) => {
+          option.addEventListener('click', () => {
+            if (option.getAttribute('aria-pressed') === 'true') return;
+            const outbound = group.dataset.modeGroup === 'outbound';
+            const bus = option.dataset.mode === 'bus';
+            runValidatedChange(() => {
+              group.querySelectorAll('.sc-mode-option').forEach((peer) => peer.setAttribute('aria-pressed', 'false'));
+              option.setAttribute('aria-pressed', 'true');
+              const detail = group.closest('.sc-connection-detail');
+              const toggle = root.querySelector(`[data-connection-toggle="${detail.id}"]`);
+              toggle.querySelector('[data-connection-label]').textContent = `${outbound ? '怨듯빆 吏꾩엯 寃쎈줈' : '洹援?寃쎈줈'} 쨌 ${option.dataset.label}`;
+              if (outbound) {
+                root.querySelector('#outbound-access-time').textContent = bus ? '12:20' : '12:18';
+                root.querySelector('#outbound-access-title').textContent = bus ? '寃利?怨듯빆踰꾩뒪 쨌 ?몄쿇怨듯빆 ??媛뺣쫱' : '怨듯빆泥좊룄 쨌 ?몄쿇怨듯빆 ???쒖슱??;
+                root.querySelector('#outbound-access-copy').textContent = bus ? '15:50 媛뺣쫱 ?꾩갑 쨌 寃利앸맂 ?ㅻ깄?룸쭔 ?ㅼ젣 ?쒕퉬?ㅼ뿉 ?몄텧' : '13:10 ?쒖슱???꾩갑 쨌 ?곕え ?ㅻ깄???덉떆';
+                root.querySelector('#day1-rail-event').classList.toggle('is-hidden', bus);
+                root.querySelector('#day1-seoul-region').classList.toggle('is-hidden', bus);
+                root.querySelector('#day1-route-label').textContent = bus ? '怨듯빆 ??媛뺣쫱 吏곹뻾' : '怨듯빆 ???쒖슱 ??媛뺣쫱';
+                root.querySelector('#day1-region-duration').textContent = bus ? '??20?쒓컙 10遺??쒖슜 媛?? : '??18?쒓컙 20遺??쒖슜 媛??;
+                root.querySelector('[data-map-kind="route"] .sc-map-route').setAttribute('d', bus
+                  ? 'M142.58,274.59C170,270 200,265 227.65,261.43C210,264 180,268 160.95,270.68C152,272 146,274 142.58,274.59'
+                  : 'M142.58,274.59C142.58,274.59 152.524,272.139 160.95,270.68C175.918,268.088 227.65,261.43 227.65,261.43C227.65,261.43 175.918,268.088 160.95,270.68C152.524,272.139 142.58,274.59 142.58,274.59');
+              } else {
+                root.querySelector('#return-transfer-departure').textContent = option.dataset.departure;
+                root.querySelector('#result-airport-return').textContent = option.dataset.arrival;
+              }
+            }, outbound
+              ? `${option.dataset.label}??湲곗??쇰줈 ?꾩껜 ?쇱젙??援먯껜?섏뿀?듬땲??`
+              : `${option.dataset.label} 洹援?寃쎈줈濡??꾩껜 ?쇱젙??援먯껜?섏뿀?듬땲??`);
+          });
+        });
+      });
+
+      root.querySelectorAll('[data-train-toggle]').forEach((toggle) => {
+        const options = root.querySelector(`#${toggle.dataset.trainToggle}`);
+        toggle.addEventListener('click', () => {
+          const open = toggle.getAttribute('aria-expanded') === 'true';
+          toggle.setAttribute('aria-expanded', open ? 'false' : 'true');
+          toggle.querySelector('b').textContent = open ? '竊? : '??;
+          options.classList.toggle('is-open', !open);
+        });
+      });
+
+      root.querySelectorAll('.sc-train-option').forEach((option) => {
+        option.addEventListener('click', () => {
+          if (option.getAttribute('aria-pressed') === 'true') return;
+          const group = option.dataset.trainGroup;
+          runValidatedChange(() => {
+            root.querySelectorAll(`[data-train-group="${group}"]`).forEach((peer) => peer.setAttribute('aria-pressed', 'false'));
+            option.setAttribute('aria-pressed', 'true');
+            const departure = option.dataset.departure;
+            root.querySelector(`[data-train-time="${group}"]`).textContent = departure;
+            root.querySelector(`[data-train-summary="${group}"]`).textContent = group === 'day1'
+              ? `${option.dataset.arrival} 媛뺣쫱???꾩갑 쨌 ?꾩? ?쒖슜 ??${option.dataset.utilization}`
+              : `${option.dataset.arrival} ?쒖슱???꾩갑 쨌 ?좏깮???꾩껜 ?쇱젙`;
+            if (group === 'day1') root.querySelector('#day1-region-duration').textContent = `??${option.dataset.utilization} ?쒖슜 媛??;
+          }, `${option.dataset.departure} 異쒕컻?몄쓣 湲곗??쇰줈 ?꾩껜 寃利??쇱젙??援먯껜?섏뿀?듬땲??`);
+        });
+      });
+
+      const setExperienceMapVisible = (visible) => {
+        root.querySelectorAll('.sc-map-experience-zone, .sc-map-experience-label').forEach((element) => element.classList.toggle('is-visible', visible));
+        const english = root.getAttribute('lang') === 'en';
+        root.querySelectorAll('[data-experience-map-toggle]').forEach((button) => {
+          button.setAttribute('aria-pressed', String(visible));
+          const language = english ? 'En' : 'Ko';
+          const state = visible ? 'On' : 'Off';
+          button.textContent = button.dataset[`copy${language}${state}`];
+        });
+      };
+      root.querySelectorAll('[data-experience-map-toggle]').forEach((button) => button.addEventListener('click', () => {
+        setExperienceMapVisible(button.getAttribute('aria-pressed') !== 'true');
+      }));
+
+      const experienceDetailToggle = root.querySelector('#experience-detail-toggle');
+      experienceDetailToggle.addEventListener('click', () => {
+        const open = experienceDetailToggle.getAttribute('aria-expanded') === 'true';
+        experienceDetailToggle.setAttribute('aria-expanded', String(!open));
+        experienceDetailToggle.querySelector('b').textContent = open ? '竊? : '??;
+        root.querySelector('#experience-detail').classList.toggle('is-open', !open);
+      });
+
+      const setExperienceState = (state) => {
+        const card = root.querySelector('#theme-experience-card');
+        const status = root.querySelector('#theme-experience-status');
+        const english = root.getAttribute('lang') === 'en';
+        card.classList.toggle('is-hidden', state !== 'recommended');
+        status.classList.toggle('is-open', state !== 'recommended');
+        if (state === 'none') status.textContent = english
+          ? 'No verified experience zone met the relevance threshold for this itinerary.'
+          : '?꾩옱 ?쇱젙?먯꽌??愿?⑤룄 湲곗????듦낵??寃利?泥댄뿕 沅뚯뿭???놁뒿?덈떎.';
+        if (state === 'unavailable') status.textContent = english
+          ? 'Experience recommendations are unavailable because the verified snapshot is missing.'
+          : '寃利앸맂 泥댄뿕 沅뚯뿭 ?ㅻ깄?룹씠 ?놁뼱 異붿쿇???쒓났?????놁뒿?덈떎.';
+        if (state !== 'recommended') setExperienceMapVisible(false);
+      };
+
+      /* 吏?꾨뒗 ?ㅽ듃?뚰겕 ?놁씠 ??긽 蹂댁씠?꾨줉 ??SVG???뺤쟻?쇰줈 ?ы븿?덉뒿?덈떎.
+      const peninsula = {
+        type: 'FeatureCollection',
+        features: [
+          { type: 'Feature', properties: { code: 'PRK' }, geometry: { type: 'Polygon', coordinates: [[[130.64,42.395024],[130.779992,42.22001],[130.400031,42.280004],[129.965949,41.941368],[129.667362,41.601104],[129.705189,40.882828],[129.188115,40.661808],[129.0104,40.485436],[128.633368,40.189847],[127.967414,40.025413],[127.533436,39.75685],[127.50212,39.323931],[127.385434,39.213472],[127.783343,39.050898],[128.349716,38.612243],[128.205746,38.370397],[127.780035,38.304536],[127.073309,38.256115],[126.68372,37.804773],[126.237339,37.840378],[126.174759,37.749686],[125.689104,37.94001],[125.568439,37.752089],[125.27533,37.669071],[125.240087,37.857224],[124.981033,37.948821],[124.712161,38.108346],[124.985994,38.548474],[125.221949,38.665857],[125.132859,38.848559],[125.38659,39.387958],[125.321116,39.551385],[124.737482,39.660344],[124.265625,39.928493],[125.079942,40.569824],[126.182045,41.107336],[126.869083,41.816569],[127.343783,41.503152],[128.208433,41.466772],[128.052215,41.994285],[129.596669,42.424982],[129.994267,42.985387],[130.64,42.395024]]] } },
+          { type: 'Feature', properties: { code: 'KOR' }, geometry: { type: 'Polygon', coordinates: [[[126.174759,37.749686],[126.237339,37.840378],[126.68372,37.804773],[127.073309,38.256115],[127.780035,38.304536],[128.205746,38.370397],[128.349716,38.612243],[129.21292,37.432392],[129.46045,36.784189],[129.468304,35.632141],[129.091377,35.082484],[128.18585,34.890377],[127.386519,34.475674],[126.485748,34.390046],[126.37392,34.93456],[126.559231,35.684541],[126.117398,36.725485],[126.860143,36.893924],[126.174759,37.749686]]] } }
+        ]
+      };
+      const locations = {
+        airport: { name: '?몄쿇怨듯빆', coords: [126.4417093, 37.4634593], type: 'airport', dx: -8, anchor: 'end', dy: 16 },
+        seoul: { name: '?쒖슱??, coords: [126.9725721, 37.5528527], type: 'station', dx: -8, anchor: 'end', dy: -8 },
+        gangneung: { name: '媛뺣쫱??, coords: [128.8993979, 37.76452], type: 'station', dx: -8, anchor: 'end', dy: 18 },
+        gyeongpo: { name: '寃쏀룷? ?대?', coords: [128.907, 37.795], type: 'place', dx: 9, anchor: 'start', dy: -8 },
+        jumunjin: { name: '二쇰Ц吏?, coords: [128.829, 37.892], type: 'place', dx: 9, anchor: 'start', dy: -6 }
+      };
+      const drawMap = (svgNode) => {
+        if (!window.d3) return;
+        const width = Math.max(280, Math.round(svgNode.getBoundingClientRect().width));
+        const height = 430;
+        const svg = d3.select(svgNode);
+        svg.selectAll('*').remove();
+        svg.attr('viewBox', `0 0 ${width} ${height}`);
+        svg.append('title').text(svgNode.getAttribute('aria-label'));
+        svg.append('desc').text('Natural Earth ?쒕컲??寃쎄퀎 ?꾩뿉 寃利앸맂 怨듯빆怨?泥좊룄?? 珥ъ쁺吏 ?꾩튂瑜??쒖떆??吏??);
+        const projection = d3.geoMercator().fitExtent([[34, 24], [width - 34, height - 24]], peninsula);
+        const path = d3.geoPath(projection);
+        svg.selectAll('path.sc-land')
+          .data(peninsula.features)
+          .join('path')
+          .attr('class', 'sc-land')
+          .attr('d', path)
+          .attr('fill', feature => feature.properties.code === 'KOR' ? 'var(--sc-blue-soft)' : 'var(--sc-subtle)')
+          .attr('stroke', 'var(--sc-line)')
+          .attr('stroke-width', 1.4);
+
+        const kind = svgNode.dataset.mapKind;
+        if (kind === 'route') {
+          const route = [locations.airport, locations.seoul, locations.gangneung, locations.seoul, locations.airport].map(item => projection(item.coords));
+          svg.append('path')
+            .attr('d', d3.line().curve(d3.curveCatmullRom.alpha(.45))(route))
+            .attr('fill', 'none')
+            .attr('stroke', 'var(--sc-orange)')
+            .attr('stroke-width', 3)
+            .attr('stroke-linecap', 'round')
+            .attr('stroke-linejoin', 'round');
+        }
+
+        const keys = kind === 'places'
+          ? ['airport', 'seoul', 'gangneung', 'gyeongpo', 'jumunjin']
+          : ['airport', 'seoul', 'gangneung', 'gyeongpo'];
+        const points = keys.map(key => locations[key]);
+        const groups = svg.selectAll('g.sc-map-point')
+          .data(points)
+          .join('g')
+          .attr('class', 'sc-map-point')
+          .attr('transform', item => `translate(${projection(item.coords).join(',')})`);
+        groups.append('circle')
+          .attr('r', item => item.type === 'place' ? 6 : 7)
+          .attr('fill', item => item.type === 'airport' ? 'var(--sc-airport)' : item.type === 'place' ? 'var(--sc-orange)' : 'var(--sc-blue)')
+          .attr('stroke', 'var(--sc-surface)')
+          .attr('stroke-width', 3);
+        groups.append('text')
+          .attr('x', item => item.dx)
+          .attr('y', item => item.dy)
+          .attr('text-anchor', item => item.anchor)
+          .attr('fill', 'var(--sc-text)')
+          .attr('font-size', 12)
+          .attr('font-weight', 500)
+          .text(item => item.name);
+      };
+      root.querySelectorAll('.sc-korea-map').forEach((svg) => {
+        drawMap(svg);
+        new ResizeObserver(() => drawMap(svg)).observe(svg);
+      });
+      */
+
+      const openModal = (id) => root.querySelector(`#${id}`).classList.add('is-open');
+      const closeModal = (id) => root.querySelector(`#${id}`).classList.remove('is-open');
+      root.querySelectorAll('[data-modal-close]').forEach((button) => button.addEventListener('click', () => closeModal(button.dataset.modalClose)));
+      root.querySelectorAll('.sc-modal-backdrop').forEach((backdrop) => backdrop.addEventListener('click', (event) => {
+        if (event.target === backdrop) backdrop.classList.remove('is-open');
+      }));
+
+      const updateRejectedPlaces = () => {
+        const selected = [...root.querySelectorAll('.sc-required[aria-pressed="true"]')].map((button) => button.dataset.place);
+        const rejected = selected.slice(3);
+        const panel = root.querySelector('#rejected-places');
+        panel.classList.toggle('is-open', rejected.length > 0);
+        root.querySelector('#rejected-places-copy').textContent = rejected.length
+          ? `${rejected.join(', ')} 쨌 ?꾩옱 ?댁감 ?쒓컙?쒖? ?댁쁺?쒓컙 ?덉뿉 諛곗튂?????놁뼱 ?쒖쇅?덉뒿?덈떎.`
+          : '';
+      };
+      root.querySelector('#generate-itinerary').addEventListener('click', () => {
+        const button = root.querySelector('#generate-itinerary');
+        const loading = root.querySelector('#generation-loading');
+        root.querySelector('#generation-failure').classList.remove('is-open');
+        button.disabled = true;
+        loading.classList.add('is-open');
+        setTimeout(() => {
+          button.disabled = false;
+          loading.classList.remove('is-open');
+          updateRejectedPlaces();
+          showScreen(4);
+        }, 650);
+      });
+
+      let authenticated = false;
+      let authIntent = 'save';
+      const performSave = () => {
+        const status = root.querySelector('#save-status');
+        status.textContent = '???쇱젙????λ맖';
+        status.className = 'sc-save-status is-saved';
+      };
+      const requestAuth = (intent) => {
+        authIntent = intent;
+        root.querySelector('#auth-modal-title').textContent = intent === 'save' ? '?쇱젙????ν븯?ㅻ㈃ 濡쒓렇?명빐二쇱꽭?? : '???쇱젙??蹂대젮硫?濡쒓렇?명빐二쇱꽭??;
+        openModal('auth-modal');
+      };
+      root.querySelector('#save-itinerary').addEventListener('click', () => authenticated ? performSave() : requestAuth('save'));
+      root.querySelector('#my-trips-button').addEventListener('click', () => authenticated ? openModal('trips-modal') : requestAuth('trips'));
+      const finishAuth = () => {
+        authenticated = true;
+        root.querySelector('#my-trips-button').textContent = '吏?곷떂 쨌 ???쇱젙';
+        closeModal('auth-modal');
+        if (authIntent === 'save') performSave();
+        else openModal('trips-modal');
+      };
+      root.querySelector('#login-and-save').addEventListener('click', finishAuth);
+      root.querySelector('#signup-and-save').addEventListener('click', finishAuth);
+      root.querySelector('#logout-button').addEventListener('click', () => {
+        authenticated = false;
+        root.querySelector('#my-trips-button').textContent = '???쇱젙';
+        closeModal('trips-modal');
+      });
+      root.querySelector('#reopen-trip').addEventListener('click', () => {
+        closeModal('trips-modal');
+        showScreen(4);
+        root.querySelector('#result-state-banner').textContent = '??λ맂 ?쇱젙???ㅼ떆 ?댁뿀?듬땲?? ?꾩옱 ?ㅻ깄??湲곗??쇰줈 ?쒖떆?⑸땲??';
+        root.querySelector('#result-state-banner').classList.add('is-open');
+      });
+      root.querySelectorAll('.sc-trip-item').forEach((item) => item.addEventListener('click', () => {
+        root.querySelectorAll('.sc-trip-item').forEach((peer) => peer.setAttribute('aria-pressed', 'false'));
+        item.setAttribute('aria-pressed', 'true');
+        root.querySelector('.sc-trip-detail h4').textContent = item.querySelector('strong').textContent;
+      }));
+
+      const showHelp = (topic) => {
+        root.querySelectorAll('[data-help-tab]').forEach((tab) => tab.setAttribute('aria-pressed', String(tab.dataset.helpTab === topic)));
+        root.querySelectorAll('[data-help-panel]').forEach((panel) => panel.classList.toggle('is-open', panel.dataset.helpPanel === topic));
+        openModal('help-modal');
+      };
+      root.querySelectorAll('[data-help-topic]').forEach((button) => button.addEventListener('click', () => showHelp(button.dataset.helpTopic)));
+      root.querySelectorAll('[data-help-tab]').forEach((button) => button.addEventListener('click', () => showHelp(button.dataset.helpTab)));
+
+      const demoPanel = root.querySelector('#demo-state-panel');
+      root.querySelector('#demo-state-toggle').addEventListener('click', () => {
+        const open = root.querySelector('#demo-state-toggle').getAttribute('aria-expanded') === 'true';
+        root.querySelector('#demo-state-toggle').setAttribute('aria-expanded', String(!open));
+        demoPanel.classList.toggle('is-open', !open);
+      });
+      root.querySelectorAll('[data-demo-state]').forEach((button) => button.addEventListener('click', () => {
+        const state = button.dataset.demoState;
+        root.querySelector('#generation-failure').classList.remove('is-open');
+        root.querySelector('#result-state-banner').classList.remove('is-open');
+        const saveStatus = root.querySelector('#save-status');
+        saveStatus.className = 'sc-save-status';
+        saveStatus.textContent = '??λ릺吏 ?딆? ?쇱젙';
+        if (state === 'generation-fail') {
+          showScreen(3);
+          root.querySelector('#generation-failure').classList.add('is-open');
+        } else if (state === 'recalc-fail') {
+          showScreen(4);
+          const banner = root.querySelector('#result-state-banner');
+          banner.innerHTML = '<strong>?쇱젙???ㅼ떆 怨꾩궛?섏? 紐삵뻽?듬땲??</strong><br><span>湲곗〈 ?쇱젙? 洹몃?濡??좎??덉뒿?덈떎. ???대Ⅸ ??났???먮뒗 ?ㅻⅨ ?댁감瑜??좏깮?댁＜?몄슂.</span>';
+          banner.classList.add('is-open');
+        } else if (state === 'save-fail') {
+          showScreen(4);
+          saveStatus.textContent = '??μ뿉 ?ㅽ뙣?덉뒿?덈떎. ?곌껐???뺤씤?섍퀬 ?ㅼ떆 ?쒕룄?댁＜?몄슂.';
+          saveStatus.classList.add('is-error');
+        } else if (state === 'offline-fallback') {
+          showScreen(1);
+          ['arrival', 'departure'].forEach((direction) => {
+            const lookupStatus = root.querySelector(`#${direction}-lookup-status`);
+            lookupStatus.textContent = '議고쉶 ?ㅽ뙣 쨌 吏곸젒 ?낅젰 ?ъ슜';
+            lookupStatus.className = 'sc-flight-lookup-status is-error';
+            root.querySelector(`#${direction}-flight-time`).readOnly = false;
+          });
+          root.querySelector('#flight-data-notice').innerHTML = '<strong>??났 議고쉶瑜??ъ슜?????놁뒿?덈떎.</strong> ??λ맂 ?뺣낫 ?먮뒗 吏곸젒 ?낅젰?쇰줈 怨꾩냽?????덉쑝硫? ?댁감쨌珥ъ쁺吏 ?ㅻ깄?룹? 洹몃?濡??ъ슜?????덉뒿?덈떎.';
+        } else if (state === 'experience-none') {
+          showScreen(4);
+          setExperienceState('none');
+        } else if (state === 'experience-unavailable') {
+          showScreen(4);
+          setExperienceState('unavailable');
+        } else if (state === 'clear') {
+          setExperienceState('recommended');
+          ['arrival', 'departure'].forEach((direction) => {
+            const lookupStatus = root.querySelector(`#${direction}-lookup-status`);
+            lookupStatus.textContent = '議고쉶 ??;
+            lookupStatus.className = 'sc-flight-lookup-status';
+            root.querySelector(`#${direction}-flight-time`).readOnly = true;
+          });
+          root.querySelector('#flight-data-notice').textContent = '??났?몄씠 議고쉶?섏? ?딆쑝硫???λ맂 ?뺣낫 ?먮뒗 吏곸젒 ?낅젰???ъ슜?⑸땲?? 怨듯빆 異쒕컻 媛???쒓컖怨?怨듯빆 ?꾩갑 留덇컧 ?쒓컖? ?쇱젙 ?붿쭊???쒖옉쨌蹂듦? ?쒖빟?쇰줈 ?꾨떖?⑸땲??';
+        }
+      }));
+
+      const coreTranslations = [
+        ['.sc-brand-copy span', 'K-肄섑뀗痢?湲곕컲 吏??泥좊룄 ?ы뻾', 'Regional rail trips inspired by K-content'],
+        ['[data-screen-target="1"] span:last-child', '?ы뻾 議곌굔', 'Trip details'],
+        ['[data-screen-target="2"] span:last-child', 'K-肄섑뀗痢?, 'K-content'],
+        ['[data-screen-target="3"] span:last-child', '珥ъ쁺吏', 'Locations'],
+        ['[data-screen-target="4"] span:last-child', '?쇱젙 寃곌낵', 'Itinerary'],
+        ['[data-screen="1"] h2', '怨듯빆?먯꽌 異쒕컻?섍퀬 ?뚯븘???쒓컙???뺥빐二쇱꽭??, 'Choose when to leave and return to the airport'],
+        ['[data-screen="2"] h2', '醫뗭븘?섎뒗 諛곗슦???묓뭹??寃?됲븯?몄슂', 'Search for actors or titles you love'],
+        ['[data-screen="3"] h2', '?꾨낫瑜??뺤씤?섍퀬 媛怨??띠? ?μ냼瑜??좏깮?섏꽭??, 'Choose the filming locations you want to visit'],
+        ['[data-screen="4"] .sc-screen-heading h2', '異붿쿇 ?쇱젙', 'Recommended itinerary'],
+        ['#generate-itinerary', '?쇱젙 留뚮뱾湲?, 'Build itinerary'],
+        ['#save-itinerary', '?쇱젙 ???, 'Save itinerary'],
+        ['#theme-experience-title', '?쒕났쨌?꾪넻臾명솕 泥댄뿕', 'Hanbok & traditional culture'],
+        ['#theme-experience-zone', '?쒖슱 沅곴텗쨌?쒖삦 臾명솕 沅뚯뿭', 'Seoul palace & hanok culture zone'],
+        ['#theme-experience-badge', 'AI ?곌퀎 異붿쿇', 'AI-matched suggestion'],
+        ['#theme-experience-reason', '?꾧묠鍮꾩쓽 怨좊젮?쒕? ?쒖궗? ?곌껐?섎뒗 ?꾪넻臾명솕 泥댄뿕 沅뚯뿭?낅땲??', 'A traditional culture zone related to the Goryeo-era narrative in Guardian: The Lonely and Great God.'],
+        ['#theme-experience-route', '?꾩옱 ?쒖슱??沅뚯뿭 ?쇱젙怨??곌껐', 'Connected to the current Seoul Station itinerary'],
+        ['#theme-experience-policy', '?뱀젙 ?낆껜媛 ?꾨땶 怨듭떇 愿愿묒젙蹂?湲곕컲 沅뚯뿭', 'An official tourism zone, not a specific business'],
+        ['#experience-detail-toggle span', '怨듭떇 愿愿묒젙蹂?湲곗? 蹂닿린', 'View official tourism basis'],
+        ['#theme-experience-source', '愿愿묎났??룹??먯껜 怨듭떇 ?뺣낫 쨌 2026.08.08 ?뺤씤', 'Official tourism and local-government sources 쨌 verified 2026.08.08'],
+        ['#theme-experience-source-note', '??沅뚯뿭 ?덉쓽 媛쒕퀎 ?낆껜쨌媛寃㈑룹슫?곸떆媛꾩? 異붿쿇?섍굅??蹂댁쬆?섏? ?딆뒿?덈떎.', 'Individual businesses, prices, and opening hours within this zone are not recommended or guaranteed.'],
+        ['#theme-experience-notice', '??二쇰? 泥댄뿕 ?쒖븞?대ŉ ?꾩옱 ?쇱젙?먮뒗 ?먮룞?쇰줈 ?ы븿?섏? ?딆뒿?덈떎.', '??This is a nearby experience suggestion and is not automatically added to the itinerary.'],
+        ['#experience-map-zone-label', '沅곴텗쨌?쒖삦 臾명솕 沅뚯뿭', 'Palace & hanok culture zone'],
+        ['#experience-map-legend-label', '?뚮쭏泥댄뿕 沅뚯뿭', 'Experience zone']
+      ];
+      root.querySelector('#language-select').addEventListener('change', (event) => {
+        const english = event.target.value === 'en';
+        root.setAttribute('lang', english ? 'en' : 'ko');
+        coreTranslations.forEach(([selector, ko, en]) => {
+          const element = root.querySelector(selector);
+          if (element) element.textContent = english ? en : ko;
+        });
+        const status = root.querySelector('#theme-experience-status');
+        if (status.classList.contains('is-open')) {
+          setExperienceState(status.textContent.includes('?ㅻ깄??) || status.textContent.includes('snapshot') ? 'unavailable' : 'none');
+        }
+        const mapVisible = root.querySelector('.sc-map-experience-zone').classList.contains('is-visible');
+        setExperienceMapVisible(mapVisible);
+      });
+    })();
+  </script>
+</div>
+</body>
+</html>
+
