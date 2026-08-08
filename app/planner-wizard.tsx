@@ -13,7 +13,7 @@ import {
   type PlaceCandidate,
 } from "@/lib/actions/places";
 import { planItinerary } from "@/lib/actions/itinerary";
-import { excludedPlaceIdsFrom, selectableCandidateIds } from "@/lib/candidates";
+import { excludedPlaceIdsFrom, initialCandidateIds } from "@/lib/candidates";
 import { getFlightInfo } from "@/lib/actions/flights";
 import { t, type Locale, type MessageKey } from "@/lib/i18n/messages";
 import { buildMockAlternatives, type MockAlternative } from "@/lib/alternatives-mock";
@@ -28,6 +28,7 @@ import {
   banner,
   displayedDays as deriveDisplayedDays,
   initialItineraryView,
+  itineraryWarnings as deriveWarnings,
   recommendedDays,
   reduceItineraryView,
   rejectedPlaces as deriveRejectedPlaces,
@@ -115,7 +116,7 @@ export default function PlannerWizard() {
     });
     setCandidateData(data);
     const excluded = new Set(c.excludedPlaceIds);
-    setSelectedPlaceIds(new Set(selectableCandidateIds(data.candidates).filter((id) => !excluded.has(id))));
+    setSelectedPlaceIds(new Set(initialCandidateIds(data.candidates).filter((id) => !excluded.has(id))));
     dispatchView({ type: "REOPEN", record });
     setStep(4);
   }, []);
@@ -150,8 +151,8 @@ export default function PlannerWizard() {
       selectedWorkIds: selectedWorks.map((w) => w.id),
     });
     setCandidateData(data);
-    // #14·PR #30 리뷰 ①: 미확인 후보는 표시 전용 — 초기 선택은 검증 후보만
-    setSelectedPlaceIds(new Set(selectableCandidateIds(data.candidates)));
+    // #43 확정: 미확인 후보도 선택 가능 — 초기 선택은 전체 후보, 엔진이 경고와 함께 배치
+    setSelectedPlaceIds(new Set(initialCandidateIds(data.candidates)));
     setStep(3);
   }, [selectedActors, selectedWorks]);
 
@@ -190,6 +191,7 @@ export default function PlannerWizard() {
   const displayedDays = deriveDisplayedDays(view);
   const viewBanner = banner(view);
   const viewRejected = deriveRejectedPlaces(view);
+  const viewWarnings = deriveWarnings(view);
 
   const chooseAlternative = useCallback((alt: MockAlternative | null) => {
     dispatchView({ type: "SELECT_ALT", alt });
@@ -202,6 +204,9 @@ export default function PlannerWizard() {
     const constraints = view.reopened?.constraints ?? currentConstraints();
     if (!constraints) return null;
     const context = view.reopened?.context ?? { actors: selectedActors, works: selectedWorks };
+    // 재저장도 재열람 보존 규칙과 동일 — 저장 당시 경고를 잃지 않는다 (#43 경고 누락 0건)
+    const warnings = view.reopened?.warnings
+      ?? (view.result?.status === "planned" ? view.result.warnings : []);
     const primaryContent =
       context.actors[0]?.name[locale] ?? context.works[0]?.title[locale] ?? null;
     return {
@@ -211,8 +216,9 @@ export default function PlannerWizard() {
       schemaVersion: SAVED_SCHEMA_VERSION,
       snapshotVersion: "unversioned", // 시드 기준일 필드(#6 8/9 작업) 합류 시 교체
       context,
+      warnings,
     };
-  }, [displayedDays, view.reopened, currentConstraints, selectedActors, selectedWorks, locale]);
+  }, [displayedDays, view.reopened, view.result, currentConstraints, selectedActors, selectedWorks, locale]);
 
   const SAVE_STATUS_KEY: Record<SaveStatus, MessageKey> = {
     none: "save.statusNone",
@@ -234,9 +240,6 @@ export default function PlannerWizard() {
     return list;
   }, [candidateData, sortBy]);
 
-  const verifiedCandidates = sortedCandidates.filter((c) => c.openingHours.type !== "unverified");
-  const unverifiedCandidates = sortedCandidates.filter((c) => c.openingHours.type === "unverified");
-
   // #33 — availableMinutes 포맷 전용 (재계산 금지)
   const availableLabel = (minutes: number) => {
     const hours = Math.floor(minutes / 60);
@@ -246,6 +249,7 @@ export default function PlannerWizard() {
       : `${mins}${tr("region.minutes")}`;
     return `${tr("region.about")} ${duration} ${tr("region.available")}`;
   };
+
 
   const stationName = (id: string) =>
     candidateData?.stations.find((s) => s.id === id)?.name[locale] ?? id;
@@ -487,7 +491,8 @@ export default function PlannerWizard() {
             </p>
           )}
           <ul className="mt-3 space-y-2">
-            {verifiedCandidates.map((c) => (
+            {/* #43 확정: 미확인 후보도 같은 목록에서 선택 가능 — 카드에 경고 배지 */}
+            {sortedCandidates.map((c) => (
               <PlaceCard key={c.id} candidate={c} locale={locale} tr={tr}
                 selected={selectedPlaceIds.has(c.id)}
                 stationName={stationName} workTitles={workTitles}
@@ -499,21 +504,6 @@ export default function PlannerWizard() {
               />
             ))}
           </ul>
-          {unverifiedCandidates.length > 0 && (
-            <div className="mt-4 rounded-lg border border-dashed p-3">
-              <h3 className="text-sm font-medium text-gray-600">{tr("step3.needsCheck")}</h3>
-              <p className="text-xs text-gray-400">{tr("step3.needsCheckDesc")}</p>
-              <ul className="mt-2 space-y-2">
-                {unverifiedCandidates.map((c) => (
-                  // #14·PR #30 리뷰 ①: 참고 표시 전용 — 선택 조작 없음
-                  <PlaceCard key={c.id} candidate={c} locale={locale} tr={tr}
-                    selected={false}
-                    stationName={stationName} workTitles={workTitles}
-                  />
-                ))}
-              </ul>
-            </div>
-          )}
           <div className="mt-4 flex justify-between">
             <button className="rounded border px-4 py-2 text-sm" onClick={() => setStep(2)}>{tr("common.back")}</button>
             <button
@@ -596,6 +586,19 @@ export default function PlannerWizard() {
                   </div>
                 );
               })}
+              {viewWarnings.length > 0 && (
+                // #43 수용 기준: 경고 누락 0건 — 배치는 유지하되 방문 전 확인을 안내
+                <div className="rounded-lg border border-amber-200 bg-amber-50 p-4">
+                  <h3 className="text-sm font-medium text-amber-800">{tr("step4.warningsTitle")}</h3>
+                  <ul className="mt-2 space-y-1 text-sm text-amber-800">
+                    {viewWarnings.map((warning) => (
+                      <li key={warning.placeId}>
+                        ⚠️ {placeName(warning.placeId)} — {tr(`reason.${warning.detail}` as MessageKey)}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
               {viewRejected.length > 0 && (
                 <div className="rounded-lg border border-amber-200 bg-amber-50 p-4">
                   <h3 className="text-sm font-medium text-amber-800">{tr("step4.rejectedTitle")}</h3>
@@ -603,7 +606,6 @@ export default function PlannerWizard() {
                     {viewRejected.map((reason) => (
                       <li key={`${reason.placeId}-${reason.code}`}>
                         {placeName(reason.placeId)} — {tr(`reason.${reason.code}` as MessageKey)}
-                        {"detail" in reason && <> ({tr(`reason.${reason.detail}` as MessageKey)})</>}
                       </li>
                     ))}
                   </ul>
@@ -684,7 +686,7 @@ function PlaceCard({ candidate, locale, tr, selected, onToggle, stationName, wor
   locale: Locale;
   tr: (key: MessageKey) => string;
   selected: boolean;
-  onToggle?: () => void; // 없으면 표시 전용 카드 (#14·PR #30 리뷰 ①)
+  onToggle: () => void; // #43: 미확인 후보도 선택 가능 — 표시 전용 카드 없음
   stationName: (id: string) => string;
   workTitles: (ids: string[]) => string;
 }) {
@@ -692,7 +694,7 @@ function PlaceCard({ candidate, locale, tr, selected, onToggle, stationName, wor
   const hoursLabel =
     oh.type === "always_open" ? tr("step3.alwaysOpen")
     : oh.type === "hours" ? `${oh.open}–${oh.close}`
-    : tr("step3.hoursUnverified");
+    : null; // 미확인은 텍스트 대신 경고 배지 (#43)
   const source = oh.type !== "unverified" ? `${oh.source} · ${oh.verifiedAt} ${tr("step3.verifiedAt")}` : null;
 
   return (
@@ -709,21 +711,20 @@ function PlaceCard({ candidate, locale, tr, selected, onToggle, stationName, wor
             {workTitles(candidate.workIds)} · {stationName(candidate.nearestStationId)} · {tr("step3.accessAbout")} {candidate.accessEstimate.minutes}{tr("step3.accessEstimate")}
           </p>
           <p className="mt-0.5 text-xs text-gray-500">
-            {hoursLabel}{source ? ` · ${source}` : ""}
+            {hoursLabel ?? (
+              <span className="rounded bg-amber-100 px-1.5 py-0.5 text-amber-800">
+                ⚠️ {tr("step3.hoursUnverified")}
+              </span>
+            )}
+            {source ? ` · ${source}` : ""}
           </p>
         </div>
-        {onToggle ? (
-          <button
-            className={`shrink-0 rounded px-3 py-1 text-sm ${selected ? "bg-blue-600 text-white" : "border"}`}
-            onClick={onToggle}
-          >
-            {selected ? "✓" : "+"}
-          </button>
-        ) : (
-          <span className="shrink-0 rounded bg-gray-100 px-3 py-1 text-xs text-gray-500">
-            {tr("step3.viewOnly")}
-          </span>
-        )}
+        <button
+          className={`shrink-0 rounded px-3 py-1 text-sm ${selected ? "bg-blue-600 text-white" : "border"}`}
+          onClick={onToggle}
+        >
+          {selected ? "✓" : "+"}
+        </button>
       </div>
     </li>
   );

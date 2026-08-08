@@ -1,7 +1,7 @@
-# 씬나로 일정 엔진 명세 v0.2
+# 씬나로 일정 엔진 명세 v0.3
 
-> 근거: 이슈 #2(편집·사유 코드), #3(점수·사전식 비교), #5(운영시간) 최종 결정 + PR #9 리뷰 반영.
-> 상위 문서: 요구사항 정의서(v0.3에서 REQ-ITIN-008 '코스 선택 기준'·회귀 테스트 요구 신설 예정).
+> 근거: 이슈 #2(편집·사유 코드), #3(점수·사전식 비교), #5·#43(운영시간) 최종 결정 + PR #9 리뷰 반영.
+> 상위 문서: PRD v0.2, 요구사항 정의서 v0.5.
 
 ## 1. 원칙
 
@@ -25,7 +25,7 @@ Planner
 type TripConstraints = {
   arrivalAt: string;            // ISO, 입국편 도착
   departureAt: string;          // ISO, 출국편 출발
-  airportReadyAt: string;       // ISO, 공항 출발 가능 시각 — 절대 시각 입력 (#14 차단 2, REQ-SRCH-002 개정)
+  airportReadyAt: string;       // ISO, 공항 출발 가능 시각 — 절대 시각 입력 (#14 차단 2)
   airportStationId?: string;    // 공항철도 출발·도착역(생략 시 Station.isAirport)
   gatewayStationId?: string;    // 관문역(생략 시 Station.isGateway·gatewayPriority)
   selectedActorIds?: string[];  // 배우 중심 탐색(복수 가능)
@@ -41,8 +41,11 @@ type TripConstraints = {
 function generateItinerary(c: TripConstraints, repos: Repos): ItineraryResult;
 ```
 
-편집 3동작(촬영지 제외 / 방문일 변경 / 항공편 시각 변경)은 모두 `TripConstraints`의
+편집 2동작(촬영지 제외 / 항공편 시각 변경)은 모두 `TripConstraints`의
 해당 필드만 바꿔 같은 함수를 다시 호출한다. UI는 **성공 응답일 때만** 일정을 교체한다. (REQ-EDIT-005)
+
+방문일 변경·고정과 필수 방문 입력은 PRD v0.2에서 제거됐다. 엔진은 장소를 특정 날짜에
+강제하거나 반드시 포함시키는 계약을 제공하지 않는다.
 
 ### 관계 유형은 시드가 아니라 constraints에서 파생한다 (PR #9 리뷰 B)
 
@@ -73,7 +76,7 @@ const OpeningHours = z.discriminatedUnion("type", [
     closedDays: z.array(z.enum(["sun", "mon", "tue", "wed", "thu", "fri", "sat"])).optional(),
     source: z.string(), verifiedAt: z.string(),
   }),
-  z.object({ type: z.literal("unverified") }),    // 자동 일정 제외 대상 (#5)
+  z.object({ type: z.literal("unverified") }),    // 자동 제외하지 않고 경고 대상 (#43)
 ]);
 
 // PR #9 리뷰 1: 부분 누락을 Zod에서 원천 차단하기 위해 통합 객체로
@@ -115,7 +118,7 @@ const Station = z.object({
 1. 입력 검증           — Zod. 실패는 예외(사유 코드 아님)
 2. 후보 장소 수집       — §2 파생 규칙으로 selected_work / actor_other_work 후보만
 3. 하드 필터           — 아래 5.의 제약 위반 장소·후보 제거, 사유 코드 기록
-4. 일자 슬롯 구성       — 입국+airportExitOffset ... 출국-departureBuffer 사이,
+4. 일자 슬롯 구성       — airportReadyAt ... airportArrivalDeadline 사이,
                          maxPlacesPerDay·일자별 dailySlackMinutes 반영
 5. 열차 선택           — 공항철도를 포함한 시간표 스냅샷에서 연결 가능한 편 탐색
 6. 후보 일정 생성·비교   — 사전식 비교(아래 6.)로 최선 일정 선택
@@ -131,20 +134,19 @@ const Station = z.object({
 
 공항↔관문역은 지역 내 이동 추정과 다르다. `airportStationId`에서 출발해 공항철도
 스냅샷 leg를 실제 열차 구간처럼 탐색하고, 귀환도 공항역 도착 시각이
-`airportArrivalDeadline`(공항 도착 마감 시각) 이하여야 한다. 다른 열차번호로 갈아탈 때는 최소
+`airportArrivalDeadline` 이하여야 한다. 다른 열차번호로 갈아탈 때는 최소
 15분의 환승 간격을 적용한다.
 
 `dailySlackMinutes`는 출국 전 잔여시간의 대리값으로 쓰지 않는다. 각 방문일을 KST 0시 기준으로
 나누고, 해당 일자의 여행 가능 구간에서 열차·역–장소 왕복·체류가 점유한 시간을 제외한 여유가
 기본값 이상인지 날짜별로 판정한다.
 
-## 5. 하드 제약 (위반 시 점수 계산 전 제거)
+## 5. 하드 제약과 운영시간 경고
 
 | 제약 | 사유 코드 |
 |---|---|
 | 연결 가능한 열차 존재 | TRAIN_UNAVAILABLE |
-| 출국 역산: 마지막 방문의 역 복귀 + 열차 + 공항 이동 완료 ≤ airportArrivalDeadline(공항 도착 마감) | DEPARTURE_DEADLINE_EXCEEDED |
-| 운영시간 판정(아래 판정식) | ACTIVITY_WINDOW_MISMATCH (+detail) |
+| 출국 역산: 마지막 방문의 역 복귀 + 열차 + 공항 이동 완료 ≤ airportArrivalDeadline | DEPARTURE_DEADLINE_EXCEEDED |
 | 사용자 제외 장소 미포함 | (후보 수집 단계에서 제거, 코드 불필요 — 사용자 직접 제외는 rejectedPlaces에 넣지 않는다) |
 
 ### 운영시간 판정식 (PR #9 리뷰 A — open·stayMinutes 포함)
@@ -159,7 +161,8 @@ visitEnd         = visitStart + stayMinutes
 ```
 
 - `always_open`(출처 확인)은 판정을 통과 처리하되 복귀시간 모델은 동일 적용. (#5)
-- 판정 실패의 상세는 detail로 구분하며, 세 경우 모두 자동 일정에서 제외된다:
+- 운영시간 판정 결과는 배치 선호와 경고에 사용한다. 장소가 철거 또는 접근 불가가 아니라면
+  운영시간 밖이라는 이유만으로 후보에서 제거하지 않는다.
 
 ```ts
 type ActivityWindowDetail =
@@ -167,15 +170,21 @@ type ActivityWindowDetail =
   | "CONSERVATIVE_BUFFER_MISMATCH"  // 기본 추정 가능, 버퍼 적용 시 불가
   | "UNVERIFIED_HOURS";             // 운영시간 미확인
 
-// 후보 하나의 자동 제외 사유 (rejectedPlaces 전용, 3종)
+// 후보 하나의 자동 제외 사유
 type CandidateRejection =
   | { code: "TRAIN_UNAVAILABLE"; placeId: string }
-  | { code: "DEPARTURE_DEADLINE_EXCEEDED"; placeId: string }
-  | { code: "ACTIVITY_WINDOW_MISMATCH"; placeId: string; detail: ActivityWindowDetail };
+  | { code: "DEPARTURE_DEADLINE_EXCEEDED"; placeId: string };
+
+// 자동 제외하지 않고 사용자에게 표시하는 운영시간 경고
+type CandidateWarning = {
+  code: "ACTIVITY_WINDOW_MISMATCH";
+  placeId: string;
+  detail: ActivityWindowDetail;
+};
+
 ```
 
-- UI 후보 목록: `CONSERVATIVE_BUFFER_MISMATCH`·`UNVERIFIED_HOURS`는
-  `방문 가능성 직접 확인 필요` 배지로 표시. (#5)
+- UI 후보 목록: 세 상세 사유를 운영시간·방문 가능성 확인 배지로 표시한다.
 - 발표 표현: 실제 운영시간 위반을 단정하지 않고 **보수 추정 기준상 활동 시간대 불일치**로 설명.
 
 ## 6. 후보 비교 — 사전식 (#3, 가중합 아님)
@@ -192,9 +201,10 @@ type ComparisonKeys = {
     actorOtherWorkPlaceCount: number; // 1b) 1a 동점일 때, 높을수록 우선
   };
   visitablePlaceCount: number;        // 2) 높을수록 우선
-  totalRailMinutes: number;           // 3) 낮을수록 우선
-  transferCount: number;              // 4) 낮을수록 우선
-  slackSatisfied: boolean;            // 5) 충족 우선 (미달만 불이익, 초과 가점 없음)
+  activityWarningCount: number;       // 3) 낮을수록 우선 (#43)
+  totalRailMinutes: number;           // 4) 낮을수록 우선
+  transferCount: number;              // 5) 낮을수록 우선
+  slackSatisfied: boolean;            // 6) 충족 우선 (미달만 불이익, 초과 가점 없음)
 };
 ```
 
@@ -203,11 +213,10 @@ type ComparisonKeys = {
 beam pruning도 동일한 1차 관련성 키(`selected_work` 방문 수)를 먼저 사용하고, 그 다음
 `readyAt`과 안정 ID로 정렬한다. MVP beam 상한은 1,000개이며 회귀 프리셋으로 결과를 고정한다.
 
-## 7. 출력 타입 (PR #9 리뷰 C — diff는 앱 계층 책임)
+## 7. 출력 타입
 
-엔진은 이전 일정을 입력받지 않는다(단일 constraints 입력 유지). 대신 `metrics`를 반환하고,
-**편집 전후 비교(diff)는 UI/애플리케이션 계층이 이전 결과의 metrics와 새 결과의 metrics를
-비교해 만든다.** (REQ-EDIT-004)
+엔진은 이전 일정을 입력받지 않고 단일 constraints 입력으로 새 일정을 계산한다. MVP는 별도의
+편집 전후 요약을 제공하지 않으므로, UI는 성공한 새 결과를 명확히 표시하는 데 `metrics`를 쓴다.
 
 ```ts
 type ItineraryMetrics = {
@@ -221,7 +230,8 @@ type ItineraryResult =
   | {
       status: "planned";            // 선택된 일정이 있는 정상 상태
       days: DayPlan[];              // 장소·열차편(시각·역)·추정 이동 라벨 포함
-      rejectedPlaces: CandidateRejection[];  // 엔진이 자동 제외한 후보 3종 (REQ-ITIN-005)
+      rejectedPlaces: CandidateRejection[];
+      warnings: CandidateWarning[];
       comparisonKeys: ComparisonKeys;     // '왜 이 일정인가' 화면 재사용 (#3)
       metrics: ItineraryMetrics;
     }
@@ -229,13 +239,13 @@ type ItineraryResult =
       status: "empty";              // 정상 처리, 조건을 만족하는 일정 없음
       days: [];
       rejectedPlaces: CandidateRejection[];
+      warnings: CandidateWarning[];
     };
 ```
 
-`#14 ver.0.4` 확정으로 필수 방문·방문일 고정 입력이 제거되어 사용자 제약 실패(ok:false)
-분기가 소멸했다. 결과는 **planned / empty 2분기**이며 `status`가 유일한 판별자다. 후보가
-전멸하면 `status: "empty"` — '조건을 만족하는 일정 없음' 화면 상태(PRD 9.2)의 근거이며,
-empty 상태에는 comparisonKeys·metrics를 포함하지 않는다(허위 값 금지, PR #16 리뷰).
+후보가 전멸하면 **`status: "empty"`**로 반환한다. 최초 생성에서는 빈 상태를 표시하고,
+기존 일정 편집 중에는 이전 일정을 유지한다. empty 상태에는 선택된 일정이 없으므로
+comparisonKeys·metrics를 포함하지 않는다(허위 값 금지, PR #16 리뷰).
 
 `DayPlan.date`는 KST 기준 `YYYY-MM-DD`이고, 항목·열차의 `arriveAt`·`departAt`은 절대시각
 ISO 문자열(직렬화 시 UTC `Z`)이다. UI는 표시에만 사용자 시간대/KST 변환을 적용한다.
@@ -269,22 +279,23 @@ type RegionWindow = {
   구간(현재 공항철도, 추후 검증 공항버스 `GatewayLeg` 동일 규칙)의 도착이
   `GATEWAY_ARRIVAL` 경계다. 출국 마감(`airportArrivalDeadline`) 이후 시간은 계산하지 않는다.
 
-## 8. 회귀 프리셋 3개 (기존 Python 시나리오 정답값 이식)
+## 8. 회귀 프리셋 3개
+
 
 공통 fixture(정의서 v0.5 ITIN-003과 동일): 김고은 / 작품 4편 / 촬영지 14곳 시드(가안 — #1 수동 검증 완료 시 확정), 기준 입국 2026-08-12 10:00 / 출국 2026-08-14 18:00 / 시간표 스냅샷 2026-08-07.
 
 | 프리셋 | 조작 | 기대 결과 |
 |---|---|---|
-| 촬영지 제외 | 경기전 포함 → 제외 | 폐쇄된 나주영상테마파크를 교체한 호남권 장거리 후보 제외 재구성 |
+| 촬영지 제외 | 나주영상테마파크 포함 → 제외 | ktx_시각조회.py 정답값과 일치하는 재구성 |
 | 항공 변경 | 정상 도착 → 2시간 지연 | korail_시나리오확정.py 정답값 — 첫날 일정 재구성 (REQ-EDIT-006) |
-| (폐기) 방문일 고정 | #14 ver.0.4에서 방문일 고정 제거로 폐기 | 대체 프리셋(예: 폐쇄 장소 제외 fixture — PR #31 논의)은 회귀 이식 시 확정 |
+| 복수 선택 합집합 | 배우와 별도 작품을 함께 선택 | 두 선택의 검증 장소 합집합을 중복 없이 사용하고 동일 입력에 동일 결과 |
 
 기대 순위(사전식 키 값 포함)는 테스트 코드에 상수로 명시한다. 08-09 플래너 P0 완료 후
 PR 필수 체크로 활성화(팀 규칙 CI 절).
 
 ## 9. 성능·기타
 
-- 재계산 목표 2초 이내(REQ-EDIT-001, 정의서 v0.3에서 NFR-PERF-001을 P0로 승격 예정).
+- 재계산 목표 2초 이내(REQ-EDIT-001, NFR-PERF-001).
 - 열차 시간표·항공은 스냅샷 기준. 항공 실호출 1건은 어댑터 계층에서 5초 폴백(REQ-DATA-003).
 - 엔진 단위 테스트는 Vitest, UI 없이 실행 가능해야 한다.
 
@@ -295,7 +306,7 @@ PR 필수 체크로 활성화(팀 규칙 CI 절).
 | 2. 입력·단일 진입점·관계 파생 | REQ-EDIT-001·002·006, REQ-SRCH-002 |
 | 3. 시드 스키마 | REQ-DATA-001·002·004·005, NFR-I18N-001 |
 | 4. 역 허브 이동 모델 | REQ-ITIN-006 |
-| 5. 하드 제약·사유 코드·판정식 | REQ-ITIN-003·005·006, NFR-ACCU-001·003 |
-| 6. 사전식 비교 | 정의서 v0.3 신설 예정 REQ-ITIN-008 '코스 선택 기준' |
-| 7. 출력·metrics | REQ-EDIT-004·005, REQ-ITIN-005 |
-| 8. 회귀 프리셋 | 정의서 v0.3 회귀 테스트 요구 신설 예정, 팀 규칙 CI 절 |
+| 5. 하드 제약·운영시간 경고·판정식 | REQ-ITIN-003·005·006, NFR-ACCU-001·003 |
+| 6. 사전식 비교 | REQ-ITIN-008 '코스 선택 기준' |
+| 7. 출력·metrics | REQ-EDIT-001·005, REQ-ITIN-005 |
+| 8. 회귀 프리셋 | NFR-TEST-001, 팀 규칙 CI 절 |
