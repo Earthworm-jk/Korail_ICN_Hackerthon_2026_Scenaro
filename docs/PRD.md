@@ -315,7 +315,7 @@ USER_CONSTRAINT_INFEASIBLE은 constraintType과 targetId로 실패한 조건과 
 
 회귀 프리셋은 별도 자동 테스트 3개다.
 
-- 나주 관련 장소 제외
+- 경기전 제외
 - 항공편 2시간 지연
 - 특정 장소 방문일 고정
 
