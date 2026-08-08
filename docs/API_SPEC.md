@@ -66,10 +66,13 @@ getCandidatePlaces(selection: {
 }): Promise<PlaceCandidate[]>;
 // PlaceCandidate = PlaceT + {
 //   relation: "selected_work" | "actor_other_work",  // §2 파생(상호 배타)
+//   relationDetails: RelationDetail[],               // #51 — 작품별 회차·장면·장면 배우(검증값 그대로)
 //   badge?: "CONSERVATIVE_BUFFER_MISMATCH"           // 방문 가능성 직접 확인 필요
 //         | "UNVERIFIED_HOURS"                       // 운영시간 확인 필요
 // }  // ActivityWindowDetail과 동일 열거값 — 화면 배지 2종(WIREFRAMES S3)과 1:1
-// REQ-SRCH-005·006·007. 정렬은 UI에서 (관련성 / officialSourceCount 토글)
+// RelationDetail = WorkPlaceRelation의 workId·episodeLabel?·sceneNote?·featuredActorIds?·actorPresenceReviewed?
+// REQ-SRCH-005·006·007. 정렬은 UI에서 (관련성 / officialSourceCount 토글).
+// #51 배우 선택 필터는 표시 레벨(lib/candidates.ts splitByActorPresence) — 엔진·초기 선택(#43) 무관
 
 // lib/actions/itinerary.ts
 planItinerary(request: PlanRequest): Promise<PlanActionResult>;
