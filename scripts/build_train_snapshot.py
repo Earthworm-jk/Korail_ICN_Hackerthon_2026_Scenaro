@@ -11,10 +11,11 @@
       TRAIN_API_KEY='...' python3 scripts/build_train_snapshot.py --dry-run
 
 소스:
-  - tago  : 국토교통부(TAGO) 열차정보서비스 — 교차검증용
-  - korail: 한국철도공사 열차운행계획 — 주 데이터 (팀 테스트 완료. 엔드포인트·응답 필드를
-            KORAIL_* 상수에 채우면 활성화된다)
-  기본은 --source tago. 두 소스 모두 응답을 공통 Leg로 정규화하므로 상수만 맞추면 된다.
+  - korail: 한국철도공사 열차운행계획(openapis.korail.com) — 주 데이터, 기본 소스.
+            계약(경로·쿼리 DSL·응답 필드)은 샘플 페이지 실측으로 확정 완료 —
+            openapis.korail.com에 등록된 키만 있으면 동작한다.
+  - tago  : 국토교통부(TAGO) 열차정보서비스 — 교차검증용. 표준 URI가 코드 12(서비스 없음)라
+            팀 테스트에서 동작한 실제 URI 확인 필요.
 
 산출 규칙:
   - OD_PAIRS × DATES 왕복을 조회해 legs 생성
@@ -65,10 +66,16 @@ TAGO_TIMETABLE_OP = "getStrtpntAlocFndTrainInfo"
 # 역 이름 → nodeid 조회에 쓰는 도시코드 (서울 11, 강원 51, 전북 45 — 팀 확인값으로 조정)
 TAGO_CITY_CODES = [11, 51, 45]
 
-# ---- KORAIL (한국철도공사 열차운행계획) — 주 데이터 ----------------------------------
-# 팀 테스트에서 확인한 End Point·오퍼레이션·필드명을 채우면 --source korail이 활성화된다.
-KORAIL_BASE = os.environ.get("KORAIL_BASE", "")  # 예: https://apis.data.go.kr/B553766/...
-KORAIL_TIMETABLE_OP = os.environ.get("KORAIL_TIMETABLE_OP", "")
+# ---- KORAIL (한국철도공사 열차운행계획, openapis.korail.com) — 주 데이터 --------------
+# 2026-08-08 샘플 페이지 실측으로 확정한 계약:
+#   GET {BASE}/{OP}?serviceKey=...&pageNo=1&numOfRows=200
+#       &cond[run_ymd::GTE]=YYYYMMDD&cond[run_ymd::LTE]=YYYYMMDD
+#       &cond[dptre_stn_nm::EQ]=서울&cond[arvl_stn_nm::EQ]=강릉
+#   응답: response.header.resultCode "0" / body.items.item[] —
+#         trn_no("00801"), trn_plan_dptre_dt("2026-08-12 05:06:00.0"), trn_plan_arvl_dt
+# 키는 openapis.korail.com에 등록된 키여야 한다("-3 등록되지 않은 서비스"면 미등록).
+KORAIL_BASE = os.environ.get("KORAIL_BASE", "https://openapis.korail.com/api/v1")
+KORAIL_TIMETABLE_OP = os.environ.get("KORAIL_TIMETABLE_OP", "run/travelerTrainRunPlan")
 
 
 @dataclass(frozen=True)
@@ -131,6 +138,11 @@ def get_json(base: str, op: str, key: str, params: dict[str, str], timeout: floa
         header = payload.get("response", {}).get("header", {})
         if header.get("resultCode") not in {"00", 0, "0"}:
             msg = header.get("resultMsg", "unknown")
+            if str(header.get("resultCode")) == "-3":
+                raise ApiError(
+                    "[진단] 코레일 포털: 등록되지 않은 서비스(-3) — 이 키가 openapis.korail.com에서 "
+                    "발급·서비스 신청된 키인지 확인 필요 (data.go.kr 키와 별개일 수 있음)",
+                )
             if "KEY" in str(msg).upper():
                 last_error = ApiError(f"[진단] 키 인증 문제({msg}) — 반대 인코딩형으로 재시도")
                 continue
@@ -198,18 +210,39 @@ def fetch_tago_legs(key: str) -> list[Leg]:
     return legs
 
 
+def korail_dt_to_iso(value: str) -> str:
+    """"2026-08-12 05:06:00.0" → "2026-08-12T05:06:00+09:00" (KST 고정)"""
+    s = str(value).strip()
+    if len(s) < 19:
+        raise ApiError(f"코레일 시각 형식 이상: {value}")
+    return f"{s[0:10]}T{s[11:19]}+09:00"
+
+
 def fetch_korail_legs(key: str) -> list[Leg]:
-    if not KORAIL_BASE or not KORAIL_TIMETABLE_OP:
-        raise ApiError(
-            "[진단] 코레일 열차운행계획 엔드포인트 미설정 — 팀 테스트에서 확인한 "
-            "KORAIL_BASE/KORAIL_TIMETABLE_OP(환경변수 또는 스크립트 상수)와 응답 필드 매핑을 채워주세요.",
-        )
-    raise ApiError("korail 소스 정규화 매핑 미구현 — 응답 구조를 받으면 채운다")
+    legs: list[Leg] = []
+    for (from_id, from_name), (to_id, to_name) in OD_PAIRS:
+        for date in DATES:
+            for (a_id, a_name), (b_id, b_name) in [((from_id, from_name), (to_id, to_name)),
+                                                   ((to_id, to_name), (from_id, from_name))]:
+                payload = get_json(KORAIL_BASE, KORAIL_TIMETABLE_OP, key, {
+                    "pageNo": "1", "numOfRows": "200",
+                    "cond[run_ymd::GTE]": date, "cond[run_ymd::LTE]": date,
+                    "cond[dptre_stn_nm::EQ]": a_name, "cond[arvl_stn_nm::EQ]": b_name,
+                })
+                for item in items_of(payload):
+                    legs.append(Leg(
+                        trainNo=str(item["trn_no"]).zfill(5),
+                        fromStationId=a_id,
+                        toStationId=b_id,
+                        departAt=korail_dt_to_iso(item["trn_plan_dptre_dt"]),
+                        arriveAt=korail_dt_to_iso(item["trn_plan_arvl_dt"]),
+                    ))
+    return legs
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("--source", choices=["tago", "korail"], default="tago")
+    parser.add_argument("--source", choices=["korail", "tago"], default="korail")  # 팀 방향: 코레일 주 데이터
     parser.add_argument("--dry-run", action="store_true", help="파일을 쓰지 않고 요약만 출력")
     args = parser.parse_args()
 
