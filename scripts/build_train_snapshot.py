@@ -11,9 +11,9 @@
       TRAIN_API_KEY='...' python3 scripts/build_train_snapshot.py --dry-run
 
 소스:
-  - korail: 한국철도공사 열차운행계획(openapis.korail.com) — 주 데이터, 기본 소스.
-            계약(경로·쿼리 DSL·응답 필드)은 샘플 페이지 실측으로 확정 완료 —
-            openapis.korail.com에 등록된 키만 있으면 동작한다.
+  - korail: 한국철도공사_열차운행정보(공공데이터포털 B551457) — 주 데이터, 기본 소스.
+            data.go.kr에서 이 서비스 활용신청이 승인된 키면 동작한다(TAGO와 동일
+            개인키 가능 — #49 지영 확인). v2는 날짜 cond만 서버 필터를 지원한다.
   - tago  : 국토교통부(TAGO) 열차정보 — 교차검증용 (2026-03 개정 URI, #49).
 
 산출 규칙:
@@ -62,16 +62,18 @@ TAGO_TIMETABLE_OP = os.environ.get("TAGO_TIMETABLE_OP", "GetStrtpntAlocFndTrainI
 # 역 이름 → nodeid 조회 도시코드 — TAGO는 구형 2자리 체계 (서울 11, 강원 32, 전북 35)
 TAGO_CITY_CODES = [11, 32, 35]
 
-# ---- KORAIL (한국철도공사 열차운행계획, openapis.korail.com) — 주 데이터 --------------
-# 2026-08-08 샘플 페이지 실측으로 확정한 계약:
-#   GET {BASE}/{OP}?serviceKey=...&pageNo=1&numOfRows=200
-#       &cond[run_ymd::GTE]=YYYYMMDD&cond[run_ymd::LTE]=YYYYMMDD
-#       &cond[dptre_stn_nm::EQ]=서울&cond[arvl_stn_nm::EQ]=강릉
+# ---- KORAIL (한국철도공사_열차운행정보, 공공데이터포털 B551457) — 주 데이터 -----------
+# 2026-08-08 공식 주소 확인(#49 지영): 별도 코레일 포털 키 불필요 — data.go.kr에서
+# 한국철도공사_열차운행정보 활용신청이 승인된 서비스키(TAGO와 동일 개인키 가능)를 사용한다.
+#   GET {BASE}/{OP}?serviceKey=...&pageNo=1&numOfRows=500&cond[run_ymd::EQ]=YYYYMMDD
 #   응답: response.header.resultCode "0" / body.items.item[] —
-#         trn_no("00801"), trn_plan_dptre_dt("2026-08-12 05:06:00.0"), trn_plan_arvl_dt
-# 키는 openapis.korail.com에 등록된 키여야 한다("-3 등록되지 않은 서비스"면 미등록).
-KORAIL_BASE = os.environ.get("KORAIL_BASE", "https://openapis.korail.com/api/v1")
-KORAIL_TIMETABLE_OP = os.environ.get("KORAIL_TIMETABLE_OP", "run/travelerTrainRunPlan")
+#         trn_no("00801"), run_ymd, dptre_stn_nm/cd, arvl_stn_nm/cd,
+#         trn_plan_dptre_dt("2026-08-12 05:06:00.0"), trn_plan_arvl_dt
+# v2 실측 주의: 서버 필터는 run_ymd cond만 동작하고 역명 cond(dptre_stn_nm 등)는
+# 0건을 반환한다 — 날짜별 전 노선(일 약 370건)을 받아 역 구간은 클라이언트에서 거른다.
+KORAIL_BASE = os.environ.get("KORAIL_BASE", "https://apis.data.go.kr/B551457")
+KORAIL_TIMETABLE_OP = os.environ.get("KORAIL_TIMETABLE_OP", "run/v2/travelerTrainRunPlan2")
+KORAIL_PAGE_SIZE = 500  # 일별 전 노선 행 수(약 370)보다 크게 — 초과 시 페이지 순회
 
 
 @dataclass(frozen=True)
@@ -136,8 +138,8 @@ def get_json(base: str, op: str, key: str, params: dict[str, str], timeout: floa
             msg = header.get("resultMsg", "unknown")
             if str(header.get("resultCode")) == "-3":
                 raise ApiError(
-                    "[진단] 코레일 포털: 등록되지 않은 서비스(-3) — 이 키가 openapis.korail.com에서 "
-                    "발급·서비스 신청된 키인지 확인 필요 (data.go.kr 키와 별개일 수 있음)",
+                    "[진단] 등록되지 않은 서비스(-3) — 이 키의 data.go.kr 계정에서 "
+                    "한국철도공사_열차운행정보 활용신청이 승인됐는지 확인 필요",
                 )
             if "KEY" in str(msg).upper():
                 last_error = ApiError(f"[진단] 키 인증 문제({msg}) — 반대 인코딩형으로 재시도")
@@ -225,18 +227,35 @@ def korail_dt_to_iso(value: str) -> str:
     return f"{s[0:10]}T{s[11:19]}+09:00"
 
 
+def fetch_korail_day(key: str, date: str) -> list[dict]:
+    """일별 전 노선 운행계획 수신 — v2는 역명 cond를 지원하지 않아 날짜 cond만 서버 필터."""
+    rows: list[dict] = []
+    page = 1
+    while True:
+        payload = get_json(KORAIL_BASE, KORAIL_TIMETABLE_OP, key, {
+            "pageNo": str(page), "numOfRows": str(KORAIL_PAGE_SIZE),
+            "cond[run_ymd::EQ]": date,
+        })
+        items = require_items(payload, f"전 노선 {date} (page {page})")
+        rows.extend(items)
+        total = int(payload.get("response", {}).get("body", {}).get("totalCount", len(rows)))
+        if len(rows) >= total or page > 10:  # 페이지 상한은 폭주 방어
+            return rows
+        page += 1
+
+
 def fetch_korail_legs(key: str) -> list[Leg]:
     legs: list[Leg] = []
+    day_rows = {date: fetch_korail_day(key, date) for date in DATES}
     for (from_id, from_name), (to_id, to_name) in OD_PAIRS:
         for date in DATES:
             for (a_id, a_name), (b_id, b_name) in [((from_id, from_name), (to_id, to_name)),
                                                    ((to_id, to_name), (from_id, from_name))]:
-                payload = get_json(KORAIL_BASE, KORAIL_TIMETABLE_OP, key, {
-                    "pageNo": "1", "numOfRows": "200",
-                    "cond[run_ymd::GTE]": date, "cond[run_ymd::LTE]": date,
-                    "cond[dptre_stn_nm::EQ]": a_name, "cond[arvl_stn_nm::EQ]": b_name,
-                })
-                items = require_items(payload, f"{a_name}→{b_name} {date}")
+                items = [row for row in day_rows[date]
+                         if str(row.get("dptre_stn_nm", "")).strip() == a_name
+                         and str(row.get("arvl_stn_nm", "")).strip() == b_name]
+                if not items:
+                    raise ApiError(f"[방어] 정상 응답이지만 결과 0건: {a_name}→{b_name} {date} — 기존 스냅샷을 변경하지 않습니다")
                 for item in items:
                     legs.append(Leg(
                         trainNo=str(item["trn_no"]).zfill(5),
