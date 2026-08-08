@@ -35,12 +35,6 @@
     "regionId": "gangwon"
   },
   {
-    "id": "station-chuncheon",
-    "name": { "ko": "춘천역", "en": "Chuncheon Station" },
-    "lineType": "ITX",
-    "regionId": "gangwon"
-  },
-  {
     "id": "station-jeonju",
     "name": { "ko": "전주역", "en": "Jeonju Station" },
     "lineType": "KTX",

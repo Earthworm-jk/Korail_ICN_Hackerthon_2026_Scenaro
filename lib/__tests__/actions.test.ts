@@ -139,7 +139,7 @@ describe("#56 열차 스냅샷 권역 확장 — 실데이터 회귀", () => {
     "place-balwangsan-cable-car",
   ];
 
-  // 배치 가능 전환의 증명은 단독 선택 배치다 — 13곳 동시 요청에서는 3일 수용량 경쟁으로
+  // 배치 가능 전환의 증명은 단독 선택 배치다 — 12곳 동시 요청에서는 3일 수용량 경쟁으로
   // 밀린 후보에 엔진이 마지막 실패 지점의 폴백 사유(TRAIN_UNAVAILABLE 등)를 붙이기 때문.
   async function planOnly(placeId: string) {
     const { candidates } = await getCandidatePlaces({
