@@ -1,11 +1,11 @@
 import { describe, expect, it } from "vitest";
 import type { ItineraryResult } from "../engine/types";
 
-// PR #16 리뷰: 세 분기가 타입으로 구분되는지 컴파일 수준에서 고정하는 fixture.
-// 이 파일이 typecheck를 통과한다는 것 자체가 계약 검증이다.
+// PR #16 리뷰: 분기가 타입으로 구분되는지 컴파일 수준에서 고정하는 fixture.
+// #14 ver.0.4 확정으로 필수 방문·방문일 고정이 제거되어 사용자 제약 실패(ok:false)
+// 분기가 소멸했다 — 결과는 planned/empty 2분기이며 status가 유일한 판별자다.
 
 const planned: ItineraryResult = {
-  ok: true,
   status: "planned",
   days: [
     {
@@ -24,7 +24,7 @@ const planned: ItineraryResult = {
           placeId: "place-yeongjin-beach",
           arriveAt: "2026-08-12T15:45:00+09:00",
           departAt: "2026-08-12T16:45:00+09:00",
-          accessMinutesLabel: "역-장소 접근 25분 추정",
+          accessMinutesLabel: "역-장소 접근 35분 추정",
         },
       ],
     },
@@ -41,40 +41,32 @@ const planned: ItineraryResult = {
 };
 
 const empty: ItineraryResult = {
-  ok: true,
   status: "empty",
   days: [],
   rejectedPlaces: [
-    { code: "ACTIVITY_WINDOW_MISMATCH", placeId: "place-jukrim-cathedral", detail: "UNVERIFIED_HOURS" },
+    { code: "ACTIVITY_WINDOW_MISMATCH", placeId: "place-woljeongsa-temple", detail: "UNVERIFIED_HOURS" },
   ],
 };
 
-const failed: ItineraryResult = {
-  ok: false,
-  reason: { code: "USER_CONSTRAINT_INFEASIBLE", constraintType: "PINNED_DATE", targetId: "place-oak-valley" },
-};
-
-describe("ItineraryResult 세 분기 판별 (PR #16 계약)", () => {
+describe("ItineraryResult 2분기 판별 (#14 ver.0.4 — 사용자 제약 실패 분기 소멸)", () => {
   it("planned에서만 comparisonKeys·metrics에 접근할 수 있다", () => {
-    for (const r of [planned, empty, failed]) {
-      if (r.ok && r.status === "planned") {
+    for (const r of [planned, empty]) {
+      if (r.status === "planned") {
         expect(r.metrics.totalRailMinutes).toBeGreaterThan(0);
         expect(r.comparisonKeys.visitablePlaceCount).toBeGreaterThan(0);
       }
     }
   });
 
-  it("empty는 허위 metrics 없이 '일정 없음'을 판별한다", () => {
-    expect(empty.ok && empty.status === "empty").toBe(true);
+  it("empty는 허위 metrics 없이 '조건을 만족하는 일정 없음'을 판별한다", () => {
+    expect(empty.status).toBe("empty");
     expect(empty.days).toHaveLength(0);
     expect(empty.rejectedPlaces.length).toBeGreaterThan(0);
     expect("metrics" in empty).toBe(false);
   });
 
-  it("실패는 기존 일정 유지 분기(ok:false)로만 표현된다", () => {
-    expect(failed.ok).toBe(false);
-    if (!failed.ok) {
-      expect(failed.reason.constraintType).toBe("PINNED_DATE");
-    }
+  it("status 외의 실패 판별자(ok 필드)는 존재하지 않는다", () => {
+    expect("ok" in planned).toBe(false);
+    expect("ok" in empty).toBe(false);
   });
 });

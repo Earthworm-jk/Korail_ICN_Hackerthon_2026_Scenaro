@@ -83,9 +83,7 @@ function constraints(overrides: Partial<TripConstraints> = {}): TripConstraints 
     airportExitOffsetMin: 60,
     selectedActorIds: ["actor-a", "actor-b"],
     selectedWorkIds: ["work-1"],
-    requiredPlaceIds: [],
     excludedPlaceIds: [],
-    pinnedDates: {},
     maxPlacesPerDay: 3,
     dailySlackMinutes: 60,
     departureBufferMinutes: 120,
@@ -97,8 +95,8 @@ describe("generateItinerary", () => {
   it("복수 배우와 복수 작품 관계를 사용해 결정적인 왕복 일정을 만든다", () => {
     const result = generateItinerary(constraints(), repositories());
 
-    expect(result.ok).toBe(true);
-    if (!result.ok || result.status !== "planned") return;
+    expect(result.status).toBe("planned");
+    if (result.status !== "planned") return;
     expect(result.days.flatMap((day) => day.items.map((item) => item.placeId))).toEqual([
       "place-selected",
       "place-actor-a",
@@ -130,48 +128,15 @@ describe("generateItinerary", () => {
       repositories(),
     );
 
-    expect(result.ok).toBe(true);
-    if (!result.ok || result.status !== "planned") return;
+    expect(result.status).toBe("planned");
+    if (result.status !== "planned") return;
     expect(result.days.flatMap((day) => day.items.map((item) => item.placeId)).sort())
       .toEqual(["place-actor-a", "place-selected"]);
     expect(result.rejectedPlaces.some((reason) =>
       "placeId" in reason && reason.placeId === "place-actor-b")).toBe(false);
   });
 
-  it("필수 장소와 제외 장소가 충돌하면 사용자 제약 실패를 반환한다", () => {
-    const result = generateItinerary(
-      constraints({
-        requiredPlaceIds: ["place-selected"],
-        excludedPlaceIds: ["place-selected"],
-      }),
-      repositories(),
-    );
 
-    expect(result).toEqual({
-      ok: false,
-      reason: {
-        code: "USER_CONSTRAINT_INFEASIBLE",
-        constraintType: "REQUIRED_PLACE",
-        targetId: "place-selected",
-      },
-    });
-  });
-
-  it("고정 방문일을 지킬 수 없으면 기존 일정 대신 실패를 반환한다", () => {
-    const result = generateItinerary(
-      constraints({ pinnedDates: { "place-selected": "2026-08-13" } }),
-      repositories(),
-    );
-
-    expect(result).toEqual({
-      ok: false,
-      reason: {
-        code: "USER_CONSTRAINT_INFEASIBLE",
-        constraintType: "PINNED_DATE",
-        targetId: "place-selected",
-      },
-    });
-  });
 
   it("하루 장소 수를 넘기지 않고 다음 날로 방문을 넘긴다", () => {
     const repos = repositories();
@@ -190,8 +155,8 @@ describe("generateItinerary", () => {
       maxPlacesPerDay: 1,
     }), repos);
 
-    expect(result.ok).toBe(true);
-    if (!result.ok || result.status !== "planned") return;
+    expect(result.status).toBe("planned");
+    if (result.status !== "planned") return;
     expect(result.days.map(({ date, items }) => ({ date, placeCount: items.length })))
       .toEqual([
         { date: "2026-08-12", placeCount: 1 },
@@ -207,8 +172,8 @@ describe("generateItinerary", () => {
       departureBufferMinutes: 120,
     }), repositories());
 
-    expect(result.ok && result.status).toBe("empty");
-    if (!result.ok || result.status !== "empty") return;
+    expect(result.status).toBe("empty");
+    if (result.status !== "empty") return;
     expect(result.rejectedPlaces).toContainEqual({
       code: "DEPARTURE_DEADLINE_EXCEEDED",
       placeId: "place-selected",
@@ -223,8 +188,8 @@ describe("generateItinerary", () => {
       selectedWorkIds: ["work-3"],
     }), repos);
 
-    expect(result.ok).toBe(true);
-    if (!result.ok || result.status !== "planned") return;
+    expect(result.status).toBe("planned");
+    if (result.status !== "planned") return;
     expect(result.metrics.transferCount).toBe(0);
   });
 
@@ -242,8 +207,8 @@ describe("generateItinerary", () => {
       selectedWorkIds: ["work-3"],
     }), repos);
 
-    expect(result.ok && result.status).toBe("planned");
-    if (!result.ok || result.status !== "planned") return;
+    expect(result.status).toBe("planned");
+    if (result.status !== "planned") return;
     expect(result.days.flatMap((day) => day.rides.map((ride) => ride.trainNo)))
       .not.toContain("202");
   });
@@ -280,8 +245,8 @@ describe("generateItinerary", () => {
       selectedWorkIds: ["work-1"],
     }), repos);
 
-    expect(result.ok && result.status).toBe("planned");
-    if (!result.ok || result.status !== "planned") return;
+    expect(result.status).toBe("planned");
+    if (result.status !== "planned") return;
     const trainNumbers = result.days.flatMap((day) => day.rides.map((ride) => ride.trainNo));
     expect(trainNumbers.at(0)).toBe("AREX-OUT");
     expect(trainNumbers.at(-1)).toBe("AREX-BACK");
@@ -294,8 +259,8 @@ describe("generateItinerary", () => {
       dailySlackMinutes: 1_000,
     }), repositories());
 
-    expect(result.ok && result.status).toBe("planned");
-    if (!result.ok || result.status !== "planned") return;
+    expect(result.status).toBe("planned");
+    if (result.status !== "planned") return;
     expect(result.comparisonKeys.slackSatisfied).toBe(false);
   });
 
@@ -316,7 +281,6 @@ describe("generateItinerary", () => {
     }), repos);
 
     expect(result).toEqual({
-      ok: true,
       status: "empty",
       days: [],
       rejectedPlaces: [{
@@ -339,7 +303,6 @@ describe("generateItinerary", () => {
     }), repos);
 
     expect(result).toEqual({
-      ok: true,
       status: "empty",
       days: [],
       rejectedPlaces: [{ code: "TRAIN_UNAVAILABLE", placeId: "place-selected" }],
@@ -369,8 +332,8 @@ describe("generateItinerary", () => {
     }), repos);
 
     expect(performance.now() - startedAt).toBeLessThan(2_000);
-    expect(result.ok).toBe(true);
-    if (!result.ok || result.status !== "planned") return;
+    expect(result.status).toBe("planned");
+    if (result.status !== "planned") return;
     expect(result.comparisonKeys.visitablePlaceCount).toBe(15);
   });
 

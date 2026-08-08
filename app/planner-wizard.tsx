@@ -430,7 +430,7 @@ export default function PlannerWizard() {
             </div>
           )}
 
-          {!planning && result && result.ok && result.status === "planned" && (
+          {!planning && result && result.status === "planned" && (
             <div className="mt-4 space-y-4">
               {result.days.map((day) => (
                 <div key={day.date} className="rounded-lg border p-4">
@@ -468,7 +468,7 @@ export default function PlannerWizard() {
             </div>
           )}
 
-          {!planning && result && result.ok && result.status === "empty" && (
+          {!planning && result && result.status === "empty" && (
             <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-4">
               <h3 className="font-medium text-amber-800">{tr("step4.emptyTitle")}</h3>
               <p className="mt-1 text-sm text-amber-700">{tr("step4.emptyDesc")}</p>
@@ -481,12 +481,6 @@ export default function PlannerWizard() {
                   ))}
                 </ul>
               )}
-            </div>
-          )}
-
-          {!planning && result && !result.ok && (
-            <div className="mt-4 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">
-              {tr("step4.failTitle")}
             </div>
           )}
 
