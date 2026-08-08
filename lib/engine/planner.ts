@@ -373,7 +373,7 @@ function completeSchedule(
     keys: {
       relevanceKey: { selectedWorkPlaceCount, actorOtherWorkPlaceCount },
       visitablePlaceCount: state.visits.length,
-      warningCount: warningCountOf(state), // #43 결정 3 — 방문 수와 이동시간 사이
+      activityWarningCount: activityWarningCountOf(state), // #43 결정 3 — 방문 수와 이동시간 사이
       totalRailMinutes,
       transferCount: totalTransfers,
       slackSatisfied: hasDailySlack(
@@ -560,8 +560,8 @@ function pruneStates(states: PlannerState[]): PlannerState[] {
     ].join("|");
     const previous = bestBySignature.get(signature);
     if (!previous
-      || warningCountOf(state) < warningCountOf(previous)
-      || (warningCountOf(state) === warningCountOf(previous)
+      || activityWarningCountOf(state) < activityWarningCountOf(previous)
+      || (activityWarningCountOf(state) === activityWarningCountOf(previous)
         && (state.readyAt < previous.readyAt
           || (state.readyAt === previous.readyAt && state.railMinutes < previous.railMinutes)))) {
       bestBySignature.set(signature, state);
@@ -573,7 +573,7 @@ function pruneStates(states: PlannerState[]): PlannerState[] {
       const bSelected = b.visits.filter(({ relation }) => relation === "selected_work").length;
       // 경고 수는 최종 비교 키(#43)와 같은 방향으로 beam에서도 우선한다
       return bSelected - aSelected
-        || warningCountOf(a) - warningCountOf(b)
+        || activityWarningCountOf(a) - activityWarningCountOf(b)
         || a.readyAt - b.readyAt
         || stableStateId(a).localeCompare(stableStateId(b), "en");
     })
@@ -703,7 +703,7 @@ function minutesBetween(start: number, end: number): number {
   return Math.max(0, Math.round((end - start) / MINUTE_MS));
 }
 
-function warningCountOf(state: PlannerState): number {
+function activityWarningCountOf(state: PlannerState): number {
   return state.visits.filter(({ warning }) => warning !== null).length;
 }
 

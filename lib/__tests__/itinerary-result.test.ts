@@ -37,7 +37,7 @@ const planned: ItineraryResult = {
   comparisonKeys: {
     relevanceKey: { selectedWorkPlaceCount: 1, actorOtherWorkPlaceCount: 0 },
     visitablePlaceCount: 1,
-    warningCount: 1,
+    activityWarningCount: 1,
     totalRailMinutes: 118,
     transferCount: 0,
     slackSatisfied: true,

@@ -110,7 +110,7 @@ describe("generateItinerary", () => {
       selectedWorkPlaceCount: 2,
       actorOtherWorkPlaceCount: 1,
     });
-    expect(result.comparisonKeys.warningCount).toBe(1);
+    expect(result.comparisonKeys.activityWarningCount).toBe(1);
     expect(result.metrics).toEqual({
       totalTravelMinutes: 420,
       totalRailMinutes: 240,
@@ -292,7 +292,7 @@ describe("generateItinerary", () => {
       { code: "ACTIVITY_WINDOW_MISMATCH", placeId: "place-selected", detail: "CONSERVATIVE_BUFFER_MISMATCH" },
     ]);
     expect(result.rejectedPlaces).toEqual([]);
-    expect(result.comparisonKeys.warningCount).toBe(1);
+    expect(result.comparisonKeys.activityWarningCount).toBe(1);
   });
 
   it("동일 관련성·방문 수에서는 경고 없는 일정이 항상 우선한다 (#43 수용 기준)", () => {
@@ -312,7 +312,7 @@ describe("generateItinerary", () => {
     if (result.status !== "planned") return;
     expect(result.days.flatMap((day) => day.items.map((item) => item.placeId)))
       .toEqual(["place-clean"]);
-    expect(result.comparisonKeys.warningCount).toBe(0);
+    expect(result.comparisonKeys.activityWarningCount).toBe(0);
     expect(result.warnings).toEqual([]);
   });
 
@@ -328,7 +328,7 @@ describe("generateItinerary", () => {
         expect(warned.has(item.placeId), item.placeId).toBe(true);
       }
     }
-    expect(result.comparisonKeys.warningCount).toBe(result.warnings.length);
+    expect(result.comparisonKeys.activityWarningCount).toBe(result.warnings.length);
   });
 
   it("귀환 열차가 없으면 열차 없음 사유를 반환한다", () => {

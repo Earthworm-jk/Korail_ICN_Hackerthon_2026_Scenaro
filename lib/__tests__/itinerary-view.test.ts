@@ -25,7 +25,7 @@ const plannedA: ItineraryResult = {
   status: "planned", days: [dayA], rejectedPlaces: [], warnings: [],
   comparisonKeys: {
     relevanceKey: { selectedWorkPlaceCount: 1, actorOtherWorkPlaceCount: 0 },
-    visitablePlaceCount: 1, warningCount: 0, totalRailMinutes: 100, transferCount: 0, slackSatisfied: true,
+    visitablePlaceCount: 1, activityWarningCount: 0, totalRailMinutes: 100, transferCount: 0, slackSatisfied: true,
   },
   metrics: { totalTravelMinutes: 150, totalRailMinutes: 100, transferCount: 0, departureSlackMinutes: 180 },
 };

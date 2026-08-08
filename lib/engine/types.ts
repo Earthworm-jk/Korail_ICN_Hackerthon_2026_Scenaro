@@ -43,7 +43,7 @@ export type ComparisonKeys = {
     actorOtherWorkPlaceCount: number; // 1b) 1a 동점일 때, 높을수록 우선
   };
   visitablePlaceCount: number; // 2) 높을수록 우선
-  warningCount: number; // 3) 낮을수록 우선 — 운영시간 경고 수 (#43 결정 3, #3 개정)
+  activityWarningCount: number; // 3) 낮을수록 우선 — 운영시간 경고 수 (#43 결정 3, #3 개정)
   totalRailMinutes: number; // 4) 낮을수록 우선
   transferCount: number; // 5) 낮을수록 우선
   slackSatisfied: boolean; // 6) 충족 우선 (미달만 불이익, 초과 가점 없음)

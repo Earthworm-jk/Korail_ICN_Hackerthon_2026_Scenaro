@@ -23,8 +23,8 @@ export function compareCandidates(a: Candidate, b: Candidate): number {
     return b.keys.relevanceKey.actorOtherWorkPlaceCount - a.keys.relevanceKey.actorOtherWorkPlaceCount;
   if (a.keys.visitablePlaceCount !== b.keys.visitablePlaceCount)
     return b.keys.visitablePlaceCount - a.keys.visitablePlaceCount;
-  if (a.keys.warningCount !== b.keys.warningCount)
-    return a.keys.warningCount - b.keys.warningCount;
+  if (a.keys.activityWarningCount !== b.keys.activityWarningCount)
+    return a.keys.activityWarningCount - b.keys.activityWarningCount;
   if (a.keys.totalRailMinutes !== b.keys.totalRailMinutes)
     return a.keys.totalRailMinutes - b.keys.totalRailMinutes;
   if (a.keys.transferCount !== b.keys.transferCount)

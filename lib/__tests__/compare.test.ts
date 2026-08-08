@@ -6,7 +6,7 @@ function cand(partial: Partial<Candidate> & { stableId: string }): Candidate {
     keys: {
       relevanceKey: { selectedWorkPlaceCount: 3, actorOtherWorkPlaceCount: 1 },
       visitablePlaceCount: 3,
-      warningCount: 0,
+      activityWarningCount: 0,
       totalRailMinutes: 120,
       transferCount: 1,
       slackSatisfied: true,
@@ -55,20 +55,20 @@ describe("사전식 비교 (#3 — 가중합 아님)", () => {
 
 describe("운영시간 경고 수 키 (#43 결정 3 — 방문 수 뒤·이동시간 앞)", () => {
   it("방문 수가 같으면 경고가 적은 일정이 이동시간과 무관하게 우선한다", () => {
-    const clean = cand({ stableId: "a", keys: { warningCount: 0, totalRailMinutes: 999 } as never });
-    const warned = cand({ stableId: "b", keys: { warningCount: 1, totalRailMinutes: 1 } as never });
+    const clean = cand({ stableId: "a", keys: { activityWarningCount: 0, totalRailMinutes: 999 } as never });
+    const warned = cand({ stableId: "b", keys: { activityWarningCount: 1, totalRailMinutes: 1 } as never });
     expect(compareCandidates(clean, warned)).toBeLessThan(0);
   });
 
   it("방문 수가 다르면 경고 수보다 방문 수가 먼저다 — 사용자 선택 의도 우선", () => {
-    const moreVisits = cand({ stableId: "a", keys: { visitablePlaceCount: 3, warningCount: 2 } as never });
-    const fewerClean = cand({ stableId: "b", keys: { visitablePlaceCount: 2, warningCount: 0 } as never });
+    const moreVisits = cand({ stableId: "a", keys: { visitablePlaceCount: 3, activityWarningCount: 2 } as never });
+    const fewerClean = cand({ stableId: "b", keys: { visitablePlaceCount: 2, activityWarningCount: 0 } as never });
     expect(compareCandidates(moreVisits, fewerClean)).toBeLessThan(0);
   });
 
   it("경고 수가 같으면 기존 이동시간 순서로 비교한다", () => {
-    const faster = cand({ stableId: "a", keys: { warningCount: 1, totalRailMinutes: 100 } as never });
-    const slower = cand({ stableId: "b", keys: { warningCount: 1, totalRailMinutes: 200 } as never });
+    const faster = cand({ stableId: "a", keys: { activityWarningCount: 1, totalRailMinutes: 100 } as never });
+    const slower = cand({ stableId: "b", keys: { activityWarningCount: 1, totalRailMinutes: 200 } as never });
     expect(compareCandidates(faster, slower)).toBeLessThan(0);
   });
 });
