@@ -38,6 +38,8 @@ import {
 import { fromKstLocalInput as fromLocalInput, toKstLocalInput as toLocalInput } from "@/lib/kst-datetime";
 import { AlternativeTimetables } from "./alternative-timetables";
 import { AuthModal, TripsModal, useSaveStub, type SaveStatus } from "./save-stub";
+import { ExecutionSupport } from "./execution-support";
+import type { StationFacilitiesSnapshotT } from "@/lib/station-facilities";
 
 const KST = "Asia/Seoul";
 
@@ -60,7 +62,9 @@ type FlightField = {
 
 const STEPS: MessageKey[] = ["nav.step1", "nav.step2", "nav.step3", "nav.step4"];
 
-export default function PlannerWizard() {
+export default function PlannerWizard({ stationFacilities }: {
+  stationFacilities: StationFacilitiesSnapshotT;
+}) {
   const [locale, setLocale] = useState<Locale>("ko");
   const [step, setStep] = useState(1);
   const tr = useCallback((key: MessageKey) => t(locale, key), [locale]);
@@ -618,6 +622,16 @@ export default function PlannerWizard() {
                   </ul>
                 </div>
               )}
+              {/* #24 A5 — 실행 지원: 일정에 등장하는 역만, 스냅샷 수록분만 안내 */}
+              <ExecutionSupport
+                snapshot={stationFacilities}
+                stationIds={[...new Set(displayedDays.flatMap((day) => [
+                  ...day.rides.flatMap((ride) => [ride.fromStationId, ride.toStationId]),
+                  ...day.regionWindows.map((window) => window.stationId),
+                ]))]}
+                stationName={stationName}
+                tr={tr}
+              />
             </div>
           )}
 
