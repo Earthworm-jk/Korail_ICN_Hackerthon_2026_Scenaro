@@ -1,0 +1,255 @@
+import { mkdtempSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { describe, expect, it } from "vitest";
+import {
+  loadRepositories,
+  parseRepositories,
+  SeedValidationError,
+  type RawSeedFiles,
+} from "../repositories/json";
+
+// #20 확정 기준: 의미 검증(Zod refine) + 로드 후 중복·참조 무결성 + 오류 전건 일괄 보고
+
+type LocalName = { ko: string; en: string };
+type Seed = {
+  actors: { id: string; name: LocalName; workIds: string[] }[];
+  works: { id: string; title: LocalName }[];
+  places: {
+    id: string;
+    name: LocalName;
+    workIds: string[];
+    nearestStationId: string;
+    accessEstimate: { minutes: number; source: string; verifiedAt: string };
+    openingHours: Record<string, unknown>;
+    stayMinutes: number;
+    verificationLevel: string;
+    officialSourceCount: number;
+    reasonText: LocalName;
+  }[];
+  stations: { id: string; name: LocalName; lineType: string; regionId: string }[];
+  trainLegs: {
+    trainNo: string;
+    fromStationId: string;
+    toStationId: string;
+    departAt: string;
+    arriveAt: string;
+  }[];
+  flights: { flightNo: string; direction: string; scheduledAt: string; terminal?: string }[];
+};
+
+function baseSeed(): Seed {
+  return structuredClone({
+    actors: [{ id: "actor-a", name: { ko: "배우", en: "Actor" }, workIds: ["work-1"] }],
+    works: [{ id: "work-1", title: { ko: "작품", en: "Work" } }],
+    places: [
+      {
+        id: "place-1",
+        name: { ko: "장소", en: "Place" },
+        workIds: ["work-1"],
+        nearestStationId: "station-1",
+        accessEstimate: { minutes: 25, source: "fixture", verifiedAt: "2026-08-07" },
+        openingHours: {
+          type: "hours",
+          open: "09:00",
+          close: "18:00",
+          lastEntry: "17:00",
+          source: "fixture",
+          verifiedAt: "2026-08-07",
+        },
+        stayMinutes: 60,
+        verificationLevel: "원본확인",
+        officialSourceCount: 1,
+        reasonText: { ko: "사유", en: "Reason" },
+      },
+    ],
+    stations: [
+      { id: "station-1", name: { ko: "역", en: "Station" }, lineType: "KTX", regionId: "gangwon" },
+    ],
+    trainLegs: [
+      {
+        trainNo: "801",
+        fromStationId: "station-1",
+        toStationId: "station-1",
+        departAt: "2026-08-12T07:00:00+09:00",
+        arriveAt: "2026-08-12T09:00:00+09:00",
+      },
+    ],
+    flights: [
+      {
+        flightNo: "KE123",
+        direction: "arrival",
+        scheduledAt: "2026-08-12T10:00:00+09:00",
+        terminal: "T1",
+      },
+    ],
+  });
+}
+
+/** 타입이 막는 오염 값을 의도적으로 주입한다 — 검증기가 잡아내야 하는 입력 */
+function corrupt(target: object, patch: Record<string, unknown>): void {
+  Object.assign(target, patch);
+}
+
+function issuesOf(raw: Seed): string[] {
+  try {
+    parseRepositories(raw as RawSeedFiles);
+    return [];
+  } catch (error) {
+    if (error instanceof SeedValidationError) return error.issues;
+    throw error;
+  }
+}
+
+describe("시드 의미 검증 (#20)", () => {
+  it("유효한 시드는 통과한다", () => {
+    expect(() => parseRepositories(baseSeed() as RawSeedFiles)).not.toThrow();
+  });
+
+  it("verifiedAt은 실존하는 YYYY-MM-DD 날짜여야 한다", () => {
+    const raw = baseSeed();
+    raw.places[0].accessEstimate.verifiedAt = "2026-13-40";
+    const issues = issuesOf(raw);
+    expect(issues).toHaveLength(1);
+    expect(issues[0]).toContain("[places.json][Place:place-1][accessEstimate.verifiedAt]");
+  });
+
+  it("운영시간은 HH:mm 형식과 open < close, open <= lastEntry <= close를 지켜야 한다", () => {
+    const raw = baseSeed();
+    corrupt(raw.places[0].openingHours, { open: "19:00", close: "9시", lastEntry: "20:00" });
+    const issues = issuesOf(raw);
+    expect(issues.some((m) => m.includes("openingHours") && m.includes("HH:mm"))).toBe(true);
+
+    corrupt(raw.places[0].openingHours, { close: "09:00" });
+    const ordered = issuesOf(raw);
+    expect(ordered.some((m) => m.includes("open < close"))).toBe(true);
+    expect(ordered.some((m) => m.includes("lastEntry"))).toBe(true);
+  });
+
+  it("accessEstimate.minutes·stayMinutes는 양의 정수여야 한다", () => {
+    const raw = baseSeed();
+    raw.places[0].accessEstimate.minutes = 0;
+    raw.places[0].stayMinutes = -30;
+    const issues = issuesOf(raw);
+    expect(issues.some((m) => m.includes("accessEstimate.minutes"))).toBe(true);
+    expect(issues.some((m) => m.includes("stayMinutes"))).toBe(true);
+  });
+
+  it("TrainLeg는 유효한 ISO 일시와 departAt < arriveAt을 지켜야 한다", () => {
+    const raw = baseSeed();
+    raw.trainLegs.push({
+      trainNo: "802",
+      fromStationId: "station-1",
+      toStationId: "station-1",
+      departAt: "2026-08-12T12:00:00+09:00",
+      arriveAt: "2026-08-12T11:00:00+09:00",
+    });
+    raw.trainLegs.push({
+      trainNo: "803",
+      fromStationId: "station-1",
+      toStationId: "station-1",
+      departAt: "언젠가",
+      arriveAt: "2026-08-12T11:00:00+09:00",
+    });
+    const issues = issuesOf(raw);
+    expect(issues.some((m) => m.includes("[TrainLeg:802]") && m.includes("departAt < arriveAt"))).toBe(true);
+    expect(issues.some((m) => m.includes("[TrainLeg:803]") && m.includes("ISO"))).toBe(true);
+  });
+});
+
+describe("중복 키 검증 (#20 — 복합 키)", () => {
+  it("엔티티 id 중복은 실패한다", () => {
+    const raw = baseSeed();
+    raw.places.push(baseSeed().places[0]);
+    const issues = issuesOf(raw);
+    expect(issues.some((m) => m.includes("[Place:place-1]") && m.includes("중복 키"))).toBe(true);
+  });
+
+  it("열차는 trainNo 단독이 아니라 복합 키 기준 — 같은 번호라도 출발시각이 다르면 통과", () => {
+    const raw = baseSeed();
+    raw.trainLegs.push({
+      ...baseSeed().trainLegs[0],
+      departAt: "2026-08-13T07:00:00+09:00",
+      arriveAt: "2026-08-13T09:00:00+09:00",
+    });
+    expect(() => parseRepositories(raw as RawSeedFiles)).not.toThrow();
+
+    raw.trainLegs.push(baseSeed().trainLegs[0]);
+    const issues = issuesOf(raw);
+    expect(issues.some((m) => m.includes("[TrainLeg:801]") && m.includes("중복 키"))).toBe(true);
+  });
+
+  it("항공은 flightNo+direction+scheduledAt 복합 키 기준", () => {
+    const raw = baseSeed();
+    raw.flights.push({ ...baseSeed().flights[0], direction: "departure" });
+    expect(() => parseRepositories(raw as RawSeedFiles)).not.toThrow();
+
+    raw.flights.push(baseSeed().flights[0]);
+    const issues = issuesOf(raw);
+    expect(issues.some((m) => m.includes("[Flight:KE123]") && m.includes("중복 키"))).toBe(true);
+  });
+});
+
+describe("참조 무결성 검증 (#20)", () => {
+  it("끊어진 역·작품 참조는 로드 단계에서 실패한다", () => {
+    const raw = baseSeed();
+    raw.places[0].nearestStationId = "station-ghost";
+    raw.actors[0].workIds = ["work-ghost"];
+    raw.trainLegs[0].toStationId = "station-ghost";
+    const issues = issuesOf(raw);
+    expect(issues.some((m) => m.includes("[Place:place-1][nearestStationId]") && m.includes("station-ghost"))).toBe(true);
+    expect(issues.some((m) => m.includes("[Actor:actor-a][workIds]") && m.includes("work-ghost"))).toBe(true);
+    expect(issues.some((m) => m.includes("[TrainLeg:801][toStationId]"))).toBe(true);
+  });
+
+  it("구조가 깨진 파일에서 파생되는 참조 오류는 연쇄 보고하지 않는다", () => {
+    const raw = baseSeed();
+    corrupt(raw.stations[0], { id: 123 }); // stations 구조 실패
+    const issues = issuesOf(raw);
+    expect(issues.some((m) => m.startsWith("[stations.json]"))).toBe(true);
+    // stations가 깨졌으므로 places·trainLegs의 역 참조 오류는 노이즈 — 보고 금지
+    expect(issues.some((m) => m.includes("존재하지 않는 역 참조"))).toBe(false);
+  });
+});
+
+describe("오류 전건 일괄 보고 (#20)", () => {
+  it("여러 파일의 오류가 한 번의 실패에 모두 담긴다", () => {
+    const raw = baseSeed();
+    raw.places[0].stayMinutes = 0; // places 의미 오류
+    raw.actors[0].workIds = ["work-ghost"]; // actors 참조 오류
+    raw.flights.push(baseSeed().flights[0]); // flights 중복
+    const issues = issuesOf(raw);
+    expect(issues.length).toBeGreaterThanOrEqual(3);
+    expect(issues.some((m) => m.startsWith("[places.json]"))).toBe(true);
+    expect(issues.some((m) => m.startsWith("[actors.json]"))).toBe(true);
+    expect(issues.some((m) => m.startsWith("[flights-snapshot.json]"))).toBe(true);
+  });
+
+  it("파일 단위 JSON 파싱 오류도 다른 파일 검증과 함께 수집된다", () => {
+    const dir = mkdtempSync(join(tmpdir(), "scenaro-seed-"));
+    const raw = baseSeed();
+    const files: Record<string, unknown> = {
+      "actors.json": raw.actors,
+      "works.json": raw.works,
+      "places.json": raw.places,
+      "stations.json": raw.stations,
+      "train-snapshot.json": raw.trainLegs,
+      "flights-snapshot.json": raw.flights,
+    };
+    for (const [name, value] of Object.entries(files)) {
+      writeFileSync(join(dir, name), JSON.stringify(value), "utf-8");
+    }
+    writeFileSync(join(dir, "works.json"), "{ 깨진 JSON", "utf-8");
+
+    try {
+      loadRepositories(dir);
+      expect.unreachable("검증이 실패해야 합니다");
+    } catch (error) {
+      expect(error).toBeInstanceOf(SeedValidationError);
+      const issues = (error as SeedValidationError).issues;
+      expect(issues.some((m) => m.startsWith("[works.json][(파일)]"))).toBe(true);
+      // works가 읽히지 않았으므로 actors→works 참조 오류는 연쇄 보고하지 않는다
+      expect(issues.some((m) => m.includes("존재하지 않는 작품 참조"))).toBe(false);
+    }
+  });
+});
