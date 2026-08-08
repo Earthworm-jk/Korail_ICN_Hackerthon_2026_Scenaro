@@ -79,6 +79,14 @@ export function rejectedPlaces(view: ItineraryView) {
   return view.result.rejectedPlaces;
 }
 
+/** 운영시간 경고 목록 (#43 결정 1) — 재열람 시에도 저장된 경고를 복원한다 (경고 누락 0건, PR #44 리뷰 2) */
+export function itineraryWarnings(view: ItineraryView) {
+  if (view.planning) return [];
+  if (view.reopened) return view.reopened.warnings ?? [];
+  if (view.result?.status !== "planned") return [];
+  return view.result.warnings;
+}
+
 export function banner(view: ItineraryView): "reopened" | "swapped" | null {
   if (view.planning) return null;
   if (view.reopened) return "reopened";

@@ -1,12 +1,15 @@
 import type { Repositories } from "../repositories/json";
 import { accessBufferMinutes, type PlaceT, type TrainLegT } from "../types/schema";
 import { compareCandidates, type Candidate } from "./compare";
+import { buildRegionWindows, DAY_ACTIVITY_END, DAY_ACTIVITY_START } from "./region-windows";
 import type {
   ActivityWindowDetail,
   CandidateRejection,
+  CandidateWarning,
   DayPlan,
   ItineraryItem,
   ItineraryResult,
+  RegionWindow,
   TrainRide,
   TripConstraints,
 } from "./types";
@@ -29,6 +32,7 @@ type ScheduledVisit = {
   visitStart: number;
   visitEnd: number;
   stationReadyAt: number;
+  warning: ActivityWindowDetail | null; // #43: 운영시간 판정 결과 — 배치는 유지, 경고로 전달
 };
 
 type PlannerState = {
@@ -77,16 +81,7 @@ export function planItinerary(
 
     const relation = classifyPlace(place, selectedWorkIds, actorWorkIds);
     if (!relation) continue;
-
-    if (place.openingHours.type === "unverified") {
-      const reason: CandidateRejection = {
-        code: "ACTIVITY_WINDOW_MISMATCH",
-        placeId: place.id,
-        detail: "UNVERIFIED_HOURS",
-      };
-      rejectedPlaces.push(reason);
-      continue;
-    }
+    // #43 결정 1: 운영시간 미확인은 후보 제외 사유가 아니다 — 배치 시 경고로 전달한다
     candidates.push({ place, relation });
   }
 
@@ -168,6 +163,7 @@ export function planItinerary(
       status: "empty",
       days: [],
       rejectedPlaces: uniqueReasons(rejectedPlaces),
+      warnings: [],
     };
   }
 
@@ -189,10 +185,27 @@ export function planItinerary(
   const allRides = [...best.state.rides, ...best.returnRides];
   const totalRailMinutes = best.state.railMinutes + routeMinutes(best.returnRides);
   const totalTransferCount = best.state.transferCount + transferCount(best.returnRides);
+  // #33 — 역·권역 체류 창은 엔진이 확정 계산하고 UI는 포맷만 한다
+  const regionWindows = buildRegionWindows({
+    rides: allRides,
+    airportReadyAt: constraints.airportReadyAt,
+    airportArrivalDeadline: constraints.airportArrivalDeadline,
+    startStationId: endpointStationId,
+    stations: repos.stations,
+  });
+  // #43 수용 기준: 운영시간 밖·미확인 배치의 경고 누락 0건 — 방문 기록에서 직접 파생한다
+  const warnings: CandidateWarning[] = best.state.visits
+    .filter(({ warning }) => warning !== null)
+    .map(({ place, warning }) => ({
+      code: "ACTIVITY_WINDOW_MISMATCH",
+      placeId: place.id,
+      detail: warning as ActivityWindowDetail,
+    }));
   return {
     status: "planned",
-    days: buildDays(best.state.visits, allRides),
+    days: buildDays(best.state.visits, allRides, regionWindows),
     rejectedPlaces: uniqueReasons(rejectedPlaces),
+    warnings,
     comparisonKeys: best.keys,
     metrics: {
       totalTravelMinutes:
@@ -228,56 +241,48 @@ function appendVisit(
     : state.readyAt;
   const dateAvailable = (date: string) =>
     (state.dateCounts.get(date) ?? 0) < constraints.maxPlacesPerDay;
-  const buffered = findVisitWindow(
-    place,
-    stationArrival,
-    true,
-    deadline,
-    dateAvailable,
-  );
-  if (!buffered) {
-    const withoutBuffer = findVisitWindow(
-      place,
-      stationArrival,
-      false,
-      deadline,
-      dateAvailable,
-    );
-    const detail: ActivityWindowDetail = withoutBuffer
-      ? "CONSERVATIVE_BUFFER_MISMATCH"
-      : "OUTSIDE_VERIFIED_HOURS";
-    return {
-      ok: false,
-      reason: { code: "ACTIVITY_WINDOW_MISMATCH", placeId: place.id, detail },
-    };
+
+  // #43 결정 1: 검증 운영시간 안 배치를 먼저 시도하고, 불가능하면 판정식(#5) 결과를
+  // 경고로 강등해 배치는 유지한다 — 하드 제약은 열차·출국 마감뿐
+  let window = place.openingHours.type === "unverified"
+    ? null
+    : findVisitWindow(place, stationArrival, true, deadline, dateAvailable, "verified");
+  let warning: ActivityWindowDetail | null = null;
+  if (!window) {
+    warning = activityWarningDetail(place, stationArrival, deadline, dateAvailable);
+    window = findVisitWindow(place, stationArrival, true, deadline, dateAvailable, "ignore-hours");
+    if (!window) {
+      // 남은 기간 안에 배치 자체가 불가능(마감·하루 상한) — 운영시간 사유가 아니다 (#43)
+      return {
+        ok: false,
+        reason: { code: "DEPARTURE_DEADLINE_EXCEEDED", placeId: place.id },
+      };
+    }
   }
 
-  const date = koreaDate(buffered.visitStart);
+  const date = koreaDate(window.visitStart);
   if ((state.dateCounts.get(date) ?? 0) >= constraints.maxPlacesPerDay) {
     return {
       ok: false,
-      reason: {
-        code: "ACTIVITY_WINDOW_MISMATCH",
-        placeId: place.id,
-        detail: "OUTSIDE_VERIFIED_HOURS",
-      },
+      reason: { code: "DEPARTURE_DEADLINE_EXCEEDED", placeId: place.id },
     };
   }
 
   const dateCounts = new Map(state.dateCounts);
   dateCounts.set(date, (dateCounts.get(date) ?? 0) + 1);
-  const localRoundTrip = 2 * buffered.accessAndBufferMinutes;
+  const localRoundTrip = 2 * window.accessAndBufferMinutes;
   return {
     ok: true,
     state: {
       stationId: place.nearestStationId,
-      readyAt: buffered.stationReadyAt,
+      readyAt: window.stationReadyAt,
       visits: [...state.visits, {
         place,
         relation: candidate.relation,
-        visitStart: buffered.visitStart,
-        visitEnd: buffered.visitEnd,
-        stationReadyAt: buffered.stationReadyAt,
+        visitStart: window.visitStart,
+        visitEnd: window.visitEnd,
+        stationReadyAt: window.stationReadyAt,
+        warning,
       }],
       rides: [...state.rides, ...route],
       railMinutes: state.railMinutes + routeMinutes(route),
@@ -294,6 +299,7 @@ function findVisitWindow(
   includeBuffer: boolean,
   deadline: number,
   dateAvailable: (date: string) => boolean,
+  mode: "verified" | "ignore-hours",
 ): { visitStart: number; visitEnd: number; stationReadyAt: number; accessAndBufferMinutes: number } | null {
   const buffer = includeBuffer ? accessBufferMinutes(place.accessEstimate.minutes) : 0;
   const accessAndBufferMinutes = place.accessEstimate.minutes + buffer;
@@ -302,9 +308,17 @@ function findVisitWindow(
   const dates = enumerateDates(startDate, koreaDate(deadline));
 
   for (const date of dates) {
-    if (date < startDate || !dateAvailable(date) || isClosedDay(place, date)) continue;
-    let visitStart = earliestPlaceArrival;
-    if (place.openingHours.type === "hours") {
+    if (date < startDate || !dateAvailable(date)) continue;
+    if (mode === "verified" && isClosedDay(place, date)) continue;
+    // PR #45 리뷰: 출력 창(regionWindows)과 배치가 어긋나지 않도록 같은 활동 경계를 적용한다
+    // — 역 출발 가능 시각 >= 09:00 (장소 도착 하한 = 09:00 + 접근·보수 버퍼),
+    //   장소 방문 + 역 복귀 완료 <= min(출국 마감, 해당 날짜 21:00). hours·상시 개방·경고 폴백 공통.
+    const activityDeadline = Math.min(deadline, koreaDateTime(date, DAY_ACTIVITY_END));
+    let visitStart = Math.max(
+      earliestPlaceArrival,
+      koreaDateTime(date, DAY_ACTIVITY_START) + accessAndBufferMinutes * MINUTE_MS,
+    );
+    if (mode === "verified" && place.openingHours.type === "hours") {
       const open = koreaDateTime(date, place.openingHours.open);
       const close = koreaDateTime(date, place.openingHours.close);
       visitStart = Math.max(visitStart, open);
@@ -312,20 +326,32 @@ function findVisitWindow(
         && visitStart > koreaDateTime(date, place.openingHours.lastEntry)) continue;
       const visitEnd = visitStart + place.stayMinutes * MINUTE_MS;
       const stationReadyAt = visitEnd + accessAndBufferMinutes * MINUTE_MS;
-      if (visitEnd <= close && stationReadyAt <= deadline) {
+      if (visitEnd <= close && stationReadyAt <= activityDeadline) {
         return { visitStart, visitEnd, stationReadyAt, accessAndBufferMinutes };
       }
       continue;
     }
 
-    visitStart = Math.max(visitStart, koreaDateTime(date, "00:00"));
     const visitEnd = visitStart + place.stayMinutes * MINUTE_MS;
     const stationReadyAt = visitEnd + accessAndBufferMinutes * MINUTE_MS;
-    if (koreaDate(visitStart) === date && stationReadyAt <= deadline) {
+    if (koreaDate(visitStart) === date && stationReadyAt <= activityDeadline) {
       return { visitStart, visitEnd, stationReadyAt, accessAndBufferMinutes };
     }
   }
   return null;
+}
+
+/** #5 판정식 유지 — 결과만 제외 대신 경고 상세로 쓴다 (#43 결정 1) */
+function activityWarningDetail(
+  place: PlaceT,
+  stationArrival: number,
+  deadline: number,
+  dateAvailable: (date: string) => boolean,
+): ActivityWindowDetail {
+  if (place.openingHours.type === "unverified") return "UNVERIFIED_HOURS";
+  return findVisitWindow(place, stationArrival, false, deadline, dateAvailable, "verified")
+    ? "CONSERVATIVE_BUFFER_MISMATCH"
+    : "OUTSIDE_VERIFIED_HOURS";
 }
 
 function completeSchedule(
@@ -362,6 +388,7 @@ function completeSchedule(
     keys: {
       relevanceKey: { selectedWorkPlaceCount, actorOtherWorkPlaceCount },
       visitablePlaceCount: state.visits.length,
+      activityWarningCount: activityWarningCountOf(state), // #43 결정 3 — 방문 수와 이동시간 사이
       totalRailMinutes,
       transferCount: totalTransfers,
       slackSatisfied: hasDailySlack(
@@ -547,8 +574,11 @@ function pruneStates(states: PlannerState[]): PlannerState[] {
       [...state.dateCounts].sort(([a], [b]) => a.localeCompare(b, "en")).map(([d, n]) => `${d}:${n}`).join(","),
     ].join("|");
     const previous = bestBySignature.get(signature);
-    if (!previous || state.readyAt < previous.readyAt
-      || (state.readyAt === previous.readyAt && state.railMinutes < previous.railMinutes)) {
+    if (!previous
+      || activityWarningCountOf(state) < activityWarningCountOf(previous)
+      || (activityWarningCountOf(state) === activityWarningCountOf(previous)
+        && (state.readyAt < previous.readyAt
+          || (state.readyAt === previous.readyAt && state.railMinutes < previous.railMinutes)))) {
       bestBySignature.set(signature, state);
     }
   }
@@ -556,19 +586,25 @@ function pruneStates(states: PlannerState[]): PlannerState[] {
     .sort((a, b) => {
       const aSelected = a.visits.filter(({ relation }) => relation === "selected_work").length;
       const bSelected = b.visits.filter(({ relation }) => relation === "selected_work").length;
+      // 경고 수는 최종 비교 키(#43)와 같은 방향으로 beam에서도 우선한다
       return bSelected - aSelected
+        || activityWarningCountOf(a) - activityWarningCountOf(b)
         || a.readyAt - b.readyAt
         || stableStateId(a).localeCompare(stableStateId(b), "en");
     })
     .slice(0, MAX_BEAM_SIZE);
 }
 
-function buildDays(visits: ScheduledVisit[], rides: TrainLegT[]): DayPlan[] {
+function buildDays(
+  visits: ScheduledVisit[],
+  rides: TrainLegT[],
+  regionWindows: RegionWindow[],
+): DayPlan[] {
   const days = new Map<string, DayPlan>();
   const getDay = (date: string): DayPlan => {
     const existing = days.get(date);
     if (existing) return existing;
-    const created: DayPlan = { date, items: [], rides: [] };
+    const created: DayPlan = { date, items: [], rides: [], regionWindows: [] };
     days.set(date, created);
     return created;
   };
@@ -585,12 +621,19 @@ function buildDays(visits: ScheduledVisit[], rides: TrainLegT[]): DayPlan[] {
     const item: TrainRide = { ...ride };
     getDay(koreaDate(Date.parse(ride.departAt))).rides.push(item);
   }
+  // #33 — 창은 KST 자정 분할되어 있으므로 시작 시각의 날짜에 단독 귀속된다
+  for (const window of regionWindows) {
+    getDay(koreaDate(Date.parse(window.startAt))).regionWindows.push(window);
+  }
   return [...days.values()]
     .sort((a, b) => a.date.localeCompare(b.date, "en"))
     .map((day) => ({
       ...day,
       items: day.items.sort((a, b) => Date.parse(a.arriveAt) - Date.parse(b.arriveAt)),
       rides: day.rides.sort((a, b) => Date.parse(a.departAt) - Date.parse(b.departAt)),
+      regionWindows: day.regionWindows.sort(
+        (a, b) => Date.parse(a.startAt) - Date.parse(b.startAt),
+      ),
     }));
 }
 
@@ -684,6 +727,10 @@ function completionFailure(
 
 function minutesBetween(start: number, end: number): number {
   return Math.max(0, Math.round((end - start) / MINUTE_MS));
+}
+
+function activityWarningCountOf(state: PlannerState): number {
+  return state.visits.filter(({ warning }) => warning !== null).length;
 }
 
 function stableStateId(state: PlannerState): string {

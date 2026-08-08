@@ -106,34 +106,37 @@ function constraints(
 }
 
 describe("generateItinerary", () => {
-  it("복수 배우와 복수 작품 관계를 사용해 결정적인 왕복 일정을 만든다", () => {
+  it("결정적 왕복 일정 — 미확인 장소는 제외 대신 경고와 함께 배치된다 (#43)", () => {
     const result = generateItinerary(constraints(), repositories());
 
     expect(result.status).toBe("planned");
     if (result.status !== "planned") return;
+    // place-unverified가 work-1(선택 작품)이라 relevance 2가 되어 기존 3곳 조합을 이긴다
     expect(result.days.flatMap((day) => day.items.map((item) => item.placeId))).toEqual([
-      "place-selected",
       "place-actor-a",
-      "place-actor-b",
+      "place-selected",
+      "place-unverified",
     ]);
     expect(result.days.flatMap((day) => day.rides.map((ride) => ride.trainNo))).toEqual([
-      "101", "201", "301",
+      "101", "302",
     ]);
     expect(result.comparisonKeys.relevanceKey).toEqual({
-      selectedWorkPlaceCount: 1,
-      actorOtherWorkPlaceCount: 2,
+      selectedWorkPlaceCount: 2,
+      actorOtherWorkPlaceCount: 1,
     });
+    expect(result.comparisonKeys.activityWarningCount).toBe(1);
     expect(result.metrics).toEqual({
-      totalTravelMinutes: 450,
-      totalRailMinutes: 270,
+      totalTravelMinutes: 420,
+      totalRailMinutes: 240,
       transferCount: 0,
-      departureSlackMinutes: 240,
+      departureSlackMinutes: 180,
     });
-    expect(result.rejectedPlaces).toContainEqual({
-      code: "ACTIVITY_WINDOW_MISMATCH",
-      placeId: "place-unverified",
-      detail: "UNVERIFIED_HOURS",
-    });
+    expect(result.warnings).toEqual([
+      { code: "ACTIVITY_WINDOW_MISMATCH", placeId: "place-unverified", detail: "UNVERIFIED_HOURS" },
+    ]);
+    expect(result.rejectedPlaces).toEqual([
+      { code: "TRAIN_UNAVAILABLE", placeId: "place-actor-b" },
+    ]);
   });
 
   it("사용자가 제외한 장소는 일정과 자동 제외 사유에서 모두 뺀다", () => {
@@ -145,9 +148,9 @@ describe("generateItinerary", () => {
     expect(result.status).toBe("planned");
     if (result.status !== "planned") return;
     expect(result.days.flatMap((day) => day.items.map((item) => item.placeId)).sort())
-      .toEqual(["place-actor-a", "place-selected"]);
+      .toEqual(["place-actor-a", "place-selected", "place-unverified"]);
     expect(result.rejectedPlaces.some((reason) =>
-      "placeId" in reason && reason.placeId === "place-actor-b")).toBe(false);
+      reason.placeId === "place-actor-b")).toBe(false);
   });
 
 
@@ -278,7 +281,7 @@ describe("generateItinerary", () => {
     expect(result.comparisonKeys.slackSatisfied).toBe(false);
   });
 
-  it("운영시간은 맞지만 보수적 접근 버퍼 때문에 불가능하면 상세 사유를 구분한다", () => {
+  it("보수 버퍼로 검증 시간 안 배치가 불가한 장소도 제외하지 않고 상세 경고와 함께 배치한다 (#43)", () => {
     const repos = repositories();
     repos.places = repos.places.filter(({ id }) => id === "place-selected");
     repos.places[0].openingHours = {
@@ -294,15 +297,52 @@ describe("generateItinerary", () => {
       selectedWorkIds: ["work-1"],
     }), repos);
 
-    expect(result).toEqual({
-      status: "empty",
-      days: [],
-      rejectedPlaces: [{
-        code: "ACTIVITY_WINDOW_MISMATCH",
-        placeId: "place-selected",
-        detail: "CONSERVATIVE_BUFFER_MISMATCH",
-      }],
-    });
+    expect(result.status).toBe("planned");
+    if (result.status !== "planned") return;
+    expect(result.days.flatMap((day) => day.items.map((item) => item.placeId)))
+      .toEqual(["place-selected"]);
+    // #5 판정식 유지 — 버퍼 없이는 가능했으므로 상세는 CONSERVATIVE_BUFFER_MISMATCH
+    expect(result.warnings).toEqual([
+      { code: "ACTIVITY_WINDOW_MISMATCH", placeId: "place-selected", detail: "CONSERVATIVE_BUFFER_MISMATCH" },
+    ]);
+    expect(result.rejectedPlaces).toEqual([]);
+    expect(result.comparisonKeys.activityWarningCount).toBe(1);
+  });
+
+  it("동일 관련성·방문 수에서는 경고 없는 일정이 항상 우선한다 (#43 수용 기준)", () => {
+    const repos = repositories();
+    repos.places = [
+      place("place-clean", "work-1", "station-gangneung", { type: "always_open", source: "fixture", verifiedAt: "2026-08-08" }),
+      place("place-warned", "work-1", "station-gangneung", { type: "unverified" }),
+    ];
+    // 당일 일정 + 하루 1곳 → 한 곳만 배치 가능. 관련성·방문 수가 같으므로 경고 수가 승부를 가른다
+    const result = generateItinerary(constraints({
+      selectedActorIds: [],
+      selectedWorkIds: ["work-1"],
+      maxPlacesPerDay: 1,
+    }), repos);
+
+    expect(result.status).toBe("planned");
+    if (result.status !== "planned") return;
+    expect(result.days.flatMap((day) => day.items.map((item) => item.placeId)))
+      .toEqual(["place-clean"]);
+    expect(result.comparisonKeys.activityWarningCount).toBe(0);
+    expect(result.warnings).toEqual([]);
+  });
+
+  it("배치된 미확인·시간 밖 방문의 경고 누락은 0건이다 (#43 수용 기준)", () => {
+    const result = generateItinerary(constraints(), repositories());
+
+    expect(result.status).toBe("planned");
+    if (result.status !== "planned") return;
+    const warned = new Set(result.warnings.map(({ placeId }) => placeId));
+    for (const item of result.days.flatMap(({ items }) => items)) {
+      const source = repositories().places.find(({ id }) => id === item.placeId);
+      if (source?.openingHours.type === "unverified") {
+        expect(warned.has(item.placeId), item.placeId).toBe(true);
+      }
+    }
+    expect(result.comparisonKeys.activityWarningCount).toBe(result.warnings.length);
   });
 
   it("귀환 열차가 없으면 열차 없음 사유를 반환한다", () => {
@@ -320,6 +360,7 @@ describe("generateItinerary", () => {
       status: "empty",
       days: [],
       rejectedPlaces: [{ code: "TRAIN_UNAVAILABLE", placeId: "place-selected" }],
+      warnings: [],
     });
   });
 
@@ -349,6 +390,69 @@ describe("generateItinerary", () => {
     expect(result.status).toBe("planned");
     if (result.status !== "planned") return;
     expect(result.comparisonKeys.visitablePlaceCount).toBe(15);
+  });
+
+  // PR #45 리뷰: 출력 창(09:00-21:00)과 실제 배치의 정합 — 활동 경계 회귀
+  it("전날 저녁 도착한 상시 개방 장소는 자정이 아니라 다음 날 활동 시작 이후에 배치된다", () => {
+    const repos = repositories();
+    repos.places = repos.places.filter(({ id }) => id === "place-selected");
+    repos.trainLegs = [
+      leg("901", "station-seoul", "station-gangneung", "2026-08-12T19:30:00+09:00", "2026-08-12T21:30:00+09:00"),
+      leg("902", "station-gangneung", "station-seoul", "2026-08-13T17:00:00+09:00", "2026-08-13T19:00:00+09:00"),
+    ];
+    const result = generateItinerary(constraints({
+      arrivalAt: "2026-08-12T18:00:00+09:00",
+      departureAt: "2026-08-13T22:00:00+09:00",
+      selectedActorIds: [],
+      selectedWorkIds: ["work-1"],
+    }), repos);
+
+    expect(result.status).toBe("planned");
+    if (result.status !== "planned") return;
+    // 21:30 역 도착 → 당일(21:00 경계 초과)·자정 배치 금지 → 다음 날 09:00 + 접근 30분 = 09:30 KST
+    expect(result.days.flatMap(({ items }) => items.map(({ arriveAt }) => arriveAt)))
+      .toEqual(["2026-08-13T00:30:00.000Z"]);
+  });
+
+  it("접근·체류·역 복귀가 21:00을 넘는 후보는 배치되지 않는다", () => {
+    const repos = repositories();
+    repos.places = repos.places.filter(({ id }) => id === "place-selected");
+    repos.trainLegs = [
+      leg("901", "station-seoul", "station-gangneung", "2026-08-12T19:30:00+09:00", "2026-08-12T20:15:00+09:00"),
+      leg("902", "station-gangneung", "station-seoul", "2026-08-12T21:10:00+09:00", "2026-08-12T22:50:00+09:00"),
+    ];
+    // 20:15 도착 → 방문 시 역 복귀 21:45 > 21:00, 다음 날은 출국 마감(23:00) 밖
+    const result = generateItinerary(constraints({
+      arrivalAt: "2026-08-12T18:00:00+09:00",
+      departureAt: "2026-08-13T01:00:00+09:00",
+      selectedActorIds: [],
+      selectedWorkIds: ["work-1"],
+    }), repos);
+
+    expect(result.status).toBe("empty");
+    if (result.status !== "empty") return;
+    expect(result.rejectedPlaces).toContainEqual({
+      code: "DEPARTURE_DEADLINE_EXCEEDED",
+      placeId: "place-selected",
+    });
+  });
+
+  it("배치된 모든 방문의 지역 활동 구간(접근 포함)이 해당 날짜 09:00-21:00 안에 있다", () => {
+    const result = generateItinerary(constraints(), repositories());
+
+    expect(result.status).toBe("planned");
+    if (result.status !== "planned") return;
+    const kstMinutes = (iso: string) => {
+      const kst = new Date(Date.parse(iso) + 9 * 3_600_000);
+      return kst.getUTCHours() * 60 + kst.getUTCMinutes();
+    };
+    for (const item of result.days.flatMap(({ items }) => items)) {
+      const accessMs = 30 * 60_000; // fixture: 접근 10분 + 보수 버퍼 20분
+      expect(kstMinutes(new Date(Date.parse(item.arriveAt) - accessMs).toISOString()))
+        .toBeGreaterThanOrEqual(9 * 60);
+      expect(kstMinutes(new Date(Date.parse(item.departAt) + accessMs).toISOString()))
+        .toBeLessThanOrEqual(21 * 60);
+    }
   });
 
   it("배우와 작품이 모두 비어 있는 입력은 계산 전에 거절한다", () => {
