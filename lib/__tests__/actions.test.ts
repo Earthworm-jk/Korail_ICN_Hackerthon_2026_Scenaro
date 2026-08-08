@@ -65,12 +65,20 @@ describe("미확인 후보 선택 가능 (#43 — 표시 전용 계약 개정)",
 });
 
 describe("잘못된 시각 요청 (PR #30 리뷰 ③ — throw 없이 INVALID_REQUEST)", () => {
-  // 실시드 13곳 전체 요청은 열차 스냅샷 규모에 비례해 느려진다(#56 진부 확장으로 86→203건,
-  // CI에서 기본 5초 경계 초과). 엔진 성능 계약은 engine.test.ts의 "15곳 2초" 테스트가 지킨다.
   it("유효한 요청은 ok:true로 엔진 결과를 반환한다", async () => {
     const res = await planItinerary(validRequest());
     expect(res.ok).toBe(true);
-  }, 15000);
+  });
+
+  // #56 차단 리뷰: 실시드 전체 요청은 사용자가 실제 거치는 경로이므로 제품 데이터 기준으로
+  // NFR-PERF-001(2초)을 고정한다 — 스냅샷 확장(만종·노선 팩)이 계약을 깨면 여기서 잡힌다.
+  it("NFR-PERF-001: 실시드 전체 요청이 2초 안에 완료된다", async () => {
+    const startedAt = performance.now();
+    const res = await planItinerary(validRequest());
+    const elapsedMs = performance.now() - startedAt;
+    expect(res.ok).toBe(true);
+    expect(elapsedMs).toBeLessThan(2000);
+  });
 
   it("빈 시각 입력(datetime-local 미입력)은 INVALID_REQUEST", async () => {
     const res = await planItinerary({ ...validRequest(), arrivalAt: ":00+09:00" });
