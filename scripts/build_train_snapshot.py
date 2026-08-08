@@ -14,8 +14,7 @@
   - korail: 한국철도공사 열차운행계획(openapis.korail.com) — 주 데이터, 기본 소스.
             계약(경로·쿼리 DSL·응답 필드)은 샘플 페이지 실측으로 확정 완료 —
             openapis.korail.com에 등록된 키만 있으면 동작한다.
-  - tago  : 국토교통부(TAGO) 열차정보서비스 — 교차검증용. 표준 URI가 코드 12(서비스 없음)라
-            팀 테스트에서 동작한 실제 URI 확인 필요.
+  - tago  : 국토교통부(TAGO) 열차정보 — 교차검증용 (2026-03 개정 URI, #49).
 
 산출 규칙:
   - OD_PAIRS × DATES 왕복을 조회해 legs 생성
@@ -54,17 +53,14 @@ OD_PAIRS: list[tuple[tuple[str, str], tuple[str, str]]] = [
 # 이 역이 낀 구간은 API로 갱신하지 않고 기존 스냅샷에서 보존 (공항철도)
 PRESERVE_STATION = "station-incheon-airport-t1"
 
-# ---- TAGO (국토교통부 열차정보서비스) — 교차검증용 -----------------------------------
-# 주의: 2026-08-08 기준 아래 기본 URI는 이 계정 키에서 "서비스 없음(코드 12)"이 나왔다.
-# 팀 테스트에서 정상 동작한 실제 URI로 교체할 것 (활용신청한 서비스 상세 페이지의 End Point).
-TAGO_BASE = os.environ.get(
-    "TAGO_BASE",
-    "https://apis.data.go.kr/1613000/TrainInfoService",
-)
-TAGO_STATION_OP = "getCtyAcctoTrainSttnList"
-TAGO_TIMETABLE_OP = "getStrtpntAlocFndTrainInfo"
-# 역 이름 → nodeid 조회에 쓰는 도시코드 (서울 11, 강원 51, 전북 45 — 팀 확인값으로 조정)
-TAGO_CITY_CODES = [11, 51, 45]
+# ---- TAGO (국토교통부 열차정보) — 교차검증용 ------------------------------------------
+# 2026-03-06 개정 명세(#49 지영 확인): Base가 TrainInfoService → TrainInfo,
+# 오퍼레이션이 PascalCase(Get...)로 변경됨. 구 URI는 코드 12(서비스 없음).
+TAGO_BASE = os.environ.get("TAGO_BASE", "https://apis.data.go.kr/1613000/TrainInfo")
+TAGO_STATION_OP = os.environ.get("TAGO_STATION_OP", "GetCtyAcctoTrainSttnList")
+TAGO_TIMETABLE_OP = os.environ.get("TAGO_TIMETABLE_OP", "GetStrtpntAlocFndTrainInfo")
+# 역 이름 → nodeid 조회 도시코드 — TAGO는 구형 2자리 체계 (서울 11, 강원 32, 전북 35)
+TAGO_CITY_CODES = [11, 32, 35]
 
 # ---- KORAIL (한국철도공사 열차운행계획, openapis.korail.com) — 주 데이터 --------------
 # 2026-08-08 샘플 페이지 실측으로 확정한 계약:
