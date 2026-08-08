@@ -1,8 +1,14 @@
 [
   {
-    "flightNo": "SAMPLE-001",
+    "flightNo": "SAMPLE-ARRIVAL-001",
     "direction": "arrival",
     "scheduledAt": "2026-08-12T10:00:00+09:00",
+    "terminal": "T1"
+  },
+  {
+    "flightNo": "SAMPLE-DEPARTURE-001",
+    "direction": "departure",
+    "scheduledAt": "2026-08-14T18:00:00+09:00",
     "terminal": "T1"
   }
 ]

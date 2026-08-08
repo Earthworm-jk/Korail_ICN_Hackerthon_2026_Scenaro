@@ -1,22 +1,49 @@
 [
   {
+    "id": "station-incheon-airport-t1",
+    "name": { "ko": "인천공항1터미널역", "en": "Incheon Airport Terminal 1 Station" },
+    "lineType": "AREX",
+    "regionId": "seoul_metro",
+    "isGateway": true,
+    "gatewayPriority": 1,
+    "isAirport": true
+  },
+  {
+    "id": "station-seoul",
+    "name": { "ko": "서울역", "en": "Seoul Station" },
+    "lineType": "KTX",
+    "regionId": "seoul_metro",
+    "isGateway": true,
+    "gatewayPriority": 2
+  },
+  {
     "id": "station-gangneung",
-    "name": {
-      "ko": "강릉역",
-      "en": "Gangneung Station"
-    },
+    "name": { "ko": "강릉역", "en": "Gangneung Station" },
     "lineType": "KTX",
     "regionId": "gangwon"
   },
   {
-    "id": "station-seoul",
-    "name": {
-      "ko": "서울역",
-      "en": "Seoul Station"
-    },
+    "id": "station-jinbu",
+    "name": { "ko": "진부(오대산)역", "en": "Jinbu (Odaesan) Station" },
     "lineType": "KTX",
-    "regionId": "seoul_metro",
-    "isGateway": true,
-    "gatewayPriority": 1
+    "regionId": "gangwon"
+  },
+  {
+    "id": "station-manjong",
+    "name": { "ko": "만종역", "en": "Manjong Station" },
+    "lineType": "KTX",
+    "regionId": "gangwon"
+  },
+  {
+    "id": "station-chuncheon",
+    "name": { "ko": "춘천역", "en": "Chuncheon Station" },
+    "lineType": "ITX",
+    "regionId": "gangwon"
+  },
+  {
+    "id": "station-naju",
+    "name": { "ko": "나주역", "en": "Naju Station" },
+    "lineType": "KTX",
+    "regionId": "honam"
   }
 ]
