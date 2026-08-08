@@ -4,6 +4,10 @@ export type TripConstraints = {
   arrivalAt: string;
   departureAt: string;
   airportExitOffsetMin: number; // 90 | 120 | 직접 설정 (REQ-SRCH-002)
+  airportStationId?: string; // 공항철도 출발·도착역. 생략 시 isAirport 역을 사용한다.
+  gatewayStationId?: string; // 생략하면 수도권 대표 관문역을 결정적으로 선택한다.
+  selectedActorIds?: string[]; // 복수 배우 선택. selectedActorId와 합쳐서 처리한다.
+  /** @deprecated 기존 호출부 호환용. 새 호출부는 selectedActorIds를 사용한다. */
   selectedActorId?: string;
   selectedWorkIds: string[];
   requiredPlaceIds: string[];
@@ -56,7 +60,7 @@ export type ItineraryMetrics = {
 
 export type ItineraryItem = {
   placeId: string;
-  arriveAt: string;
+  arriveAt: string; // 절대시각 ISO. 직렬화는 UTC(Z), DayPlan.date만 KST 기준이다.
   departAt: string;
   accessMinutesLabel: string; // 항상 '추정치' 라벨과 함께 표시 (REQ-ITIN-006)
 };
@@ -70,7 +74,7 @@ export type TrainRide = {
 };
 
 export type DayPlan = {
-  date: string; // YYYY-MM-DD
+  date: string; // KST 기준 YYYY-MM-DD
   items: ItineraryItem[];
   rides: TrainRide[];
 };

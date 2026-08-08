@@ -26,7 +26,10 @@ type TripConstraints = {
   arrivalAt: string;            // ISO, 입국편 도착
   departureAt: string;          // ISO, 출국편 출발
   airportExitOffsetMin: 90 | 120 | number; // 착륙 후 출발 가능시점 (REQ-SRCH-002)
-  selectedActorId?: string;     // 배우 중심 탐색
+  airportStationId?: string;    // 공항철도 출발·도착역(생략 시 Station.isAirport)
+  gatewayStationId?: string;    // 관문역(생략 시 Station.isGateway·gatewayPriority)
+  selectedActorIds?: string[];  // 배우 중심 탐색(복수 가능)
+  selectedActorId?: string;     // 기존 호출부 호환용 단수 입력
   selectedWorkIds: string[];    // 작품 중심(복수 가능)
   requiredPlaceIds: string[];   // 필수 방문 — 하드 제약
   excludedPlaceIds: string[];   // 사용자 제외 — 하드 제약
@@ -50,8 +53,8 @@ function generateItinerary(c: TripConstraints, repos: Repos): ItineraryResult;
 
 ```
 1) place.workIds ∩ selectedWorkIds ≠ ∅              → selected_work (여기서 판정 종료)
-2) 1)이 아니고, selectedActorId가 있으며
-   place.workIds ∩ actor(selectedActorId).workIds ≠ ∅ → actor_other_work
+2) 1)이 아니고, 선택 배우가 있으며
+   place.workIds ∩ actors(selectedActorIds).workIds ≠ ∅ → actor_other_work
 3) 둘 다 아님                                         → 후보 아님 (NFR-ACCU-001)
 ```
 
@@ -69,7 +72,7 @@ const OpeningHours = z.discriminatedUnion("type", [
     type: z.literal("hours"),
     open: z.string(), close: z.string(),          // HH:mm
     lastEntry: z.string().optional(),             // 마지막 입장
-    closedDays: z.array(z.string()).optional(),   // 휴무
+    closedDays: z.array(z.enum(["sun", "mon", "tue", "wed", "thu", "fri", "sat"])).optional(),
     source: z.string(), verifiedAt: z.string(),
   }),
   z.object({ type: z.literal("unverified") }),    // 자동 일정 제외 대상 (#5)
@@ -94,6 +97,16 @@ const Place = z.object({
   officialSourceCount: z.number(),     // UI 정렬 전용 — 엔진 점수와 분리 (#3)
   reasonText: z.object({ ko: z.string(), en: z.string() }), // 사전 작성 추천 사유
 });
+
+const Station = z.object({
+  id: z.string(),
+  name: z.object({ ko: z.string(), en: z.string() }),
+  lineType: z.enum(["KTX", "ITX", "AREX", "일반"]),
+  regionId: RegionId,
+  isGateway: z.boolean().optional(),
+  gatewayPriority: z.number().int().nonnegative().optional(),
+  isAirport: z.boolean().optional(),
+});
 ```
 
 버퍼는 저장하지 않고 파생: `bufferMin = max(20, ceil(accessEstimate.minutes * 0.5))`. (#5)
@@ -105,8 +118,8 @@ const Place = z.object({
 2. 후보 장소 수집       — §2 파생 규칙으로 selected_work / actor_other_work 후보만
 3. 하드 필터           — 아래 5.의 제약 위반 장소·후보 제거, 사유 코드 기록
 4. 일자 슬롯 구성       — 입국+airportExitOffset ... 출국-departureBuffer 사이,
-                         maxPlacesPerDay·dailySlackMinutes 반영
-5. 열차 선택           — 시간표 스냅샷에서 역 간 연결 가능한 편 탐색
+                         maxPlacesPerDay·일자별 dailySlackMinutes 반영
+5. 열차 선택           — 공항철도를 포함한 시간표 스냅샷에서 연결 가능한 편 탐색
 6. 후보 일정 생성·비교   — 사전식 비교(아래 6.)로 최선 일정 선택
 7. 결과 조립           — days, rejectedPlaces(사유 코드), comparisonKeys, metrics
 ```
@@ -117,6 +130,15 @@ const Place = z.object({
 모델링하며 복귀에도 동일한 `accessEstimate.minutes + buffer`를 보수적으로 적용한다.**
 같은 역 권역에서 여러 장소를 방문해도 각 방문은 역 기준 왕복으로 시간을 소비한 것으로 계산한다
 (보수적 — 실제보다 여유 있게 잡히며, 과장 금지 원칙과 일치).
+
+공항↔관문역은 지역 내 이동 추정과 다르다. `airportStationId`에서 출발해 공항철도
+스냅샷 leg를 실제 열차 구간처럼 탐색하고, 귀환도 공항역 도착 시각이
+`departureAt - departureBufferMinutes` 이하여야 한다. 다른 열차번호로 갈아탈 때는 최소
+15분의 환승 간격을 적용한다.
+
+`dailySlackMinutes`는 출국 전 잔여시간의 대리값으로 쓰지 않는다. 각 방문일을 KST 0시 기준으로
+나누고, 해당 일자의 여행 가능 구간에서 열차·역–장소 왕복·체류가 점유한 시간을 제외한 여유가
+기본값 이상인지 날짜별로 판정한다.
 
 ## 5. 하드 제약 (위반 시 점수 계산 전 제거)
 
@@ -187,6 +209,8 @@ type ComparisonKeys = {
 
 동점 타이브레이커(결정성 보장): **출국 전 여유 큼 → 장소 ID·열차번호 사전순.**
 비교 키에 이미 포함된 환승·이동시간은 동점 시점에 같으므로 반복하지 않는다(정의서 v0.5).
+beam pruning도 동일한 1차 관련성 키(`selected_work` 방문 수)를 먼저 사용하고, 그 다음
+`readyAt`과 안정 ID로 정렬한다. MVP beam 상한은 1,000개이며 회귀 프리셋으로 결과를 고정한다.
 
 ## 7. 출력 타입 (PR #9 리뷰 C — diff는 앱 계층 책임)
 
@@ -223,6 +247,9 @@ type ItineraryResult =
 후보가 전멸해도 사용자 제약 위반이 아니면 `ok: false`가 아니라 **`status: "empty"`**로
 반환한다 — '조건을 만족하는 일정 없음' 화면 상태(PRD 9.2)의 근거. empty 상태에는 선택된
 일정이 없으므로 comparisonKeys·metrics를 포함하지 않는다(허위 값 금지, PR #16 리뷰).
+
+`DayPlan.date`는 KST 기준 `YYYY-MM-DD`이고, 항목·열차의 `arriveAt`·`departAt`은 절대시각
+ISO 문자열(직렬화 시 UTC `Z`)이다. UI는 표시에만 사용자 시간대/KST 변환을 적용한다.
 
 ## 8. 회귀 프리셋 3개 (기존 Python 시나리오 정답값 이식)
 

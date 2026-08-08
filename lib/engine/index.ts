@@ -7,10 +7,49 @@
  */
 import type { Repositories } from "../repositories/json";
 import type { ItineraryResult, TripConstraints } from "./types";
+import { planItinerary } from "./planner";
+import { z } from "zod";
+
+const TripConstraintsSchema = z.object({
+  arrivalAt: z.iso.datetime({ offset: true }),
+  departureAt: z.iso.datetime({ offset: true }),
+  airportExitOffsetMin: z.number().int().nonnegative(),
+  airportStationId: z.string().min(1).optional(),
+  gatewayStationId: z.string().min(1).optional(),
+  selectedActorIds: z.array(z.string().min(1)).optional(),
+  selectedActorId: z.string().min(1).optional(),
+  selectedWorkIds: z.array(z.string().min(1)),
+  requiredPlaceIds: z.array(z.string().min(1)),
+  excludedPlaceIds: z.array(z.string().min(1)),
+  pinnedDates: z.record(z.string(), z.iso.date()),
+  maxPlacesPerDay: z.number().int().positive(),
+  dailySlackMinutes: z.number().int().nonnegative(),
+  departureBufferMinutes: z.number().int().nonnegative(),
+}).superRefine((constraints, context) => {
+  if (Date.parse(constraints.arrivalAt) >= Date.parse(constraints.departureAt)) {
+    context.addIssue({
+      code: "custom",
+      path: ["departureAt"],
+      message: "departureAt must be later than arrivalAt",
+    });
+  }
+
+  const actorCount = new Set([
+    ...(constraints.selectedActorIds ?? []),
+    ...(constraints.selectedActorId ? [constraints.selectedActorId] : []),
+  ]).size;
+  if (actorCount === 0 && constraints.selectedWorkIds.length === 0) {
+    context.addIssue({
+      code: "custom",
+      path: ["selectedWorkIds"],
+      message: "at least one actor or work must be selected",
+    });
+  }
+});
 
 export function generateItinerary(
-  _constraints: TripConstraints,
-  _repos: Repositories,
+  constraints: TripConstraints,
+  repos: Repositories,
 ): ItineraryResult {
-  throw new Error("NotImplemented — docs/ENGINE_SPEC.md §4 참조, 08-09 플래너 P0에서 구현");
+  return planItinerary(TripConstraintsSchema.parse(constraints), repos);
 }
