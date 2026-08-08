@@ -1,0 +1,57 @@
+{
+  "source": "한국철도공사 편의시설정보 (data.go.kr B551457 convenience/stationFacilities)",
+  "fetchedAt": "2026-08-09",
+  "totalStationsInSource": 406,
+  "stations": [
+    {
+      "stationId": "station-seoul",
+      "stationCode": "3900023",
+      "sourceName": "서울",
+      "elevatorCount": 18,
+      "escalatorCount": 23,
+      "hasToilet": true,
+      "hasNursingRoom": true,
+      "hasInfoCenter": true
+    },
+    {
+      "stationId": "station-gangneung",
+      "stationCode": "3900587",
+      "sourceName": "강릉",
+      "elevatorCount": 3,
+      "escalatorCount": 6,
+      "hasToilet": true,
+      "hasNursingRoom": true,
+      "hasInfoCenter": false
+    },
+    {
+      "stationId": "station-jinbu",
+      "stationCode": "3901060",
+      "sourceName": "진부(오대산)",
+      "elevatorCount": 2,
+      "escalatorCount": 6,
+      "hasToilet": true,
+      "hasNursingRoom": true,
+      "hasInfoCenter": false
+    },
+    {
+      "stationId": "station-manjong",
+      "stationCode": "3900141",
+      "sourceName": "만종",
+      "elevatorCount": 4,
+      "escalatorCount": 8,
+      "hasToilet": true,
+      "hasNursingRoom": true,
+      "hasInfoCenter": false
+    },
+    {
+      "stationId": "station-jeonju",
+      "stationCode": "3900248",
+      "sourceName": "전주",
+      "elevatorCount": 0,
+      "escalatorCount": 0,
+      "hasToilet": true,
+      "hasNursingRoom": true,
+      "hasInfoCenter": false
+    }
+  ]
+}
