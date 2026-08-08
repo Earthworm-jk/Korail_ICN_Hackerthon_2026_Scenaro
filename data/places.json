@@ -6,17 +6,17 @@
     "nearestStationId": "station-gangneung",
     "accessEstimate": {
       "minutes": 35,
-      "source": "데모 시드 수동 보수 추정 (#1, 2026-08-08; 실시간 교통 아님)",
+      "source": "카카오맵 자동차 길찾기 강릉역→영진해변 35분·25.8km (2026-08-08; 실시간 교통·교통수단 보장 아님)",
       "verifiedAt": "2026-08-08"
     },
     "openingHours": {
       "type": "always_open",
-      "source": "공공데이터포털 한국문화정보원 촬영지 데이터 (2026-08-07 다운로드)",
-      "verifiedAt": "2026-08-07"
+      "source": "한국관광공사 VISITKOREA 영진해변 24시간 개방 https://english.visitkorea.or.kr/svc/contents/contentsView.do?vcontsId=112532",
+      "verifiedAt": "2026-08-08"
     },
     "stayMinutes": 60,
-    "verificationLevel": "원본확인",
-    "officialSourceCount": 1,
+    "verificationLevel": "교차확인",
+    "officialSourceCount": 2,
     "reasonText": {
       "ko": "도깨비의 대표적인 바닷가 장면을 떠올릴 수 있는 강릉 촬영지예요.",
       "en": "A Gangneung filming location associated with an iconic seaside scene from Guardian."
@@ -28,23 +28,17 @@
     "workIds": ["work-goblin"],
     "nearestStationId": "station-gangneung",
     "accessEstimate": {
-      "minutes": 35,
-      "source": "데모 시드 수동 보수 추정 (#1, 2026-08-08; 실시간 교통 아님)",
+      "minutes": 45,
+      "source": "원천 CSV 좌표 오류 가능성으로 POI 재확인 전 사용하는 임시 보수값 (2026-08-08; 길찾기 미검증)",
       "verifiedAt": "2026-08-08"
     },
-    "openingHours": {
-      "type": "hours",
-      "open": "13:00",
-      "close": "20:00",
-      "source": "공공데이터포털 한국문화정보원 촬영지 데이터의 평일 보수값 (2026-08-07 다운로드; 방문 전 재확인 필요)",
-      "verifiedAt": "2026-08-07"
-    },
+    "openingHours": { "type": "unverified" },
     "stayMinutes": 60,
     "verificationLevel": "원본확인",
     "officialSourceCount": 1,
     "reasonText": {
-      "ko": "도깨비 촬영 장면과 연결되는 강릉의 카페 촬영지예요.",
-      "en": "A cafe filming location in Gangneung connected to Guardian."
+      "ko": "도깨비 촬영 장면과 연결되는 카페예요. 외관 방문은 가능할 수 있지만 영업 여부와 내부 이용시간은 재확인이 필요해요.",
+      "en": "A cafe location connected to Guardian. Exterior viewing may be possible, but current business and indoor visiting hours require confirmation."
     }
   },
   {
@@ -53,23 +47,17 @@
     "workIds": ["work-yumi-cells"],
     "nearestStationId": "station-gangneung",
     "accessEstimate": {
-      "minutes": 20,
-      "source": "데모 시드 수동 보수 추정 (#1, 2026-08-08; 실시간 교통 아님)",
+      "minutes": 10,
+      "source": "카카오맵 자동차 길찾기 강릉역→엄마손막국수 9분·2.5km의 5분 올림값 (2026-08-08; 실시간 교통·교통수단 보장 아님)",
       "verifiedAt": "2026-08-08"
     },
-    "openingHours": {
-      "type": "hours",
-      "open": "11:00",
-      "close": "20:00",
-      "source": "공공데이터포털 한국문화정보원 촬영지 데이터 (2026-08-07 다운로드; 계절 휴무는 방문 전 재확인 필요)",
-      "verifiedAt": "2026-08-07"
-    },
+    "openingHours": { "type": "unverified" },
     "stayMinutes": 60,
     "verificationLevel": "원본확인",
     "officialSourceCount": 1,
     "reasonText": {
-      "ko": "유미의 세포들에 등장한 강릉의 식당 촬영지예요.",
-      "en": "A restaurant filming location in Gangneung featured in Yumi's Cells."
+      "ko": "유미의 세포들에 등장한 식당 촬영지예요. 외관 방문은 가능할 수 있지만 현재 영업 여부와 내부 이용시간은 확인이 필요해요.",
+      "en": "A restaurant location featured in Yumi's Cells. Exterior viewing may be possible, but current business and indoor visiting hours need confirmation."
     }
   },
   {
@@ -79,16 +67,16 @@
     "nearestStationId": "station-gangneung",
     "accessEstimate": {
       "minutes": 20,
-      "source": "데모 시드 수동 보수 추정 (#1, 2026-08-08; 실시간 교통 아님)",
+      "source": "카카오맵 자동차 길찾기 강릉역→스카이베이호텔 경포 16분·6.8km의 5분 올림값 (2026-08-08; 공식 안내의 버스 20~40분·택시 10~15분 범위도 별도 확인)",
       "verifiedAt": "2026-08-08"
     },
     "openingHours": { "type": "unverified" },
     "stayMinutes": 45,
-    "verificationLevel": "원본확인",
-    "officialSourceCount": 1,
+    "verificationLevel": "교차확인",
+    "officialSourceCount": 2,
     "reasonText": {
-      "ko": "유미의 세포들 촬영지이지만 일반 방문 가능 시간은 확인이 필요해요.",
-      "en": "A Yumi's Cells location whose public visiting hours still require verification."
+      "ko": "유미의 세포들 촬영지예요. 호텔 외관은 볼 수 있지만 투숙객이 아닌 방문자의 내부 이용 범위와 시간은 확인이 필요해요.",
+      "en": "A Yumi's Cells location whose exterior can be viewed, while indoor access for non-guests requires confirmation."
     }
   },
   {
@@ -97,20 +85,14 @@
     "workIds": ["work-goblin"],
     "nearestStationId": "station-jinbu",
     "accessEstimate": {
-      "minutes": 25,
-      "source": "데모 시드 수동 보수 추정 (#1, 2026-08-08; 실시간 교통 아님)",
+      "minutes": 20,
+      "source": "카카오맵 자동차 길찾기 진부역→월정사 19분·12.3km의 5분 올림값 (2026-08-08; 한국관광공사 안내 버스 약 45분은 별도 참고)",
       "verifiedAt": "2026-08-08"
     },
-    "openingHours": {
-      "type": "hours",
-      "open": "07:00",
-      "close": "18:00",
-      "source": "공공데이터포털 한국문화정보원 촬영지 데이터의 일출·일몰 범위를 보수적으로 고정 (2026-08-07 다운로드)",
-      "verifiedAt": "2026-08-07"
-    },
+    "openingHours": { "type": "unverified" },
     "stayMinutes": 60,
-    "verificationLevel": "원본확인",
-    "officialSourceCount": 1,
+    "verificationLevel": "교차확인",
+    "officialSourceCount": 2,
     "reasonText": {
       "ko": "도깨비의 고즈넉한 분위기를 따라가 볼 수 있는 오대산 촬영지예요.",
       "en": "An Odaesan filming location that evokes the quiet atmosphere of Guardian."
@@ -122,20 +104,20 @@
     "workIds": ["work-goblin"],
     "nearestStationId": "station-jinbu",
     "accessEstimate": {
-      "minutes": 25,
-      "source": "데모 시드 수동 보수 추정 (#1, 2026-08-08; 실시간 교통 아님)",
+      "minutes": 20,
+      "source": "카카오맵 자동차 길찾기 진부역→월정사 전나무 숲길 18분·11.8km의 5분 올림값 (2026-08-08; 한국관광공사 안내 버스 약 45분은 별도 참고)",
       "verifiedAt": "2026-08-08"
     },
     "openingHours": {
       "type": "hours",
       "open": "07:00",
-      "close": "18:00",
-      "source": "공공데이터포털 한국문화정보원 촬영지 데이터의 일출·일몰 범위를 보수적으로 고정 (2026-08-07 다운로드)",
-      "verifiedAt": "2026-08-07"
+      "close": "21:00",
+      "source": "한국관광공사 VISITKOREA 월정사 전나무 숲길 운영시간 안내 https://english.visitkorea.or.kr/svc/contents/contentsView.do?vcontsId=225974",
+      "verifiedAt": "2026-08-08"
     },
     "stayMinutes": 60,
-    "verificationLevel": "원본확인",
-    "officialSourceCount": 1,
+    "verificationLevel": "교차확인",
+    "officialSourceCount": 2,
     "reasonText": {
       "ko": "월정사와 함께 둘러보기 좋은 도깨비 촬영 숲길이에요.",
       "en": "A Guardian forest filming trail that pairs naturally with Woljeongsa Temple."
@@ -143,19 +125,20 @@
   },
   {
     "id": "place-samyang-ranch",
-    "name": { "ko": "대관령 삼양목장", "en": "Daegwallyeong Samyang Ranch" },
+    "name": { "ko": "대관령 삼양목장", "en": "Samyang Roundhill" },
     "workIds": ["work-goblin"],
     "nearestStationId": "station-jinbu",
     "accessEstimate": {
-      "minutes": 45,
-      "source": "데모 시드 수동 보수 추정 (#1, 2026-08-08; 실시간 교통 아님)",
+      "minutes": 35,
+      "source": "카카오맵 자동차 길찾기 진부역→삼양라운드힐 33분·23.4km의 5분 올림값 (2026-08-08; 실시간 교통·교통수단 보장 아님)",
       "verifiedAt": "2026-08-08"
     },
     "openingHours": {
       "type": "hours",
       "open": "09:00",
-      "close": "17:00",
-      "source": "대한민국 구석구석 여행기사 https://korean.visitkorea.or.kr/detail/rem_detail.do?cotid=d342bccd-c614-4850-8c91-83f28debe1e4",
+      "close": "18:00",
+      "lastEntry": "17:00",
+      "source": "삼양라운드힐 공식 이용안내: 5~10월 09:00~18:00·매표 마감 17:00 https://www.samyangroundhill.com/guide/index",
       "verifiedAt": "2026-08-08"
     },
     "stayMinutes": 120,
@@ -172,17 +155,15 @@
     "workIds": ["work-goblin"],
     "nearestStationId": "station-jinbu",
     "accessEstimate": {
-      "minutes": 30,
-      "source": "데모 시드 수동 보수 추정 (#1, 2026-08-08; 실시간 교통 아님)",
+      "minutes": 20,
+      "source": "카카오맵 자동차 길찾기 진부역→모나용평 드래곤프라자 19분·15.0km의 5분 올림값 (2026-08-08; 실시간 교통·교통수단 보장 아님)",
       "verifiedAt": "2026-08-08"
     },
     "openingHours": {
       "type": "hours",
       "open": "09:00",
-      "close": "17:00",
-      "lastEntry": "16:00",
-      "closedDays": ["mon"],
-      "source": "모나용평 공식 발왕산 관광케이블카 안내 https://www.peakisland.co.kr/kor/convenience/leports/gondola.do",
+      "close": "18:00",
+      "source": "모나용평 2026 공식 운영일정 PDF의 여름시즌 상행 09:00~18:00·하행 19:00 기준(8월 휴장 8/24) https://www.yongpyong.co.kr/upload/kor/2026_발왕산_관광케이블카_운영일정안내.pdf",
       "verifiedAt": "2026-08-08"
     },
     "stayMinutes": 120,
@@ -200,35 +181,39 @@
     "nearestStationId": "station-manjong",
     "accessEstimate": {
       "minutes": 25,
-      "source": "데모 시드 수동 보수 추정 (#1, 2026-08-08; 실시간 교통 아님)",
+      "source": "원천 CSV 좌표 오류 가능성으로 POI 재확인 전 사용하는 임시 보수값 (2026-08-08; 길찾기 미검증)",
       "verifiedAt": "2026-08-08"
     },
     "openingHours": { "type": "unverified" },
     "stayMinutes": 90,
-    "verificationLevel": "원본확인",
-    "officialSourceCount": 1,
+    "verificationLevel": "교차확인",
+    "officialSourceCount": 2,
     "reasonText": {
-      "ko": "작은 아씨들 촬영지이지만 일반 방문 가능 시간은 확인이 필요해요.",
-      "en": "A Little Women location whose public visiting hours still require verification."
+      "ko": "작은 아씨들 촬영 리조트예요. 외부 공간은 볼 수 있지만 실제 촬영구역과 비투숙객의 내부 이용 범위는 확인이 필요해요.",
+      "en": "A Little Women resort location. Exterior areas may be viewable, while the exact filming area and non-guest indoor access require confirmation."
     }
   },
   {
     "id": "place-jukrim-catholic-church",
-    "name": { "ko": "죽림동성당", "en": "Jukrim-dong Catholic Church" },
+    "name": { "ko": "죽림동성당", "en": "Jukrim-dong Cathedral" },
     "workIds": ["work-yumi-cells"],
     "nearestStationId": "station-chuncheon",
     "accessEstimate": {
-      "minutes": 15,
-      "source": "데모 시드 수동 보수 추정 (#1, 2026-08-08; 실시간 교통 아님)",
+      "minutes": 10,
+      "source": "카카오맵 자동차 길찾기 춘천역→죽림동성당 3분·1.1km의 보수 최소값 (2026-08-08; 실시간 교통·교통수단 보장 아님)",
       "verifiedAt": "2026-08-08"
     },
-    "openingHours": { "type": "unverified" },
+    "openingHours": {
+      "type": "always_open",
+      "source": "한국관광공사 열린관광의 경내 상시 개방·연중무휴 안내 https://access.visitkorea.or.kr/ms/detail.do?cotId=c06299ff-03d6-489b-a001-35a080d46b3a",
+      "verifiedAt": "2026-08-08"
+    },
     "stayMinutes": 45,
-    "verificationLevel": "원본확인",
-    "officialSourceCount": 1,
+    "verificationLevel": "교차확인",
+    "officialSourceCount": 2,
     "reasonText": {
-      "ko": "유미의 세포들 촬영지이지만 종교시설 방문 가능 시간은 별도 확인이 필요해요.",
-      "en": "A Yumi's Cells church location whose visitor access hours require separate confirmation."
+      "ko": "유미의 세포들 촬영 성당이에요. 외관은 볼 수 있지만 예배를 방해하지 않도록 내부 관람 가능시간은 별도 확인해야 해요.",
+      "en": "A Yumi's Cells cathedral location. The exterior can be viewed, while indoor visits require confirmation and respect for services."
     }
   },
   {
@@ -237,17 +222,11 @@
     "workIds": ["work-the-king"],
     "nearestStationId": "station-chuncheon",
     "accessEstimate": {
-      "minutes": 35,
-      "source": "데모 시드 수동 보수 추정 (#1, 2026-08-08; 실시간 교통 아님)",
+      "minutes": 30,
+      "source": "카카오맵 자동차 길찾기 춘천역→옛 강촌역 26분·16.5km의 5분 올림값 (2026-08-08; 촬영 코스 확정 전 임시값)",
       "verifiedAt": "2026-08-08"
     },
-    "openingHours": {
-      "type": "hours",
-      "open": "09:00",
-      "close": "17:00",
-      "source": "공공데이터포털 한국문화정보원 촬영지 데이터의 하절기 운영시간 (2026-08-07 다운로드; 회차는 방문 전 재확인 필요)",
-      "verifiedAt": "2026-08-07"
-    },
+    "openingHours": { "type": "unverified" },
     "stayMinutes": 120,
     "verificationLevel": "원본확인",
     "officialSourceCount": 1,
@@ -263,7 +242,7 @@
     "nearestStationId": "station-seoul",
     "accessEstimate": {
       "minutes": 10,
-      "source": "데모 시드 수동 보수 추정 (#1, 2026-08-08; 실시간 교통 아님)",
+      "source": "카카오맵 도보 길찾기 서울역→서울로7017 약 0.3km의 보수 최소값 (2026-08-08; 실시간 교통 아님)",
       "verifiedAt": "2026-08-08"
     },
     "openingHours": {
@@ -281,51 +260,25 @@
   },
   {
     "id": "place-deoksugung-stone-wall-road",
-    "name": { "ko": "덕수궁 돌담길", "en": "Deoksugung Stone Wall Road" },
+    "name": { "ko": "덕수궁 돌담길", "en": "Deoksugung Stonewall Walkway" },
     "workIds": ["work-goblin"],
     "nearestStationId": "station-seoul",
     "accessEstimate": {
       "minutes": 20,
-      "source": "데모 시드 수동 보수 추정 (#1, 2026-08-08; 실시간 교통 아님)",
+      "source": "카카오맵 도보 길찾기 서울역→덕수궁 돌담길 약 20분 기준 (2026-08-08; 차량 약 11분, 실시간 교통 아님)",
       "verifiedAt": "2026-08-08"
     },
     "openingHours": {
       "type": "always_open",
-      "source": "공공데이터포털 한국문화정보원 촬영지 데이터 (2026-08-07 다운로드; 궁 내부 관람시간과 별개)",
-      "verifiedAt": "2026-08-07"
-    },
-    "stayMinutes": 45,
-    "verificationLevel": "원본확인",
-    "officialSourceCount": 1,
-    "reasonText": {
-      "ko": "서울 도심에서 도깨비의 장면을 따라 걷기 좋은 촬영지예요.",
-      "en": "A central Seoul walking location associated with Guardian."
-    }
-  },
-  {
-    "id": "place-naju-image-theme-park",
-    "name": { "ko": "나주영상테마파크", "en": "Naju Image Theme Park" },
-    "workIds": ["work-goblin"],
-    "nearestStationId": "station-naju",
-    "accessEstimate": {
-      "minutes": 45,
-      "source": "회귀 프리셋용 데모 시드 수동 보수 추정 (#1, 2026-08-08; 실시간 교통 아님)",
+      "source": "한국관광공사 열린관광 00:00~24:00·연중무휴 안내 https://access.visitkorea.or.kr/ms/detail.do?cotId=cbe43eae-f99e-49db-8b6a-905b1942ef43",
       "verifiedAt": "2026-08-08"
     },
-    "openingHours": {
-      "type": "hours",
-      "open": "09:00",
-      "close": "18:00",
-      "closedDays": ["mon"],
-      "source": "공공데이터포털 한국문화정보원 촬영지 데이터의 하절기 운영시간 (2026-08-07 다운로드)",
-      "verifiedAt": "2026-08-07"
-    },
-    "stayMinutes": 120,
-    "verificationLevel": "원본확인",
-    "officialSourceCount": 1,
+    "stayMinutes": 45,
+    "verificationLevel": "교차확인",
+    "officialSourceCount": 2,
     "reasonText": {
-      "ko": "도깨비 촬영지로, 장거리 불가능 일정 회귀 테스트에 사용하는 후보예요.",
-      "en": "A Guardian location used as a long-distance infeasibility regression fixture."
+      "ko": "서울 도심에서 도깨비의 장면을 따라 걷기 좋은 상시 개방 외부 촬영지예요.",
+      "en": "An always-open outdoor filming location in central Seoul associated with Guardian."
     }
   }
 ]
