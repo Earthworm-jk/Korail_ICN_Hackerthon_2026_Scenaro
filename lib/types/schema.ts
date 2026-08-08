@@ -28,6 +28,16 @@ export const IsoDateTime = z.iso.datetime({
 // PR #29 리뷰: 빈 문자열 ID·참조는 시드 정규화 전에 로드 단계에서 차단한다
 export const NonEmptyId = z.string().min(1, "빈 문자열 ID·참조는 허용되지 않습니다");
 
+// PR #52 리뷰: 출처는 실제 http/https URL만 — 형식 없는 문자열이 출처로 고정되는 것을 차단
+export const HttpUrl = z.string().refine((v) => {
+  try {
+    const url = new URL(v);
+    return url.protocol === "http:" || url.protocol === "https:";
+  } catch {
+    return false;
+  }
+}, "http/https URL이어야 합니다");
+
 export const LocalizedText = z.object({ ko: z.string(), en: z.string() });
 
 // 관계 유형은 시드에 저장하지 않고 constraints에서 파생한다 (ENGINE_SPEC §2, PR #9 리뷰)
@@ -106,6 +116,15 @@ export const Place = z.object({
   address: z.string().min(1).optional(),
   latitude: z.number().min(-90).max(90).optional(),
   longitude: z.number().min(-180).max(180).optional(),
+}).superRefine((place, ctx) => {
+  // PR #52 리뷰: 좌표는 동명이소 판단에 한 쌍으로 쓰인다 — 반쪽 좌표가 시드로 고정되는 것을 차단
+  if ((place.latitude === undefined) !== (place.longitude === undefined)) {
+    ctx.addIssue({
+      code: "custom",
+      path: [place.latitude === undefined ? "latitude" : "longitude"],
+      message: "latitude·longitude는 함께 있어야 합니다 (좌표 쌍)",
+    });
+  }
 });
 
 // #51 확정: 회차·장면·출처는 장소가 아니라 작품–장소 관계에 속한다. 장소는 복제하지 않고
@@ -115,7 +134,7 @@ export const WorkPlaceRelation = z.object({
   placeId: NonEmptyId,
   episodeLabel: z.string().min(1).optional(), // "1화"·"1–2화"·특별편 — 문자열, 영화는 생략
   sceneNote: LocalizedText.optional(),
-  sourceUrls: z.array(z.string().min(1)).min(1), // 사람 검증 출처 필수 (#51 완료 기준)
+  sourceUrls: z.array(HttpUrl).min(1), // 사람 검증 출처 필수 — http/https 형식 검사 (#51, PR #52 리뷰)
   verifiedAt: IsoDate,
   reviewed: z.boolean(),
 });

@@ -291,6 +291,7 @@ describe("작품–장소 관계 검증 (#51 — 스키마 선행 고정)", () =
   it("같은 장소·다른 작품 관계는 정상, 같은 작품·장소 중복은 실패한다", () => {
     const raw = baseSeed();
     raw.works.push({ id: "work-2", title: { ko: "작품2", en: "Work2" } });
+    raw.places[0].workIds.push("work-2"); // 관계는 Place.workIds와 정합해야 한다 (PR #52 리뷰)
     raw.workPlaceRelations.push({ ...baseSeed().workPlaceRelations[0], workId: "work-2" });
     expect(() => parseRepositories(raw as RawSeedFiles)).not.toThrow();
 
@@ -308,6 +309,28 @@ describe("작품–장소 관계 검증 (#51 — 스키마 선행 고정)", () =
     expect(issues.some((m) => m.includes("[placeId]") && m.includes("place-ghost"))).toBe(true);
   });
 
+  it("관계의 workId가 장소의 workIds에 없으면 실패한다 — 엔진·회차 표시 사실 분기 차단 (PR #52 리뷰)", () => {
+    const raw = baseSeed();
+    raw.works.push({ id: "work-2", title: { ko: "작품2", en: "Work2" } });
+    // work-2는 실존하지만 place-1.workIds에는 없음 — 후보 분류와 회차 표시가 갈라지는 상태
+    raw.workPlaceRelations.push({ ...baseSeed().workPlaceRelations[0], workId: "work-2" });
+    const issues = issuesOf(raw);
+    expect(issues.some((m) =>
+      m.includes("[workId]") && m.includes("workIds에 없는 작품: work-2"))).toBe(true);
+  });
+
+  it("sourceUrls는 http/https URL 형식이어야 한다 (PR #52 리뷰)", () => {
+    const raw = baseSeed();
+    raw.workPlaceRelations[0].sourceUrls = ["not-a-url"];
+    const issues = issuesOf(raw);
+    expect(issues.some((m) =>
+      m.includes("[work-place-relations.json]") && m.includes("http/https"))).toBe(true);
+
+    raw.workPlaceRelations[0].sourceUrls = ["ftp://example.com/file"];
+    const ftp = issuesOf(raw);
+    expect(ftp.some((m) => m.includes("http/https"))).toBe(true);
+  });
+
   it("Place의 별칭·주소·좌표 optional 필드는 값이 있으면 검증하고 없으면 통과한다 (#51 additive)", () => {
     const raw = baseSeed();
     corrupt(raw.places[0], {
@@ -321,6 +344,19 @@ describe("작품–장소 관계 검증 (#51 — 스키마 선행 고정)", () =
     corrupt(raw.places[0], { latitude: 123.4 });
     const issues = issuesOf(raw);
     expect(issues.some((m) => m.includes("[places.json]") && m.includes("latitude"))).toBe(true);
+  });
+
+  it("좌표는 한 쌍이어야 한다 — 반쪽 좌표는 실패 (PR #52 리뷰, 동명이소 판단 근거)", () => {
+    const raw = baseSeed();
+    corrupt(raw.places[0], { latitude: 37.9 }); // longitude 없음
+    const issues = issuesOf(raw);
+    expect(issues.some((m) =>
+      m.includes("[places.json]") && m.includes("함께 있어야"))).toBe(true);
+
+    const raw2 = baseSeed();
+    corrupt(raw2.places[0], { longitude: 128.8 }); // latitude 없음
+    const issues2 = issuesOf(raw2);
+    expect(issues2.some((m) => m.includes("함께 있어야"))).toBe(true);
   });
 });
 

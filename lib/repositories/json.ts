@@ -186,13 +186,25 @@ function validate(
   // #51 — 관계 파일은 작품·장소 양쪽 구조 통과 시에만 참조 검사 (연쇄 노이즈 스킵 규칙 동일)
   if (!failed.has("workPlaceRelations")) {
     const workIds = failed.has("works") ? null : idsOf("works");
-    const placeIds = failed.has("places") ? null : idsOf("places");
+    const placeById = failed.has("places")
+      ? null
+      : new Map(parsed.places!.map((place) => [place.id, place]));
     parsed.workPlaceRelations!.forEach((relation, index) => {
-      if (workIds && !workIds.has(relation.workId)) {
+      const workExists = workIds?.has(relation.workId) ?? false;
+      if (workIds && !workExists) {
         issues.push(formatIssue("workPlaceRelations", relation, index, "workId", `존재하지 않는 작품 참조: ${relation.workId}`));
       }
-      if (placeIds && !placeIds.has(relation.placeId)) {
+      const place = placeById?.get(relation.placeId);
+      if (placeById && !place) {
         issues.push(formatIssue("workPlaceRelations", relation, index, "placeId", `존재하지 않는 장소 참조: ${relation.placeId}`));
+      }
+      // PR #52 리뷰: 엔진 후보 분류는 Place.workIds를, 회차 표시는 관계를 읽는다 —
+      // 두 화면의 사실이 갈라지지 않도록 관계의 workId가 장소의 workIds에 포함돼야 한다
+      if (workExists && place && !place.workIds.includes(relation.workId)) {
+        issues.push(formatIssue(
+          "workPlaceRelations", relation, index, "workId",
+          `장소 ${relation.placeId}의 workIds에 없는 작품: ${relation.workId} (Place.workIds와 정합 필요)`,
+        ));
       }
     });
   }
