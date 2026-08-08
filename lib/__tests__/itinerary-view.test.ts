@@ -11,6 +11,7 @@ import {
 } from "../itinerary-view";
 import {
   constraintsFromTripInputs,
+  SAVED_SCHEMA_VERSION,
   tripInputsFromConstraints,
   type SavedItineraryStub,
 } from "../saved-itineraries-stub";
@@ -39,7 +40,7 @@ const constraintsA = constraintsFromTripInputs(
 
 const recordA: SavedItineraryStub = {
   id: "stub-1", title: "A", savedAt: "2026-08-08T18:00:00.000Z",
-  days: [dayA], constraints: constraintsA, schemaVersion: 1, snapshotVersion: "unversioned",
+  days: [dayA], constraints: constraintsA, schemaVersion: SAVED_SCHEMA_VERSION, snapshotVersion: "unversioned",
   context: { actors: [{ id: "actor-kim-goeun", name: { ko: "김고은", en: "Kim Go-eun" } }], works: [] },
 };
 
