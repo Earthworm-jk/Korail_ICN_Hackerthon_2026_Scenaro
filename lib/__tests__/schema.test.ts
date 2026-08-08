@@ -42,6 +42,35 @@ describe("시드 스키마 검증 (REQ-DATA-004)", () => {
     expect(repos.places.some(({ id }) => id === "place-naju-image-theme-park")).toBe(false);
     expect(repos.stations.some(({ id }) => id === "station-naju")).toBe(false);
   });
+
+  it("#51 데이터는 14개 작품–장소 관계와 검토된 데모 별칭을 제공한다", () => {
+    const repos = loadRepositories();
+    const relationKeys = new Set(
+      repos.workPlaceRelations.map(({ workId, placeId }) => `${workId}|${placeId}`),
+    );
+    const expectedKeys = new Set(
+      repos.places.flatMap((place) => place.workIds.map((workId) => `${workId}|${place.id}`)),
+    );
+    const yeongjin = repos.places.find(({ id }) => id === "place-yeongjin-beach");
+
+    expect(relationKeys).toEqual(expectedKeys);
+    expect(repos.workPlaceRelations).toHaveLength(14);
+    expect(repos.workPlaceRelations.every(({ reviewed, sourceUrls }) => reviewed && sourceUrls.length > 0)).toBe(true);
+    expect(yeongjin?.searchAliases?.map(({ ko }) => ko)).toEqual([
+      "도깨비 방파제",
+      "주문진 도깨비 방사제",
+    ]);
+  });
+
+  it("재확인 대상 3곳은 주소만 두고 임의 좌표를 만들지 않는다", () => {
+    const repos = loadRepositories();
+    for (const id of ["place-lala-muri", "place-oak-valley-resort", "place-gangchon-rail-park"]) {
+      const place = repos.places.find((item) => item.id === id);
+      expect(place?.address, id).toBeTruthy();
+      expect(place?.latitude, id).toBeUndefined();
+      expect(place?.longitude, id).toBeUndefined();
+    }
+  });
 });
 
 describe("접근시간 버퍼 규칙 (#5)", () => {
