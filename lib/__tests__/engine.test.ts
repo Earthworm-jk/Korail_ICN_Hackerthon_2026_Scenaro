@@ -17,7 +17,14 @@ function repositories(): Repositories {
       { id: "work-3", title: localized("작품 3") },
     ],
     stations: [
-      { id: "station-seoul", name: localized("서울역"), lineType: "KTX", regionId: "seoul_metro" },
+      {
+        id: "station-seoul",
+        name: localized("서울역"),
+        lineType: "KTX",
+        regionId: "seoul_metro",
+        isGateway: true,
+        gatewayPriority: 1,
+      },
       { id: "station-gangneung", name: localized("강릉역"), lineType: "KTX", regionId: "gangwon" },
       { id: "station-jinbu", name: localized("진부역"), lineType: "KTX", regionId: "gangwon" },
     ],
@@ -91,7 +98,7 @@ describe("generateItinerary", () => {
     const result = generateItinerary(constraints(), repositories());
 
     expect(result.ok).toBe(true);
-    if (!result.ok) return;
+    if (!result.ok || result.status !== "planned") return;
     expect(result.days.flatMap((day) => day.items.map((item) => item.placeId))).toEqual([
       "place-selected",
       "place-actor-a",
@@ -124,7 +131,7 @@ describe("generateItinerary", () => {
     );
 
     expect(result.ok).toBe(true);
-    if (!result.ok) return;
+    if (!result.ok || result.status !== "planned") return;
     expect(result.days.flatMap((day) => day.items.map((item) => item.placeId)).sort())
       .toEqual(["place-actor-a", "place-selected"]);
     expect(result.rejectedPlaces.some((reason) =>
@@ -184,7 +191,7 @@ describe("generateItinerary", () => {
     }), repos);
 
     expect(result.ok).toBe(true);
-    if (!result.ok) return;
+    if (!result.ok || result.status !== "planned") return;
     expect(result.days.map(({ date, items }) => ({ date, placeCount: items.length })))
       .toEqual([
         { date: "2026-08-12", placeCount: 1 },
@@ -200,12 +207,11 @@ describe("generateItinerary", () => {
       departureBufferMinutes: 120,
     }), repositories());
 
-    expect(result).toEqual({
-      ok: false,
-      reason: {
-        code: "DEPARTURE_DEADLINE_EXCEEDED",
-        placeId: "place-selected",
-      },
+    expect(result.ok && result.status).toBe("empty");
+    if (!result.ok || result.status !== "empty") return;
+    expect(result.rejectedPlaces).toContainEqual({
+      code: "DEPARTURE_DEADLINE_EXCEEDED",
+      placeId: "place-selected",
     });
   });
 
@@ -218,8 +224,79 @@ describe("generateItinerary", () => {
     }), repos);
 
     expect(result.ok).toBe(true);
-    if (!result.ok) return;
+    if (!result.ok || result.status !== "planned") return;
     expect(result.metrics.transferCount).toBe(0);
+  });
+
+  it("다른 열차로 갈아탈 때 최소 15분 환승 간격을 지킨다", () => {
+    const repos = repositories();
+    repos.trainLegs.push(leg(
+      "202",
+      "station-gangneung",
+      "station-jinbu",
+      "2026-08-12T10:05:00+09:00",
+      "2026-08-12T10:35:00+09:00",
+    ));
+    const result = generateItinerary(constraints({
+      selectedActorIds: [],
+      selectedWorkIds: ["work-3"],
+    }), repos);
+
+    expect(result.ok && result.status).toBe("planned");
+    if (!result.ok || result.status !== "planned") return;
+    expect(result.days.flatMap((day) => day.rides.map((ride) => ride.trainNo)))
+      .not.toContain("202");
+  });
+
+  it("공항철도 구간을 입국 가능 시각과 출국 역산에 포함한다", () => {
+    const repos = repositories();
+    repos.stations.push({
+      id: "station-icn-t1",
+      name: localized("인천공항1터미널역"),
+      lineType: "AREX",
+      regionId: "seoul_metro",
+      isAirport: true,
+    });
+    repos.trainLegs.push(
+      leg(
+        "AREX-OUT",
+        "station-icn-t1",
+        "station-seoul",
+        "2026-08-12T07:05:00+09:00",
+        "2026-08-12T07:40:00+09:00",
+      ),
+      leg(
+        "AREX-BACK",
+        "station-seoul",
+        "station-icn-t1",
+        "2026-08-12T19:20:00+09:00",
+        "2026-08-12T20:00:00+09:00",
+      ),
+    );
+
+    const result = generateItinerary(constraints({
+      airportStationId: "station-icn-t1",
+      selectedActorIds: [],
+      selectedWorkIds: ["work-1"],
+    }), repos);
+
+    expect(result.ok && result.status).toBe("planned");
+    if (!result.ok || result.status !== "planned") return;
+    const trainNumbers = result.days.flatMap((day) => day.rides.map((ride) => ride.trainNo));
+    expect(trainNumbers.at(0)).toBe("AREX-OUT");
+    expect(trainNumbers.at(-1)).toBe("AREX-BACK");
+  });
+
+  it("일반 여유는 출국 전 잔여시간이 아니라 방문일별 가용시간으로 판정한다", () => {
+    const result = generateItinerary(constraints({
+      selectedActorIds: [],
+      selectedWorkIds: ["work-1"],
+      dailySlackMinutes: 1_000,
+    }), repositories());
+
+    expect(result.ok && result.status).toBe("planned");
+    if (!result.ok || result.status !== "planned") return;
+    expect(result.comparisonKeys.slackSatisfied).toBe(false);
   });
 
   it("운영시간은 맞지만 보수적 접근 버퍼 때문에 불가능하면 상세 사유를 구분한다", () => {
@@ -239,12 +316,14 @@ describe("generateItinerary", () => {
     }), repos);
 
     expect(result).toEqual({
-      ok: false,
-      reason: {
+      ok: true,
+      status: "empty",
+      days: [],
+      rejectedPlaces: [{
         code: "ACTIVITY_WINDOW_MISMATCH",
         placeId: "place-selected",
         detail: "CONSERVATIVE_BUFFER_MISMATCH",
-      },
+      }],
     });
   });
 
@@ -260,8 +339,10 @@ describe("generateItinerary", () => {
     }), repos);
 
     expect(result).toEqual({
-      ok: false,
-      reason: { code: "TRAIN_UNAVAILABLE", placeId: "place-selected" },
+      ok: true,
+      status: "empty",
+      days: [],
+      rejectedPlaces: [{ code: "TRAIN_UNAVAILABLE", placeId: "place-selected" }],
     });
   });
 
@@ -289,7 +370,7 @@ describe("generateItinerary", () => {
 
     expect(performance.now() - startedAt).toBeLessThan(2_000);
     expect(result.ok).toBe(true);
-    if (!result.ok) return;
+    if (!result.ok || result.status !== "planned") return;
     expect(result.comparisonKeys.visitablePlaceCount).toBe(15);
   });
 

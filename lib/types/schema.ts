@@ -17,6 +17,8 @@ export const AccessEstimate = z.object({
   verifiedAt: z.string(),
 });
 
+export const Weekday = z.enum(["sun", "mon", "tue", "wed", "thu", "fri", "sat"]);
+
 // #5 최종 결정: 출처 없는 운영시간을 만들지 않는다. unverified는 자동 일정 제외 대상
 export const OpeningHours = z.discriminatedUnion("type", [
   z.object({
@@ -29,7 +31,7 @@ export const OpeningHours = z.discriminatedUnion("type", [
     open: z.string(), // HH:mm
     close: z.string(),
     lastEntry: z.string().optional(),
-    closedDays: z.array(z.string()).optional(),
+    closedDays: z.array(Weekday).optional(),
     source: z.string(),
     verifiedAt: z.string(),
   }),
@@ -67,8 +69,11 @@ export const RegionId = z.enum(["gangwon", "seoul_metro", "honam"]);
 export const Station = z.object({
   id: z.string(),
   name: LocalizedText,
-  lineType: z.enum(["KTX", "ITX", "일반"]),
+  lineType: z.enum(["KTX", "ITX", "AREX", "일반"]),
   regionId: RegionId,
+  isGateway: z.boolean().optional(),
+  gatewayPriority: z.number().int().nonnegative().optional(),
+  isAirport: z.boolean().optional(),
 });
 
 export const TrainLeg = z.object({

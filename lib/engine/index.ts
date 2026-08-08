@@ -14,6 +14,7 @@ const TripConstraintsSchema = z.object({
   arrivalAt: z.iso.datetime({ offset: true }),
   departureAt: z.iso.datetime({ offset: true }),
   airportExitOffsetMin: z.number().int().nonnegative(),
+  airportStationId: z.string().min(1).optional(),
   gatewayStationId: z.string().min(1).optional(),
   selectedActorIds: z.array(z.string().min(1)).optional(),
   selectedActorId: z.string().min(1).optional(),

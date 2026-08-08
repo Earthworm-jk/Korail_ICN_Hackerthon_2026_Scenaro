@@ -3,10 +3,10 @@ import { accessBufferMinutes, type PlaceT, type TrainLegT } from "../types/schem
 import { compareCandidates, type Candidate } from "./compare";
 import type {
   ActivityWindowDetail,
+  CandidateRejection,
   DayPlan,
   ItineraryItem,
   ItineraryResult,
-  RejectionReason,
   TrainRide,
   TripConstraints,
 } from "./types";
@@ -14,6 +14,7 @@ import type {
 const KOREA_OFFSET_MS = 9 * 60 * 60 * 1_000;
 const MINUTE_MS = 60_000;
 const MAX_BEAM_SIZE = 1_000;
+const MIN_TRANSFER_MINUTES = 15;
 
 type Relation = "selected_work" | "actor_other_work";
 
@@ -43,7 +44,7 @@ type PlannerState = {
 
 type Transition =
   | { ok: true; state: PlannerState }
-  | { ok: false; reason: RejectionReason };
+  | { ok: false; reason: CandidateRejection };
 
 type CompleteSchedule = Candidate & {
   state: PlannerState;
@@ -76,7 +77,7 @@ export function planItinerary(
     }
   }
 
-  const rejectedPlaces: RejectionReason[] = [];
+  const rejectedPlaces: CandidateRejection[] = [];
   const candidates: CandidatePlace[] = [];
   for (const place of [...repos.places].sort((a, b) => a.id.localeCompare(b.id, "en"))) {
     if (excludedPlaceIds.has(place.id)) continue;
@@ -85,7 +86,7 @@ export function planItinerary(
     if (!relation) continue;
 
     if (place.openingHours.type === "unverified") {
-      const reason: RejectionReason = {
+      const reason: CandidateRejection = {
         code: "ACTIVITY_WINDOW_MISMATCH",
         placeId: place.id,
         detail: "UNVERIFIED_HOURS",
@@ -115,12 +116,15 @@ export function planItinerary(
   });
 
   const gatewayStationId = constraints.gatewayStationId ?? findGatewayStationId(repos);
+  const endpointStationId = constraints.airportStationId
+    ?? findAirportStationId(repos)
+    ?? gatewayStationId;
   const availableAt = Date.parse(constraints.arrivalAt)
     + constraints.airportExitOffsetMin * MINUTE_MS;
   const departureAt = Date.parse(constraints.departureAt);
   const deadline = departureAt - constraints.departureBufferMinutes * MINUTE_MS;
   const initial: PlannerState = {
-    stationId: gatewayStationId,
+    stationId: endpointStationId,
     readyAt: availableAt,
     visits: [],
     rides: [],
@@ -157,7 +161,7 @@ export function planItinerary(
     for (const state of frontier) {
       const schedule = completeSchedule(
         state,
-        gatewayStationId,
+        endpointStationId,
         constraints,
         repos.trainLegs,
         departureAt,
@@ -176,13 +180,21 @@ export function planItinerary(
     for (const placeId of Object.keys(constraints.pinnedDates)) {
       if (!hasVisited(frontier, placeId)) return infeasible("PINNED_DATE", placeId);
     }
-    const first = candidates[0]?.place.id;
+    for (const candidate of candidates) {
+      const reason = completionFailure(
+        initial,
+        candidate,
+        constraints,
+        repos.trainLegs,
+        endpointStationId,
+      );
+      if (reason) rejectedPlaces.push(reason);
+    }
     return {
-      ok: false,
-      reason: first
-        ? completionFailure(initial, candidates[0], constraints, repos.trainLegs, gatewayStationId)
-          ?? { code: "TRAIN_UNAVAILABLE", placeId: first }
-        : { code: "TRAIN_UNAVAILABLE", placeId: "unknown" },
+      ok: true,
+      status: "empty",
+      days: [],
+      rejectedPlaces: uniqueReasons(rejectedPlaces),
     };
   }
 
@@ -196,7 +208,7 @@ export function planItinerary(
       candidate,
       constraints,
       repos.trainLegs,
-      gatewayStationId,
+      endpointStationId,
     );
     if (reason) rejectedPlaces.push(reason);
   }
@@ -206,6 +218,7 @@ export function planItinerary(
   const totalTransferCount = best.state.transferCount + transferCount(best.returnRides);
   return {
     ok: true,
+    status: "planned",
     days: buildDays(best.state.visits, allRides),
     rejectedPlaces: uniqueReasons(rejectedPlaces),
     comparisonKeys: best.keys,
@@ -350,7 +363,7 @@ function findVisitWindow(
 
 function completeSchedule(
   state: PlannerState,
-  gatewayStationId: string,
+  endpointStationId: string,
   constraints: TripConstraints,
   trainLegs: TrainLegT[],
   departureAt: number,
@@ -359,7 +372,7 @@ function completeSchedule(
   const returnRides = findEarliestRoute(
     trainLegs,
     state.stationId,
-    gatewayStationId,
+    endpointStationId,
     state.readyAt,
     deadline,
   );
@@ -384,11 +397,14 @@ function completeSchedule(
       visitablePlaceCount: state.visits.length,
       totalRailMinutes,
       transferCount: totalTransfers,
-      slackSatisfied:
-        departureSlackMinutes >= constraints.departureBufferMinutes + constraints.dailySlackMinutes,
+      slackSatisfied: hasDailySlack(
+        state,
+        returnRides,
+        constraints,
+        Date.parse(constraints.arrivalAt) + constraints.airportExitOffsetMin * MINUTE_MS,
+        deadline,
+      ),
     },
-    transferCount: totalTransfers,
-    totalRailMinutes,
     departureSlackMinutes,
     stableId: [
       ...state.visits.map(({ place }) => place.id),
@@ -396,6 +412,66 @@ function completeSchedule(
       ...returnRides.map(({ trainNo }) => trainNo),
     ].join("/"),
   };
+}
+
+function hasDailySlack(
+  state: PlannerState,
+  returnRides: TrainLegT[],
+  constraints: TripConstraints,
+  tripStart: number,
+  tripEnd: number,
+): boolean {
+  const intervals: Array<{ start: number; end: number }> = [
+    ...[...state.rides, ...returnRides].map((ride) => ({
+      start: Date.parse(ride.departAt),
+      end: Date.parse(ride.arriveAt),
+    })),
+    ...state.visits.map((visit) => {
+      const returnAccessMs = visit.stationReadyAt - visit.visitEnd;
+      return {
+        start: visit.visitStart - returnAccessMs,
+        end: visit.stationReadyAt,
+      };
+    }),
+  ];
+  const activeDates = new Set<string>();
+  for (const interval of intervals) {
+    let cursor = koreaDateTime(koreaDate(interval.start), "00:00");
+    while (cursor < interval.end) {
+      activeDates.add(koreaDate(cursor));
+      cursor += 24 * 60 * MINUTE_MS;
+    }
+  }
+
+  return [...activeDates].every((date) => {
+    const dayStart = koreaDateTime(date, "00:00");
+    const dayEnd = dayStart + 24 * 60 * MINUTE_MS;
+    const windowStart = Math.max(dayStart, tripStart);
+    const windowEnd = Math.min(dayEnd, tripEnd);
+    if (windowEnd <= windowStart) return false;
+
+    const merged: Array<{ start: number; end: number }> = [];
+    for (const interval of intervals
+      .map(({ start, end }) => ({
+        start: Math.max(start, windowStart),
+        end: Math.min(end, windowEnd),
+      }))
+      .filter(({ start, end }) => end > start)
+      .sort((a, b) => a.start - b.start || a.end - b.end)) {
+      const previous = merged.at(-1);
+      if (!previous || interval.start > previous.end) {
+        merged.push({ ...interval });
+      } else {
+        previous.end = Math.max(previous.end, interval.end);
+      }
+    }
+    const busyMinutes = merged.reduce(
+      (total, interval) => total + minutesBetween(interval.start, interval.end),
+      0,
+    );
+    const availableMinutes = minutesBetween(windowStart, windowEnd);
+    return availableMinutes - busyMinutes >= constraints.dailySlackMinutes;
+  });
 }
 
 function findEarliestRoute(
@@ -418,10 +494,17 @@ function findEarliestRoute(
     const arriveAt = Date.parse(leg.arriveAt);
     if (departAt < notBefore || arriveAt > deadline || arriveAt < departAt) continue;
     const origin = arrivals.get(leg.fromStationId);
-    if (!origin || origin.at > departAt) continue;
+    if (!origin) continue;
+    const previous = origin.path.at(-1);
+    const minimumConnection = previous && previous.trainNo !== leg.trainNo
+      ? MIN_TRANSFER_MINUTES * MINUTE_MS
+      : 0;
+    if (origin.at + minimumConnection > departAt) continue;
     const current = arrivals.get(leg.toStationId);
-    if (!current || arriveAt < current.at) {
-      arrivals.set(leg.toStationId, { at: arriveAt, path: [...origin.path, leg] });
+    const path = [...origin.path, leg];
+    if (!current || arriveAt < current.at
+      || (arriveAt === current.at && compareRoutePaths(path, current.path) < 0)) {
+      arrivals.set(leg.toStationId, { at: arriveAt, path });
     }
   }
   return arrivals.get(toStationId)?.path ?? null;
@@ -462,21 +545,33 @@ function assertReferences(
     && !repos.stations.some(({ id }) => id === constraints.gatewayStationId)) {
     throw new RangeError(`unknown gateway station: ${constraints.gatewayStationId}`);
   }
+  if (constraints.airportStationId
+    && !repos.stations.some(({ id }) => id === constraints.airportStationId)) {
+    throw new RangeError(`unknown airport station: ${constraints.airportStationId}`);
+  }
+}
+
+function compareRoutePaths(a: TrainLegT[], b: TrainLegT[]): number {
+  return transferCount(a) - transferCount(b)
+    || routeMinutes(a) - routeMinutes(b)
+    || a.map(({ trainNo }) => trainNo).join("/")
+      .localeCompare(b.map(({ trainNo }) => trainNo).join("/"), "en");
 }
 
 function findGatewayStationId(repos: Repositories): string {
-  const metro = repos.stations
-    .filter(({ regionId }) => regionId === "seoul_metro")
-    .sort((a, b) => {
-      const aSeoul = a.id.includes("seoul") ? 0 : 1;
-      const bSeoul = b.id.includes("seoul") ? 0 : 1;
-      return aSeoul - bSeoul || a.id.localeCompare(b.id, "en");
-    });
-  const fallback = [...repos.trainLegs]
-    .sort((a, b) => Date.parse(a.departAt) - Date.parse(b.departAt))[0]?.fromStationId;
-  const gateway = metro[0]?.id ?? fallback;
+  const gateway = repos.stations
+    .filter(({ isGateway }) => isGateway)
+    .sort((a, b) => (a.gatewayPriority ?? Number.MAX_SAFE_INTEGER)
+      - (b.gatewayPriority ?? Number.MAX_SAFE_INTEGER)
+      || a.id.localeCompare(b.id, "en"))[0]?.id;
   if (!gateway) throw new RangeError("a gateway station could not be inferred");
   return gateway;
+}
+
+function findAirportStationId(repos: Repositories): string | undefined {
+  return repos.stations
+    .filter(({ isAirport }) => isAirport)
+    .sort((a, b) => a.id.localeCompare(b.id, "en"))[0]?.id;
 }
 
 function pruneStates(states: PlannerState[]): PlannerState[] {
@@ -557,17 +652,9 @@ function enumerateDates(start: string, end: string): string[] {
 function isClosedDay(place: PlaceT, date: string): boolean {
   if (place.openingHours.type !== "hours" || !place.openingHours.closedDays) return false;
   const day = new Date(koreaDateTime(date, "12:00")).getUTCDay();
-  const aliases = [
-    ["sun", "sunday", "일", "일요일"],
-    ["mon", "monday", "월", "월요일"],
-    ["tue", "tuesday", "화", "화요일"],
-    ["wed", "wednesday", "수", "수요일"],
-    ["thu", "thursday", "목", "목요일"],
-    ["fri", "friday", "금", "금요일"],
-    ["sat", "saturday", "토", "토요일"],
-  ][day];
-  return place.openingHours.closedDays.some((value) =>
-    aliases.includes(value.trim().toLowerCase()));
+  const weekday = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"][day] as
+    "sun" | "mon" | "tue" | "wed" | "thu" | "fri" | "sat";
+  return place.openingHours.closedDays.includes(weekday);
 }
 
 function koreaDate(epoch: number): string {
@@ -596,8 +683,8 @@ function completionFailure(
   candidate: CandidatePlace,
   constraints: TripConstraints,
   trainLegs: TrainLegT[],
-  gatewayStationId: string,
-): RejectionReason | null {
+  endpointStationId: string,
+): CandidateRejection | null {
   const departureAt = Date.parse(constraints.departureAt);
   const deadline = departureAt - constraints.departureBufferMinutes * MINUTE_MS;
   const transition = appendVisit(state, candidate, constraints, trainLegs, deadline);
@@ -620,7 +707,7 @@ function completionFailure(
   const returnBeforeDeadline = findEarliestRoute(
     trainLegs,
     transition.state.stationId,
-    gatewayStationId,
+    endpointStationId,
     transition.state.readyAt,
     deadline,
   );
@@ -630,7 +717,7 @@ function completionFailure(
   const returnBeforeDeparture = findEarliestRoute(
     trainLegs,
     transition.state.stationId,
-    gatewayStationId,
+    endpointStationId,
     transition.state.readyAt,
     departureAt,
   );
@@ -654,7 +741,7 @@ function hasVisited(states: PlannerState[], placeId: string): boolean {
   return states.some((state) => state.visits.some(({ place }) => place.id === placeId));
 }
 
-function uniqueReasons(reasons: RejectionReason[]): RejectionReason[] {
+function uniqueReasons(reasons: CandidateRejection[]): CandidateRejection[] {
   const seen = new Set<string>();
   return reasons.filter((reason) => {
     const key = JSON.stringify(reason);

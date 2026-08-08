@@ -89,7 +89,7 @@ getFlightInfo(flightNo: string, direction: "arrival" | "departure"): Promise<
 
 ### 3.3 오류 계약
 
-- 도메인 실패(일정 불가)는 예외가 아니라 `ItineraryResult { ok: false, reason }` 값으로 반환
+- 후보가 모두 제외된 일정 없음은 `ok: true, status: "empty"`, 필수·고정일 사용자 제약 실패만 `ok: false`로 반환
 - 시드·입력 스키마 위반은 Zod 예외 → 개발 중에만 발생해야 정상(기동 시 검증)
 - 외부 API 실패는 폴백으로 흡수하고 `source: "snapshot"`으로 알린다 — 사용자에게 오류를
   던지지 않는다 (PRD 9.2)
