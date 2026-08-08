@@ -22,7 +22,7 @@ export type PlanRequest = {
 const DEFAULT_MAX_PLACES_PER_DAY = 3;
 const DEFAULT_DAILY_SLACK_MINUTES = 120;
 
-// PR #30 리뷰 ③: 입력 오류는 엔진의 ok:false(일정 제약에 따른 계산 결과)와 의미가 다르다.
+// PR #30 리뷰 ③: 입력 오류는 엔진의 planned/empty 계산 결과와 의미가 다르다.
 // 잘못된 요청은 throw하지 않고 Action 경계에서 INVALID_REQUEST로 분리 반환한다.
 export type PlanActionResult =
   | { ok: true; result: ItineraryResult }

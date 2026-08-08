@@ -67,10 +67,18 @@ getCandidatePlaces(selection: {
 // REQ-SRCH-005·006·007. 정렬은 UI에서 (관련성 / officialSourceCount 토글)
 
 // lib/actions/itinerary.ts
-planItinerary(constraints: TripConstraints): Promise<ItineraryResult>;
+planItinerary(request: PlanRequest): Promise<PlanActionResult>;
 // 생성과 편집 재계산 모두 이 액션 하나 (#2 단일 진입점).
-// 편집 3동작 = constraints 필드 변경 후 재호출. diff는 UI가 이전 metrics와 비교(REQ-EDIT-004)
-// 반환은 ENGINE_SPEC §7의 2분기(#14 ver.0.4 — 필수·고정일 제거로 실패 분기 소멸):
+// 편집 2동작(#14 ver.0.4 — 방문일 변경 제외) = 촬영지 선택 변경·항공 시각 변경 후 재호출.
+// diff는 UI가 이전 metrics와 비교(REQ-EDIT-004)
+//
+// PlanRequest = 여행 조건 + 선택 배우·작품 + 제외 장소 (사용자 설정 없는 내부 기본값은
+//   Action이 채운다 — maxPlacesPerDay, dailySlackMinutes)
+// PlanActionResult (PR #30 리뷰 ③ — Action 계층의 입력 검증 래퍼):
+//   { ok: true;  result: ItineraryResult }
+//   { ok: false; code: "INVALID_REQUEST"; fieldErrors: Record<string, string> }
+// Action의 ok는 "요청이 유효했는가"이며, 엔진 ItineraryResult에는 ok가 없다 —
+// 계산 결과는 ENGINE_SPEC §7의 status 2분기(#14 ver.0.4 — 필수·고정일 제거로 실패 분기 소멸):
 //   { status: "planned", days, rejectedPlaces, comparisonKeys, metrics }
 //   { status: "empty",   days: [], rejectedPlaces }  // 조건을 만족하는 일정 없음
 // empty는 정상 응답이며 comparisonKeys·metrics를 포함하지 않는다(허위 값 금지)
@@ -96,7 +104,10 @@ getFlightInfo(flightNo: string, direction: "arrival" | "departure"): Promise<
 - 일정 계산에 실패 응답은 없다 — 후보가 전멸하면 `status: "empty"` 정상 응답이며
   "조건을 만족하는 일정 없음" 화면 상태(PRD 9.2)의 근거다 (#14 ver.0.4로 사용자 제약
   실패 분기 소멸). 편집 실패 시 기존 일정 유지(REQ-EDIT-005)는 앱 계층 오류 처리 몫
-- 시드·입력 스키마 위반은 Zod 예외 → 개발 중에만 발생해야 정상(Repository 초기화 시 검증)
+- 입력 스키마 위반은 예외가 아니다 — Action이 safeParse 후 `INVALID_REQUEST`로 반환하고
+  UI는 1단계 검증 화면으로 안내한다(1단계 검증을 우회한 요청에서만 발생해야 정상)
+- 시드 스키마 위반은 Repository 초기화 실패(`SeedValidationError`) — 기동 단계에서만
+  발생해야 정상(REQ-DATA-004, PR #29)
 - 외부 API 실패는 폴백으로 흡수하고 `source: "snapshot"`으로 알린다 — 사용자에게 오류를
   던지지 않는다 (PRD 9.2)
 
