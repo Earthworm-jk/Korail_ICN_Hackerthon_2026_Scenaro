@@ -1,7 +1,7 @@
-# 씬나로 API 명세 v0.1
+# 씬나로 API 명세 v0.2
 
 > 원칙: **앱이 실제로 호출하는 것만 수록한다.** (지난 프로젝트 요구사항·API v1.3에서 검증된 원칙)
-> 상위 문서: PRD §7·§8, 엔진 명세 v0.2, 요구사항 정의서 v0.3.
+> 상위 문서: PRD v0.2, 엔진 명세 v0.3, 요구사항 정의서 v0.5.
 
 ## 1. 계층 구조
 
@@ -69,11 +69,11 @@ getCandidatePlaces(selection: {
 // lib/actions/itinerary.ts
 planItinerary(constraints: TripConstraints): Promise<ItineraryResult>;
 // 생성과 편집 재계산 모두 이 액션 하나 (#2 단일 진입점).
-// 편집 3동작 = constraints 필드 변경 후 재호출. diff는 UI가 이전 metrics와 비교(REQ-EDIT-004)
-// 반환은 ENGINE_SPEC §7의 세 분기(정의서 v0.5 — 후보 제외와 전체 실패 분리):
-//   { ok: true,  status: "planned", days, rejectedPlaces, comparisonKeys, metrics }
-//   { ok: true,  status: "empty",   days: [], rejectedPlaces }  // 조건을 만족하는 일정 없음
-//   { ok: false, reason: ConstraintFailure }                    // USER_CONSTRAINT_INFEASIBLE 전용
+// 편집 2동작(촬영지 제외 / 항공편 시각 변경) = constraints 필드 변경 후 재호출.
+// 별도 전후 diff를 만들지 않고 성공한 갱신 일정을 표시한다.
+// 반환은 ENGINE_SPEC §7의 두 분기:
+//   { ok: true, status: "planned", days, rejectedPlaces, warnings, comparisonKeys, metrics }
+//   { ok: true, status: "empty",   days: [], rejectedPlaces, warnings }
 // empty는 정상 응답이며 comparisonKeys·metrics를 포함하지 않는다(허위 값 금지)
 
 // lib/actions/flights.ts
@@ -92,12 +92,11 @@ getFlightInfo(flightNo: string, direction: "arrival" | "departure"): Promise<
 // 시드 FlightT는 스냅샷 최소 필드이며, live 응답은 FlightInfo로 정규화한다
 ```
 
-### 3.3 오류 계약
+### 3.3 빈 결과·오류 계약
 
-- 사용자 제약 불능(USER_CONSTRAINT_INFEASIBLE)만 `ok: false`다 — UI는 기존 일정을 유지한다
-  (REQ-EDIT-005)
-- 후보가 전멸해도 사용자 제약 위반이 아니면 `ok: true, status: "empty"`로 반환한다 —
-  "조건을 만족하는 일정 없음" 화면 상태(PRD 9.2)의 근거이며 오류가 아니다
+- 후보가 전멸하면 `ok: true, status: "empty"`로 반환한다. 최초 생성에서는 빈 상태를 표시하고,
+  편집 재계산 중에는 기존 일정을 유지한다.
+- 방문일 고정과 필수 방문 입력이 없으므로 `USER_CONSTRAINT_INFEASIBLE` 오류 계약은 사용하지 않는다.
 - 시드·입력 스키마 위반은 Zod 예외 → 개발 중에만 발생해야 정상(Repository 초기화 시 검증)
 - 외부 API 실패는 폴백으로 흡수하고 `source: "snapshot"`으로 알린다 — 사용자에게 오류를
   던지지 않는다 (PRD 9.2)
