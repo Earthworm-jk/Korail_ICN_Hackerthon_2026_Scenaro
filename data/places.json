@@ -1,8 +1,13 @@
 [
   {
     "id": "place-yeongjin-beach",
-    "name": { "ko": "영진해변", "en": "Yeongjin Beach" },
-    "workIds": ["work-goblin"],
+    "name": {
+      "ko": "영진해변",
+      "en": "Yeongjin Beach"
+    },
+    "workIds": [
+      "work-goblin"
+    ],
     "nearestStationId": "station-gangneung",
     "accessEstimate": {
       "minutes": 35,
@@ -20,88 +25,144 @@
     "reasonText": {
       "ko": "도깨비의 대표적인 바닷가 장면을 떠올릴 수 있는 강릉 촬영지예요.",
       "en": "A Gangneung filming location associated with an iconic seaside scene from Guardian."
-    }
+    },
+    "searchAliases": [
+      {
+        "ko": "도깨비 방파제",
+        "en": "Goblin Breakwater"
+      },
+      {
+        "ko": "주문진 도깨비 방사제",
+        "en": "Jumunjin Goblin Breakwater"
+      }
+    ],
+    "address": "강원도 강릉시 주문진읍 해안로 1609",
+    "latitude": 37.8691601,
+    "longitude": 128.8365243
   },
   {
     "id": "place-lala-muri",
-    "name": { "ko": "라라무리", "en": "Lala Muri" },
-    "workIds": ["work-goblin"],
+    "name": {
+      "ko": "라라무리",
+      "en": "Lala Muri"
+    },
+    "workIds": [
+      "work-goblin"
+    ],
     "nearestStationId": "station-gangneung",
     "accessEstimate": {
       "minutes": 45,
       "source": "원천 CSV 좌표 오류 가능성으로 POI 재확인 전 사용하는 임시 보수값 (2026-08-08; 길찾기 미검증)",
       "verifiedAt": "2026-08-08"
     },
-    "openingHours": { "type": "unverified" },
+    "openingHours": {
+      "type": "unverified"
+    },
     "stayMinutes": 60,
     "verificationLevel": "원본확인",
     "officialSourceCount": 1,
     "reasonText": {
       "ko": "도깨비 촬영 장면과 연결되는 카페예요. 외관 방문은 가능할 수 있지만 영업 여부와 내부 이용시간은 재확인이 필요해요.",
       "en": "A cafe location connected to Guardian. Exterior viewing may be possible, but current business and indoor visiting hours require confirmation."
-    }
+    },
+    "address": "강원도 강릉시 연곡면 진고개로 2551-18"
   },
   {
     "id": "place-eomma-son-makguksu",
-    "name": { "ko": "엄마손막국수", "en": "Eomma Son Makguksu" },
-    "workIds": ["work-yumi-cells"],
+    "name": {
+      "ko": "엄마손막국수",
+      "en": "Eomma Son Makguksu"
+    },
+    "workIds": [
+      "work-yumi-cells"
+    ],
     "nearestStationId": "station-gangneung",
     "accessEstimate": {
       "minutes": 10,
       "source": "카카오맵 자동차 길찾기 강릉역→엄마손막국수 9분·2.5km의 5분 올림값 (2026-08-08; 실시간 교통·교통수단 보장 아님)",
       "verifiedAt": "2026-08-08"
     },
-    "openingHours": { "type": "unverified" },
+    "openingHours": {
+      "type": "unverified"
+    },
     "stayMinutes": 60,
     "verificationLevel": "원본확인",
     "officialSourceCount": 1,
     "reasonText": {
       "ko": "유미의 세포들에 등장한 식당 촬영지예요. 외관 방문은 가능할 수 있지만 현재 영업 여부와 내부 이용시간은 확인이 필요해요.",
       "en": "A restaurant location featured in Yumi's Cells. Exterior viewing may be possible, but current business and indoor visiting hours need confirmation."
-    }
+    },
+    "address": "강원도 강릉시 운정길 40",
+    "latitude": 37.783952,
+    "longitude": 128.88272
   },
   {
     "id": "place-skybay-hotel-gyeongpo",
-    "name": { "ko": "스카이베이호텔 경포", "en": "Skybay Hotel Gyeongpo" },
-    "workIds": ["work-yumi-cells"],
+    "name": {
+      "ko": "스카이베이호텔 경포",
+      "en": "Skybay Hotel Gyeongpo"
+    },
+    "workIds": [
+      "work-yumi-cells"
+    ],
     "nearestStationId": "station-gangneung",
     "accessEstimate": {
       "minutes": 20,
       "source": "카카오맵 자동차 길찾기 강릉역→스카이베이호텔 경포 16분·6.8km의 5분 올림값 (2026-08-08; 공식 안내의 버스 20~40분·택시 10~15분 범위도 별도 확인)",
       "verifiedAt": "2026-08-08"
     },
-    "openingHours": { "type": "unverified" },
+    "openingHours": {
+      "type": "unverified"
+    },
     "stayMinutes": 45,
     "verificationLevel": "교차확인",
     "officialSourceCount": 2,
     "reasonText": {
       "ko": "유미의 세포들 촬영지예요. 호텔 외관은 볼 수 있지만 투숙객이 아닌 방문자의 내부 이용 범위와 시간은 확인이 필요해요.",
       "en": "A Yumi's Cells location whose exterior can be viewed, while indoor access for non-guests requires confirmation."
-    }
+    },
+    "address": "강원도 강릉시 해안로 476",
+    "latitude": 37.804363,
+    "longitude": 128.90769
   },
   {
     "id": "place-woljeongsa-temple",
-    "name": { "ko": "월정사", "en": "Woljeongsa Temple" },
-    "workIds": ["work-goblin"],
+    "name": {
+      "ko": "월정사",
+      "en": "Woljeongsa Temple"
+    },
+    "workIds": [
+      "work-goblin"
+    ],
     "nearestStationId": "station-jinbu",
     "accessEstimate": {
       "minutes": 20,
       "source": "카카오맵 자동차 길찾기 진부역→월정사 19분·12.3km의 5분 올림값 (2026-08-08; 한국관광공사 안내 버스 약 45분은 별도 참고)",
       "verifiedAt": "2026-08-08"
     },
-    "openingHours": { "type": "unverified" },
+    "openingHours": {
+      "type": "unverified"
+    },
     "stayMinutes": 60,
     "verificationLevel": "교차확인",
     "officialSourceCount": 2,
     "reasonText": {
       "ko": "도깨비의 고즈넉한 분위기를 따라가 볼 수 있는 오대산 촬영지예요.",
       "en": "An Odaesan filming location that evokes the quiet atmosphere of Guardian."
-    }
+    },
+    "address": "강원도 평창군 진부면 오대산로 374-8",
+    "latitude": 37.731807,
+    "longitude": 128.592508
   },
   {
     "id": "place-woljeongsa-fir-forest",
-    "name": { "ko": "월정사 전나무 숲길", "en": "Woljeongsa Fir Forest Trail" },
-    "workIds": ["work-goblin"],
+    "name": {
+      "ko": "월정사 전나무 숲길",
+      "en": "Woljeongsa Fir Forest Trail"
+    },
+    "workIds": [
+      "work-goblin"
+    ],
     "nearestStationId": "station-jinbu",
     "accessEstimate": {
       "minutes": 20,
@@ -121,12 +182,20 @@
     "reasonText": {
       "ko": "월정사와 함께 둘러보기 좋은 도깨비 촬영 숲길이에요.",
       "en": "A Guardian forest filming trail that pairs naturally with Woljeongsa Temple."
-    }
+    },
+    "address": "강원도 평창군 진부면 오대산로 350-1",
+    "latitude": 37.731998,
+    "longitude": 128.599855
   },
   {
     "id": "place-samyang-ranch",
-    "name": { "ko": "대관령 삼양목장", "en": "Samyang Roundhill" },
-    "workIds": ["work-goblin"],
+    "name": {
+      "ko": "대관령 삼양목장",
+      "en": "Samyang Roundhill"
+    },
+    "workIds": [
+      "work-goblin"
+    ],
     "nearestStationId": "station-jinbu",
     "accessEstimate": {
       "minutes": 35,
@@ -147,12 +216,20 @@
     "reasonText": {
       "ko": "도깨비의 넓은 초원 풍경을 경험할 수 있는 대관령 촬영지예요.",
       "en": "A Daegwallyeong filming location known for the broad grassland scenery seen in Guardian."
-    }
+    },
+    "address": "강원도 평창군 대관령면 꽃밭양지길 708-9",
+    "latitude": 37.723053,
+    "longitude": 128.719629
   },
   {
     "id": "place-balwangsan-cable-car",
-    "name": { "ko": "모나파크 용평리조트 발왕산 관광케이블카", "en": "Balwangsan Tourist Cable Car" },
-    "workIds": ["work-goblin"],
+    "name": {
+      "ko": "모나파크 용평리조트 발왕산 관광케이블카",
+      "en": "Balwangsan Tourist Cable Car"
+    },
+    "workIds": [
+      "work-goblin"
+    ],
     "nearestStationId": "station-jinbu",
     "accessEstimate": {
       "minutes": 20,
@@ -172,31 +249,47 @@
     "reasonText": {
       "ko": "도깨비 촬영 풍경과 발왕산 전망을 함께 즐길 수 있는 장소예요.",
       "en": "A Guardian filming location combined with panoramic views from Balwangsan."
-    }
+    },
+    "address": "강원도 평창군 대관령면 올림픽로 715",
+    "latitude": 37.642873,
+    "longitude": 128.680066
   },
   {
     "id": "place-oak-valley-resort",
-    "name": { "ko": "오크밸리 리조트", "en": "Oak Valley Resort" },
-    "workIds": ["work-little-women"],
+    "name": {
+      "ko": "오크밸리 리조트",
+      "en": "Oak Valley Resort"
+    },
+    "workIds": [
+      "work-little-women"
+    ],
     "nearestStationId": "station-manjong",
     "accessEstimate": {
       "minutes": 25,
       "source": "원천 CSV 좌표 오류 가능성으로 POI 재확인 전 사용하는 임시 보수값 (2026-08-08; 길찾기 미검증)",
       "verifiedAt": "2026-08-08"
     },
-    "openingHours": { "type": "unverified" },
+    "openingHours": {
+      "type": "unverified"
+    },
     "stayMinutes": 90,
     "verificationLevel": "교차확인",
     "officialSourceCount": 2,
     "reasonText": {
       "ko": "작은 아씨들 촬영 리조트예요. 외부 공간은 볼 수 있지만 실제 촬영구역과 비투숙객의 내부 이용 범위는 확인이 필요해요.",
       "en": "A Little Women resort location. Exterior areas may be viewable, while the exact filming area and non-guest indoor access require confirmation."
-    }
+    },
+    "address": "강원도 원주시 지정면 오크밸리1길 66"
   },
   {
     "id": "place-jukrim-catholic-church",
-    "name": { "ko": "죽림동성당", "en": "Jukrim-dong Cathedral" },
-    "workIds": ["work-yumi-cells"],
+    "name": {
+      "ko": "죽림동성당",
+      "en": "Jukrim-dong Cathedral"
+    },
+    "workIds": [
+      "work-yumi-cells"
+    ],
     "nearestStationId": "station-chuncheon",
     "accessEstimate": {
       "minutes": 10,
@@ -214,31 +307,20 @@
     "reasonText": {
       "ko": "유미의 세포들 촬영 성당이에요. 외관은 볼 수 있지만 예배를 방해하지 않도록 내부 관람 가능시간은 별도 확인해야 해요.",
       "en": "A Yumi's Cells cathedral location. The exterior can be viewed, while indoor visits require confirmation and respect for services."
-    }
-  },
-  {
-    "id": "place-gangchon-rail-park",
-    "name": { "ko": "강촌레일파크", "en": "Gangchon Rail Park" },
-    "workIds": ["work-the-king"],
-    "nearestStationId": "station-chuncheon",
-    "accessEstimate": {
-      "minutes": 30,
-      "source": "카카오맵 자동차 길찾기 춘천역→옛 강촌역 26분·16.5km의 5분 올림값 (2026-08-08; 촬영 코스 확정 전 임시값)",
-      "verifiedAt": "2026-08-08"
     },
-    "openingHours": { "type": "unverified" },
-    "stayMinutes": 120,
-    "verificationLevel": "원본확인",
-    "officialSourceCount": 1,
-    "reasonText": {
-      "ko": "더 킹: 영원의 군주 장면을 따라 레일바이크를 체험할 수 있는 촬영지예요.",
-      "en": "A The King: Eternal Monarch location where visitors can experience a rail bike route."
-    }
+    "address": "강원도 춘천시 약사고개길 23",
+    "latitude": 37.876614,
+    "longitude": 127.72724
   },
   {
     "id": "place-seoullo-7017",
-    "name": { "ko": "서울로7017", "en": "Seoullo 7017" },
-    "workIds": ["work-little-women"],
+    "name": {
+      "ko": "서울로7017",
+      "en": "Seoullo 7017"
+    },
+    "workIds": [
+      "work-little-women"
+    ],
     "nearestStationId": "station-seoul",
     "accessEstimate": {
       "minutes": 10,
@@ -256,12 +338,20 @@
     "reasonText": {
       "ko": "작은 아씨들의 서울 도심 분위기를 서울역 가까이에서 느낄 수 있는 촬영지예요.",
       "en": "A Little Women filming location offering a city walk close to Seoul Station."
-    }
+    },
+    "address": "서울특별시 중구 청파로 432",
+    "latitude": 37.556524,
+    "longitude": 126.97375
   },
   {
     "id": "place-deoksugung-stone-wall-road",
-    "name": { "ko": "덕수궁 돌담길", "en": "Deoksugung Stonewall Walkway" },
-    "workIds": ["work-goblin"],
+    "name": {
+      "ko": "덕수궁 돌담길",
+      "en": "Deoksugung Stonewall Walkway"
+    },
+    "workIds": [
+      "work-goblin"
+    ],
     "nearestStationId": "station-seoul",
     "accessEstimate": {
       "minutes": 20,
@@ -279,12 +369,20 @@
     "reasonText": {
       "ko": "서울 도심에서 도깨비의 장면을 따라 걷기 좋은 상시 개방 외부 촬영지예요.",
       "en": "An always-open outdoor filming location in central Seoul associated with Guardian."
-    }
+    },
+    "address": "서울특별시 중구 세종대로 99",
+    "latitude": 37.565924,
+    "longitude": 126.97501
   },
   {
     "id": "place-gyeonggijeon-shrine",
-    "name": { "ko": "경기전", "en": "Gyeonggijeon Shrine" },
-    "workIds": ["work-the-king"],
+    "name": {
+      "ko": "경기전",
+      "en": "Gyeonggijeon Shrine"
+    },
+    "workIds": [
+      "work-the-king"
+    ],
     "nearestStationId": "station-jeonju",
     "accessEstimate": {
       "minutes": 20,
@@ -305,6 +403,9 @@
     "reasonText": {
       "ko": "더 킹: 영원의 군주에 등장하는 전주의 역사 촬영지예요.",
       "en": "A historic Jeonju filming location featured in The King: Eternal Monarch."
-    }
+    },
+    "address": "전라북도 전주시 완산구 태조로 44",
+    "latitude": 35.815488,
+    "longitude": 127.149771
   }
 ]

@@ -31,16 +31,48 @@ describe("시드 스키마 검증 (REQ-DATA-004)", () => {
     }
   });
 
-  it("김고은 데모 fixture는 폐쇄된 나주 후보 대신 경기전·전주역을 포함한 14곳이다", () => {
+  it("김고은 데모 fixture는 강촌레일파크 제외가 확정된 13곳이다 (#51)", () => {
     const repos = loadRepositories();
     const gyeonggijeon = repos.places.find(({ id }) => id === "place-gyeonggijeon-shrine");
 
-    expect(repos.places).toHaveLength(14);
+    expect(repos.places).toHaveLength(13);
+    // #51 확정: 관계 미검증·김고은 미등장 — MVP 런타임 시드에서 장소·관계 완전 제외
+    expect(repos.places.some(({ id }) => id === "place-gangchon-rail-park")).toBe(false);
+    expect(repos.workPlaceRelations.some(({ placeId }) => placeId === "place-gangchon-rail-park")).toBe(false);
     expect(gyeonggijeon?.workIds).toContain("work-the-king");
     expect(gyeonggijeon?.nearestStationId).toBe("station-jeonju");
     expect(repos.stations.some(({ id }) => id === "station-jeonju")).toBe(true);
     expect(repos.places.some(({ id }) => id === "place-naju-image-theme-park")).toBe(false);
     expect(repos.stations.some(({ id }) => id === "station-naju")).toBe(false);
+  });
+
+  it("#51 데이터는 13개 작품–장소 관계와 검토된 데모 별칭을 제공한다 (강촌 제외)", () => {
+    const repos = loadRepositories();
+    const relationKeys = new Set(
+      repos.workPlaceRelations.map(({ workId, placeId }) => `${workId}|${placeId}`),
+    );
+    const expectedKeys = new Set(
+      repos.places.flatMap((place) => place.workIds.map((workId) => `${workId}|${place.id}`)),
+    );
+    const yeongjin = repos.places.find(({ id }) => id === "place-yeongjin-beach");
+
+    expect(relationKeys).toEqual(expectedKeys);
+    expect(repos.workPlaceRelations).toHaveLength(13);
+    expect(repos.workPlaceRelations.every(({ reviewed, sourceUrls }) => reviewed && sourceUrls.length > 0)).toBe(true);
+    expect(yeongjin?.searchAliases?.map(({ ko }) => ko)).toEqual([
+      "도깨비 방파제",
+      "주문진 도깨비 방사제",
+    ]);
+  });
+
+  it("재확인 대상 2곳은 주소만 두고 임의 좌표를 만들지 않는다", () => {
+    const repos = loadRepositories();
+    for (const id of ["place-lala-muri", "place-oak-valley-resort"]) {
+      const place = repos.places.find((item) => item.id === id);
+      expect(place?.address, id).toBeTruthy();
+      expect(place?.latitude, id).toBeUndefined();
+      expect(place?.longitude, id).toBeUndefined();
+    }
   });
 });
 
