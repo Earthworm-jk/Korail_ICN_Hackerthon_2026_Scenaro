@@ -120,3 +120,46 @@ describe("잘못된 시각 요청 (PR #30 리뷰 ③ — throw 없이 INVALID_RE
     expect(res).toMatchObject({ ok: false, code: "INVALID_REQUEST" });
   });
 });
+
+describe("#56 열차 스냅샷 권역 확장 — 실데이터 회귀", () => {
+  const JINBU_PLACE_IDS = [
+    "place-woljeongsa-temple",
+    "place-woljeongsa-fir-forest",
+    "place-samyang-ranch",
+    "place-balwangsan-cable-car",
+  ];
+
+  // 배치 가능 전환의 증명은 단독 선택 배치다 — 13곳 동시 요청에서는 3일 수용량 경쟁으로
+  // 밀린 후보에 엔진이 마지막 실패 지점의 폴백 사유(TRAIN_UNAVAILABLE 등)를 붙이기 때문.
+  async function planOnly(placeId: string) {
+    const { candidates } = await getCandidatePlaces({
+      selectedActorIds: [ACTOR],
+      selectedWorkIds: [],
+    });
+    const excluded = candidates.map(({ id }) => id).filter((id) => id !== placeId);
+    return planItinerary({ ...validRequest(), excludedPlaceIds: excluded });
+  }
+
+  it("진부 앵커 4곳이 각각 단독 선택 시 TRAIN_UNAVAILABLE 없이 배치된다", async () => {
+    for (const placeId of JINBU_PLACE_IDS) {
+      const res = await planOnly(placeId);
+      expect(res.ok).toBe(true);
+      if (!res.ok) return;
+      expect(res.result.status).toBe("planned");
+      if (res.result.status !== "planned") return;
+      expect(res.result.days.flatMap((day) => day.items.map((item) => item.placeId)))
+        .toContain(placeId);
+    }
+  });
+
+  it("관문·후속 단계 전 상태: 전주 경기전은 단독 선택도 아직 열차 미연결 (#56 3단계)", async () => {
+    const res = await planOnly("place-gyeonggijeon-shrine");
+    expect(res.ok).toBe(true);
+    if (!res.ok) return;
+    expect(res.result.status).toBe("empty");
+    expect(res.result.rejectedPlaces).toContainEqual({
+      code: "TRAIN_UNAVAILABLE",
+      placeId: "place-gyeonggijeon-shrine",
+    });
+  });
+});
