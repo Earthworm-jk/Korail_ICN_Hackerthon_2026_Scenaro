@@ -18,8 +18,9 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { z } from "zod";
 import {
-  Actor, Work, Place, Station, TrainLeg, Flight,
+  Actor, Work, Place, Station, TrainLeg, Flight, WorkPlaceRelation,
   type ActorT, type WorkT, type PlaceT, type StationT, type TrainLegT, type FlightT,
+  type WorkPlaceRelationT,
 } from "../types/schema";
 
 export type Repositories = {
@@ -29,6 +30,7 @@ export type Repositories = {
   stations: StationT[];
   trainLegs: TrainLegT[];
   flights: FlightT[];
+  workPlaceRelations: WorkPlaceRelationT[]; // #51 — 회차·장면·출처 관계 (장소 비복제)
 };
 
 /** 시드 6종의 파싱 전 원본. 테스트에서는 파일 없이 이 형태로 직접 검증한다. */
@@ -88,6 +90,11 @@ const SPECS: Record<SeedKey, Spec> = {
     file: "flights-snapshot.json", kind: "Flight", schema: Flight,
     idOf: (f) => str(f.flightNo),
     dupKeyOf: (f) => `${f.flightNo}|${f.direction}|${utc(f.scheduledAt)}`,
+  },
+  workPlaceRelations: {
+    file: "work-place-relations.json", kind: "WorkPlaceRelation", schema: WorkPlaceRelation,
+    idOf: (r) => (str(r.workId) && str(r.placeId) ? `${r.workId}→${r.placeId}` : undefined),
+    dupKeyOf: (r) => `${r.workId}|${r.placeId}`, // 같은 장소·다른 작품은 정상 — 관계 단위 유일 (#51)
   },
 };
 
@@ -175,6 +182,31 @@ function validate(
         }
       });
     }
+  }
+  // #51 — 관계 파일은 작품·장소 양쪽 구조 통과 시에만 참조 검사 (연쇄 노이즈 스킵 규칙 동일)
+  if (!failed.has("workPlaceRelations")) {
+    const workIds = failed.has("works") ? null : idsOf("works");
+    const placeById = failed.has("places")
+      ? null
+      : new Map(parsed.places!.map((place) => [place.id, place]));
+    parsed.workPlaceRelations!.forEach((relation, index) => {
+      const workExists = workIds?.has(relation.workId) ?? false;
+      if (workIds && !workExists) {
+        issues.push(formatIssue("workPlaceRelations", relation, index, "workId", `존재하지 않는 작품 참조: ${relation.workId}`));
+      }
+      const place = placeById?.get(relation.placeId);
+      if (placeById && !place) {
+        issues.push(formatIssue("workPlaceRelations", relation, index, "placeId", `존재하지 않는 장소 참조: ${relation.placeId}`));
+      }
+      // PR #52 리뷰: 엔진 후보 분류는 Place.workIds를, 회차 표시는 관계를 읽는다 —
+      // 두 화면의 사실이 갈라지지 않도록 관계의 workId가 장소의 workIds에 포함돼야 한다
+      if (workExists && place && !place.workIds.includes(relation.workId)) {
+        issues.push(formatIssue(
+          "workPlaceRelations", relation, index, "workId",
+          `장소 ${relation.placeId}의 workIds에 없는 작품: ${relation.workId} (Place.workIds와 정합 필요)`,
+        ));
+      }
+    });
   }
   if (!failed.has("stations")) {
     const stationIds = idsOf("stations");

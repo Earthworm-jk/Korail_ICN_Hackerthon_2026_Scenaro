@@ -28,6 +28,16 @@ export const IsoDateTime = z.iso.datetime({
 // PR #29 리뷰: 빈 문자열 ID·참조는 시드 정규화 전에 로드 단계에서 차단한다
 export const NonEmptyId = z.string().min(1, "빈 문자열 ID·참조는 허용되지 않습니다");
 
+// PR #52 리뷰: 출처는 실제 http/https URL만 — 형식 없는 문자열이 출처로 고정되는 것을 차단
+export const HttpUrl = z.string().refine((v) => {
+  try {
+    const url = new URL(v);
+    return url.protocol === "http:" || url.protocol === "https:";
+  } catch {
+    return false;
+  }
+}, "http/https URL이어야 합니다");
+
 export const LocalizedText = z.object({ ko: z.string(), en: z.string() });
 
 // 관계 유형은 시드에 저장하지 않고 constraints에서 파생한다 (ENGINE_SPEC §2, PR #9 리뷰)
@@ -100,6 +110,33 @@ export const Place = z.object({
   verificationLevel: z.enum(["원본확인", "교차확인", "TourAPI대조"]),
   officialSourceCount: z.number().int().nonnegative(), // UI 정렬 전용 — 엔진 점수와 분리 (#3)
   reasonText: LocalizedText, // 사전 작성 추천 사유 (REQ-DATA-005)
+  // #51 확정(additive — 기존 엔진·시드 무변경): 검토 통과 별칭·주소·좌표.
+  // searchAliases는 place-aliases.json(검토 전 산출물)에서 검토 통과분만 수록되는 단방향 (#48)
+  searchAliases: z.array(LocalizedText).optional(),
+  address: z.string().min(1).optional(),
+  latitude: z.number().min(-90).max(90).optional(),
+  longitude: z.number().min(-180).max(180).optional(),
+}).superRefine((place, ctx) => {
+  // PR #52 리뷰: 좌표는 동명이소 판단에 한 쌍으로 쓰인다 — 반쪽 좌표가 시드로 고정되는 것을 차단
+  if ((place.latitude === undefined) !== (place.longitude === undefined)) {
+    ctx.addIssue({
+      code: "custom",
+      path: [place.latitude === undefined ? "latitude" : "longitude"],
+      message: "latitude·longitude는 함께 있어야 합니다 (좌표 쌍)",
+    });
+  }
+});
+
+// #51 확정: 회차·장면·출처는 장소가 아니라 작품–장소 관계에 속한다. 장소는 복제하지 않고
+// 같은 placeId에 작품별 관계를 각각 연결한다. 회차 근거가 없으면 episodeLabel을 생략한다.
+export const WorkPlaceRelation = z.object({
+  workId: NonEmptyId,
+  placeId: NonEmptyId,
+  episodeLabel: z.string().min(1).optional(), // "1화"·"1–2화"·특별편 — 문자열, 영화는 생략
+  sceneNote: LocalizedText.optional(),
+  sourceUrls: z.array(HttpUrl).min(1), // 사람 검증 출처 필수 — http/https 형식 검사 (#51, PR #52 리뷰)
+  verifiedAt: IsoDate,
+  reviewed: z.boolean(),
 });
 
 // 권역은 역에만 저장하고 장소는 nearestStationId로 파생한다 — 단일 진실 (이슈 #6 8일차 잔여)
@@ -146,6 +183,7 @@ export type PlaceT = z.infer<typeof Place>;
 export type StationT = z.infer<typeof Station>;
 export type TrainLegT = z.infer<typeof TrainLeg>;
 export type FlightT = z.infer<typeof Flight>;
+export type WorkPlaceRelationT = z.infer<typeof WorkPlaceRelation>;
 
 // #5: 버퍼는 저장하지 않고 파생한다 — max(20분, 접근시간의 50%)
 export function accessBufferMinutes(accessMinutes: number): number {
