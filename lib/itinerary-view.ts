@@ -79,6 +79,12 @@ export function rejectedPlaces(view: ItineraryView) {
   return view.result.rejectedPlaces;
 }
 
+/** 운영시간 경고 목록 (#43 결정 1) — 추천 결과 화면에서만. 재열람 스냅샷에는 경고를 싣지 않는다 */
+export function itineraryWarnings(view: ItineraryView) {
+  if (view.planning || view.reopened || view.result?.status !== "planned") return [];
+  return view.result.warnings;
+}
+
 export function banner(view: ItineraryView): "reopened" | "swapped" | null {
   if (view.planning) return null;
   if (view.reopened) return "reopened";

@@ -22,15 +22,15 @@ const dayA = { date: "2026-08-12", rides: [], items: [] };
 const dayB = { date: "2026-08-13", rides: [], items: [] };
 
 const plannedA: ItineraryResult = {
-  status: "planned", days: [dayA], rejectedPlaces: [],
+  status: "planned", days: [dayA], rejectedPlaces: [], warnings: [],
   comparisonKeys: {
     relevanceKey: { selectedWorkPlaceCount: 1, actorOtherWorkPlaceCount: 0 },
-    visitablePlaceCount: 1, totalRailMinutes: 100, transferCount: 0, slackSatisfied: true,
+    visitablePlaceCount: 1, warningCount: 0, totalRailMinutes: 100, transferCount: 0, slackSatisfied: true,
   },
   metrics: { totalTravelMinutes: 150, totalRailMinutes: 100, transferCount: 0, departureSlackMinutes: 180 },
 };
 const plannedB: ItineraryResult = { ...plannedA, days: [dayB] };
-const empty: ItineraryResult = { status: "empty", days: [], rejectedPlaces: [{ code: "TRAIN_UNAVAILABLE", placeId: "p1" }] };
+const empty: ItineraryResult = { status: "empty", days: [], rejectedPlaces: [{ code: "TRAIN_UNAVAILABLE", placeId: "p1" }], warnings: [] };
 
 const constraintsA = constraintsFromTripInputs(
   { arrivalAt: "2026-08-12T10:00", departureAt: "2026-08-14T18:00", exitOffsetMin: 120, departureBufferMinutes: 120 },
