@@ -70,10 +70,9 @@ getCandidatePlaces(selection: {
 planItinerary(constraints: TripConstraints): Promise<ItineraryResult>;
 // 생성과 편집 재계산 모두 이 액션 하나 (#2 단일 진입점).
 // 편집 3동작 = constraints 필드 변경 후 재호출. diff는 UI가 이전 metrics와 비교(REQ-EDIT-004)
-// 반환은 ENGINE_SPEC §7의 세 분기(정의서 v0.5 — 후보 제외와 전체 실패 분리):
-//   { ok: true,  status: "planned", days, rejectedPlaces, comparisonKeys, metrics }
-//   { ok: true,  status: "empty",   days: [], rejectedPlaces }  // 조건을 만족하는 일정 없음
-//   { ok: false, reason: ConstraintFailure }                    // USER_CONSTRAINT_INFEASIBLE 전용
+// 반환은 ENGINE_SPEC §7의 2분기(#14 ver.0.4 — 필수·고정일 제거로 실패 분기 소멸):
+//   { status: "planned", days, rejectedPlaces, comparisonKeys, metrics }
+//   { status: "empty",   days: [], rejectedPlaces }  // 조건을 만족하는 일정 없음
 // empty는 정상 응답이며 comparisonKeys·metrics를 포함하지 않는다(허위 값 금지)
 
 // lib/actions/flights.ts
@@ -94,10 +93,9 @@ getFlightInfo(flightNo: string, direction: "arrival" | "departure"): Promise<
 
 ### 3.3 오류 계약
 
-- 사용자 제약 불능(USER_CONSTRAINT_INFEASIBLE)만 `ok: false`다 — UI는 기존 일정을 유지한다
-  (REQ-EDIT-005)
-- 후보가 전멸해도 사용자 제약 위반이 아니면 `ok: true, status: "empty"`로 반환한다 —
-  "조건을 만족하는 일정 없음" 화면 상태(PRD 9.2)의 근거이며 오류가 아니다
+- 일정 계산에 실패 응답은 없다 — 후보가 전멸하면 `status: "empty"` 정상 응답이며
+  "조건을 만족하는 일정 없음" 화면 상태(PRD 9.2)의 근거다 (#14 ver.0.4로 사용자 제약
+  실패 분기 소멸). 편집 실패 시 기존 일정 유지(REQ-EDIT-005)는 앱 계층 오류 처리 몫
 - 시드·입력 스키마 위반은 Zod 예외 → 개발 중에만 발생해야 정상(Repository 초기화 시 검증)
 - 외부 API 실패는 폴백으로 흡수하고 `source: "snapshot"`으로 알린다 — 사용자에게 오류를
   던지지 않는다 (PRD 9.2)

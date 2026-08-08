@@ -31,10 +31,8 @@ type TripConstraints = {
   selectedActorIds?: string[];  // 배우 중심 탐색(복수 가능)
   selectedActorId?: string;     // 기존 호출부 호환용 단수 입력
   selectedWorkIds: string[];    // 작품 중심(복수 가능)
-  requiredPlaceIds: string[];   // 필수 방문 — 하드 제약
   excludedPlaceIds: string[];   // 사용자 제외 — 하드 제약
-  pinnedDates: Record<string, string>; // placeId → YYYY-MM-DD, 고정 방문일 — 하드 제약
-  maxPlacesPerDay: number;      // 여행 속도 (REQ-ITIN-001)
+  maxPlacesPerDay: number;      // 내부 기본값 3 — 사용자 설정 UI 없음 (#14 ver.0.4)
   dailySlackMinutes: number;    // 일반 여유(소프트), 기본 120
   departureBufferMinutes: number; // 출국 안전 버퍼(하드), 기본 120 — #3 결정으로 필드 분리
 };
@@ -147,7 +145,6 @@ const Station = z.object({
 | 연결 가능한 열차 존재 | TRAIN_UNAVAILABLE |
 | 출국 역산: 마지막 방문의 역 복귀 + 열차 + 공항 이동 + departureBufferMinutes ≤ 출국 시각 | DEPARTURE_DEADLINE_EXCEEDED |
 | 운영시간 판정(아래 판정식) | ACTIVITY_WINDOW_MISMATCH (+detail) |
-| 필수 장소 포함 / 고정 방문일 준수 불가 | USER_CONSTRAINT_INFEASIBLE — 후보 제외가 아니라 **전체 실패(ok:false) 사유** |
 | 사용자 제외 장소 미포함 | (후보 수집 단계에서 제거, 코드 불필요 — 사용자 직접 제외는 rejectedPlaces에 넣지 않는다) |
 
 ### 운영시간 판정식 (PR #9 리뷰 A — open·stayMinutes 포함)
@@ -175,12 +172,6 @@ type CandidateRejection =
   | { code: "TRAIN_UNAVAILABLE"; placeId: string }
   | { code: "DEPARTURE_DEADLINE_EXCEEDED"; placeId: string }
   | { code: "ACTIVITY_WINDOW_MISMATCH"; placeId: string; detail: ActivityWindowDetail };
-
-// 전체 재계산 실패 사유 (ok:false 전용) — 후보 제외가 아니라 요청 실패다(정의서 v0.5)
-type ConstraintFailure = {
-  code: "USER_CONSTRAINT_INFEASIBLE";
-  constraintType: "REQUIRED_PLACE" | "PINNED_DATE"; targetId: string;
-};
 ```
 
 - UI 후보 목록: `CONSERVATIVE_BUFFER_MISMATCH`·`UNVERIFIED_HOURS`는
@@ -228,7 +219,6 @@ type ItineraryMetrics = {
 
 type ItineraryResult =
   | {
-      ok: true;
       status: "planned";            // 선택된 일정이 있는 정상 상태
       days: DayPlan[];              // 장소·열차편(시각·역)·추정 이동 라벨 포함
       rejectedPlaces: CandidateRejection[];  // 엔진이 자동 제외한 후보 3종 (REQ-ITIN-005)
@@ -236,17 +226,16 @@ type ItineraryResult =
       metrics: ItineraryMetrics;
     }
   | {
-      ok: true;
       status: "empty";              // 정상 처리, 조건을 만족하는 일정 없음
       days: [];
       rejectedPlaces: CandidateRejection[];
-    }
-  | { ok: false; reason: ConstraintFailure };     // UI는 기존 일정 유지 (REQ-EDIT-005)
+    };
 ```
 
-후보가 전멸해도 사용자 제약 위반이 아니면 `ok: false`가 아니라 **`status: "empty"`**로
-반환한다 — '조건을 만족하는 일정 없음' 화면 상태(PRD 9.2)의 근거. empty 상태에는 선택된
-일정이 없으므로 comparisonKeys·metrics를 포함하지 않는다(허위 값 금지, PR #16 리뷰).
+`#14 ver.0.4` 확정으로 필수 방문·방문일 고정 입력이 제거되어 사용자 제약 실패(ok:false)
+분기가 소멸했다. 결과는 **planned / empty 2분기**이며 `status`가 유일한 판별자다. 후보가
+전멸하면 `status: "empty"` — '조건을 만족하는 일정 없음' 화면 상태(PRD 9.2)의 근거이며,
+empty 상태에는 comparisonKeys·metrics를 포함하지 않는다(허위 값 금지, PR #16 리뷰).
 
 `DayPlan.date`는 KST 기준 `YYYY-MM-DD`이고, 항목·열차의 `arriveAt`·`departAt`은 절대시각
 ISO 문자열(직렬화 시 UTC `Z`)이다. UI는 표시에만 사용자 시간대/KST 변환을 적용한다.
@@ -259,7 +248,7 @@ ISO 문자열(직렬화 시 UTC `Z`)이다. UI는 표시에만 사용자 시간�
 |---|---|---|
 | 촬영지 제외 | 나주영상테마파크 포함 → 제외 | ktx_시각조회.py 정답값과 일치하는 재구성 |
 | 항공 변경 | 정상 도착 → 2시간 지연 | korail_시나리오확정.py 정답값 — 첫날 일정 재구성 (REQ-EDIT-006) |
-| 방문일 고정 | 특정 장소를 다른 날로 고정 | 두 날짜 모두 제약 위반 0건 또는 USER_CONSTRAINT_INFEASIBLE(PINNED_DATE) |
+| (폐기) 방문일 고정 | #14 ver.0.4에서 방문일 고정 제거로 폐기 | 대체 프리셋(예: 폐쇄 장소 제외 fixture — PR #31 논의)은 회귀 이식 시 확정 |
 
 기대 순위(사전식 키 값 포함)는 테스트 코드에 상수로 명시한다. 08-09 플래너 P0 완료 후
 PR 필수 체크로 활성화(팀 규칙 CI 절).

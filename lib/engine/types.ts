@@ -10,9 +10,7 @@ export type TripConstraints = {
   /** @deprecated 기존 호출부 호환용. 새 호출부는 selectedActorIds를 사용한다. */
   selectedActorId?: string;
   selectedWorkIds: string[];
-  requiredPlaceIds: string[];
   excludedPlaceIds: string[];
-  pinnedDates: Record<string, string>; // placeId → YYYY-MM-DD
   maxPlacesPerDay: number;
   dailySlackMinutes: number; // 일반 여유(소프트), 기본 120
   departureBufferMinutes: number; // 출국 안전 버퍼(하드), 기본 120 — #3에서 필드 분리
@@ -30,13 +28,6 @@ export type CandidateRejection =
   | { code: "TRAIN_UNAVAILABLE"; placeId: string }
   | { code: "DEPARTURE_DEADLINE_EXCEEDED"; placeId: string }
   | { code: "ACTIVITY_WINDOW_MISMATCH"; placeId: string; detail: ActivityWindowDetail };
-
-// 전체 재계산 실패 사유 (ok:false 전용) — 후보 제외가 아니라 요청 실패
-export type ConstraintFailure = {
-  code: "USER_CONSTRAINT_INFEASIBLE";
-  constraintType: "REQUIRED_PLACE" | "PINNED_DATE";
-  targetId: string;
-};
 
 // #3 최종 결정 + PR #9 리뷰: 가중합·상수 점수 없이 키들을 순서대로 비교(사전식).
 // 관련성도 관계 유형별 '개수 벡터'로 비교해 임의 가중치를 원천 제거한다.
@@ -79,9 +70,10 @@ export type DayPlan = {
   rides: TrainRide[];
 };
 
+// #14 ver.0.4 확정: 필수 방문·방문일 고정 입력이 없어 사용자 제약 실패(ok:false) 분기가
+// 소멸했다. 결과는 planned/empty 2분기이며 status가 유일한 판별자다.
 export type ItineraryResult =
   | {
-      ok: true;
       status: "planned"; // 선택된 일정이 있는 정상 상태
       days: DayPlan[];
       rejectedPlaces: CandidateRejection[]; // 숨기지 않고 사유와 함께 (REQ-ITIN-005)
@@ -89,9 +81,7 @@ export type ItineraryResult =
       metrics: ItineraryMetrics; // 편집 전후 비교(diff)는 앱 계층이 metrics로 계산 (PR #9 리뷰)
     }
   | {
-      ok: true;
       status: "empty"; // 정상 처리됐지만 조건을 만족하는 일정 없음 — 허위 metrics 금지 (PR #16 리뷰)
       days: [];
       rejectedPlaces: CandidateRejection[];
-    }
-  | { ok: false; reason: ConstraintFailure }; // 사용자 제약 위반 — UI는 기존 일정 유지
+    };
