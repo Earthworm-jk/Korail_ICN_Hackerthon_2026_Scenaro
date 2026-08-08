@@ -1,7 +1,7 @@
 import type { Repositories } from "../repositories/json";
 import { accessBufferMinutes, type PlaceT, type TrainLegT } from "../types/schema";
 import { compareCandidates, type Candidate } from "./compare";
-import { buildRegionWindows } from "./region-windows";
+import { buildRegionWindows, DAY_ACTIVITY_END, DAY_ACTIVITY_START } from "./region-windows";
 import type {
   ActivityWindowDetail,
   CandidateRejection,
@@ -310,7 +310,14 @@ function findVisitWindow(
   for (const date of dates) {
     if (date < startDate || !dateAvailable(date)) continue;
     if (mode === "verified" && isClosedDay(place, date)) continue;
-    let visitStart = earliestPlaceArrival;
+    // PR #45 리뷰: 출력 창(regionWindows)과 배치가 어긋나지 않도록 같은 활동 경계를 적용한다
+    // — 역 출발 가능 시각 >= 09:00 (장소 도착 하한 = 09:00 + 접근·보수 버퍼),
+    //   장소 방문 + 역 복귀 완료 <= min(출국 마감, 해당 날짜 21:00). hours·상시 개방·경고 폴백 공통.
+    const activityDeadline = Math.min(deadline, koreaDateTime(date, DAY_ACTIVITY_END));
+    let visitStart = Math.max(
+      earliestPlaceArrival,
+      koreaDateTime(date, DAY_ACTIVITY_START) + accessAndBufferMinutes * MINUTE_MS,
+    );
     if (mode === "verified" && place.openingHours.type === "hours") {
       const open = koreaDateTime(date, place.openingHours.open);
       const close = koreaDateTime(date, place.openingHours.close);
@@ -319,16 +326,15 @@ function findVisitWindow(
         && visitStart > koreaDateTime(date, place.openingHours.lastEntry)) continue;
       const visitEnd = visitStart + place.stayMinutes * MINUTE_MS;
       const stationReadyAt = visitEnd + accessAndBufferMinutes * MINUTE_MS;
-      if (visitEnd <= close && stationReadyAt <= deadline) {
+      if (visitEnd <= close && stationReadyAt <= activityDeadline) {
         return { visitStart, visitEnd, stationReadyAt, accessAndBufferMinutes };
       }
       continue;
     }
 
-    visitStart = Math.max(visitStart, koreaDateTime(date, "00:00"));
     const visitEnd = visitStart + place.stayMinutes * MINUTE_MS;
     const stationReadyAt = visitEnd + accessAndBufferMinutes * MINUTE_MS;
-    if (koreaDate(visitStart) === date && stationReadyAt <= deadline) {
+    if (koreaDate(visitStart) === date && stationReadyAt <= activityDeadline) {
       return { visitStart, visitEnd, stationReadyAt, accessAndBufferMinutes };
     }
   }

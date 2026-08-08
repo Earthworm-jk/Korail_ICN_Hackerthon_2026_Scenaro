@@ -20,7 +20,8 @@ const KOREA_OFFSET_MS = 9 * 60 * 60 * 1_000;
 const MINUTE_MS = 60_000;
 const DAY_MS = 24 * 60 * MINUTE_MS;
 
-/** 하루 활동 가능 시간대 (KST 09:00-21:00, 내부 기본 — #33 코멘트 확정) — 심야·숙박 제외 */
+/** 하루 활동 가능 시간대 (KST 09:00-21:00, 내부 기본 — #33 코멘트 확정) — 심야·숙박 제외.
+ *  같은 경계를 planner의 findVisitWindow 배치에도 적용해 출력 창과 실제 배치가 어긋나지 않는다 (PR #45 리뷰). */
 export const DAY_ACTIVITY_START = "09:00";
 export const DAY_ACTIVITY_END = "21:00";
 
@@ -88,15 +89,19 @@ export function buildRegionWindows(params: {
     while (segmentStart < presence.end) {
       const nextMidnight = koreaMidnightAfter(segmentStart);
       const segmentEnd = Math.min(presence.end, nextMidnight);
-      windows.push({
-        stationId: presence.stationId,
-        regionId,
-        startAt: new Date(segmentStart).toISOString(),
-        endAt: new Date(segmentEnd).toISOString(),
-        availableMinutes: activityOverlapMinutes(segmentStart, segmentEnd),
-        startBoundary: segmentStartBoundary,
-        endBoundary: segmentEnd === presence.end ? presence.endBoundary : "DAY_END",
-      });
+      const availableMinutes = activityOverlapMinutes(segmentStart, segmentEnd);
+      // PR #45 리뷰: 엔진은 "활용 가능한 창"만 반환한다 — 0분 창은 날짜 블록 잡음이므로 미출력
+      if (availableMinutes > 0) {
+        windows.push({
+          stationId: presence.stationId,
+          regionId,
+          startAt: new Date(segmentStart).toISOString(),
+          endAt: new Date(segmentEnd).toISOString(),
+          availableMinutes,
+          startBoundary: segmentStartBoundary,
+          endBoundary: segmentEnd === presence.end ? presence.endBoundary : "DAY_END",
+        });
+      }
       segmentStart = segmentEnd;
       segmentStartBoundary = "DAY_START";
     }

@@ -60,7 +60,7 @@ describe("buildRegionWindows (#33)", () => {
     expect(gangneung.map((w) => [w.startBoundary, w.endBoundary, w.availableMinutes])).toEqual([
       ["TRAIN_ARRIVAL", "DAY_END", 306], // 15:54-21:00
       ["DAY_START", "DAY_END", 720], // 09:00-21:00 온전한 하루
-      ["DAY_START", "TRAIN_DEPARTURE", 0], // 00:00-08:10 — 활동시간(09:00) 이전이라 0분
+      // 마지막 날 00:00-08:10 구간은 활동시간(09:00) 이전 0분 창 — 출력하지 않는다 (PR #45 리뷰)
     ]);
     // 각 창은 단일 KST 날짜에 속한다 (자정 분할 불변식)
     for (const w of windows) {
@@ -89,7 +89,7 @@ describe("buildRegionWindows (#33)", () => {
     });
   });
 
-  it("활동시간 밖(심야) 창은 availableMinutes 0으로 남기고 창 자체는 유지한다", () => {
+  it("활동시간 밖(심야) 0분 창은 출력하지 않는다 (PR #45 리뷰 — 활용 가능한 창만 반환)", () => {
     const windows = buildRegionWindows({
       rides: [
         ride("K1", "seoul", "gangneung", "2026-08-12T19:00:00+09:00", "2026-08-12T21:30:00+09:00"),
@@ -99,8 +99,9 @@ describe("buildRegionWindows (#33)", () => {
       startStationId: "seoul",
       stations,
     });
-    const late = windows.find((w) => w.stationId === "gangneung");
-    expect(late).toMatchObject({ availableMinutes: 0, endBoundary: "AIRPORT_DEADLINE" }); // 21:30-23:00
+    // 강릉 도착(21:30)-마감(23:00) 구간은 활동시간 밖 — 창 자체를 만들지 않는다
+    expect(windows.some((w) => w.stationId === "gangneung")).toBe(false);
+    for (const w of windows) expect(w.availableMinutes).toBeGreaterThan(0);
   });
 
   it("동일 입력에는 동일 출력 — 결정적", () => {
