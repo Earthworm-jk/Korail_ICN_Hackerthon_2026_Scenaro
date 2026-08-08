@@ -35,12 +35,14 @@
 
 ## 3. 계층 2 — 앱 내부 계약
 
-### 3.1 방식: Server Actions (제안 — 리뷰에서 확정 요청)
+### 3.1 방식: Server Actions (확정)
 
-Route Handler 대신 **Server Actions**를 기본으로 제안한다.
+UI의 서버 접점은 Route Handler 대신 **Server Actions**를 기본으로 한다.
 
 - 근거: 엔진·스키마와 TS 타입을 그대로 공유(직렬화 계약 별도 관리 불필요), CORS·포트 개념
   없음, 폼·버튼 연동이 짧음. 2인 병렬 작업의 접점이 "함수 시그니처"로 줄어든다
+- UI는 `lib/actions/`만 호출하고, `lib/repositories`·`lib/env`·`lib/adapters`는
+  `server-only` 경계 안에서만 사용한다
 - Route Handler가 필요해지는 경우: 외부에서 호출 가능한 데모 API를 심사에 보여주고 싶을 때.
   그 경우 같은 함수를 `app/api/*/route.ts`로 얇게 감싸 추가한다(계약 동일)
 

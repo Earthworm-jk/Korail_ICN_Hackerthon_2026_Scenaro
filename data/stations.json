@@ -41,8 +41,8 @@
     "regionId": "gangwon"
   },
   {
-    "id": "station-naju",
-    "name": { "ko": "나주역", "en": "Naju Station" },
+    "id": "station-jeonju",
+    "name": { "ko": "전주역", "en": "Jeonju Station" },
     "lineType": "KTX",
     "regionId": "honam"
   }
