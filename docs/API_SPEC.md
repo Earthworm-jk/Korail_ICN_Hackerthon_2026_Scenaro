@@ -20,10 +20,11 @@
 
 | 항목 | 값 |
 |---|---|
-| 엔드포인트 | `https://apis.data.go.kr/B551177/StatusOfPassengerFlightsDSOdp` (상세 오퍼레이션은 구현 시 확정) |
+| 엔드포인트 | `https://apis.data.go.kr/B551177/StatusOfPassengerFlightsDeOdp` — `getPassengerArrivalsDeOdp` / `getPassengerDeparturesDeOdp` (#46 확정: 주간 현황 DSOdp 대신 상세조회, 2026-08-08 실측) |
 | 인증 | `AIRPORT_API_KEY` (.env.local, 커밋 금지) |
 | 사용 필드 | 편명, 예정/변경 시각, 운항 상태, 터미널 |
 | 타임아웃·폴백 | **5초 초과 또는 오류 시 `data/flights-snapshot.json`으로 자동 전환**, UI에 스냅샷 기준임을 표시 |
+| 호출 특성 | `searchday`(조회일 기준 D-3~D+6)·`flight_id` 필터로 해당 편만 수신. 편명·날짜별 5분 캐시(일 500건 쿼터 보호). 단일 발급 키는 원형 우선·인증 오류 시 반대 인코딩형 1회 재시도. live 200+편명 없음은 오류 폴백과 구분해 미검색 처리 (#46, `lib/adapters/flights-live.ts`) |
 | 호출 시점 | 데모 중 입국편 확인 1회. 오프라인 모드에서는 호출하지 않음(NFR-DEMO-001) |
 
 ### 2.2 런타임에 호출하지 않는 것 (명시)
@@ -106,7 +107,7 @@ type FlightInfo = {
   status?: string;               // 운항 상태 문구 — live 조회 시
   terminal?: string;
 };
-getFlightInfo(flightNo: string, direction: "arrival" | "departure"): Promise<
+getFlightInfo(flightNo: string, direction: "arrival" | "departure", date?: string): Promise<
   | { ok: true; flight: FlightInfo; source: "live" | "snapshot" }  // 폴백 여부 UI 표시
   | { ok: false; reason: "FLIGHT_NOT_FOUND" }                      // 미검색 편명 — 수동 시각 입력 유도
 >;

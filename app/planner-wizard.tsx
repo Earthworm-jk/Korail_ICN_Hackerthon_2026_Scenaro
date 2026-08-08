@@ -53,6 +53,8 @@ type FlightField = {
   flightNo: string;
   at: string; // datetime-local (KST)
   notFound: boolean;
+  source?: "live" | "snapshot"; // 조회 출처 — 폴백 여부 표시 (API_SPEC 2.1)
+  status?: string; // 운항 상태 문구 — live 조회 시
 };
 
 const STEPS: MessageKey[] = ["nav.step1", "nav.step2", "nav.step3", "nav.step4"];
@@ -129,12 +131,15 @@ export default function PlannerWizard() {
     const field = direction === "arrival" ? arrival : departure;
     const setField = direction === "arrival" ? setArrival : setDeparture;
     if (!field.flightNo.trim()) return;
-    const res = await getFlightInfo(field.flightNo, direction);
+    const res = await getFlightInfo(field.flightNo, direction, field.at); // 날짜부 → searchday (#46)
     if (res.ok) {
-      setField({ ...field, notFound: false });
-      (direction === "arrival" ? setArrivalAtInput : setDepartureAtInput)(toLocalInput(res.flight.scheduledAt));
+      setField({ ...field, notFound: false, source: res.source, status: res.flight.status });
+      // live 조회는 변경(예상) 시각이 있으면 그 값을 쓴다 — 예선 약속(지연 반영) 서사
+      (direction === "arrival" ? setArrivalAtInput : setDepartureAtInput)(
+        toLocalInput(res.flight.estimatedAt ?? res.flight.scheduledAt),
+      );
     } else {
-      setField({ ...field, notFound: true });
+      setField({ ...field, notFound: true, source: undefined, status: undefined });
     }
   }, [arrival, departure, setArrivalAtInput, setDepartureAtInput]);
 
@@ -338,6 +343,14 @@ export default function PlannerWizard() {
                   </button>
                 </div>
                 {field.notFound && <p className="mt-1 text-xs text-red-600">{tr("step1.notFound")}</p>}
+                {field.source && (
+                  <p className="mt-1 text-xs">
+                    <span className={field.source === "live" ? "rounded bg-teal-50 px-1.5 py-0.5 text-teal-700" : "rounded bg-amber-50 px-1.5 py-0.5 text-amber-800"}>
+                      {tr(field.source === "live" ? "step1.sourceLive" : "step1.sourceSnapshot")}
+                    </span>
+                    {field.status && <span className="ml-1 text-gray-500">{field.status}</span>}
+                  </p>
+                )}
                 <label className="mt-3 block text-xs text-gray-500">{tr("step1.scheduledAt")}</label>
                 <input
                   type="datetime-local"

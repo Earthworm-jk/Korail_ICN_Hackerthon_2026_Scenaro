@@ -1,5 +1,11 @@
 [
   {
+    "flightNo": "AF264",
+    "direction": "arrival",
+    "scheduledAt": "2026-08-12T09:35:00+09:00",
+    "terminal": "T2"
+  },
+  {
     "flightNo": "SAMPLE-ARRIVAL-001",
     "direction": "arrival",
     "scheduledAt": "2026-08-12T10:00:00+09:00",
