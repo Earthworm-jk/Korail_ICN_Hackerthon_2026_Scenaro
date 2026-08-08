@@ -57,7 +57,8 @@ OD_PAIRS: list[tuple[tuple[str, str], tuple[str, str]]] = [
 STOPOVER_OD_PAIRS: list[tuple[tuple[str, str], tuple[str, str]]] = [
     (("station-seoul", "서울"), ("station-jinbu", "진부")),
     (("station-jinbu", "진부"), ("station-gangneung", "강릉")),
-    # 만종은 진부 E2E 확인 후 별도 PR에서 설정만 추가(#56 보완 합의): (("station-seoul", "서울"), ("station-manjong", "만종")),
+    (("station-seoul", "서울"), ("station-manjong", "만종")),  # #56 2단계 — 설정만 추가(재사용성 증명)
+    (("station-manjong", "만종"), ("station-gangneung", "강릉")),
     # 전주는 용산 관문 계약 합의 전 보류, 춘천은 KTX 컷라인으로 MVP 비범위(#56)
 ]
 STOPOVER_SOURCE_OFFSET_DAYS = 7  # 같은 요일 매핑 — SOURCES.md에 기준일과 함께 명시
