@@ -204,6 +204,9 @@ export default function PlannerWizard() {
     const constraints = view.reopened?.constraints ?? currentConstraints();
     if (!constraints) return null;
     const context = view.reopened?.context ?? { actors: selectedActors, works: selectedWorks };
+    // 재저장도 재열람 보존 규칙과 동일 — 저장 당시 경고를 잃지 않는다 (#43 경고 누락 0건)
+    const warnings = view.reopened?.warnings
+      ?? (view.result?.status === "planned" ? view.result.warnings : []);
     const primaryContent =
       context.actors[0]?.name[locale] ?? context.works[0]?.title[locale] ?? null;
     return {
@@ -213,8 +216,9 @@ export default function PlannerWizard() {
       schemaVersion: SAVED_SCHEMA_VERSION,
       snapshotVersion: "unversioned", // 시드 기준일 필드(#6 8/9 작업) 합류 시 교체
       context,
+      warnings,
     };
-  }, [displayedDays, view.reopened, currentConstraints, selectedActors, selectedWorks, locale]);
+  }, [displayedDays, view.reopened, view.result, currentConstraints, selectedActors, selectedWorks, locale]);
 
   const SAVE_STATUS_KEY: Record<SaveStatus, MessageKey> = {
     none: "save.statusNone",

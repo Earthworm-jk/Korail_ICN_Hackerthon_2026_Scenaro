@@ -3,7 +3,7 @@
  * 필드는 saved_itineraries 최소 스키마(#25 PRD §6)와 이름을 맞춰 두어 실제 저장 액션으로
  * 교체할 때 UI 변경이 없게 한다. 세션이 끝나면 사라지는 것이 정상이며 UI는 스텁 배지를 단다.
  */
-import type { DayPlan } from "./engine/types";
+import type { CandidateWarning, DayPlan } from "./engine/types";
 import type { PlanRequest } from "./actions/itinerary";
 import type { ActorSummary, WorkSummary } from "./actions/search";
 import { fromKstLocalInput, toKstLocalInput } from "./kst-datetime";
@@ -21,6 +21,9 @@ export type SavedItineraryStub = {
   snapshotVersion: string; // 열차·항공 스냅샷 기준 — 재열람 시 버전 불일치 안내 근거
   /** 재열람 시 검색 선택 칩·후보 재조회 복원용 요약 */
   context: { actors: ActorSummary[]; works: WorkSummary[] };
+  /** 저장 시점 운영시간 경고 — 재열람에도 경고 누락 0건 유지 (#43, PR #44 리뷰 2).
+   *  기존 레코드 호환을 위해 optional이며 없으면 빈 배열로 취급한다. */
+  warnings?: CandidateWarning[];
 };
 
 /** 여행 조건 입력 필드(1단계 화면 상태) ↔ constraints 왕복 변환 — 재열람 복원의 단일 경로 */

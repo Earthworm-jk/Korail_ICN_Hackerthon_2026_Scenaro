@@ -3,6 +3,7 @@ import {
   banner,
   displayedDays,
   initialItineraryView,
+  itineraryWarnings,
   reduceItineraryView,
   rejectedPlaces,
   showEmpty,
@@ -58,6 +59,21 @@ describe("constraints 왕복 (재열람 복원 경로)", () => {
       constraintsA.excludedPlaceIds,
     );
     expect(rebuilt).toEqual(constraintsA);
+  });
+});
+
+describe("경고 보존 (#43 경고 누락 0건 — PR #44 리뷰 2)", () => {
+  const warning = { code: "ACTIVITY_WINDOW_MISMATCH" as const, placeId: "p-warned", detail: "UNVERIFIED_HOURS" as const };
+
+  it("경고 있는 일정을 저장하고 재열람해도 경고가 유지된다", () => {
+    const recordWithWarnings: SavedItineraryStub = { ...recordA, warnings: [warning] };
+    const reopened = reduceItineraryView(initialItineraryView, { type: "REOPEN", record: recordWithWarnings });
+    expect(itineraryWarnings(reopened)).toEqual([warning]);
+  });
+
+  it("경고 필드가 없는 기존 레코드는 빈 배열로 취급한다 — 호환", () => {
+    const reopened = reduceItineraryView(initialItineraryView, { type: "REOPEN", record: recordA });
+    expect(itineraryWarnings(reopened)).toEqual([]);
   });
 });
 
