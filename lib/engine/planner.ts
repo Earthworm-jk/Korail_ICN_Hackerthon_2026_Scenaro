@@ -613,7 +613,7 @@ function buildDays(
       placeId: visit.place.id,
       arriveAt: new Date(visit.visitStart).toISOString(),
       departAt: new Date(visit.visitEnd).toISOString(),
-      accessMinutesLabel: `약 ${visit.place.accessEstimate.minutes}분 · 추정치`,
+      accessMinutes: visit.place.accessEstimate.minutes,
     };
     getDay(koreaDate(visit.visitStart)).items.push(item);
   }

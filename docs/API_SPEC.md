@@ -30,6 +30,8 @@
 ### 2.2 런타임에 호출하지 않는 것 (명시)
 
 - **KTX 시간표**: `data/train-snapshot.json` 스냅샷만 사용. 실시간 조회 없음
+- **역 편의시설**: `data/station-facilities.json` 스냅샷만 사용
+  (생성: `scripts/build_station_facilities.py`, 한국철도공사 편의시설정보 B551457). 실시간 조회 없음
 - **TourAPI·레일포털 등**: 오프라인 데이터 파이프라인(Python, 시드 생성 단계)에서만 사용.
   앱 런타임 호출 없음
 - 위 항목이 바뀌면(런타임 실호출 추가) 이 문서를 먼저 갱신한다 — "실호출만 수록" 원칙

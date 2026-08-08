@@ -24,7 +24,7 @@ const planned: ItineraryResult = {
           placeId: "place-yeongjin-beach",
           arriveAt: "2026-08-12T15:45:00+09:00",
           departAt: "2026-08-12T16:45:00+09:00",
-          accessMinutesLabel: "역-장소 접근 35분 추정",
+          accessMinutes: 35,
         },
       ],
       regionWindows: [

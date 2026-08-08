@@ -60,7 +60,9 @@ export type ItineraryItem = {
   placeId: string;
   arriveAt: string; // 절대시각 ISO. 직렬화는 UTC(Z), DayPlan.date만 KST 기준이다.
   departAt: string;
-  accessMinutesLabel: string; // 항상 '추정치' 라벨과 함께 표시 (REQ-ITIN-006)
+  // 편도 접근시간 예산(분). 완성 문장 대신 숫자만 내려 UI가 locale에 맞춰
+  // '약 N분 · 추정치' 라벨과 함께 포맷한다 (REQ-ITIN-006, PR #59 리뷰 1)
+  accessMinutes: number;
 };
 
 export type TrainRide = {

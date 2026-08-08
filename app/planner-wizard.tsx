@@ -36,8 +36,11 @@ import {
   showEmpty,
 } from "@/lib/itinerary-view";
 import { fromKstLocalInput as fromLocalInput, toKstLocalInput as toLocalInput } from "@/lib/kst-datetime";
+import { formatFlightStatus } from "@/lib/flight-status";
 import { AlternativeTimetables } from "./alternative-timetables";
 import { AuthModal, TripsModal, useSaveStub, type SaveStatus } from "./save-stub";
+import { ExecutionSupport } from "./execution-support";
+import type { StationFacilitiesSnapshotT } from "@/lib/station-facilities";
 
 const KST = "Asia/Seoul";
 
@@ -60,7 +63,9 @@ type FlightField = {
 
 const STEPS: MessageKey[] = ["nav.step1", "nav.step2", "nav.step3", "nav.step4"];
 
-export default function PlannerWizard() {
+export default function PlannerWizard({ stationFacilities }: {
+  stationFacilities: StationFacilitiesSnapshotT;
+}) {
   const [locale, setLocale] = useState<Locale>("ko");
   const [step, setStep] = useState(1);
   const tr = useCallback((key: MessageKey) => t(locale, key), [locale]);
@@ -250,6 +255,10 @@ export default function PlannerWizard() {
   };
 
 
+  // PR #59 리뷰 1 — 엔진은 분 값만 내리고 라벨은 locale로 조합한다 (REQ-ITIN-006)
+  const accessLabel = (minutes: number) =>
+    `${tr("region.about")} ${minutes}${tr("region.minutes")} · ${tr("itinerary.estimateLabel")}`;
+
   const stationName = (id: string) =>
     candidateData?.stations.find((s) => s.id === id)?.name[locale] ?? id;
   const placeName = (id: string) =>
@@ -342,7 +351,10 @@ export default function PlannerWizard() {
                     <span className={field.source === "live" ? "rounded bg-teal-50 px-1.5 py-0.5 text-teal-700" : "rounded bg-amber-50 px-1.5 py-0.5 text-amber-800"}>
                       {tr(field.source === "live" ? "step1.sourceLive" : "step1.sourceSnapshot")}
                     </span>
-                    {field.status && <span className="ml-1 text-gray-500">{field.status}</span>}
+                    {/* PR #59 리뷰 1 — remark 원문 대신 매핑 문구, 매핑 불가는 영어에서 숨김 */}
+                    {formatFlightStatus(locale, field.status) && (
+                      <span className="ml-1 text-gray-500">{formatFlightStatus(locale, field.status)}</span>
+                    )}
                   </p>
                 )}
                 <label className="mt-3 block text-xs text-gray-500">{tr("step1.scheduledAt")}</label>
@@ -561,7 +573,7 @@ export default function PlannerWizard() {
                       {day.items.map((item) => (
                         <li key={item.placeId} className="text-gray-700">
                           📍 {placeName(item.placeId)}
-                          <span className="ml-2 text-xs text-gray-500">{item.accessMinutesLabel}</span>
+                          <span className="ml-2 text-xs text-gray-500">{accessLabel(item.accessMinutes)}</span>
                         </li>
                       ))}
                     </ul>
@@ -618,6 +630,17 @@ export default function PlannerWizard() {
                   </ul>
                 </div>
               )}
+              {/* #24 A5 — 실행 지원: 일정에 등장하는 역만, 스냅샷 수록분만 안내 */}
+              <ExecutionSupport
+                snapshot={stationFacilities}
+                stationIds={[...new Set(displayedDays.flatMap((day) => [
+                  ...day.rides.flatMap((ride) => [ride.fromStationId, ride.toStationId]),
+                  ...day.regionWindows.map((window) => window.stationId),
+                ]))]}
+                rides={displayedDays.flatMap((day) => day.rides)}
+                stationName={stationName}
+                tr={tr}
+              />
             </div>
           )}
 
@@ -702,7 +725,13 @@ function PlaceCard({ candidate, locale, tr, selected, onToggle, stationName, wor
     oh.type === "always_open" ? tr("step3.alwaysOpen")
     : oh.type === "hours" ? `${oh.open}–${oh.close}`
     : null; // 미확인은 텍스트 대신 경고 배지 (#43)
-  const source = oh.type !== "unverified" ? `${oh.source} · ${oh.verifiedAt} ${tr("step3.verifiedAt")}` : null;
+  // PR #59 리뷰 1 — 시드의 출처 설명은 한국어 원문이라 영어 모드에서는 번역 가능한
+  // 라벨·확인일만 표시한다. 출처 ko/en 구조화는 #4 다국어 범위에서 후속 결정.
+  const source = oh.type !== "unverified"
+    ? locale === "ko"
+      ? `${oh.source} · ${oh.verifiedAt} ${tr("step3.verifiedAt")}`
+      : `${tr("step3.officialSource")} · ${tr("step3.verifiedAt")} ${oh.verifiedAt}`
+    : null;
 
   return (
     <li className={`rounded-lg border p-3 ${selected ? "border-blue-400 bg-blue-50/40" : ""}`}>
