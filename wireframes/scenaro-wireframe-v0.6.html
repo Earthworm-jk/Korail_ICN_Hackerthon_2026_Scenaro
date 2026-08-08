@@ -325,6 +325,15 @@
     }
     #scenaro-wireframe .sc-place-copy strong { display: block; font-weight: 500; margin-bottom: 4px; }
     #scenaro-wireframe .sc-place-copy span { display: block; color: var(--sc-muted); font-size: 12px; margin-top: 2px; }
+    #scenaro-wireframe .sc-warning-badge {
+      display: inline-block !important;
+      width: fit-content;
+      padding: 3px 7px;
+      border-radius: 999px;
+      background: var(--sc-orange-soft);
+      color: var(--sc-orange) !important;
+      font-weight: 500;
+    }
     #scenaro-wireframe .sc-required {
       min-height: 40px;
       padding: 8px 10px;
@@ -547,6 +556,18 @@
     #scenaro-wireframe .sc-rejected.is-open { display: block; }
     #scenaro-wireframe .sc-rejected strong { font-weight: 500; }
     #scenaro-wireframe .sc-rejected span { display: block; margin-top: 5px; color: var(--sc-muted); font-size: 12px; }
+    #scenaro-wireframe .sc-itinerary-warning {
+      display: none;
+      margin-top: 14px;
+      padding: 12px;
+      border: 1px solid color-mix(in srgb, var(--sc-orange) 38%, var(--sc-line));
+      border-radius: 10px;
+      background: var(--sc-orange-soft);
+      color: var(--sc-orange);
+    }
+    #scenaro-wireframe .sc-itinerary-warning.is-open { display: block; }
+    #scenaro-wireframe .sc-itinerary-warning strong { font-weight: 500; }
+    #scenaro-wireframe .sc-itinerary-warning span { display: block; margin-top: 5px; font-size: 12px; }
     #scenaro-wireframe .sc-help-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 14px; }
     #scenaro-wireframe .sc-state-banner {
       display: none;
@@ -804,8 +825,8 @@
               </div>
               <div class="sc-place">
                 <div class="sc-place-thumb" aria-hidden="true">松</div>
-                <div class="sc-place-copy"><strong>주문진 해안도로</strong><span>도깨비 · 연결역: 강릉역 · 접근 약 45분(추정)</span><span>상시 개방 · 한국관광공사 · 2026.07.18 확인</span></div>
-                <button type="button" class="sc-required" data-place="주문진 해안도로" data-map-marker="jumunjin" aria-pressed="false">선택</button>
+                <div class="sc-place-copy"><strong>주문진 해안도로</strong><span>도깨비 · 연결역: 강릉역 · 접근 약 45분(추정)</span><span class="sc-warning-badge" id="candidate-hours-warning">⚠️ 운영시간 확인 필요 — 경고와 함께 배치됩니다</span></div>
+                <button type="button" class="sc-required" data-place="주문진 해안도로" data-map-marker="jumunjin" aria-pressed="true">✓ 선택됨</button>
               </div>
               <div class="sc-place">
                 <div class="sc-place-thumb" aria-hidden="true">塔</div>
@@ -850,7 +871,7 @@
               </div>
               <div class="sc-day">
                 <div class="sc-day-title"><strong>DAY 2 · 10월 2일</strong><span class="sc-mode">강릉 체류</span></div>
-                <div class="sc-region-block" style="margin-left:0"><strong>강릉역 권역에서 선택 장소 방문</strong><span>경포대 해변 · 도깨비 · 상시 개방 · 한국관광공사 · 2026.07.20 확인</span><span>주문진 해안도로 · 도깨비 · 상시 개방 · 한국관광공사 · 2026.07.18 확인</span></div>
+                <div class="sc-region-block" style="margin-left:0"><strong>강릉역 권역에서 선택 장소 방문</strong><span>경포대 해변 · 도깨비 · 상시 개방 · 한국관광공사 · 2026.07.20 확인</span><span id="result-hours-warning">주문진 해안도로 · 도깨비 · ⚠️ 운영시간 확인 필요</span></div>
               </div>
               <div class="sc-day">
                 <div class="sc-day-title"><strong>DAY 3 · 10월 3일</strong><span class="sc-mode">강릉 → 서울</span></div>
@@ -886,7 +907,8 @@
               <div class="sc-map-heading"><h3>전체 이동 동선</h3><div class="sc-map-heading-actions"><span class="sc-mode">대한민국 지도</span><button type="button" class="sc-map-filter" id="experience-map-toggle" data-experience-map-toggle aria-pressed="false" data-copy-ko-off="테마체험 보기" data-copy-ko-on="테마체험 숨기기" data-copy-en-off="Show experience" data-copy-en-on="Hide experience">테마체험 보기</button></div></div>
               <svg class="sc-korea-map" data-map-kind="route" viewBox="0 0 360 430" role="img" aria-label="인천공항에서 서울과 강릉을 거쳐 다시 인천공항으로 돌아오는 동선"><title>전체 이동 동선</title><desc>Natural Earth 한반도 경계 위에 공항, 철도역과 촬영지 이동 동선을 표시한 지도</desc><path class="sc-map-land sc-map-land-north" d="M287.905,51.803L292.751,59.995L279.598,57.19L264.572,72.991L254.236,88.784L255.545,121.851L237.646,131.954L231.494,139.992L218.443,153.415L195.39,160.858L180.368,172.974L179.284,192.407L175.245,197.346L189.019,204.601L208.624,224.093L203.641,234.789L188.904,237.696L164.44,239.831L150.954,259.666L135.502,258.106L133.336,262.079L116.525,253.736L112.348,261.973L102.201,265.606L100.981,257.367L92.014,253.349L82.707,246.338L92.186,226.917L100.353,221.717L97.27,213.607L106.053,189.54L103.786,182.212L83.583,177.316L67.249,165.236L95.438,136.148L133.588,111.554L157.371,78.793L173.803,93.315L203.734,94.996L198.326,70.527L251.789,50.399L265.552,24Z"></path><path class="sc-map-land sc-map-land-south" d="M133.336,262.079L135.502,258.106L150.954,259.666L164.44,239.831L188.904,237.696L203.641,234.789L208.624,224.093L238.505,275.94L247.073,304.076L247.345,353.502L234.298,376.832L202.952,384.949L175.282,402.406L144.101,406L140.23,383.084L146.645,351.27L131.35,306.612L157.061,299.33Z"></path><path class="sc-map-route" d="M142.58,274.59C142.58,274.59,152.524,272.139,160.95,270.68C175.918,268.088,227.65,261.43,227.65,261.43C227.65,261.43,175.918,268.088,160.95,270.68C152.524,272.139,142.58,274.59,142.58,274.59"></path><circle class="sc-map-experience-zone" cx="160.95" cy="270.68" r="19"></circle><text class="sc-map-experience-label" id="experience-map-zone-label" x="178" y="304">궁궐·한옥 문화 권역</text><circle class="sc-map-point sc-map-point-airport" cx="142.58" cy="274.59" r="7"></circle><text x="132" y="292" text-anchor="end">인천공항</text><circle class="sc-map-point sc-map-point-station" cx="160.95" cy="270.68" r="7"></circle><text x="160" y="250" text-anchor="middle">서울역</text><circle class="sc-map-point sc-map-point-station" cx="227.65" cy="261.43" r="7"></circle><text x="245" y="282">강릉역</text><circle class="sc-map-point sc-map-point-place" cx="227.92" cy="260.09" r="6"></circle><text x="252" y="252">촬영지</text></svg>
               <div class="sc-map-legend"><span><i class="sc-map-swatch is-airport"></i>공항</span><span><i class="sc-map-swatch"></i>철도역</span><span><i class="sc-map-swatch is-place"></i>촬영지</span><span><i class="sc-map-swatch is-experience"></i><span id="experience-map-legend-label">테마체험 권역</span></span></div>
-              <div class="sc-validation" id="validation-copy">현재 선택한 모든 이동편은 운영시간·선택 장소·공항 복귀 조건을 통과했습니다.</div>
+              <div class="sc-validation" id="validation-copy">현재 선택한 이동편은 열차·선택 장소·공항 복귀 조건을 통과했습니다. 운영시간 미확인 장소는 경고로 표시합니다.</div>
+              <div class="sc-itinerary-warning" id="itinerary-warnings" role="status" aria-live="polite"><strong id="itinerary-warnings-title">방문 전 확인이 필요한 배치</strong><span id="itinerary-warnings-copy">⚠️ 주문진 해안도로 — 운영시간이 확인되지 않았습니다. 방문 전에 확인해주세요.</span></div>
               <div class="sc-rejected" id="rejected-places"><strong>이번 일정에 포함되지 않은 장소</strong><span id="rejected-places-copy"></span></div>
               <div class="sc-help-actions"><button type="button" class="sc-button" data-help-topic="transfer">환승 워크스루</button><button type="button" class="sc-button" data-help-topic="luggage">짐 보관 안내</button></div>
               <div class="sc-map-source">대한민국 경계: Natural Earth · 위치: OpenStreetMap 및 검증 시드</div>
@@ -1404,13 +1426,21 @@
         if (event.target === backdrop) backdrop.classList.remove('is-open');
       }));
 
-      const updateRejectedPlaces = () => {
+      const updateItineraryNotices = () => {
         const selected = [...root.querySelectorAll('.sc-required[aria-pressed="true"]')].map((button) => button.dataset.place);
+        const english = root.querySelector('#language-select').value === 'en';
+        const warningPanel = root.querySelector('#itinerary-warnings');
+        const hasUnverifiedVisit = selected.includes('주문진 해안도로');
+        warningPanel.classList.toggle('is-open', hasUnverifiedVisit);
+        root.querySelector('#itinerary-warnings-title').textContent = english ? 'Placements to check before visiting' : '방문 전 확인이 필요한 배치';
+        root.querySelector('#itinerary-warnings-copy').textContent = english
+          ? '⚠️ Jumunjin Coastal Road — Opening hours are unverified. Check before visiting.'
+          : '⚠️ 주문진 해안도로 — 운영시간이 확인되지 않았습니다. 방문 전에 확인해주세요.';
         const rejected = selected.slice(3);
         const panel = root.querySelector('#rejected-places');
         panel.classList.toggle('is-open', rejected.length > 0);
         root.querySelector('#rejected-places-copy').textContent = rejected.length
-          ? `${rejected.join(', ')} · 현재 열차 시간표와 운영시간 안에 배치할 수 없어 제외했습니다.`
+          ? `${rejected.join(', ')} · 현재 열차 시간표와 출국 마감 안에 배치할 수 없어 포함하지 않았습니다.`
           : '';
       };
       root.querySelector('#generate-itinerary').addEventListener('click', () => {
@@ -1422,7 +1452,7 @@
         setTimeout(() => {
           button.disabled = false;
           loading.classList.remove('is-open');
-          updateRejectedPlaces();
+          updateItineraryNotices();
           showScreen(4);
         }, 650);
       });
@@ -1539,6 +1569,9 @@
         ['[data-screen="4"] .sc-screen-heading h2', '추천 일정', 'Recommended itinerary'],
         ['#generate-itinerary', '일정 만들기', 'Build itinerary'],
         ['#save-itinerary', '일정 저장', 'Save itinerary'],
+        ['#candidate-hours-warning', '⚠️ 운영시간 확인 필요 — 경고와 함께 배치됩니다', '⚠️ Hours unverified — placed with a warning'],
+        ['#result-hours-warning', '주문진 해안도로 · 도깨비 · ⚠️ 운영시간 확인 필요', 'Jumunjin Coastal Road · Guardian · ⚠️ Hours unverified'],
+        ['#validation-copy', '현재 선택한 이동편은 열차·선택 장소·공항 복귀 조건을 통과했습니다. 운영시간 미확인 장소는 경고로 표시합니다.', 'The selected transport passes rail, place, and airport-return checks. Unverified hours are shown as warnings.'],
         ['#theme-experience-title', '한복·전통문화 체험', 'Hanbok & traditional culture'],
         ['#theme-experience-zone', '서울 궁궐·한옥 문화 권역', 'Seoul palace & hanok culture zone'],
         ['#theme-experience-badge', 'AI 연계 추천', 'AI-matched suggestion'],
