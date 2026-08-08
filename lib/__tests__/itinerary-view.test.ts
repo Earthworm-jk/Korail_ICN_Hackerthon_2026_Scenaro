@@ -3,6 +3,7 @@ import {
   banner,
   displayedDays,
   initialItineraryView,
+  itineraryWarnings,
   reduceItineraryView,
   rejectedPlaces,
   showEmpty,
@@ -23,15 +24,15 @@ const dayA = { date: "2026-08-12", rides: [], items: [] };
 const dayB = { date: "2026-08-13", rides: [], items: [] };
 
 const plannedA: ItineraryResult = {
-  status: "planned", days: [dayA], rejectedPlaces: [],
+  status: "planned", days: [dayA], rejectedPlaces: [], warnings: [],
   comparisonKeys: {
     relevanceKey: { selectedWorkPlaceCount: 1, actorOtherWorkPlaceCount: 0 },
-    visitablePlaceCount: 1, totalRailMinutes: 100, transferCount: 0, slackSatisfied: true,
+    visitablePlaceCount: 1, activityWarningCount: 0, totalRailMinutes: 100, transferCount: 0, slackSatisfied: true,
   },
   metrics: { totalTravelMinutes: 150, totalRailMinutes: 100, transferCount: 0, departureSlackMinutes: 180 },
 };
 const plannedB: ItineraryResult = { ...plannedA, days: [dayB] };
-const empty: ItineraryResult = { status: "empty", days: [], rejectedPlaces: [{ code: "TRAIN_UNAVAILABLE", placeId: "p1" }] };
+const empty: ItineraryResult = { status: "empty", days: [], rejectedPlaces: [{ code: "TRAIN_UNAVAILABLE", placeId: "p1" }], warnings: [] };
 
 const constraintsA = constraintsFromTripInputs(
   { arrivalAt: "2026-08-12T10:00", departureAt: "2026-08-14T18:00", airportReadyAt: "2026-08-12T12:00", airportArrivalDeadline: "2026-08-14T16:00" },
@@ -58,6 +59,21 @@ describe("constraints 왕복 (재열람 복원 경로)", () => {
       constraintsA.excludedPlaceIds,
     );
     expect(rebuilt).toEqual(constraintsA);
+  });
+});
+
+describe("경고 보존 (#43 경고 누락 0건 — PR #44 리뷰 2)", () => {
+  const warning = { code: "ACTIVITY_WINDOW_MISMATCH" as const, placeId: "p-warned", detail: "UNVERIFIED_HOURS" as const };
+
+  it("경고 있는 일정을 저장하고 재열람해도 경고가 유지된다", () => {
+    const recordWithWarnings: SavedItineraryStub = { ...recordA, warnings: [warning] };
+    const reopened = reduceItineraryView(initialItineraryView, { type: "REOPEN", record: recordWithWarnings });
+    expect(itineraryWarnings(reopened)).toEqual([warning]);
+  });
+
+  it("경고 필드가 없는 기존 레코드는 빈 배열로 취급한다 — 호환", () => {
+    const reopened = reduceItineraryView(initialItineraryView, { type: "REOPEN", record: recordA });
+    expect(itineraryWarnings(reopened)).toEqual([]);
   });
 });
 

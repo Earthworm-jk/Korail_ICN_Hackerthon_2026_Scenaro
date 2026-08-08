@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { getCandidatePlaces } from "../actions/places";
 import { planItinerary, type PlanRequest } from "../actions/itinerary";
-import { excludedPlaceIdsFrom, selectableCandidateIds } from "../candidates";
+import { excludedPlaceIdsFrom, initialCandidateIds } from "../candidates";
 
 // PR #30 리뷰 재리뷰 조건: 후보 합집합·미확인 제외·잘못된 시각 요청의 액션 단위 테스트
 
@@ -51,19 +51,15 @@ describe("후보 합집합·중복 제거 (#14 복수 선택)", () => {
   });
 });
 
-describe("미확인 후보 제외 (#14·PR #30 리뷰 ①)", () => {
+describe("미확인 후보 선택 가능 (#43 — 표시 전용 계약 개정)", () => {
   const candidates = [verified("p-1"), unverified("p-2"), verified("p-3")];
 
-  it("초기 선택은 검증 후보만 포함한다", () => {
-    expect(selectableCandidateIds(candidates)).toEqual(["p-1", "p-3"]);
+  it("초기 선택은 미확인을 포함한 전체 후보다", () => {
+    expect(initialCandidateIds(candidates)).toEqual(["p-1", "p-2", "p-3"]);
   });
 
-  it("전부 미확인이면 선택 가능 후보가 없다 — 생성 CTA 비활성 근거", () => {
-    expect(selectableCandidateIds([unverified("p-1"), unverified("p-2")])).toEqual([]);
-  });
-
-  it("미확인 후보는 일정 요청의 excludedPlaceIds로 들어간다", () => {
-    const selected = new Set(selectableCandidateIds(candidates));
+  it("선택 해제한 후보만 일정 요청의 excludedPlaceIds로 들어간다", () => {
+    const selected = new Set(["p-1", "p-3"]);
     expect(excludedPlaceIdsFrom(candidates, selected)).toEqual(["p-2"]);
   });
 });

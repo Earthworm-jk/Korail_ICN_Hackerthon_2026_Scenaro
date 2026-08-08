@@ -30,9 +30,14 @@ const planned: ItineraryResult = {
     },
   ],
   rejectedPlaces: [],
+  // #43: 경고는 제외가 아니라 배치 유지 + 방문 전 확인 안내
+  warnings: [
+    { code: "ACTIVITY_WINDOW_MISMATCH", placeId: "place-yeongjin-beach", detail: "CONSERVATIVE_BUFFER_MISMATCH" },
+  ],
   comparisonKeys: {
     relevanceKey: { selectedWorkPlaceCount: 1, actorOtherWorkPlaceCount: 0 },
     visitablePlaceCount: 1,
+    activityWarningCount: 1,
     totalRailMinutes: 118,
     transferCount: 0,
     slackSatisfied: true,
@@ -43,9 +48,11 @@ const planned: ItineraryResult = {
 const empty: ItineraryResult = {
   status: "empty",
   days: [],
+  // #43: 운영시간 사유는 rejectedPlaces에 올 수 없다 — 열차·출국 마감뿐
   rejectedPlaces: [
-    { code: "ACTIVITY_WINDOW_MISMATCH", placeId: "place-woljeongsa-temple", detail: "UNVERIFIED_HOURS" },
+    { code: "TRAIN_UNAVAILABLE", placeId: "place-woljeongsa-temple" },
   ],
+  warnings: [],
 };
 
 describe("ItineraryResult 2분기 판별 (#14 ver.0.4 — 사용자 제약 실패 분기 소멸)", () => {
