@@ -10,7 +10,9 @@ import type { ItineraryResult, TripConstraints } from "./types";
 import { planItinerary } from "./planner";
 import { z } from "zod";
 
-const TripConstraintsSchema = z.object({
+// PR #30 리뷰 ③: Server Action 경계가 같은 계약을 safeParse해 잘못된 요청을
+// throw 없이 INVALID_REQUEST로 반환할 수 있도록 내보낸다
+export const TripConstraintsSchema = z.object({
   arrivalAt: z.iso.datetime({ offset: true }),
   departureAt: z.iso.datetime({ offset: true }),
   airportExitOffsetMin: z.number().int().nonnegative(),
