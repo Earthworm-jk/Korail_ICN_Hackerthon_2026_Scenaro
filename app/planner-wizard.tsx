@@ -13,6 +13,7 @@ import {
   type PlaceCandidate,
 } from "@/lib/actions/places";
 import { planItinerary } from "@/lib/actions/itinerary";
+import { excludedPlaceIdsFrom, selectableCandidateIds } from "@/lib/candidates";
 import { getFlightInfo } from "@/lib/actions/flights";
 import type { ItineraryResult } from "@/lib/engine/types";
 import { t, type Locale, type MessageKey } from "@/lib/i18n/messages";
@@ -34,11 +35,6 @@ function toLocalInput(iso: string): string {
 
 function fromLocalInput(value: string): string {
   return `${value}:00+09:00`;
-}
-
-function stayHours(arriveAt: string, departAt: string): string {
-  const hours = (Date.parse(departAt) - Date.parse(arriveAt)) / 3_600_000;
-  return (Math.round(hours * 10) / 10).toString();
 }
 
 type FlightField = {
@@ -75,6 +71,8 @@ export default function PlannerWizard() {
   // step 4 — 결과
   const [result, setResult] = useState<ItineraryResult | null>(null);
   const [planning, setPlanning] = useState(false);
+  // PR #30 리뷰 ③: 입력 오류(invalid)와 예상 밖 장애(unexpected)를 구분하고, 실패 시 기존 결과를 유지한다
+  const [planError, setPlanError] = useState<"invalid" | "unexpected" | null>(null);
 
   const lookup = useCallback(async (direction: "arrival" | "departure") => {
     const field = direction === "arrival" ? arrival : departure;
@@ -101,27 +99,30 @@ export default function PlannerWizard() {
       selectedWorkIds: selectedWorks.map((w) => w.id),
     });
     setCandidateData(data);
-    setSelectedPlaceIds(new Set(data.candidates.map((c) => c.id)));
+    // #14·PR #30 리뷰 ①: 미확인 후보는 표시 전용 — 초기 선택은 검증 후보만
+    setSelectedPlaceIds(new Set(selectableCandidateIds(data.candidates)));
     setStep(3);
   }, [selectedActors, selectedWorks]);
 
   const plan = useCallback(async () => {
     if (!candidateData) return;
     setPlanning(true);
+    setPlanError(null);
     setStep(4);
-    const excludedPlaceIds = candidateData.candidates
-      .filter((c) => !selectedPlaceIds.has(c.id))
-      .map((c) => c.id);
     try {
-      setResult(await planItinerary({
+      const res = await planItinerary({
         arrivalAt: fromLocalInput(arrival.at),
         departureAt: fromLocalInput(departure.at),
         airportExitOffsetMin: exitOffset,
         departureBufferMinutes: departureBuffer,
         selectedActorIds: selectedActors.map((a) => a.id),
         selectedWorkIds: selectedWorks.map((w) => w.id),
-        excludedPlaceIds,
-      }));
+        excludedPlaceIds: excludedPlaceIdsFrom(candidateData.candidates, selectedPlaceIds),
+      });
+      if (res.ok) setResult(res.result);
+      else setPlanError("invalid"); // 1단계 검증을 우회한 요청 — 기존 결과 유지
+    } catch {
+      setPlanError("unexpected"); // 네트워크·서버 장애 — 기존 결과 유지
     } finally {
       setPlanning(false);
     }
@@ -153,6 +154,14 @@ export default function PlannerWizard() {
   const toggleChip = <T extends { id: string }>(list: T[], set: (v: T[]) => void, item: T) => {
     set(list.some((x) => x.id === item.id) ? list.filter((x) => x.id !== item.id) : [...list, item]);
   };
+
+  // PR #30 리뷰 ③: 필수값·입출국 순서는 1단계에서 막는다 (와이어프레임 계약)
+  const step1Error: MessageKey | null =
+    !arrival.at || !departure.at
+      ? "step1.errRequired"
+      : Date.parse(fromLocalInput(departure.at)) <= Date.parse(fromLocalInput(arrival.at))
+        ? "step1.errOrder"
+        : null;
 
   return (
     <div className="mx-auto max-w-3xl p-6">
@@ -257,8 +266,13 @@ export default function PlannerWizard() {
               </div>
             </div>
           </div>
-          <div className="mt-4 flex justify-end">
-            <button className="rounded bg-blue-600 px-4 py-2 text-sm text-white" onClick={() => setStep(2)}>
+          <div className="mt-4 flex items-center justify-end gap-3">
+            {step1Error && <p className="text-sm text-red-600">{tr(step1Error)}</p>}
+            <button
+              className="rounded bg-blue-600 px-4 py-2 text-sm text-white disabled:opacity-40"
+              disabled={step1Error !== null}
+              onClick={() => setStep(2)}
+            >
               {tr("common.next")}: {tr("nav.step2")}
             </button>
           </div>
@@ -381,14 +395,10 @@ export default function PlannerWizard() {
               <p className="text-xs text-gray-400">{tr("step3.needsCheckDesc")}</p>
               <ul className="mt-2 space-y-2">
                 {unverifiedCandidates.map((c) => (
+                  // #14·PR #30 리뷰 ①: 참고 표시 전용 — 선택 조작 없음
                   <PlaceCard key={c.id} candidate={c} locale={locale} tr={tr}
-                    selected={selectedPlaceIds.has(c.id)}
+                    selected={false}
                     stationName={stationName} workTitles={workTitles}
-                    onToggle={() => {
-                      const next = new Set(selectedPlaceIds);
-                      if (next.has(c.id)) next.delete(c.id); else next.add(c.id);
-                      setSelectedPlaceIds(next);
-                    }}
                   />
                 ))}
               </ul>
@@ -414,6 +424,12 @@ export default function PlannerWizard() {
 
           {planning && <p className="mt-6 text-center text-sm text-gray-500">{tr("step4.generating")}</p>}
 
+          {!planning && planError && (
+            <div className="mt-4 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+              {tr(planError === "invalid" ? "step4.errInvalid" : "step4.errUnexpected")}
+            </div>
+          )}
+
           {!planning && result && result.ok && result.status === "planned" && (
             <div className="mt-4 space-y-4">
               {result.days.map((day) => (
@@ -426,12 +442,11 @@ export default function PlannerWizard() {
                         <span className="ml-2 text-xs text-gray-400">{tr("step4.train")} {ride.trainNo}</span>
                       </li>
                     ))}
+                    {/* #14: 장소 단위 시각 미표기 — 역 단위 활용시간은 엔진 출력 계약 추가 후 표시 (#33) */}
                     {day.items.map((item) => (
                       <li key={item.placeId} className="text-gray-700">
                         📍 {placeName(item.placeId)}
-                        <span className="ml-2 text-xs text-gray-500">
-                          {tr("step4.stayAbout")} {stayHours(item.arriveAt, item.departAt)}{tr("step4.stayHours")} · {item.accessMinutesLabel}
-                        </span>
+                        <span className="ml-2 text-xs text-gray-500">{item.accessMinutesLabel}</span>
                       </li>
                     ))}
                   </ul>
@@ -496,7 +511,7 @@ function PlaceCard({ candidate, locale, tr, selected, onToggle, stationName, wor
   locale: Locale;
   tr: (key: MessageKey) => string;
   selected: boolean;
-  onToggle: () => void;
+  onToggle?: () => void; // 없으면 표시 전용 카드 (#14·PR #30 리뷰 ①)
   stationName: (id: string) => string;
   workTitles: (ids: string[]) => string;
 }) {
@@ -524,12 +539,18 @@ function PlaceCard({ candidate, locale, tr, selected, onToggle, stationName, wor
             {hoursLabel}{source ? ` · ${source}` : ""}
           </p>
         </div>
-        <button
-          className={`shrink-0 rounded px-3 py-1 text-sm ${selected ? "bg-blue-600 text-white" : "border"}`}
-          onClick={onToggle}
-        >
-          {selected ? "✓" : "+"}
-        </button>
+        {onToggle ? (
+          <button
+            className={`shrink-0 rounded px-3 py-1 text-sm ${selected ? "bg-blue-600 text-white" : "border"}`}
+            onClick={onToggle}
+          >
+            {selected ? "✓" : "+"}
+          </button>
+        ) : (
+          <span className="shrink-0 rounded bg-gray-100 px-3 py-1 text-xs text-gray-500">
+            {tr("step3.viewOnly")}
+          </span>
+        )}
       </div>
     </li>
   );
