@@ -4,14 +4,58 @@
  * 교체할 때 UI 변경이 없게 한다. 세션이 끝나면 사라지는 것이 정상이며 UI는 스텁 배지를 단다.
  */
 import type { DayPlan } from "./engine/types";
+import type { PlanRequest } from "./actions/itinerary";
+import type { ActorSummary, WorkSummary } from "./actions/search";
+import { fromKstLocalInput, toKstLocalInput } from "./kst-datetime";
+
+export const SAVED_SCHEMA_VERSION = 1;
 
 export type SavedItineraryStub = {
   id: string;
   title: string; // 앱이 기본 제목 자동 생성 (#25 §6)
   savedAt: string; // ISO
-  days: DayPlan[];
+  days: DayPlan[]; // 저장 시점 표시용 스냅샷 (#25 §6 itinerary JSON)
+  /** 저장 당시 전체 재계산 입력 — 재열람 후 재계산은 반드시 이 값을 복원해 사용한다 (PR #35 리뷰 3) */
+  constraints: PlanRequest;
+  schemaVersion: number;
   snapshotVersion: string; // 열차·항공 스냅샷 기준 — 재열람 시 버전 불일치 안내 근거
+  /** 재열람 시 검색 선택 칩·후보 재조회 복원용 요약 */
+  context: { actors: ActorSummary[]; works: WorkSummary[] };
 };
+
+/** 여행 조건 입력 필드(1단계 화면 상태) ↔ constraints 왕복 변환 — 재열람 복원의 단일 경로 */
+export type TripInputFields = {
+  arrivalAt: string; // datetime-local (KST)
+  departureAt: string;
+  exitOffsetMin: number;
+  departureBufferMinutes: number;
+};
+
+export function tripInputsFromConstraints(constraints: PlanRequest): TripInputFields {
+  return {
+    arrivalAt: toKstLocalInput(constraints.arrivalAt),
+    departureAt: toKstLocalInput(constraints.departureAt),
+    exitOffsetMin: constraints.airportExitOffsetMin,
+    departureBufferMinutes: constraints.departureBufferMinutes,
+  };
+}
+
+export function constraintsFromTripInputs(
+  inputs: TripInputFields,
+  selectedActorIds: string[],
+  selectedWorkIds: string[],
+  excludedPlaceIds: string[],
+): PlanRequest {
+  return {
+    arrivalAt: fromKstLocalInput(inputs.arrivalAt),
+    departureAt: fromKstLocalInput(inputs.departureAt),
+    airportExitOffsetMin: inputs.exitOffsetMin,
+    departureBufferMinutes: inputs.departureBufferMinutes,
+    selectedActorIds,
+    selectedWorkIds,
+    excludedPlaceIds,
+  };
+}
 
 const KST = "Asia/Seoul";
 
