@@ -186,10 +186,22 @@ function validate(
   // #51 — 관계 파일은 작품·장소 양쪽 구조 통과 시에만 참조 검사 (연쇄 노이즈 스킵 규칙 동일)
   if (!failed.has("workPlaceRelations")) {
     const workIds = failed.has("works") ? null : idsOf("works");
+    const actorIds = failed.has("actors") ? null : idsOf("actors");
     const placeById = failed.has("places")
       ? null
       : new Map(parsed.places!.map((place) => [place.id, place]));
     parsed.workPlaceRelations!.forEach((relation, index) => {
+      // #51 장면 배우 — 검증된 배우만 참조해야 한다 (featuredActorIds → actors)
+      if (actorIds && relation.featuredActorIds) {
+        for (const actorId of relation.featuredActorIds) {
+          if (!actorIds.has(actorId)) {
+            issues.push(formatIssue(
+              "workPlaceRelations", relation, index, "featuredActorIds",
+              `존재하지 않는 배우 참조: ${actorId}`,
+            ));
+          }
+        }
+      }
       const workExists = workIds?.has(relation.workId) ?? false;
       if (workIds && !workExists) {
         issues.push(formatIssue("workPlaceRelations", relation, index, "workId", `존재하지 않는 작품 참조: ${relation.workId}`));

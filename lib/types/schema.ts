@@ -129,15 +129,45 @@ export const Place = z.object({
 
 // #51 확정: 회차·장면·출처는 장소가 아니라 작품–장소 관계에 속한다. 장소는 복제하지 않고
 // 같은 placeId에 작품별 관계를 각각 연결한다. 회차 근거가 없으면 episodeLabel을 생략한다.
-export const WorkPlaceRelation = z.object({
-  workId: NonEmptyId,
-  placeId: NonEmptyId,
-  episodeLabel: z.string().min(1).optional(), // "1화"·"1–2화"·특별편 — 문자열, 영화는 생략
-  sceneNote: LocalizedText.optional(),
-  sourceUrls: z.array(HttpUrl).min(1), // 사람 검증 출처 필수 — http/https 형식 검사 (#51, PR #52 리뷰)
-  verifiedAt: IsoDate,
-  reviewed: z.boolean(),
-});
+//
+// 장면 출연 배우 3상태 (#51 합의 — 회차 출연 ≠ 장면 출연):
+//   ⓐ featuredActorIds: [...] + actorPresenceReviewed: true — 등장 배우가 검토로 확정
+//   ⓑ featuredActorIds: []  + actorPresenceReviewed: true — 시드 배우 미등장이 검토로 확정
+//   ⓒ 두 필드 모두 생략 — 미검토(모름). "없음-확정"(ⓑ)과 "모름"(ⓒ)을 섞지 않는다.
+// reviewed(작품–장소 관계 검토)를 배우 등장 확인으로 확대 해석하지 않는다.
+export const WorkPlaceRelation = z
+  .object({
+    workId: NonEmptyId,
+    placeId: NonEmptyId,
+    episodeLabel: z.string().min(1).optional(), // "1화"·"1–2화"·특별편 — 문자열, 영화는 생략
+    sceneNote: LocalizedText.optional(),
+    featuredActorIds: z.array(NonEmptyId).optional(), // 장면 등장이 검증된 배우만 (추측 금지)
+    actorPresenceReviewed: z.boolean().optional(),
+    sourceUrls: z.array(HttpUrl).min(1), // 사람 검증 출처 필수 — http/https 형식 검사 (#51, PR #52 리뷰)
+    verifiedAt: IsoDate,
+    reviewed: z.boolean(),
+  })
+  .superRefine((relation, ctx) => {
+    const reviewed = relation.actorPresenceReviewed === true;
+    if (reviewed !== (relation.featuredActorIds !== undefined)) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["featuredActorIds"],
+        message:
+          "장면 배우 3상태 위반: featuredActorIds는 actorPresenceReviewed:true와 함께만 존재해야 합니다 (ⓐ/ⓑ/ⓒ)",
+      });
+    }
+    if (relation.featuredActorIds) {
+      const unique = new Set(relation.featuredActorIds);
+      if (unique.size !== relation.featuredActorIds.length) {
+        ctx.addIssue({
+          code: "custom",
+          path: ["featuredActorIds"],
+          message: "featuredActorIds에 중복 배우가 있습니다",
+        });
+      }
+    }
+  });
 
 // 권역은 역에만 저장하고 장소는 nearestStationId로 파생한다 — 단일 진실 (이슈 #6 8일차 잔여)
 export const RegionId = z.enum(["gangwon", "seoul_metro", "honam"]);
