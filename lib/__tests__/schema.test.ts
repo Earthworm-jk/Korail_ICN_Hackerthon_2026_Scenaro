@@ -59,8 +59,11 @@ describe("시드 스키마 검증 (REQ-DATA-004)", () => {
     expect(relationKeys).toEqual(expectedKeys);
     expect(repos.workPlaceRelations).toHaveLength(13);
     expect(repos.workPlaceRelations.every(({ reviewed, sourceUrls }) => reviewed && sourceUrls.length > 0)).toBe(true);
+    expect(yeongjin?.name).toEqual({ ko: "주문진 방사제", en: "Jumunjin Breakwater" });
     expect(yeongjin?.searchAliases?.map(({ ko }) => ko)).toEqual([
+      "영진해변",
       "도깨비 방파제",
+      "주문진 방파제",
       "주문진 도깨비 방사제",
     ]);
   });

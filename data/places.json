@@ -2,8 +2,8 @@
   {
     "id": "place-yeongjin-beach",
     "name": {
-      "ko": "영진해변",
-      "en": "Yeongjin Beach"
+      "ko": "주문진 방사제",
+      "en": "Jumunjin Breakwater"
     },
     "workIds": [
       "work-goblin"
@@ -28,8 +28,16 @@
     },
     "searchAliases": [
       {
+        "ko": "영진해변",
+        "en": "Yeongjin Beach"
+      },
+      {
         "ko": "도깨비 방파제",
         "en": "Goblin Breakwater"
+      },
+      {
+        "ko": "주문진 방파제",
+        "en": "Jumunjin Breakwater"
       },
       {
         "ko": "주문진 도깨비 방사제",
