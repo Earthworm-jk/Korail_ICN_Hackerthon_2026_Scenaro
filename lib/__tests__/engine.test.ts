@@ -43,6 +43,7 @@ function repositories(): Repositories {
       leg("302", "station-gangneung", "station-seoul", "2026-08-12T17:00:00+09:00", "2026-08-12T19:00:00+09:00"),
     ],
     flights: [],
+    workPlaceRelations: [],
   };
 }
 

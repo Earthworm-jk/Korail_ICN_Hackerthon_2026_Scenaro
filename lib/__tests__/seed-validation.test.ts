@@ -36,6 +36,15 @@ type Seed = {
     arriveAt: string;
   }[];
   flights: { flightNo: string; direction: string; scheduledAt: string; terminal?: string }[];
+  workPlaceRelations: {
+    workId: string;
+    placeId: string;
+    episodeLabel?: string;
+    sceneNote?: LocalName;
+    sourceUrls: string[];
+    verifiedAt: string;
+    reviewed: boolean;
+  }[];
 };
 
 function baseSeed(): Seed {
@@ -81,6 +90,16 @@ function baseSeed(): Seed {
         direction: "arrival",
         scheduledAt: "2026-08-12T10:00:00+09:00",
         terminal: "T1",
+      },
+    ],
+    workPlaceRelations: [
+      {
+        workId: "work-1",
+        placeId: "place-1",
+        episodeLabel: "1화",
+        sourceUrls: ["https://example.com/source"],
+        verifiedAt: "2026-08-08",
+        reviewed: true,
       },
     ],
   });
@@ -252,6 +271,59 @@ describe("참조 무결성 검증 (#20)", () => {
   });
 });
 
+describe("작품–장소 관계 검증 (#51 — 스키마 선행 고정)", () => {
+  it("빈 관계 파일은 통과한다 — 값은 시드 정규화 트랙에서 채운다", () => {
+    const raw = baseSeed();
+    raw.workPlaceRelations = [];
+    expect(() => parseRepositories(raw as RawSeedFiles)).not.toThrow();
+  });
+
+  it("episodeLabel·sceneNote 생략은 정상(회차 근거 없으면 무표기), sourceUrls는 최소 1개 필수", () => {
+    const raw = baseSeed();
+    delete raw.workPlaceRelations[0].episodeLabel;
+    expect(() => parseRepositories(raw as RawSeedFiles)).not.toThrow();
+
+    raw.workPlaceRelations[0].sourceUrls = [];
+    const issues = issuesOf(raw);
+    expect(issues.some((m) => m.includes("[work-place-relations.json]") && m.includes("[sourceUrls]"))).toBe(true);
+  });
+
+  it("같은 장소·다른 작품 관계는 정상, 같은 작품·장소 중복은 실패한다", () => {
+    const raw = baseSeed();
+    raw.works.push({ id: "work-2", title: { ko: "작품2", en: "Work2" } });
+    raw.workPlaceRelations.push({ ...baseSeed().workPlaceRelations[0], workId: "work-2" });
+    expect(() => parseRepositories(raw as RawSeedFiles)).not.toThrow();
+
+    raw.workPlaceRelations.push(baseSeed().workPlaceRelations[0]);
+    const issues = issuesOf(raw);
+    expect(issues.some((m) => m.includes("[WorkPlaceRelation:work-1→place-1]") && m.includes("중복 키"))).toBe(true);
+  });
+
+  it("끊어진 작품·장소 참조는 로드 단계에서 실패한다", () => {
+    const raw = baseSeed();
+    raw.workPlaceRelations[0].workId = "work-ghost";
+    raw.workPlaceRelations.push({ ...baseSeed().workPlaceRelations[0], placeId: "place-ghost" });
+    const issues = issuesOf(raw);
+    expect(issues.some((m) => m.includes("[workId]") && m.includes("work-ghost"))).toBe(true);
+    expect(issues.some((m) => m.includes("[placeId]") && m.includes("place-ghost"))).toBe(true);
+  });
+
+  it("Place의 별칭·주소·좌표 optional 필드는 값이 있으면 검증하고 없으면 통과한다 (#51 additive)", () => {
+    const raw = baseSeed();
+    corrupt(raw.places[0], {
+      searchAliases: [{ ko: "영진해변", en: "Yeongjin Beach" }],
+      address: "강원 강릉시 주문진읍",
+      latitude: 37.9,
+      longitude: 128.8,
+    });
+    expect(() => parseRepositories(raw as RawSeedFiles)).not.toThrow();
+
+    corrupt(raw.places[0], { latitude: 123.4 });
+    const issues = issuesOf(raw);
+    expect(issues.some((m) => m.includes("[places.json]") && m.includes("latitude"))).toBe(true);
+  });
+});
+
 describe("오류 전건 일괄 보고 (#20)", () => {
   it("여러 파일의 오류가 한 번의 실패에 모두 담긴다", () => {
     const raw = baseSeed();
@@ -275,6 +347,7 @@ describe("오류 전건 일괄 보고 (#20)", () => {
       "stations.json": raw.stations,
       "train-snapshot.json": raw.trainLegs,
       "flights-snapshot.json": raw.flights,
+      "work-place-relations.json": raw.workPlaceRelations,
     };
     for (const [name, value] of Object.entries(files)) {
       writeFileSync(join(dir, name), JSON.stringify(value), "utf-8");

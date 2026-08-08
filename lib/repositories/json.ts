@@ -18,8 +18,9 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { z } from "zod";
 import {
-  Actor, Work, Place, Station, TrainLeg, Flight,
+  Actor, Work, Place, Station, TrainLeg, Flight, WorkPlaceRelation,
   type ActorT, type WorkT, type PlaceT, type StationT, type TrainLegT, type FlightT,
+  type WorkPlaceRelationT,
 } from "../types/schema";
 
 export type Repositories = {
@@ -29,6 +30,7 @@ export type Repositories = {
   stations: StationT[];
   trainLegs: TrainLegT[];
   flights: FlightT[];
+  workPlaceRelations: WorkPlaceRelationT[]; // #51 — 회차·장면·출처 관계 (장소 비복제)
 };
 
 /** 시드 6종의 파싱 전 원본. 테스트에서는 파일 없이 이 형태로 직접 검증한다. */
@@ -88,6 +90,11 @@ const SPECS: Record<SeedKey, Spec> = {
     file: "flights-snapshot.json", kind: "Flight", schema: Flight,
     idOf: (f) => str(f.flightNo),
     dupKeyOf: (f) => `${f.flightNo}|${f.direction}|${utc(f.scheduledAt)}`,
+  },
+  workPlaceRelations: {
+    file: "work-place-relations.json", kind: "WorkPlaceRelation", schema: WorkPlaceRelation,
+    idOf: (r) => (str(r.workId) && str(r.placeId) ? `${r.workId}→${r.placeId}` : undefined),
+    dupKeyOf: (r) => `${r.workId}|${r.placeId}`, // 같은 장소·다른 작품은 정상 — 관계 단위 유일 (#51)
   },
 };
 
@@ -175,6 +182,19 @@ function validate(
         }
       });
     }
+  }
+  // #51 — 관계 파일은 작품·장소 양쪽 구조 통과 시에만 참조 검사 (연쇄 노이즈 스킵 규칙 동일)
+  if (!failed.has("workPlaceRelations")) {
+    const workIds = failed.has("works") ? null : idsOf("works");
+    const placeIds = failed.has("places") ? null : idsOf("places");
+    parsed.workPlaceRelations!.forEach((relation, index) => {
+      if (workIds && !workIds.has(relation.workId)) {
+        issues.push(formatIssue("workPlaceRelations", relation, index, "workId", `존재하지 않는 작품 참조: ${relation.workId}`));
+      }
+      if (placeIds && !placeIds.has(relation.placeId)) {
+        issues.push(formatIssue("workPlaceRelations", relation, index, "placeId", `존재하지 않는 장소 참조: ${relation.placeId}`));
+      }
+    });
   }
   if (!failed.has("stations")) {
     const stationIds = idsOf("stations");
