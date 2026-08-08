@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { generateItinerary } from "../engine";
 import type { TripConstraints } from "../engine/types";
-import type { Repositories } from "../repositories/json";
+import { loadRepositories, type Repositories } from "../repositories/json";
 
 const localized = (ko: string, en = ko) => ({ ko, en });
 
@@ -196,6 +196,44 @@ describe("generateItinerary", () => {
       code: "DEPARTURE_DEADLINE_EXCEEDED",
       placeId: "place-selected",
     });
+  });
+
+  it("실스냅샷의 동일 열차번호 서울→진부→강릉 연속 구간도 환승 0으로 계산한다 (#56)", () => {
+    // PR #60 비차단 리뷰 반영: 합성 fixture가 아니라 실제 data/train-snapshot.json의
+    // 동일 열차번호 연속 leg로 환승 규칙을 고정해 데이터 회귀를 방어한다.
+    const real = loadRepositories();
+    const chains = real.trainLegs.flatMap((first) =>
+      first.fromStationId === "station-seoul" && first.toStationId === "station-jinbu"
+        ? real.trainLegs
+          .filter((second) => second.trainNo === first.trainNo
+            && second.fromStationId === "station-jinbu"
+            && second.toStationId === "station-gangneung"
+            && Date.parse(second.departAt) >= Date.parse(first.arriveAt)
+            && Date.parse(second.departAt) - Date.parse(first.arriveAt) <= 60 * 60_000)
+          .map((second) => [first, second] as const)
+        : []);
+    expect(chains.length).toBeGreaterThan(0); // 진부 경유 동일 열차가 실데이터에 존재한다
+    const [first, second] = chains[0];
+    const returnLeg = real.trainLegs.find((candidate) =>
+      candidate.fromStationId === "station-gangneung"
+      && candidate.toStationId === "station-seoul"
+      && Date.parse(candidate.departAt) >= Date.parse(second.arriveAt) + 4 * 60 * 60_000);
+    expect(returnLeg).toBeDefined();
+
+    const repos = repositories();
+    repos.trainLegs = [first, second, returnLeg as Repositories["trainLegs"][number]];
+    const result = generateItinerary(constraints({
+      arrivalAt: "2026-08-12T04:00:00+09:00", // 실스냅샷 첫 진부 경유편(05:40 출발)보다 이른 준비 시각
+      selectedActorIds: [],
+      selectedWorkIds: ["work-1"],
+      excludedPlaceIds: ["place-unverified"],
+    }), repos);
+
+    expect(result.status).toBe("planned");
+    if (result.status !== "planned") return;
+    expect(result.days.flatMap((day) => day.rides.map((ride) => ride.trainNo)))
+      .toEqual([first.trainNo, second.trainNo, returnLeg?.trainNo]);
+    expect(result.metrics.transferCount).toBe(0);
   });
 
   it("같은 열차 번호의 연속 구간은 환승으로 세지 않는다", () => {

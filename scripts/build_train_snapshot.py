@@ -17,7 +17,10 @@
   - tago  : 국토교통부(TAGO) 열차정보 — 교차검증용 (2026-03 개정 URI, #49).
 
 산출 규칙:
-  - OD_PAIRS × DATES 왕복을 조회해 legs 생성
+  - OD_PAIRS × DATES 왕복을 조회해 legs 생성 (시종착 OD — 운행계획 v2)
+  - STOPOVER_OD_PAIRS는 정차역 실적(runInfo2)의 D-7일(같은 요일) 원값을 날짜만 매핑해 생성.
+    수록 대상은 데모일 운행계획의 열차번호로 한정 — 공식 계획 시각이 아니라
+    "공식 운행 실적 기반 같은 요일 매핑" 스냅샷이다 (#56 A안 합의, SOURCES.md)
   - 공항철도(AREX) 구간은 API에 없으므로 기존 스냅샷에서 보존한다 (PRESERVE_STATION 관련 구간)
   - 복합 키(trainNo|from|to|departAt) 중복 제거, 시각 오름차순 정렬
   - 쓰기 전 기존 파일을 .bak로 백업. --dry-run이면 요약만 출력
@@ -26,6 +29,7 @@
 from __future__ import annotations
 
 import argparse
+import datetime
 import json
 import os
 import sys
@@ -42,13 +46,21 @@ SNAPSHOT_PATH = REPO_ROOT / "data" / "train-snapshot.json"
 # 데모 기준일 (SOURCES.md와 동일하게 유지)
 DATES = ["20260812", "20260813", "20260814"]
 
-# (우리 역 id, API 역 이름) — OD 양방향 모두 조회한다
+# (우리 역 id, API 역 이름) — OD 양방향 모두 조회한다. 시종착 OD만 가능(운행계획 v2의 한계, #56 실측)
 OD_PAIRS: list[tuple[tuple[str, str], tuple[str, str]]] = [
     (("station-seoul", "서울"), ("station-gangneung", "강릉")),
-    # 시드 확장 시: (("station-seoul", "서울"), ("station-jinbu", "진부")),
-    # (("station-seoul", "서울"), ("station-manjong", "만종")),
-    # (("station-seoul", "서울"), ("station-jeonju", "전주")),  # 실운행은 용산발 — OD 이름 확인 필요
 ]
+
+# 중간 정차(경유역) OD — 운행계획(runPlan2)에는 중간 정차 행이 없어(#56 실측 2026-08-09)
+# 정차역 단위 실적(runInfo2)에서 추출한다. 데모일 D의 시각은 D-7일(같은 요일) 실적 원값을
+# 날짜만 매핑해 사용하고, 수록 대상은 데모일 운행계획에 존재하는 열차번호로 한정한다(#56 A안 합의).
+STOPOVER_OD_PAIRS: list[tuple[tuple[str, str], tuple[str, str]]] = [
+    (("station-seoul", "서울"), ("station-jinbu", "진부")),
+    (("station-jinbu", "진부"), ("station-gangneung", "강릉")),
+    # 만종은 진부 E2E 확인 후 별도 PR에서 설정만 추가(#56 보완 합의): (("station-seoul", "서울"), ("station-manjong", "만종")),
+    # 전주는 용산 관문 계약 합의 전 보류, 춘천은 KTX 컷라인으로 MVP 비범위(#56)
+]
+STOPOVER_SOURCE_OFFSET_DAYS = 7  # 같은 요일 매핑 — SOURCES.md에 기준일과 함께 명시
 
 # 이 역이 낀 구간은 API로 갱신하지 않고 기존 스냅샷에서 보존 (공항철도)
 PRESERVE_STATION = "station-incheon-airport-t1"
@@ -75,6 +87,12 @@ KORAIL_BASE = os.environ.get("KORAIL_BASE", "https://apis.data.go.kr/B551457")
 KORAIL_TIMETABLE_OP = os.environ.get("KORAIL_TIMETABLE_OP", "run/v2/travelerTrainRunPlan2")
 KORAIL_PAGE_SIZE = 500  # 일별 전 노선 행 수(약 370)보다 크게 — 초과 시 페이지 순회
 KORAIL_MAX_PAGES = 10  # 폭주 방어 상한 — 도달 시 부분 수신으로 간주하고 중단
+
+# 여객열차 운행정보(정차역 단위 실적) — 과거 날짜만 보유(약 D-2 지연, #56 실측).
+# 응답 행: run_ymd, trn_no, trn_run_sn(운행순서), stn_nm, stop_se_cd/nm(시발·여객승하차·종착),
+#          trn_arvl_dt/trn_dptre_dt(역별 도착·출발, 시발은 도착 None·종착은 출발 None), uppln_dn_se_cd(D/U)
+KORAIL_RUNINFO_OP = os.environ.get("KORAIL_RUNINFO_OP", "run/v2/travelerTrainRunInfo2")
+KORAIL_RUNINFO_MAX_PAGES = 30  # 정차역 단위라 일 약 8,500행 — 페이지 상한을 따로 둔다
 
 
 @dataclass(frozen=True)
@@ -228,12 +246,13 @@ def korail_dt_to_iso(value: str) -> str:
     return f"{s[0:10]}T{s[11:19]}+09:00"
 
 
-def fetch_korail_day(key: str, date: str) -> list[dict]:
-    """일별 전 노선 운행계획 수신 — v2는 역명 cond를 지원하지 않아 날짜 cond만 서버 필터."""
+def fetch_korail_day(key: str, date: str, op: str = KORAIL_TIMETABLE_OP,
+                     max_pages: int = KORAIL_MAX_PAGES) -> list[dict]:
+    """일별 전 노선 수신 — v2는 역명 cond를 지원하지 않아 날짜 cond만 서버 필터."""
     rows: list[dict] = []
     page = 1
     while True:
-        payload = get_json(KORAIL_BASE, KORAIL_TIMETABLE_OP, key, {
+        payload = get_json(KORAIL_BASE, op, key, {
             "pageNo": str(page), "numOfRows": str(KORAIL_PAGE_SIZE),
             "cond[run_ymd::EQ]": date,
         })
@@ -242,12 +261,114 @@ def fetch_korail_day(key: str, date: str) -> list[dict]:
         total = int(payload.get("response", {}).get("body", {}).get("totalCount", len(rows)))
         if len(rows) >= total:
             return rows
-        if page >= KORAIL_MAX_PAGES:  # 부분 수신을 조용히 쓰지 않는다 (PR #54 리뷰 비차단 2)
+        if page >= max_pages:  # 부분 수신을 조용히 쓰지 않는다 (PR #54 리뷰 비차단 2)
             raise ApiError(
                 f"[방어] 부분 수신: {date} — {len(rows)}/{total}건만 받아 중단합니다. "
                 "기존 스냅샷을 변경하지 않습니다 (KORAIL_PAGE_SIZE 또는 페이지 상한 조정 필요)",
             )
         page += 1
+
+
+def shift_ymd(date: str, days: int) -> str:
+    return (datetime.date.fromisoformat(f"{date[0:4]}-{date[4:6]}-{date[6:8]}")
+            + datetime.timedelta(days=days)).strftime("%Y%m%d")
+
+
+def shift_korail_dt_to_iso(value: str, days: int) -> str:
+    """실적 시각의 날짜만 데모일로 이월 — 시분초는 원값 그대로, 자정 넘김은 일수 차이로 보존 (#56 A안)"""
+    s = str(value).strip()
+    if len(s) < 19:
+        raise ApiError(f"코레일 시각 형식 이상: {value}")
+    shifted = datetime.date.fromisoformat(s[0:10]) + datetime.timedelta(days=days)
+    return f"{shifted.isoformat()}T{s[11:19]}+09:00"
+
+
+def stopover_sequences(rows: list[dict], source_date: str) -> dict[str, list[dict]]:
+    """열차번호별 정차 시퀀스 구성 — 타 일자 행이 섞이면 쿼리 자체를 불신하고 중단한다."""
+    by_train: dict[str, list[dict]] = {}
+    for row in rows:
+        if str(row.get("run_ymd", "")).strip() != source_date:
+            raise ApiError(f"[방어] 요청 일자 밖 행: {row.get('trn_no')} run_ymd={row.get('run_ymd')} (요청 {source_date})")
+        by_train.setdefault(str(row["trn_no"]).zfill(5), []).append(row)
+    for seq in by_train.values():
+        seq.sort(key=lambda r: int(r["trn_run_sn"]))
+    return by_train
+
+
+def validate_stopover_sequence(trn: str, seq: list[dict], source_date: str) -> None:
+    """#56 합의: 수록되는 열차의 순서 중복·상하행 혼재·시간 역전은 추정으로 메우지 않고
+    중단한다(스냅샷 불변). 수록되지 않는 열차의 이상은 차단 사유가 아니다 — 실측상
+    무관 노선(예: 무궁화호 01674 매곡)에 원천 데이터 이상이 존재한다."""
+    orders = [int(r["trn_run_sn"]) for r in seq]
+    if len(set(orders)) != len(orders):
+        raise ApiError(f"[방어] 정차 순서 중복: {trn} {source_date} — 기존 스냅샷을 변경하지 않습니다")
+    if len({str(r.get("uppln_dn_se_cd", "")).strip() for r in seq}) != 1:
+        raise ApiError(f"[방어] 상·하행 코드 혼재: {trn} {source_date} — 기존 스냅샷을 변경하지 않습니다")
+    last = None
+    for r in seq:
+        for field in ("trn_arvl_dt", "trn_dptre_dt"):
+            value = r.get(field)
+            if value is None:
+                continue
+            if last is not None and str(value) < last:
+                raise ApiError(f"[방어] 시간 역전: {trn} {r.get('stn_nm')} {value} — 기존 스냅샷을 변경하지 않습니다")
+            last = str(value)
+
+
+def stopover_leg(seq: list[dict], a_name: str, b_name: str) -> tuple[str, str] | None:
+    """시퀀스에서 a→b 구간의 (출발역 출발, 도착역 도착) 원값을 찾는다. 정차 순서가 a<b일 때만 유효.
+    같은 역이 한 시퀀스에 두 번 나오면 판단하지 않고 중단한다."""
+    a_rows = [r for r in seq if str(r.get("stn_nm", "")).strip() == a_name]
+    b_rows = [r for r in seq if str(r.get("stn_nm", "")).strip() == b_name]
+    if len(a_rows) > 1 or len(b_rows) > 1:
+        raise ApiError(f"[방어] 동일 역 중복 정차: {seq[0].get('trn_no')} {a_name}/{b_name} — 기존 스냅샷을 변경하지 않습니다")
+    if not a_rows or not b_rows:
+        return None
+    if int(a_rows[0]["trn_run_sn"]) >= int(b_rows[0]["trn_run_sn"]):
+        return None  # 반대 방향 열차
+    depart, arrive = a_rows[0].get("trn_dptre_dt"), b_rows[0].get("trn_arvl_dt")
+    if not depart or not arrive:
+        return None  # 종착역 출발·시발역 도착은 없음 — 합성하지 않는다
+    return str(depart), str(arrive)
+
+
+def fetch_korail_stopover_legs(key: str, allowed_by_date: dict[str, set[str]]) -> list[Leg]:
+    """중간 정차 OD legs — 데모일 D의 시각으로 D-7일(같은 요일) runInfo2 실적 원값을 날짜만
+    매핑해 사용한다. 수록 대상은 데모일 운행계획(allowed_by_date)에 존재하는 열차번호로 한정 (#56 A안)."""
+    if not STOPOVER_OD_PAIRS:
+        return []
+    legs: list[Leg] = []
+    for date in DATES:
+        source_date = shift_ymd(date, -STOPOVER_SOURCE_OFFSET_DAYS)
+        rows = fetch_korail_day(key, source_date, op=KORAIL_RUNINFO_OP, max_pages=KORAIL_RUNINFO_MAX_PAGES)
+        sequences = stopover_sequences(rows, source_date)
+        validated: set[str] = set()
+        for (from_id, from_name), (to_id, to_name) in STOPOVER_OD_PAIRS:
+            for (a_id, a_name), (b_id, b_name) in [((from_id, from_name), (to_id, to_name)),
+                                                   ((to_id, to_name), (from_id, from_name))]:
+                found = 0
+                for trn, seq in sorted(sequences.items()):
+                    if trn not in allowed_by_date[date]:
+                        continue  # 데모일 계획에 없는 열차는 수록하지 않는다
+                    span = stopover_leg(seq, a_name, b_name)
+                    if span is None:
+                        continue
+                    if trn not in validated:
+                        validate_stopover_sequence(trn, seq, source_date)
+                        validated.add(trn)
+                    depart, arrive = span
+                    legs.append(Leg(
+                        trainNo=trn,
+                        fromStationId=a_id,
+                        toStationId=b_id,
+                        departAt=shift_korail_dt_to_iso(depart, STOPOVER_SOURCE_OFFSET_DAYS),
+                        arriveAt=shift_korail_dt_to_iso(arrive, STOPOVER_SOURCE_OFFSET_DAYS),
+                    ))
+                    found += 1
+                if not found:
+                    raise ApiError(
+                        f"[방어] 정차 실적 0건: {a_name}→{b_name} {source_date}(데모 {date}) — 기존 스냅샷을 변경하지 않습니다")
+    return legs
 
 
 def fetch_korail_legs(key: str) -> list[Leg]:
@@ -270,6 +391,9 @@ def fetch_korail_legs(key: str) -> list[Leg]:
                         departAt=korail_dt_to_iso(item["trn_plan_dptre_dt"]),
                         arriveAt=korail_dt_to_iso(item["trn_plan_arvl_dt"]),
                     ))
+    allowed_by_date = {date: {str(row["trn_no"]).zfill(5) for row in rows}
+                       for date, rows in day_rows.items()}
+    legs.extend(fetch_korail_stopover_legs(key, allowed_by_date))
     return legs
 
 
