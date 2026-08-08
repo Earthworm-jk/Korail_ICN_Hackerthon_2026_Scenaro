@@ -33,7 +33,7 @@ const plannedB: ItineraryResult = { ...plannedA, days: [dayB] };
 const empty: ItineraryResult = { status: "empty", days: [], rejectedPlaces: [{ code: "TRAIN_UNAVAILABLE", placeId: "p1" }] };
 
 const constraintsA = constraintsFromTripInputs(
-  { arrivalAt: "2026-08-12T10:00", departureAt: "2026-08-14T18:00", exitOffsetMin: 120, departureBufferMinutes: 120 },
+  { arrivalAt: "2026-08-12T10:00", departureAt: "2026-08-14T18:00", airportReadyAt: "2026-08-12T12:00", airportArrivalDeadline: "2026-08-14T16:00" },
   ["actor-kim-goeun"], ["work-goblin"], ["place-x"],
 );
 

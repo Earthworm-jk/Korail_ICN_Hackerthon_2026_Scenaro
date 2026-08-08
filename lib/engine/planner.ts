@@ -100,10 +100,9 @@ export function planItinerary(
   const endpointStationId = constraints.airportStationId
     ?? findAirportStationId(repos)
     ?? gatewayStationId;
-  const availableAt = Date.parse(constraints.arrivalAt)
-    + constraints.airportExitOffsetMin * MINUTE_MS;
+  const availableAt = Date.parse(constraints.airportReadyAt);
   const departureAt = Date.parse(constraints.departureAt);
-  const deadline = departureAt - constraints.departureBufferMinutes * MINUTE_MS;
+  const deadline = Date.parse(constraints.airportArrivalDeadline);
   const initial: PlannerState = {
     stationId: endpointStationId,
     readyAt: availableAt,
@@ -369,7 +368,7 @@ function completeSchedule(
         state,
         returnRides,
         constraints,
-        Date.parse(constraints.arrivalAt) + constraints.airportExitOffsetMin * MINUTE_MS,
+        Date.parse(constraints.airportReadyAt),
         deadline,
       ),
     },
@@ -643,7 +642,7 @@ function completionFailure(
   endpointStationId: string,
 ): CandidateRejection | null {
   const departureAt = Date.parse(constraints.departureAt);
-  const deadline = departureAt - constraints.departureBufferMinutes * MINUTE_MS;
+  const deadline = Date.parse(constraints.airportArrivalDeadline);
   const transition = appendVisit(state, candidate, constraints, trainLegs, deadline);
   if (!transition.ok) {
     if (transition.reason.code === "TRAIN_UNAVAILABLE") {

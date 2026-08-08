@@ -15,7 +15,7 @@ import { z } from "zod";
 export const TripConstraintsSchema = z.object({
   arrivalAt: z.iso.datetime({ offset: true }),
   departureAt: z.iso.datetime({ offset: true }),
-  airportExitOffsetMin: z.number().int().nonnegative(),
+  airportReadyAt: z.iso.datetime({ offset: true }),
   airportStationId: z.string().min(1).optional(),
   gatewayStationId: z.string().min(1).optional(),
   selectedActorIds: z.array(z.string().min(1)).optional(),
@@ -24,13 +24,36 @@ export const TripConstraintsSchema = z.object({
   excludedPlaceIds: z.array(z.string().min(1)),
   maxPlacesPerDay: z.number().int().positive(),
   dailySlackMinutes: z.number().int().nonnegative(),
-  departureBufferMinutes: z.number().int().nonnegative(),
+  airportArrivalDeadline: z.iso.datetime({ offset: true }),
 }).superRefine((constraints, context) => {
   if (Date.parse(constraints.arrivalAt) >= Date.parse(constraints.departureAt)) {
     context.addIssue({
       code: "custom",
       path: ["departureAt"],
       message: "departureAt must be later than arrivalAt",
+    });
+  }
+
+  // #14 차단 2: 절대 시각 경계의 순서 — arrivalAt <= airportReadyAt < airportArrivalDeadline <= departureAt
+  if (Date.parse(constraints.airportReadyAt) < Date.parse(constraints.arrivalAt)) {
+    context.addIssue({
+      code: "custom",
+      path: ["airportReadyAt"],
+      message: "airportReadyAt must not be earlier than arrivalAt",
+    });
+  }
+  if (Date.parse(constraints.airportArrivalDeadline) > Date.parse(constraints.departureAt)) {
+    context.addIssue({
+      code: "custom",
+      path: ["airportArrivalDeadline"],
+      message: "airportArrivalDeadline must not be later than departureAt",
+    });
+  }
+  if (Date.parse(constraints.airportReadyAt) >= Date.parse(constraints.airportArrivalDeadline)) {
+    context.addIssue({
+      code: "custom",
+      path: ["airportArrivalDeadline"],
+      message: "airportArrivalDeadline must be later than airportReadyAt",
     });
   }
 
