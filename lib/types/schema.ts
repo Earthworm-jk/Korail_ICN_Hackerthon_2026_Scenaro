@@ -142,7 +142,8 @@ export const WorkPlaceRelation = z
     episodeLabel: z.string().min(1).optional(), // "1화"·"1–2화"·특별편 — 문자열, 영화는 생략
     sceneNote: LocalizedText.optional(),
     featuredActorIds: z.array(NonEmptyId).optional(), // 장면 등장이 검증된 배우만 (추측 금지)
-    actorPresenceReviewed: z.boolean().optional(),
+    // PR #63 리뷰: 미검토(ⓒ)의 표현은 '생략' 하나뿐 — false 명시는 네 번째 상태가 되므로 금지
+    actorPresenceReviewed: z.literal(true).optional(),
     sourceUrls: z.array(HttpUrl).min(1), // 사람 검증 출처 필수 — http/https 형식 검사 (#51, PR #52 리뷰)
     verifiedAt: IsoDate,
     reviewed: z.boolean(),

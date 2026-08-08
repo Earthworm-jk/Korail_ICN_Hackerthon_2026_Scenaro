@@ -91,6 +91,14 @@ describe("장면 출연 배우 3상태 검증", () => {
       .toThrow(SeedValidationError);
   });
 
+  it("actorPresenceReviewed:false는 네 번째 상태가 아니다 — 명시하면 실패한다 (PR #63 리뷰)", () => {
+    expect(() => parseRepositories(withRelation({ actorPresenceReviewed: false })))
+      .toThrow(SeedValidationError);
+    expect(() => parseRepositories(withRelation({
+      featuredActorIds: [], actorPresenceReviewed: false,
+    }))).toThrow(SeedValidationError);
+  });
+
   it("존재하지 않는 배우·중복 배우 참조는 실패한다", () => {
     expect(() => parseRepositories(withRelation({
       featuredActorIds: ["actor-ghost"], actorPresenceReviewed: true,
@@ -98,6 +106,15 @@ describe("장면 출연 배우 3상태 검증", () => {
     expect(() => parseRepositories(withRelation({
       featuredActorIds: ["actor-fx", "actor-fx"], actorPresenceReviewed: true,
     }))).toThrow(SeedValidationError);
+  });
+
+  it("장면 배우의 출연작에 관계의 작품이 없으면 실패한다 (오연결 조기 차단)", () => {
+    const seed = fixtureSeed();
+    // 관계[1]은 호텔킹FX — actor-fx의 workIds에 없는 작품이라 오연결이다
+    Object.assign((seed.workPlaceRelations as Record<string, unknown>[])[1], {
+      featuredActorIds: ["actor-fx"], actorPresenceReviewed: true,
+    });
+    expect(() => parseRepositories(seed)).toThrow(/출연작\(workIds\)에 없는 작품/);
   });
 });
 
