@@ -60,7 +60,7 @@ function generateItinerary(c: TripConstraints, repos: Repos): ItineraryResult;
 
 ## 3. 시드 데이터 스키마 (Zod 요약)
 
-Python 파이프라인이 생성하고, 앱 기동 시 Zod로 검증한다(REQ-DATA-004). 스키마가 곧 데이터 명세다.
+Python 파이프라인이 생성하고, Repository 초기화 시(Planner 요청 처리 전에) Zod로 검증한다(REQ-DATA-004, 정의서 v0.5). 스키마가 곧 데이터 명세다.
 
 ```ts
 const OpeningHours = z.discriminatedUnion("type", [
@@ -125,7 +125,7 @@ const Place = z.object({
 | 연결 가능한 열차 존재 | TRAIN_UNAVAILABLE |
 | 출국 역산: 마지막 방문의 역 복귀 + 열차 + 공항 이동 + departureBufferMinutes ≤ 출국 시각 | DEPARTURE_DEADLINE_EXCEEDED |
 | 운영시간 판정(아래 판정식) | ACTIVITY_WINDOW_MISMATCH (+detail) |
-| 필수 장소 포함 / 고정 방문일 준수 불가 | USER_CONSTRAINT_INFEASIBLE (+constraintType, targetId) |
+| 필수 장소 포함 / 고정 방문일 준수 불가 | USER_CONSTRAINT_INFEASIBLE — 후보 제외가 아니라 **전체 실패(ok:false) 사유** |
 | 사용자 제외 장소 미포함 | (후보 수집 단계에서 제거, 코드 불필요 — 사용자 직접 제외는 rejectedPlaces에 넣지 않는다) |
 
 ### 운영시간 판정식 (PR #9 리뷰 A — open·stayMinutes 포함)
@@ -148,14 +148,17 @@ type ActivityWindowDetail =
   | "CONSERVATIVE_BUFFER_MISMATCH"  // 기본 추정 가능, 버퍼 적용 시 불가
   | "UNVERIFIED_HOURS";             // 운영시간 미확인
 
-type RejectionReason =
+// 후보 하나의 자동 제외 사유 (rejectedPlaces 전용, 3종)
+type CandidateRejection =
   | { code: "TRAIN_UNAVAILABLE"; placeId: string }
   | { code: "DEPARTURE_DEADLINE_EXCEEDED"; placeId: string }
-  | { code: "ACTIVITY_WINDOW_MISMATCH"; placeId: string; detail: ActivityWindowDetail }
-  | {
-      code: "USER_CONSTRAINT_INFEASIBLE";
-      constraintType: "REQUIRED_PLACE" | "PINNED_DATE"; targetId: string;
-    };
+  | { code: "ACTIVITY_WINDOW_MISMATCH"; placeId: string; detail: ActivityWindowDetail };
+
+// 전체 재계산 실패 사유 (ok:false 전용) — 후보 제외가 아니라 요청 실패다(정의서 v0.5)
+type ConstraintFailure = {
+  code: "USER_CONSTRAINT_INFEASIBLE";
+  constraintType: "REQUIRED_PLACE" | "PINNED_DATE"; targetId: string;
+};
 ```
 
 - UI 후보 목록: `CONSERVATIVE_BUFFER_MISMATCH`·`UNVERIFIED_HOURS`는
@@ -182,8 +185,8 @@ type ComparisonKeys = {
 };
 ```
 
-동점 타이브레이커(결정성 보장): 환승 적음 → 총 이동시간 짧음 → 출국 전 여유 큼 →
-장소 ID·열차번호 사전순.
+동점 타이브레이커(결정성 보장): **출국 전 여유 큼 → 장소 ID·열차번호 사전순.**
+비교 키에 이미 포함된 환승·이동시간은 동점 시점에 같으므로 반복하지 않는다(정의서 v0.5).
 
 ## 7. 출력 타입 (PR #9 리뷰 C — diff는 앱 계층 책임)
 
@@ -202,17 +205,28 @@ type ItineraryMetrics = {
 type ItineraryResult =
   | {
       ok: true;
+      status: "planned";            // 선택된 일정이 있는 정상 상태
       days: DayPlan[];              // 장소·열차편(시각·역)·추정 이동 라벨 포함
-      rejectedPlaces: RejectionReason[];  // 엔진이 자동 제외한 후보 (REQ-ITIN-005)
+      rejectedPlaces: CandidateRejection[];  // 엔진이 자동 제외한 후보 3종 (REQ-ITIN-005)
       comparisonKeys: ComparisonKeys;     // '왜 이 일정인가' 화면 재사용 (#3)
       metrics: ItineraryMetrics;
     }
-  | { ok: false; reason: RejectionReason };       // UI는 기존 일정 유지 (REQ-EDIT-005)
+  | {
+      ok: true;
+      status: "empty";              // 정상 처리, 조건을 만족하는 일정 없음
+      days: [];
+      rejectedPlaces: CandidateRejection[];
+    }
+  | { ok: false; reason: ConstraintFailure };     // UI는 기존 일정 유지 (REQ-EDIT-005)
 ```
+
+후보가 전멸해도 사용자 제약 위반이 아니면 `ok: false`가 아니라 **`status: "empty"`**로
+반환한다 — '조건을 만족하는 일정 없음' 화면 상태(PRD 9.2)의 근거. empty 상태에는 선택된
+일정이 없으므로 comparisonKeys·metrics를 포함하지 않는다(허위 값 금지, PR #16 리뷰).
 
 ## 8. 회귀 프리셋 3개 (기존 Python 시나리오 정답값 이식)
 
-공통 fixture: 김고은 / 작품 4편 / 촬영지 14곳 시드(가안 — #1 수동 검증 완료 시 확정), 기준 항공편.
+공통 fixture(정의서 v0.5 ITIN-003과 동일): 김고은 / 작품 4편 / 촬영지 14곳 시드(가안 — #1 수동 검증 완료 시 확정), 기준 입국 2026-08-12 10:00 / 출국 2026-08-14 18:00 / 시간표 스냅샷 2026-08-07.
 
 | 프리셋 | 조작 | 기대 결과 |
 |---|---|---|

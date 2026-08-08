@@ -11,8 +11,6 @@ function cand(partial: Partial<Candidate> & { stableId: string }): Candidate {
       slackSatisfied: true,
       ...(partial.keys ?? {}),
     },
-    transferCount: partial.transferCount ?? 1,
-    totalRailMinutes: partial.totalRailMinutes ?? 120,
     departureSlackMinutes: partial.departureSlackMinutes ?? 180,
     stableId: partial.stableId,
   };
