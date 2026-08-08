@@ -56,7 +56,7 @@ searchEntities(query: string): Promise<{
 
 // lib/actions/places.ts
 getCandidatePlaces(selection: {
-  selectedActorId?: string;
+  selectedActorIds: string[];
   selectedWorkIds: string[];
 }): Promise<PlaceCandidate[]>;
 // PlaceCandidate = PlaceT + {
