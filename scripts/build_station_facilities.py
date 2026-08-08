@@ -36,7 +36,6 @@ API_BASE = "https://apis.data.go.kr/B551457/convenience/stationFacilities"
 PAGE_SIZE = 500
 
 # (우리 역 id → 원천 stn_nm 정확 일치값). 원천에 없는 시드 역은 여기 넣지 않는다:
-#   - station-chuncheon: 경춘선 광역전철 역 — 코레일 편의시설정보 406역 목록에 없음
 #   - station-incheon-airport-t1: 공항철도(주) 운영 — 동일하게 원천 밖
 STATION_NAME_MAP: dict[str, str] = {
     "station-seoul": "서울",

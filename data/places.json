@@ -272,37 +272,6 @@
     "address": "강원도 원주시 지정면 오크밸리1길 66"
   },
   {
-    "id": "place-jukrim-catholic-church",
-    "name": {
-      "ko": "죽림동성당",
-      "en": "Jukrim-dong Cathedral"
-    },
-    "workIds": [
-      "work-yumi-cells"
-    ],
-    "nearestStationId": "station-chuncheon",
-    "accessEstimate": {
-      "minutes": 10,
-      "source": "카카오맵 자동차 길찾기 춘천역→죽림동성당 3분·1.1km의 보수 최소값 (2026-08-08; 실시간 교통·교통수단 보장 아님)",
-      "verifiedAt": "2026-08-08"
-    },
-    "openingHours": {
-      "type": "always_open",
-      "source": "한국관광공사 열린관광의 경내 상시 개방·연중무휴 안내 https://access.visitkorea.or.kr/ms/detail.do?cotId=c06299ff-03d6-489b-a001-35a080d46b3a",
-      "verifiedAt": "2026-08-08"
-    },
-    "stayMinutes": 45,
-    "verificationLevel": "교차확인",
-    "officialSourceCount": 2,
-    "reasonText": {
-      "ko": "유미의 세포들 촬영 성당이에요. 외관은 볼 수 있지만 예배를 방해하지 않도록 내부 관람 가능시간은 별도 확인해야 해요.",
-      "en": "A Yumi's Cells cathedral location. The exterior can be viewed, while indoor visits require confirmation and respect for services."
-    },
-    "address": "강원도 춘천시 약사고개길 23",
-    "latitude": 37.876614,
-    "longitude": 127.72724
-  },
-  {
     "id": "place-seoullo-7017",
     "name": {
       "ko": "서울로7017",

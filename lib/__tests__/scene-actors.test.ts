@@ -121,7 +121,7 @@ describe("장면 출연 배우 3상태 검증", () => {
 describe("실시드 장면 배우 상태 (#26 참고 섹션 대조)", () => {
   const repos = loadRepositories();
 
-  it("등장 확정 9곳 · 미등장 확정 3곳 · 미검토 1곳", () => {
+  it("등장 확정 8곳 · 미등장 확정 3곳 · 미검토 1곳 (12곳 — #61 죽림동성당 제외)", () => {
     const a = repos.workPlaceRelations.filter(
       (r) => r.actorPresenceReviewed && (r.featuredActorIds?.length ?? 0) > 0,
     );
@@ -129,7 +129,7 @@ describe("실시드 장면 배우 상태 (#26 참고 섹션 대조)", () => {
       (r) => r.actorPresenceReviewed && r.featuredActorIds?.length === 0,
     );
     const c = repos.workPlaceRelations.filter((r) => !r.actorPresenceReviewed);
-    expect(a).toHaveLength(9);
+    expect(a).toHaveLength(8);
     expect(b).toHaveLength(3);
     expect(c.map((r) => r.placeId)).toEqual(["place-yeongjin-beach"]);
   });
