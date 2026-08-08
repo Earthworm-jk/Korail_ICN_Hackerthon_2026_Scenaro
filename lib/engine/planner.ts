@@ -50,6 +50,35 @@ type Transition =
   | { ok: true; state: PlannerState }
   | { ok: false; reason: CandidateRejection };
 
+// #56 NFR-PERF-001: 경로 탐색이 (상태 × 후보 × 깊이)만큼 호출되므로 스냅샷 규모(203건+)에서
+// 호출마다 전체 legs 정렬·Date.parse를 반복하면 실시드 요청이 2초 계약을 깬다.
+// 실행 시작 시 1회 파싱·정렬한 인덱스와 실행 단위 경로 메모를 공유한다 — 탐색 의미론은 불변.
+type IndexedLeg = { leg: TrainLegT; departMs: number; arriveMs: number };
+
+type RouteContext = {
+  legs: IndexedLeg[]; // 출발 시각 오름차순, 동시각은 trainNo — 기존 per-call 정렬과 동일 순서
+  cache: Map<string, TrainLegT[] | null>;
+};
+
+function buildRouteContext(trainLegs: TrainLegT[]): RouteContext {
+  const legs = trainLegs
+    .map((leg) => ({ leg, departMs: Date.parse(leg.departAt), arriveMs: Date.parse(leg.arriveAt) }))
+    .sort((a, b) => a.departMs - b.departMs || a.leg.trainNo.localeCompare(b.leg.trainNo, "en"));
+  return { legs, cache: new Map() };
+}
+
+/** legs에서 departMs >= notBefore인 첫 위치 — 기존의 "departAt < notBefore면 skip"과 동치 */
+function firstDepartureIndex(legs: IndexedLeg[], notBefore: number): number {
+  let low = 0;
+  let high = legs.length;
+  while (low < high) {
+    const mid = (low + high) >> 1;
+    if (legs[mid].departMs < notBefore) low = mid + 1;
+    else high = mid;
+  }
+  return low;
+}
+
 type CompleteSchedule = Candidate & {
   state: PlannerState;
   returnRides: TrainLegT[];
@@ -98,6 +127,7 @@ export function planItinerary(
   const availableAt = Date.parse(constraints.airportReadyAt);
   const departureAt = Date.parse(constraints.departureAt);
   const deadline = Date.parse(constraints.airportArrivalDeadline);
+  const routes = buildRouteContext(repos.trainLegs);
   const initial: PlannerState = {
     stationId: endpointStationId,
     readyAt: availableAt,
@@ -122,7 +152,7 @@ export function planItinerary(
           state,
           candidate,
           constraints,
-          repos.trainLegs,
+          routes,
           deadline,
         );
         if (!transition.ok) continue;
@@ -138,7 +168,7 @@ export function planItinerary(
         state,
         endpointStationId,
         constraints,
-        repos.trainLegs,
+        routes,
         departureAt,
         deadline,
       );
@@ -154,7 +184,7 @@ export function planItinerary(
         initial,
         candidate,
         constraints,
-        repos.trainLegs,
+        routes,
         endpointStationId,
       );
       if (reason) rejectedPlaces.push(reason);
@@ -176,7 +206,7 @@ export function planItinerary(
       best.state,
       candidate,
       constraints,
-      repos.trainLegs,
+      routes,
       endpointStationId,
     );
     if (reason) rejectedPlaces.push(reason);
@@ -221,12 +251,12 @@ function appendVisit(
   state: PlannerState,
   candidate: CandidatePlace,
   constraints: TripConstraints,
-  trainLegs: TrainLegT[],
+  routes: RouteContext,
   deadline: number,
 ): Transition {
   const place = candidate.place;
   const route = findEarliestRoute(
-    trainLegs,
+    routes,
     state.stationId,
     place.nearestStationId,
     state.readyAt,
@@ -358,12 +388,12 @@ function completeSchedule(
   state: PlannerState,
   endpointStationId: string,
   constraints: TripConstraints,
-  trainLegs: TrainLegT[],
+  routes: RouteContext,
   departureAt: number,
   deadline: number,
 ): CompleteSchedule | null {
   const returnRides = findEarliestRoute(
-    trainLegs,
+    routes,
     state.stationId,
     endpointStationId,
     state.readyAt,
@@ -469,39 +499,39 @@ function hasDailySlack(
 }
 
 function findEarliestRoute(
-  trainLegs: TrainLegT[],
+  routes: RouteContext,
   fromStationId: string,
   toStationId: string,
   notBefore: number,
   deadline: number,
 ): TrainLegT[] | null {
   if (fromStationId === toStationId) return [];
+  const cacheKey = `${fromStationId}|${toStationId}|${notBefore}|${deadline}`;
+  const cached = routes.cache.get(cacheKey);
+  if (cached !== undefined) return cached;
+
   const arrivals = new Map<string, { at: number; path: TrainLegT[] }>();
   arrivals.set(fromStationId, { at: notBefore, path: [] });
-  const sortedLegs = [...trainLegs].sort((a, b) => {
-    const byDeparture = Date.parse(a.departAt) - Date.parse(b.departAt);
-    return byDeparture || a.trainNo.localeCompare(b.trainNo, "en");
-  });
-
-  for (const leg of sortedLegs) {
-    const departAt = Date.parse(leg.departAt);
-    const arriveAt = Date.parse(leg.arriveAt);
-    if (departAt < notBefore || arriveAt > deadline || arriveAt < departAt) continue;
+  for (let index = firstDepartureIndex(routes.legs, notBefore); index < routes.legs.length; index += 1) {
+    const { leg, departMs, arriveMs } = routes.legs[index];
+    if (arriveMs > deadline || arriveMs < departMs) continue;
     const origin = arrivals.get(leg.fromStationId);
     if (!origin) continue;
     const previous = origin.path.at(-1);
     const minimumConnection = previous && previous.trainNo !== leg.trainNo
       ? MIN_TRANSFER_MINUTES * MINUTE_MS
       : 0;
-    if (origin.at + minimumConnection > departAt) continue;
+    if (origin.at + minimumConnection > departMs) continue;
     const current = arrivals.get(leg.toStationId);
     const path = [...origin.path, leg];
-    if (!current || arriveAt < current.at
-      || (arriveAt === current.at && compareRoutePaths(path, current.path) < 0)) {
-      arrivals.set(leg.toStationId, { at: arriveAt, path });
+    if (!current || arriveMs < current.at
+      || (arriveMs === current.at && compareRoutePaths(path, current.path) < 0)) {
+      arrivals.set(leg.toStationId, { at: arriveMs, path });
     }
   }
-  return arrivals.get(toStationId)?.path ?? null;
+  const result = arrivals.get(toStationId)?.path ?? null;
+  routes.cache.set(cacheKey, result);
+  return result;
 }
 
 function classifyPlace(
@@ -681,19 +711,19 @@ function completionFailure(
   state: PlannerState,
   candidate: CandidatePlace,
   constraints: TripConstraints,
-  trainLegs: TrainLegT[],
+  routes: RouteContext,
   endpointStationId: string,
 ): CandidateRejection | null {
   const departureAt = Date.parse(constraints.departureAt);
   const deadline = Date.parse(constraints.airportArrivalDeadline);
-  const transition = appendVisit(state, candidate, constraints, trainLegs, deadline);
+  const transition = appendVisit(state, candidate, constraints, routes, deadline);
   if (!transition.ok) {
     if (transition.reason.code === "TRAIN_UNAVAILABLE") {
       const withoutDepartureBuffer = appendVisit(
         state,
         candidate,
         constraints,
-        trainLegs,
+        routes,
         departureAt,
       );
       if (withoutDepartureBuffer.ok) {
@@ -704,7 +734,7 @@ function completionFailure(
   }
 
   const returnBeforeDeadline = findEarliestRoute(
-    trainLegs,
+    routes,
     transition.state.stationId,
     endpointStationId,
     transition.state.readyAt,
@@ -714,7 +744,7 @@ function completionFailure(
     return null;
   }
   const returnBeforeDeparture = findEarliestRoute(
-    trainLegs,
+    routes,
     transition.state.stationId,
     endpointStationId,
     transition.state.readyAt,

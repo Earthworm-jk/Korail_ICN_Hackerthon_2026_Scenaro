@@ -152,24 +152,6 @@
     "reviewed": true
   },
   {
-    "workId": "work-yumi-cells",
-    "placeId": "place-jukrim-catholic-church",
-    "episodeLabel": "7–8화",
-    "sceneNote": {
-      "ko": "유미가 친구의 결혼식에 참석한 성당",
-      "en": "The cathedral where Yumi attends her friend's wedding"
-    },
-    "featuredActorIds": [
-      "actor-kim-go-eun"
-    ],
-    "actorPresenceReviewed": true,
-    "sourceUrls": [
-      "https://www.data.go.kr/data/15111405/fileData.do"
-    ],
-    "verifiedAt": "2026-08-08",
-    "reviewed": true
-  },
-  {
     "workId": "work-little-women",
     "placeId": "place-seoullo-7017",
     "episodeLabel": "2화",
