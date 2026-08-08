@@ -60,7 +60,7 @@ export type ItineraryMetrics = {
 
 export type ItineraryItem = {
   placeId: string;
-  arriveAt: string;
+  arriveAt: string; // 절대시각 ISO. 직렬화는 UTC(Z), DayPlan.date만 KST 기준이다.
   departAt: string;
   accessMinutesLabel: string; // 항상 '추정치' 라벨과 함께 표시 (REQ-ITIN-006)
 };
@@ -74,7 +74,7 @@ export type TrainRide = {
 };
 
 export type DayPlan = {
-  date: string; // YYYY-MM-DD
+  date: string; // KST 기준 YYYY-MM-DD
   items: ItineraryItem[];
   rides: TrainRide[];
 };
