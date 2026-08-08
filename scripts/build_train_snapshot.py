@@ -74,6 +74,7 @@ TAGO_CITY_CODES = [11, 32, 35]
 KORAIL_BASE = os.environ.get("KORAIL_BASE", "https://apis.data.go.kr/B551457")
 KORAIL_TIMETABLE_OP = os.environ.get("KORAIL_TIMETABLE_OP", "run/v2/travelerTrainRunPlan2")
 KORAIL_PAGE_SIZE = 500  # 일별 전 노선 행 수(약 370)보다 크게 — 초과 시 페이지 순회
+KORAIL_MAX_PAGES = 10  # 폭주 방어 상한 — 도달 시 부분 수신으로 간주하고 중단
 
 
 @dataclass(frozen=True)
@@ -239,8 +240,13 @@ def fetch_korail_day(key: str, date: str) -> list[dict]:
         items = require_items(payload, f"전 노선 {date} (page {page})")
         rows.extend(items)
         total = int(payload.get("response", {}).get("body", {}).get("totalCount", len(rows)))
-        if len(rows) >= total or page > 10:  # 페이지 상한은 폭주 방어
+        if len(rows) >= total:
             return rows
+        if page >= KORAIL_MAX_PAGES:  # 부분 수신을 조용히 쓰지 않는다 (PR #54 리뷰 비차단 2)
+            raise ApiError(
+                f"[방어] 부분 수신: {date} — {len(rows)}/{total}건만 받아 중단합니다. "
+                "기존 스냅샷을 변경하지 않습니다 (KORAIL_PAGE_SIZE 또는 페이지 상한 조정 필요)",
+            )
         page += 1
 
 
@@ -277,7 +283,17 @@ def main_with_args(argv: list[str], service_key: str | None = None) -> int:
     parser.add_argument("--dry-run", action="store_true", help="파일을 쓰지 않고 요약만 출력")
     args = parser.parse_args(argv)
 
-    # korail은 openapis.korail.com 전용 키 필요 — data.go.kr 항공 키 폴백은 tago에서만 (PR #50 리뷰)
+    # TAGO는 커버리지가 불완전한 교차검증 전용(SOURCES.md) — 본 스냅샷을 덮어쓰지 못하게
+    # 요약(--dry-run)만 허용한다 (PR #54 리뷰 차단 반영)
+    if args.source == "tago" and not args.dry_run:
+        print("오류: --source tago는 교차검증 전용이라 --dry-run만 허용합니다. "
+              "스냅샷 기록은 --source korail로 실행하세요.", file=sys.stderr)
+        print("\n기존 스냅샷은 변경하지 않았습니다.", file=sys.stderr)
+        return 1
+
+    # korail·tago 모두 공공데이터포털(data.go.kr) 승인키 사용 — 코레일은 한국철도공사_열차운행정보
+    # 활용신청이 승인된 키(#49 지영 확인, TAGO와 동일 개인키 가능). AIRPORT_API_KEY 폴백은
+    # 같은 data.go.kr 계정 키라는 전제로 tago에서만 허용 (PR #50 리뷰)
     key = service_key or os.environ.get("TRAIN_API_KEY") or ""
     if not key and args.source == "tago":
         key = os.environ.get("AIRPORT_API_KEY") or ""

@@ -87,6 +87,37 @@ class EmptyResponseGuardTest(unittest.TestCase):
         backup_after = backup_path.read_text(encoding="utf-8") if backup_path.exists() else None
         self.assertEqual(backup_after, backup_before)
 
+    def test_tago_소스는_비_dry_run_쓰기를_거부하고_스냅샷과_백업이_불변이다(self) -> None:
+        # PR #54 리뷰 차단 반영: 교차검증 전용 TAGO가 본 스냅샷을 덮어쓰지 못한다
+        backup_path = pipeline.SNAPSHOT_PATH.with_suffix(".json.bak")
+        before = pipeline.SNAPSHOT_PATH.read_text(encoding="utf-8")
+        backup_before = backup_path.read_text(encoding="utf-8") if backup_path.exists() else None
+        with mock.patch.object(pipeline, "get_json", side_effect=AssertionError("호출 금지")) as fake:
+            exit_code = pipeline.main_with_args(["--source", "tago"], service_key="dummy-key")
+        self.assertEqual(exit_code, 1)
+        fake.assert_not_called()  # 가드가 API 호출 전에 종료한다
+        self.assertEqual(pipeline.SNAPSHOT_PATH.read_text(encoding="utf-8"), before)
+        backup_after = backup_path.read_text(encoding="utf-8") if backup_path.exists() else None
+        self.assertEqual(backup_after, backup_before)
+
+    def test_tago_dry_run은_여전히_허용된다(self) -> None:
+        rows = [KORAIL_ITEM]  # fetch까지 가는지만 확인 — TAGO 필드 부재로 실패해도 쓰기 없음
+        with mock.patch.object(pipeline, "get_json", return_value=payload_with(rows)):
+            exit_code = pipeline.main_with_args(["--source", "tago", "--dry-run"], service_key="dummy-key")
+        self.assertIn(exit_code, (0, 1))  # 가드에 걸리지 않고 파이프라인 경로로 진입한다
+
+    def test_페이지_상한_도달_시_부분_수신으로_중단한다(self) -> None:
+        # PR #54 리뷰 비차단 2: len(rows) < total이면 조용히 반환하지 않는다
+        def one_row_huge_total(base, op, key, params, timeout=10.0):
+            payload = payload_with([dict(KORAIL_ITEM)])
+            payload["response"]["body"]["totalCount"] = 10000
+            return payload
+
+        with mock.patch.object(pipeline, "get_json", side_effect=one_row_huge_total):
+            with self.assertRaises(pipeline.ApiError) as caught:
+                pipeline.fetch_korail_day("dummy-key", "20260812")
+        self.assertIn("부분 수신", str(caught.exception))
+
     def test_전건_수신이면_정규화가_동작하고_OD_밖_행은_제외한다(self) -> None:
         rows = [KORAIL_ITEM, KORAIL_ITEM_REVERSE, KORAIL_ITEM_OTHER_OD]
         with mock.patch.object(pipeline, "get_json", return_value=payload_with(rows)):
