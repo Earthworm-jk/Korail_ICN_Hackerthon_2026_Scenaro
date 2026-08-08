@@ -26,7 +26,9 @@ type TripConstraints = {
   arrivalAt: string;            // ISO, 입국편 도착
   departureAt: string;          // ISO, 출국편 출발
   airportExitOffsetMin: 90 | 120 | number; // 착륙 후 출발 가능시점 (REQ-SRCH-002)
-  selectedActorId?: string;     // 배우 중심 탐색
+  gatewayStationId?: string;    // 철도 여정의 시작·종료 관문역(생략 시 수도권 대표역)
+  selectedActorIds?: string[];  // 배우 중심 탐색(복수 가능)
+  selectedActorId?: string;     // 기존 호출부 호환용 단수 입력
   selectedWorkIds: string[];    // 작품 중심(복수 가능)
   requiredPlaceIds: string[];   // 필수 방문 — 하드 제약
   excludedPlaceIds: string[];   // 사용자 제외 — 하드 제약
@@ -50,8 +52,8 @@ function generateItinerary(c: TripConstraints, repos: Repos): ItineraryResult;
 
 ```
 1) place.workIds ∩ selectedWorkIds ≠ ∅              → selected_work (여기서 판정 종료)
-2) 1)이 아니고, selectedActorId가 있으며
-   place.workIds ∩ actor(selectedActorId).workIds ≠ ∅ → actor_other_work
+2) 1)이 아니고, 선택 배우가 있으며
+   place.workIds ∩ actors(selectedActorIds).workIds ≠ ∅ → actor_other_work
 3) 둘 다 아님                                         → 후보 아님 (NFR-ACCU-001)
 ```
 
