@@ -3,7 +3,7 @@
  * 4단계 위저드 골격 — 여행 조건 → K-콘텐츠 → 촬영지 → 일정 결과 (ver.0.3·#14 ver.0.4 확정)
  * - 배우·작품 복수 선택 칩, 필수 방문 없음(전부 자유 선택), 방문지별 시각 미표기(역 단위 체류)
  * - 편집 = 촬영지 재선택·항공 시각 변경 후 전체 재계산 (무상태)
- * - 저장·로그인(lazy login)·대안 시간표는 자리만 — 후속 슬롯에서 연결
+ * - 대안 시간표는 mock(#14 ⑨ 선행), 저장·내 일정은 in-memory 스텁(#25 선행) — 엔진·Supabase 연결 시 교체
  */
 import { useCallback, useMemo, useState } from "react";
 import { searchEntities, type ActorSummary, type WorkSummary } from "@/lib/actions/search";
@@ -15,8 +15,12 @@ import {
 import { planItinerary } from "@/lib/actions/itinerary";
 import { excludedPlaceIdsFrom, selectableCandidateIds } from "@/lib/candidates";
 import { getFlightInfo } from "@/lib/actions/flights";
-import type { ItineraryResult } from "@/lib/engine/types";
+import type { DayPlan, ItineraryResult } from "@/lib/engine/types";
 import { t, type Locale, type MessageKey } from "@/lib/i18n/messages";
+import { buildMockAlternatives, type MockAlternative } from "@/lib/alternatives-mock";
+import { defaultSavedTitle, type SavedItineraryStub } from "@/lib/saved-itineraries-stub";
+import { AlternativeTimetables } from "./alternative-timetables";
+import { AuthModal, TripsModal, useSaveStub, type SaveStatus } from "./save-stub";
 
 const KST = "Asia/Seoul";
 
@@ -73,6 +77,15 @@ export default function PlannerWizard() {
   const [planning, setPlanning] = useState(false);
   // PR #30 리뷰 ③: 입력 오류(invalid)와 예상 밖 장애(unexpected)를 구분하고, 실패 시 기존 결과를 유지한다
   const [planError, setPlanError] = useState<"invalid" | "unexpected" | null>(null);
+  // 대안 선택은 전체 교체 — 동시에 하나만 활성 (#14 §7). null = 추천 일정
+  const [selectedAlt, setSelectedAlt] = useState<MockAlternative | null>(null);
+  const [reopened, setReopened] = useState<SavedItineraryStub | null>(null);
+
+  const saveStub = useSaveStub((record) => {
+    setReopened(record);
+    setSelectedAlt(null);
+    setStep(4);
+  });
 
   const lookup = useCallback(async (direction: "arrival" | "departure") => {
     const field = direction === "arrival" ? arrival : departure;
@@ -119,14 +132,51 @@ export default function PlannerWizard() {
         selectedWorkIds: selectedWorks.map((w) => w.id),
         excludedPlaceIds: excludedPlaceIdsFrom(candidateData.candidates, selectedPlaceIds),
       });
-      if (res.ok) setResult(res.result);
-      else setPlanError("invalid"); // 1단계 검증을 우회한 요청 — 기존 결과 유지
+      if (res.ok) {
+        setResult(res.result);
+        setSelectedAlt(null); // 재계산 = 추천 기준으로 복귀, 재열람 상태 해제
+        setReopened(null);
+        saveStub.markDirty();
+      } else setPlanError("invalid"); // 1단계 검증을 우회한 요청 — 기존 결과 유지
     } catch {
       setPlanError("unexpected"); // 네트워크·서버 장애 — 기존 결과 유지
     } finally {
       setPlanning(false);
     }
-  }, [candidateData, selectedPlaceIds, arrival.at, departure.at, exitOffset, departureBuffer, selectedActors, selectedWorks]);
+  }, [candidateData, selectedPlaceIds, arrival.at, departure.at, exitOffset, departureBuffer, selectedActors, selectedWorks, saveStub]);
+
+  const baseDays: DayPlan[] | null =
+    result?.ok && result.status === "planned" ? result.days : null;
+  const mockAlternatives = useMemo(
+    () => (baseDays ? buildMockAlternatives(baseDays) : []),
+    [baseDays],
+  );
+  // 화면에 보이는 일정 — 재열람 > 대안 선택 > 추천 순으로 결정
+  const displayedDays: DayPlan[] | null = reopened?.days ?? selectedAlt?.days ?? baseDays;
+
+  const chooseAlternative = useCallback((alt: MockAlternative | null) => {
+    setSelectedAlt(alt);
+    setReopened(null);
+    saveStub.markDirty();
+  }, [saveStub]);
+
+  const savedEntry = useCallback((): Omit<SavedItineraryStub, "id" | "savedAt"> | null => {
+    if (!displayedDays) return null;
+    const primaryContent =
+      selectedActors[0]?.name[locale] ?? selectedWorks[0]?.title[locale] ?? null;
+    return {
+      title: defaultSavedTitle(fromLocalInput(arrival.at), fromLocalInput(departure.at), primaryContent, locale),
+      days: displayedDays,
+      snapshotVersion: "unversioned", // 시드 기준일 필드(#6 8/9 작업) 합류 시 교체
+    };
+  }, [displayedDays, selectedActors, selectedWorks, locale, arrival.at, departure.at]);
+
+  const SAVE_STATUS_KEY: Record<SaveStatus, MessageKey> = {
+    none: "save.statusNone",
+    dirty: "save.statusDirty",
+    saved: "save.statusSaved",
+    error: "save.statusError",
+  };
 
   const sortedCandidates = useMemo(() => {
     if (!candidateData) return [];
@@ -172,6 +222,9 @@ export default function PlannerWizard() {
         </div>
         <div className="flex items-center gap-2">
           <span className="rounded-full bg-amber-100 px-2 py-1 text-xs text-amber-800">{tr("app.snapshotBadge")}</span>
+          <button className="rounded border px-2 py-1 text-xs" onClick={saveStub.requestTrips}>
+            {tr("trips.button")}
+          </button>
           <button
             className="rounded border px-2 py-1 text-xs"
             onClick={() => setLocale(locale === "ko" ? "en" : "ko")}
@@ -430,29 +483,49 @@ export default function PlannerWizard() {
             </div>
           )}
 
-          {!planning && result && result.ok && result.status === "planned" && (
+          {!planning && (reopened || selectedAlt) && (
+            <div className="mt-4 rounded-lg border border-teal-200 bg-teal-50 p-3 text-sm text-teal-800">
+              {tr(reopened ? "trips.reopened" : "alt.swapped")}
+            </div>
+          )}
+
+          {!planning && displayedDays && (
             <div className="mt-4 space-y-4">
-              {result.days.map((day) => (
-                <div key={day.date} className="rounded-lg border p-4">
-                  <h3 className="font-medium">{day.date}</h3>
-                  <ul className="mt-2 space-y-1 text-sm">
-                    {day.rides.map((ride) => (
-                      <li key={`${ride.trainNo}-${ride.departAt}`} className="text-gray-700">
-                        🚆 {fmtTime(ride.departAt)} {stationName(ride.fromStationId)} → {fmtTime(ride.arriveAt)} {stationName(ride.toStationId)}
-                        <span className="ml-2 text-xs text-gray-400">{tr("step4.train")} {ride.trainNo}</span>
-                      </li>
-                    ))}
-                    {/* #14: 장소 단위 시각 미표기 — 역 단위 활용시간은 엔진 출력 계약 추가 후 표시 (#33) */}
-                    {day.items.map((item) => (
-                      <li key={item.placeId} className="text-gray-700">
-                        📍 {placeName(item.placeId)}
-                        <span className="ml-2 text-xs text-gray-500">{item.accessMinutesLabel}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              ))}
-              {result.rejectedPlaces.length > 0 && (
+              {displayedDays.map((day) => {
+                const baseDay = baseDays?.find((d) => d.date === day.date);
+                return (
+                  <div key={day.date} className="rounded-lg border p-4">
+                    <h3 className="font-medium">{day.date}</h3>
+                    <ul className="mt-2 space-y-1 text-sm">
+                      {day.rides.map((ride) => (
+                        <li key={`${ride.trainNo}-${ride.departAt}`} className="text-gray-700">
+                          🚆 {fmtTime(ride.departAt)} {stationName(ride.fromStationId)} → {fmtTime(ride.arriveAt)} {stationName(ride.toStationId)}
+                          <span className="ml-2 text-xs text-gray-400">{tr("step4.train")} {ride.trainNo}</span>
+                        </li>
+                      ))}
+                      {/* #14: 장소 단위 시각 미표기 — 역 단위 활용시간은 엔진 출력 계약 추가 후 표시 (#33) */}
+                      {day.items.map((item) => (
+                        <li key={item.placeId} className="text-gray-700">
+                          📍 {placeName(item.placeId)}
+                          <span className="ml-2 text-xs text-gray-500">{item.accessMinutesLabel}</span>
+                        </li>
+                      ))}
+                    </ul>
+                    {/* 재열람 화면은 저장 시점 일정 그대로 — 대안 선택은 추천 결과에서만 */}
+                    {!reopened && baseDay && baseDay.rides.length > 0 && (
+                      <AlternativeTimetables
+                        date={day.date}
+                        alternatives={mockAlternatives}
+                        selectedAltId={selectedAlt?.id ?? null}
+                        recommendedDepartAt={baseDay.rides[0].departAt}
+                        onSelect={chooseAlternative}
+                        tr={tr}
+                      />
+                    )}
+                  </div>
+                );
+              })}
+              {!reopened && result?.ok && result.status === "planned" && result.rejectedPlaces.length > 0 && (
                 <div className="rounded-lg border border-amber-200 bg-amber-50 p-4">
                   <h3 className="text-sm font-medium text-amber-800">{tr("step4.rejectedTitle")}</h3>
                   <ul className="mt-2 space-y-1 text-sm text-amber-800">
@@ -496,11 +569,46 @@ export default function PlannerWizard() {
               <button className="rounded border px-3 py-2 text-sm" onClick={() => setStep(1)}>{tr("step4.editFlights")}</button>
               <button className="rounded border px-3 py-2 text-sm" onClick={plan}>{tr("step4.recalculate")}</button>
             </div>
-            <button className="rounded bg-gray-300 px-4 py-2 text-sm text-gray-600" title={tr("step4.saveStub")} disabled>
-              ♡ {tr("step4.save")}
-            </button>
+            <div className="flex items-center gap-2">
+              <span
+                className={`text-xs ${saveStub.saveStatus === "saved" ? "text-green-700" : saveStub.saveStatus === "error" ? "text-red-600" : "text-gray-500"}`}
+                role="status"
+              >
+                {tr(SAVE_STATUS_KEY[saveStub.saveStatus])}
+              </span>
+              <button
+                className="rounded bg-blue-600 px-4 py-2 text-sm text-white disabled:opacity-40"
+                disabled={!displayedDays}
+                onClick={() => {
+                  const entry = savedEntry();
+                  if (entry) saveStub.requestSave(entry);
+                }}
+              >
+                ♡ {tr("step4.save")}
+              </button>
+            </div>
           </div>
         </section>
+      )}
+
+      {saveStub.authIntent && (
+        <AuthModal
+          intent={saveStub.authIntent}
+          onFinish={() => saveStub.finishAuth(savedEntry())}
+          onClose={saveStub.closeAuth}
+          tr={tr}
+        />
+      )}
+      {saveStub.tripsOpen && (
+        <TripsModal
+          saved={saveStub.saved}
+          selectedTripId={saveStub.selectedTripId}
+          onSelect={saveStub.selectTrip}
+          onReopen={saveStub.reopen}
+          onLogout={saveStub.logout}
+          onClose={saveStub.closeTrips}
+          tr={tr}
+        />
       )}
     </div>
   );
