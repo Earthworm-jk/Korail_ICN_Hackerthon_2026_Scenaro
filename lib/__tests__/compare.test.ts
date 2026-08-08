@@ -51,3 +51,12 @@ describe("사전식 비교 (#3 — 가중합 아님)", () => {
     expect(sorted1).toEqual(["a", "b", "c"]);
   });
 });
+
+describe("결정적 타이브레이커 (PR #16 비차단 권고)", () => {
+  it("비교 키가 모두 같으면 출국 전 여유가 큰 후보가 우선한다", () => {
+    const roomier = cand({ stableId: "b", departureSlackMinutes: 240 });
+    const tighter = cand({ stableId: "a", departureSlackMinutes: 180 });
+    expect(compareCandidates(roomier, tighter)).toBeLessThan(0);
+    expect([tighter, roomier].sort(compareCandidates).map((c) => c.stableId)).toEqual(["b", "a"]);
+  });
+});
