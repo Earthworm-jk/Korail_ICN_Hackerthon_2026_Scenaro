@@ -250,7 +250,40 @@ comparisonKeys·metrics를 포함하지 않는다(허위 값 금지, PR #16 리�
 `DayPlan.date`는 KST 기준 `YYYY-MM-DD`이고, 항목·열차의 `arriveAt`·`departAt`은 절대시각
 ISO 문자열(직렬화 시 UTC `Z`)이다. UI는 표시에만 사용자 시간대/KST 변환을 적용한다.
 
+### 7.1 역·권역 활용 창 `regionWindows` (#33 확정)
+
+`DayPlan.regionWindows: RegionWindow[]` — 역 체류 구간(도착→다음 출발)을 KST 자정에서
+분할한 창. **UI는 `availableMinutes`를 "약 N시간 M분 활용 가능"으로 포맷만 하고 경계
+시각·역·권역을 재해석·재계산하지 않는다.**
+
+```ts
+type RegionWindow = {
+  stationId: string;
+  regionId: string;
+  startAt: string;   // ISO — 역 경계 (접근·체류 반영 전 원본 창)
+  endAt: string;
+  availableMinutes: number;
+  startBoundary: "AIRPORT_READY" | "GATEWAY_ARRIVAL" | "TRAIN_ARRIVAL" | "DAY_START";
+  endBoundary: "TRAIN_DEPARTURE" | "AIRPORT_DEADLINE" | "DAY_END";
+};
+```
+
+- **산식(#33 코멘트 확정)**: 내부 기본 활동시간 **KST 09:00-21:00**(사용자 설정 UI 없음).
+  날짜별 `availableMinutes = max(0, min(endAt, 21:00) - max(startAt, 09:00))`.
+  접근시간·체류시간·`dailySlackMinutes`는 배치 검증에 이미 사용되므로 **다시 차감하지
+  않는다**(이중 차감 금지). 값의 의미: "역 도착·출발 경계 안에서 서비스 기본 활동시간
+  기준으로 확보된 권역 창".
+- 자정 분할: 첫날은 실제 시작 경계, 중간 날짜는 `DAY_START → DAY_END`, 마지막 날은 실제
+  종료 경계. 각 창은 단일 KST 날짜에 속하며 시작 날짜의 `DayPlan`에 귀속된다.
+- **배치 정합(PR #45 리뷰)**: 같은 활동 경계를 방문 배치에도 적용한다 — 역 출발 가능
+  시각 >= 09:00(장소 도착 하한 = 09:00 + 접근·보수 버퍼), 방문 + 역 복귀 완료 <= 21:00.
+  따라서 모든 실제 활동은 출력 창 안에 있으며, `availableMinutes = 0`인 창은 출력하지 않는다.
+- 공항역(`isAirport`) 체류(수속·대기)는 창을 만들지 않는다. 공항역에서 출발한 진입
+  구간(현재 공항철도, 추후 검증 공항버스 `GatewayLeg` 동일 규칙)의 도착이
+  `GATEWAY_ARRIVAL` 경계다. 출국 마감(`airportArrivalDeadline`) 이후 시간은 계산하지 않는다.
+
 ## 8. 회귀 프리셋 3개
+
 
 공통 fixture(정의서 v0.5 ITIN-003과 동일): 김고은 / 작품 4편 / 촬영지 14곳 시드(가안 — #1 수동 검증 완료 시 확정), 기준 입국 2026-08-12 10:00 / 출국 2026-08-14 18:00 / 시간표 스냅샷 2026-08-07.
 

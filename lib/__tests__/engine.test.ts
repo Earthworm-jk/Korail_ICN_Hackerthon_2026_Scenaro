@@ -392,6 +392,69 @@ describe("generateItinerary", () => {
     expect(result.comparisonKeys.visitablePlaceCount).toBe(15);
   });
 
+  // PR #45 리뷰: 출력 창(09:00-21:00)과 실제 배치의 정합 — 활동 경계 회귀
+  it("전날 저녁 도착한 상시 개방 장소는 자정이 아니라 다음 날 활동 시작 이후에 배치된다", () => {
+    const repos = repositories();
+    repos.places = repos.places.filter(({ id }) => id === "place-selected");
+    repos.trainLegs = [
+      leg("901", "station-seoul", "station-gangneung", "2026-08-12T19:30:00+09:00", "2026-08-12T21:30:00+09:00"),
+      leg("902", "station-gangneung", "station-seoul", "2026-08-13T17:00:00+09:00", "2026-08-13T19:00:00+09:00"),
+    ];
+    const result = generateItinerary(constraints({
+      arrivalAt: "2026-08-12T18:00:00+09:00",
+      departureAt: "2026-08-13T22:00:00+09:00",
+      selectedActorIds: [],
+      selectedWorkIds: ["work-1"],
+    }), repos);
+
+    expect(result.status).toBe("planned");
+    if (result.status !== "planned") return;
+    // 21:30 역 도착 → 당일(21:00 경계 초과)·자정 배치 금지 → 다음 날 09:00 + 접근 30분 = 09:30 KST
+    expect(result.days.flatMap(({ items }) => items.map(({ arriveAt }) => arriveAt)))
+      .toEqual(["2026-08-13T00:30:00.000Z"]);
+  });
+
+  it("접근·체류·역 복귀가 21:00을 넘는 후보는 배치되지 않는다", () => {
+    const repos = repositories();
+    repos.places = repos.places.filter(({ id }) => id === "place-selected");
+    repos.trainLegs = [
+      leg("901", "station-seoul", "station-gangneung", "2026-08-12T19:30:00+09:00", "2026-08-12T20:15:00+09:00"),
+      leg("902", "station-gangneung", "station-seoul", "2026-08-12T21:10:00+09:00", "2026-08-12T22:50:00+09:00"),
+    ];
+    // 20:15 도착 → 방문 시 역 복귀 21:45 > 21:00, 다음 날은 출국 마감(23:00) 밖
+    const result = generateItinerary(constraints({
+      arrivalAt: "2026-08-12T18:00:00+09:00",
+      departureAt: "2026-08-13T01:00:00+09:00",
+      selectedActorIds: [],
+      selectedWorkIds: ["work-1"],
+    }), repos);
+
+    expect(result.status).toBe("empty");
+    if (result.status !== "empty") return;
+    expect(result.rejectedPlaces).toContainEqual({
+      code: "DEPARTURE_DEADLINE_EXCEEDED",
+      placeId: "place-selected",
+    });
+  });
+
+  it("배치된 모든 방문의 지역 활동 구간(접근 포함)이 해당 날짜 09:00-21:00 안에 있다", () => {
+    const result = generateItinerary(constraints(), repositories());
+
+    expect(result.status).toBe("planned");
+    if (result.status !== "planned") return;
+    const kstMinutes = (iso: string) => {
+      const kst = new Date(Date.parse(iso) + 9 * 3_600_000);
+      return kst.getUTCHours() * 60 + kst.getUTCMinutes();
+    };
+    for (const item of result.days.flatMap(({ items }) => items)) {
+      const accessMs = 30 * 60_000; // fixture: 접근 10분 + 보수 버퍼 20분
+      expect(kstMinutes(new Date(Date.parse(item.arriveAt) - accessMs).toISOString()))
+        .toBeGreaterThanOrEqual(9 * 60);
+      expect(kstMinutes(new Date(Date.parse(item.departAt) + accessMs).toISOString()))
+        .toBeLessThanOrEqual(21 * 60);
+    }
+  });
+
   it("배우와 작품이 모두 비어 있는 입력은 계산 전에 거절한다", () => {
     expect(() => generateItinerary(
       constraints({ selectedActorIds: [], selectedWorkIds: [] }),

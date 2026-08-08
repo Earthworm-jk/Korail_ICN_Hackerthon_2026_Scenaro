@@ -71,10 +71,35 @@ export type TrainRide = {
   arriveAt: string;
 };
 
+// #33 확정 계약 — 역·권역 단위 현지 활용 가능 시간. UI는 availableMinutes를
+// "약 N시간 M분 활용 가능"으로 포맷만 하고 경계·시각을 재해석·재계산하지 않는다.
+export type RegionWindowStartBoundary =
+  | "AIRPORT_READY" // 공항 출발 가능 시각에서 바로 시작 (선행 열차 없음)
+  | "GATEWAY_ARRIVAL" // 공항 진입 구간(공항역 출발 leg — 공항철도, 추후 검증 버스 동일 규칙) 도착
+  | "TRAIN_ARRIVAL"
+  | "DAY_START"; // KST 자정 분할의 이어지는 창
+
+export type RegionWindowEndBoundary =
+  | "TRAIN_DEPARTURE"
+  | "AIRPORT_DEADLINE" // 공항 도착 마감이 창을 끊음 (종점이 관문역인 경우 등)
+  | "DAY_END"; // KST 자정 분할의 앞 창
+
+export type RegionWindow = {
+  stationId: string;
+  regionId: string;
+  startAt: string; // ISO (UTC 직렬화)
+  endAt: string;
+  /** 하루 활동 가능 시간대(09:00-21:00 KST, 내부 기본 — #33 확정)와의 겹침. 접근·체류·여유 미차감 */
+  availableMinutes: number;
+  startBoundary: RegionWindowStartBoundary;
+  endBoundary: RegionWindowEndBoundary;
+};
+
 export type DayPlan = {
   date: string; // KST 기준 YYYY-MM-DD
   items: ItineraryItem[];
   rides: TrainRide[];
+  regionWindows: RegionWindow[]; // #33 — 해당 날짜(KST) 시작 창만, startAt 오름차순
 };
 
 // #14 ver.0.4 확정: 필수 방문·방문일 고정 입력이 없어 사용자 제약 실패(ok:false) 분기가

@@ -30,8 +30,9 @@ const days: DayPlan[] = [
         accessMinutesLabel: "약 45분(추정)",
       },
     ],
+    regionWindows: [],
   },
-  { date: "2026-08-13", rides: [], items: [] },
+  { date: "2026-08-13", rides: [], items: [], regionWindows: [] },
 ];
 
 describe("buildMockAlternatives", () => {

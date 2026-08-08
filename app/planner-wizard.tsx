@@ -240,6 +240,17 @@ export default function PlannerWizard() {
     return list;
   }, [candidateData, sortBy]);
 
+  // #33 — availableMinutes 포맷 전용 (재계산 금지)
+  const availableLabel = (minutes: number) => {
+    const hours = Math.floor(minutes / 60);
+    const mins = minutes % 60;
+    const duration = hours > 0
+      ? `${hours}${tr("region.hours")}${mins > 0 ? ` ${mins}${tr("region.minutes")}` : ""}`
+      : `${mins}${tr("region.minutes")}`;
+    return `${tr("region.about")} ${duration} ${tr("region.available")}`;
+  };
+
+
   const stationName = (id: string) =>
     candidateData?.stations.find((s) => s.id === id)?.name[locale] ?? id;
   const placeName = (id: string) =>
@@ -539,7 +550,7 @@ export default function PlannerWizard() {
                           <span className="ml-2 text-xs text-gray-400">{tr("step4.train")} {ride.trainNo}</span>
                         </li>
                       ))}
-                      {/* #14: 장소 단위 시각 미표기 — 역 단위 활용시간은 엔진 출력 계약 추가 후 표시 (#33) */}
+                      {/* #14: 장소 단위 시각 미표기 — 역 단위 활용시간은 regionWindows로 표시 (#33) */}
                       {day.items.map((item) => (
                         <li key={item.placeId} className="text-gray-700">
                           📍 {placeName(item.placeId)}
@@ -547,6 +558,20 @@ export default function PlannerWizard() {
                         </li>
                       ))}
                     </ul>
+                    {/* #33 — 엔진 값 포맷만, 경계·시각 재해석 금지 */}
+                    {day.regionWindows.length > 0 && (
+                      <div className="mt-2 space-y-1">
+                        {day.regionWindows.map((window) => (
+                          <div
+                            key={window.startAt}
+                            className="rounded border-l-2 border-amber-300 bg-amber-50/70 px-3 py-1.5 text-sm text-gray-700"
+                          >
+                            <span className="font-medium">{stationName(window.stationId)}</span>
+                            {" "}{tr("region.block")} · {availableLabel(window.availableMinutes)}
+                          </div>
+                        ))}
+                      </div>
+                    )}
                     {/* 재열람 화면은 저장 시점 일정 그대로 — mock 대안은 개발 플래그에서만 (PR #35 리뷰 2) */}
                     {SHOW_ALT_MOCK && !view.reopened && baseDay && baseDay.rides.length > 0 && (
                       <AlternativeTimetables

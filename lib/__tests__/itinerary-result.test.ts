@@ -27,6 +27,17 @@ const planned: ItineraryResult = {
           accessMinutesLabel: "역-장소 접근 35분 추정",
         },
       ],
+      regionWindows: [
+        {
+          stationId: "station-gangneung",
+          regionId: "gangwon",
+          startAt: "2026-08-12T14:59:00+09:00",
+          endAt: "2026-08-13T00:00:00+09:00",
+          availableMinutes: 361,
+          startBoundary: "TRAIN_ARRIVAL",
+          endBoundary: "DAY_END",
+        },
+      ],
     },
   ],
   rejectedPlaces: [],
