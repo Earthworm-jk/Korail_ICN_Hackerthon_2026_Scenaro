@@ -50,6 +50,24 @@ describe("getFlightInfo 분기 (#46)", () => {
     expect(result).toMatchObject({ ok: true, source: "snapshot" });
   });
 
+  // PR #47 리뷰(차단): 데모 편명은 실조회·오프라인 폴백이 같은 편으로 성립해야 한다 (#46 완료 기준)
+  it("데모 편명 KE852 — live 오류(네트워크 단절) 시 스냅샷 폴백이 적중한다", async () => {
+    mockedMode.mockReturnValue("live");
+    mockedLookup.mockRejectedValue(new Error("network unreachable"));
+    const result = await getFlightInfo("KE852", "arrival", "2026-08-14");
+    expect(result).toMatchObject({
+      ok: true,
+      source: "snapshot",
+      flight: { flightNo: "KE852", direction: "arrival", scheduledAt: "2026-08-14T21:30:00+09:00" },
+    });
+  });
+
+  it("데모 편명 KE852 — 키 제거(snapshot 모드)에서도 외부 호출 없이 조회된다", async () => {
+    const result = await getFlightInfo("KE852", "arrival", "2026-08-14");
+    expect(mockedLookup).not.toHaveBeenCalled();
+    expect(result).toMatchObject({ ok: true, source: "snapshot" });
+  });
+
   it("오류 폴백인데 스냅샷에도 없으면 FLIGHT_NOT_FOUND — 직접 입력 유지", async () => {
     mockedMode.mockReturnValue("live");
     mockedLookup.mockRejectedValue(new Error("aborted"));
