@@ -44,12 +44,17 @@ class EmptyResponseGuardTest(unittest.TestCase):
                 pipeline.fetch_korail_legs("dummy-key")
 
     def test_중단_시_스냅샷_파일이_불변이다(self) -> None:
+        # PR #50 리뷰 비차단 반영: 이전 실행이 남긴 .bak가 있어도 오탐하지 않도록
+        # 실행 전 백업의 존재·내용을 기록해 실행 후와 동일한지 비교한다.
+        backup_path = pipeline.SNAPSHOT_PATH.with_suffix(".json.bak")
         before = pipeline.SNAPSHOT_PATH.read_text(encoding="utf-8")
+        backup_before = backup_path.read_text(encoding="utf-8") if backup_path.exists() else None
         with mock.patch.object(pipeline, "get_json", return_value=payload_with([])):
             exit_code = pipeline.main_with_args(["--source", "korail"], service_key="dummy-key")
         self.assertEqual(exit_code, 1)
         self.assertEqual(pipeline.SNAPSHOT_PATH.read_text(encoding="utf-8"), before)
-        self.assertFalse(pipeline.SNAPSHOT_PATH.with_suffix(".json.bak").exists())
+        backup_after = backup_path.read_text(encoding="utf-8") if backup_path.exists() else None
+        self.assertEqual(backup_after, backup_before)
 
     def test_전건_수신이면_정규화가_동작한다(self) -> None:
         with mock.patch.object(pipeline, "get_json", return_value=payload_with([KORAIL_ITEM])):
