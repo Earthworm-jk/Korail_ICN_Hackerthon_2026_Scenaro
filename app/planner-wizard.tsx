@@ -14,6 +14,7 @@ import {
 } from "@/lib/actions/places";
 import { planItinerary } from "@/lib/actions/itinerary";
 import { excludedPlaceIdsFrom, initialCandidateIds } from "@/lib/candidates";
+import { sortCandidatePlaces } from "@/lib/place-ranking";
 import { getFlightInfo } from "@/lib/actions/flights";
 import { t, type Locale, type MessageKey } from "@/lib/i18n/messages";
 import { buildMockAlternatives, type MockAlternative } from "@/lib/alternatives-mock";
@@ -234,15 +235,8 @@ export default function PlannerWizard() {
 
   const sortedCandidates = useMemo(() => {
     if (!candidateData) return [];
-    const relRank = (c: PlaceCandidate) => (c.relation === "selected_work" ? 0 : 1);
-    const list = [...candidateData.candidates];
-    // PRD 5.3 확정 정렬 — UI 전용, 엔진 순위와 분리
-    list.sort((a, b) =>
-      sortBy === "relevance"
-        ? relRank(a) - relRank(b) || b.officialSourceCount - a.officialSourceCount || a.id.localeCompare(b.id, "en")
-        : b.officialSourceCount - a.officialSourceCount || relRank(a) - relRank(b) || a.id.localeCompare(b.id, "en"),
-    );
-    return list;
+    // #48: 스냅샷 연결 전에는 기존 관계·출처·ID 순서로 결정적 폴백한다.
+    return sortCandidatePlaces(candidateData.candidates, sortBy === "relevance" ? "relevance" : "official_sources");
   }, [candidateData, sortBy]);
 
   // #33 — availableMinutes 포맷 전용 (재계산 금지)

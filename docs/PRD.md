@@ -106,8 +106,10 @@
 
 후보 기본 정렬은 관련성순이며 공식 출처순으로 전환할 수 있다.
 
-1. 관련성순: `selected_work → actor_other_work → officialSourceCount 내림차순 → placeId 오름차순`
+1. 관련성순: `selected_work → actor_other_work → 같은 관계 범주의 검토된 AI 점수 내림차순 → officialSourceCount 내림차순 → placeId 오름차순`
 2. 공식 출처순: `officialSourceCount 내림차순 → 관계 유형 → placeId 오름차순`
+
+AI 점수는 후보 제외 조건이 아니다. 미검토·점수 미달·스냅샷 누락 시 전체 후보를 유지하고 관계 유형·공식 출처 수·ID 기준으로 결정적으로 폴백한다(#48).
 
 ### 5.4 일정 생성 엔진
 
