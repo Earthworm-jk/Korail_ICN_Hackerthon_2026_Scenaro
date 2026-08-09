@@ -254,7 +254,9 @@ export const messages = {
     // 탑승 위치·3단계 상세 안내는 제거했다. 서울역 환승 동선만 #101이 담당한다.
     // 시각·소요시간은 일정의 열차 줄이 표시하므로 팝업 전용 문구가 없다.
     "leg.arexNote": "인천공항 T1과 서울역을 잇는 공항철도 직통열차입니다. 중간에 서지 않습니다.",
-    "leg.railSource": "출처: 한국철도공사 열차운행정보 · 2026-08-09 확인",
+    // 확인일이 하나가 아니다 — 강릉 축은 2026-08-08, 경부·전라선과 진부·만종은 2026-08-09에
+    // 호출했다(SOURCES.md 철도 절). 한 날짜로 적으면 강릉 구간에 거짓이 되므로 범위로 쓴다.
+    "leg.railSource": "출처: 한국철도공사 열차운행정보 · 2026-08-08 - 08-09 확인",
   },
   en: {
     "app.title": "SCENARO",
@@ -501,7 +503,8 @@ export const messages = {
     // guidance is handled in #101. Times and duration live on the itinerary line, so the
     // modal has no copy of its own.
     "leg.arexNote": "AREX Express between Incheon T1 and Seoul Station, with no intermediate stops.",
-    "leg.railSource": "Source: Korail train operation data · verified 2026-08-09",
+    // See the ko block: the Gangneung axis was fetched 2026-08-08, the rest 2026-08-09.
+    "leg.railSource": "Source: Korail train operation data · verified 2026-08-08 - 08-09",
   },
 } as const;
 
