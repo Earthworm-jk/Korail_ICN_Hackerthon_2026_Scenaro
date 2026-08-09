@@ -44,6 +44,9 @@
 - **KTX 시간표**: `data/train-snapshot.json` 스냅샷만 사용. 실시간 조회 없음
 - **역 편의시설**: `data/station-facilities.json` 스냅샷만 사용
   (생성: `scripts/build_station_facilities.py`, 한국철도공사 편의시설정보 B551457). 실시간 조회 없음
+- **공항버스**: `data/gateway-legs.json`의 검증 왕복편만 사용. 인천공항공사 버스정보와
+  TAGO 시외버스정보는 `scripts/verify_gateway_snapshot.py`의 오프라인 교차검증에만 사용하고,
+  티머니 공식 운행정보의 데모 날짜 시각을 함께 고정한다. 런타임 시간표·좌석 조회 없음 (#58)
 - **AI 촬영지 랭킹**: `data/place-rankings.json` 스냅샷만 사용
   (생성: `scripts/build_place_rankings.py` — OpenAI 호출은 이 오프라인 스크립트에서만).
   미탑재·미검토·하한 미달은 "점수 없음"으로 결정적 폴백 (#48, PLACE_RANKING.md)
@@ -124,6 +127,15 @@ type PlanRequest = {
 //   { status: "planned", days, rejectedPlaces, warnings, comparisonKeys, metrics }
 //   { status: "empty",   days: [], rejectedPlaces, warnings }
 // empty는 정상 응답이며 comparisonKeys·metrics를 포함하지 않는다(허위 값 금지)
+
+// #58 공항버스 대안은 핵심 추천의 2초 응답을 막지 않는 후속 보강 Action이다.
+// planItinerary(request)는 철도 추천을 먼저 반환하고, 성공한 planned 결과 뒤에 호출한다.
+planGatewayAlternatives(request): Promise<
+  | { ok: true; alternatives: GatewayAlternative[] }
+  | { ok: false; code: "INVALID_REQUEST"; fieldErrors: Record<string, string> }
+>;
+// UI는 이전 요청의 늦은 응답을 폐기한다. 보강 실패는 이미 표시한 추천을 실패로 되돌리지 않는다.
+// GatewayAlternative.schedule은 observed_snapshot·verifiedAt·recheckRequired:true를 포함한다.
 
 // lib/actions/account.ts — #25 lazy login (Supabase Auth, 서버 세션 재검증 #36)
 getAccountStatus(): Promise<{ configured: boolean; authenticated: boolean }>;

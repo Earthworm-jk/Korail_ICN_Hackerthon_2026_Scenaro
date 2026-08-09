@@ -10,7 +10,7 @@
  * - 재계산 성공 = 추천 기준 복귀 (대안 선택·재열람 해제)
  * - 재열람은 저장 시점 일정 그대로 — 대안·empty·오류와 동시 노출 금지
  */
-import type { DayPlan, ItineraryResult } from "./engine/types";
+import type { DayPlan, GatewayAlternative, ItineraryResult } from "./engine/types";
 import type { MockAlternative } from "./alternatives-mock";
 import type { SavedItineraryStub } from "./saved-itineraries-stub";
 
@@ -19,8 +19,10 @@ export type ItineraryView = {
   planError: "invalid" | "unexpected" | null;
   result: ItineraryResult | null; // 마지막 계산 결과 — 실패 시에도 유지
   reopened: SavedItineraryStub | null;
-  selectedAlt: MockAlternative | null; // 전체 교체 — 동시에 하나만 (#14 §7)
+  selectedAlt: SelectableAlternative | null; // 전체 교체 — 동시에 하나만 (#14 §7)
 };
+
+export type SelectableAlternative = MockAlternative | GatewayAlternative;
 
 export const initialItineraryView: ItineraryView = {
   planning: false,
@@ -33,9 +35,10 @@ export const initialItineraryView: ItineraryView = {
 export type ItineraryViewEvent =
   | { type: "PLAN_START" }
   | { type: "PLAN_SUCCESS"; result: ItineraryResult }
+  | { type: "GATEWAY_ALTERNATIVES_SUCCESS"; alternatives: GatewayAlternative[] }
   | { type: "PLAN_INVALID" }
   | { type: "PLAN_FAILED" }
-  | { type: "SELECT_ALT"; alt: MockAlternative | null }
+  | { type: "SELECT_ALT"; alt: SelectableAlternative | null }
   | { type: "REOPEN"; record: SavedItineraryStub };
 
 export function reduceItineraryView(view: ItineraryView, event: ItineraryViewEvent): ItineraryView {
@@ -44,6 +47,15 @@ export function reduceItineraryView(view: ItineraryView, event: ItineraryViewEve
       return { ...view, planning: true, planError: null };
     case "PLAN_SUCCESS":
       return { planning: false, planError: null, result: event.result, reopened: null, selectedAlt: null };
+    case "GATEWAY_ALTERNATIVES_SUCCESS":
+      if (view.result?.status !== "planned") return view;
+      return {
+        ...view,
+        result: {
+          ...view.result,
+          gatewayAlternatives: event.alternatives.length > 0 ? event.alternatives : undefined,
+        },
+      };
     case "PLAN_INVALID":
       return { ...view, planning: false, planError: "invalid" };
     case "PLAN_FAILED":
@@ -76,6 +88,7 @@ export function showEmpty(view: ItineraryView): boolean {
 /** 배치 제외 사유 목록 — 추천 결과 화면에서만 */
 export function rejectedPlaces(view: ItineraryView) {
   if (view.planning || view.reopened || view.result?.status !== "planned") return [];
+  if (view.selectedAlt?.kind === "gateway_bus") return view.selectedAlt.rejectedPlaces;
   return view.result.rejectedPlaces;
 }
 
@@ -84,12 +97,14 @@ export function itineraryWarnings(view: ItineraryView) {
   if (view.planning) return [];
   if (view.reopened) return view.reopened.warnings ?? [];
   if (view.result?.status !== "planned") return [];
+  if (view.selectedAlt?.kind === "gateway_bus") return view.selectedAlt.warnings;
   return view.result.warnings;
 }
 
-export function banner(view: ItineraryView): "reopened" | "swapped" | null {
+export function banner(view: ItineraryView): "reopened" | "swapped" | "gateway" | null {
   if (view.planning) return null;
   if (view.reopened) return "reopened";
+  if (view.selectedAlt?.kind === "gateway_bus") return "gateway";
   if (view.selectedAlt) return "swapped";
   return null;
 }

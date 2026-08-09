@@ -17,12 +17,12 @@ import {
   type CandidateResponse,
   type PlaceCandidate,
 } from "@/lib/actions/places";
-import { planItinerary } from "@/lib/actions/itinerary";
+import { planGatewayAlternatives, planItinerary } from "@/lib/actions/itinerary";
 import { excludedPlaceIdsFrom, initialCandidateIds, initialSelectedIds, splitByActorPresence } from "@/lib/candidates";
 import { sortCandidatePlaces } from "@/lib/place-ranking";
 import { getFlightInfo } from "@/lib/actions/flights";
 import { t, type Locale, type MessageKey } from "@/lib/i18n/messages";
-import { buildMockAlternatives, type MockAlternative } from "@/lib/alternatives-mock";
+import { buildMockAlternatives } from "@/lib/alternatives-mock";
 import {
   constraintsFromTripInputs,
   defaultSavedTitle,
@@ -39,6 +39,7 @@ import {
   reduceItineraryView,
   rejectedPlaces as deriveRejectedPlaces,
   showEmpty,
+  type SelectableAlternative,
 } from "@/lib/itinerary-view";
 import { fromKstLocalInput as fromLocalInput, toKstLocalInput as toLocalInput } from "@/lib/kst-datetime";
 import { formatFlightStatus } from "@/lib/flight-status";
@@ -47,6 +48,7 @@ import { splitSourceLink } from "@/lib/source-link";
 import { AlternativeTimetables } from "./alternative-timetables";
 import { AuthModal, TripsModal, useSaveStub, type SaveStatus } from "./save-stub";
 import { ExecutionSupport } from "./execution-support";
+import { GatewayAlternatives } from "./gateway-alternatives";
 import { ItineraryRouteMap, KoreaMapPanel, type MapPlace, type MapStation } from "./korea-map";
 import { ThemeExperienceCard } from "./theme-experience";
 import { getThemeExperience, type ThemeExperienceResult } from "@/lib/actions/theme-experience";
@@ -260,6 +262,7 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates }:
 
   // step 4 — 결과. 전이 규칙·파생은 lib/itinerary-view 순수 함수로 고정 (PR #35 리뷰 3)
   const [view, dispatchView] = useReducer(reduceItineraryView, initialItineraryView);
+  const planSequence = useRef(0); // 늦게 도착한 이전 요청의 공항버스 대안이 새 결과를 덮지 않게 한다.
 
   // #80 테마체험 권역 — 일정이 확정된 시점(생성 성공·재열람)에만 조회한다.
   // 입력은 표시 중인 일정의 권역과 선택 작품뿐이며, 런타임 OpenAI 호출은 없다.
@@ -380,6 +383,7 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates }:
   const plan = useCallback(async () => {
     const constraints = currentConstraints();
     if (!constraints) return;
+    const sequence = ++planSequence.current;
     dispatchView({ type: "PLAN_START" });
     setThemeExperience(null);
     setStep(4);
@@ -389,6 +393,13 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates }:
         dispatchView({ type: "PLAN_SUCCESS", result: res.result });
         saveStub.markDirty();
         if (res.result.status === "planned") {
+          // 핵심 철도 추천을 먼저 보여주고, 더 비싼 전체 공항버스 재계산은 비차단으로 붙인다.
+          void planGatewayAlternatives(constraints).then((gateway) => {
+            if (sequence !== planSequence.current || !gateway.ok) return;
+            dispatchView({ type: "GATEWAY_ALTERNATIVES_SUCCESS", alternatives: gateway.alternatives });
+          }).catch(() => {
+            // 선택 대안 보강 실패는 이미 생성된 핵심 추천을 실패 상태로 되돌리지 않는다.
+          });
           void refreshThemeExperience(res.result.days, constraints.selectedWorkIds);
         }
       } else dispatchView({ type: "PLAN_INVALID" }); // 1단계 검증을 우회한 요청 — 기존 결과 유지
@@ -407,8 +418,7 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates }:
   const viewRejected = deriveRejectedPlaces(view);
   const viewWarnings = deriveWarnings(view);
 
-
-  const chooseAlternative = useCallback((alt: MockAlternative | null) => {
+  const chooseAlternative = useCallback((alt: SelectableAlternative | null) => {
     dispatchView({ type: "SELECT_ALT", alt });
     saveStub.markDirty();
   }, [saveStub]);
@@ -420,8 +430,7 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates }:
     if (!constraints) return null;
     const context = view.reopened?.context ?? { actors: selectedActors, works: selectedWorks };
     // 재저장도 재열람 보존 규칙과 동일 — 저장 당시 경고를 잃지 않는다 (#43 경고 누락 0건)
-    const warnings = view.reopened?.warnings
-      ?? (view.result?.status === "planned" ? view.result.warnings : []);
+    const warnings = view.reopened?.warnings ?? viewWarnings;
     const primaryContent =
       context.actors[0]?.name[locale] ?? context.works[0]?.title[locale] ?? null;
     return {
@@ -433,7 +442,7 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates }:
       context,
       warnings,
     };
-  }, [displayedDays, view.reopened, view.result, currentConstraints, selectedActors, selectedWorks, locale]);
+  }, [displayedDays, view.reopened, viewWarnings, currentConstraints, selectedActors, selectedWorks, locale]);
 
   const SAVE_STATUS_KEY: Record<SaveStatus, MessageKey> = {
     none: "save.statusNone",
@@ -894,20 +903,36 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates }:
 
           {viewBanner && (
             <div className="mt-4 rounded-lg border border-sc-airport/30 bg-sc-airport-soft p-3 text-sm text-sc-airport-text">
-              {tr(viewBanner === "reopened" ? "trips.reopened" : "alt.swapped")}
+              {tr(viewBanner === "reopened" ? "trips.reopened" : viewBanner === "gateway" ? "gateway.swapped" : "alt.swapped")}
             </div>
           )}
 
           {displayedDays && (
-            // #14 v0.6 sc-result-grid — 좌측 일정 타임라인 + 우측 지도·경고·실행 지원
-            <div className="mt-4 grid gap-[18px] md:grid-cols-[minmax(0,1fr)_minmax(360px,1fr)] md:items-start">
-              <div className="min-w-0 space-y-4">
+            <div className="mt-4 space-y-4">
+              {!view.reopened && view.result?.status === "planned" && (
+                <GatewayAlternatives
+                  alternatives={view.result.gatewayAlternatives ?? []}
+                  selectedId={view.selectedAlt?.kind === "gateway_bus" ? view.selectedAlt.id : null}
+                  locale={locale}
+                  onSelect={chooseAlternative}
+                  tr={tr}
+                />
+              )}
+              {/* #14 v0.6 sc-result-grid — 좌측 일정 타임라인 + 우측 지도·경고·실행 지원 */}
+              <div className="grid gap-[18px] md:grid-cols-[minmax(0,1fr)_minmax(360px,1fr)] md:items-start">
+                <div className="min-w-0 space-y-4">
               {displayedDays.map((day) => {
                 const baseDay = baseDays?.find((d) => d.date === day.date);
                 return (
                   <div key={day.date} className="rounded-lg border p-4">
                     <h3 className="font-medium">{day.date}</h3>
                     <ul className="mt-2 space-y-1 text-sm">
+                      {(day.gatewayLegs ?? []).map((leg) => (
+                        <li key={leg.id} className="text-sc-text/80">
+                          🚌 {fmtTime(leg.departAt)} {leg.fromName[locale]} → {fmtTime(leg.arriveAt)} {leg.toName[locale]}
+                          <span className="ml-2 text-xs text-sc-muted/70">{leg.serviceName[locale]} · {leg.operator[locale]}</span>
+                        </li>
+                      ))}
                       {day.rides.map((ride) => (
                         <li key={`${ride.trainNo}-${ride.departAt}`} className="text-sc-text/80">
                           🚆 {fmtTime(ride.departAt)} {stationName(ride.fromStationId)} → {fmtTime(ride.arriveAt)} {stationName(ride.toStationId)}
@@ -999,12 +1024,14 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates }:
                 snapshot={stationFacilities}
                 stationIds={[...new Set(displayedDays.flatMap((day) => [
                   ...day.rides.flatMap((ride) => [ride.fromStationId, ride.toStationId]),
+                  ...(day.gatewayLegs ?? []).flatMap((leg) => [leg.fromStationId, leg.toStationId]),
                   ...day.regionWindows.map((window) => window.stationId),
                 ]))]}
                 rides={displayedDays.flatMap((day) => day.rides)}
                 stationName={stationName}
                 tr={tr}
               />
+              </div>
               </div>
             </div>
           )}

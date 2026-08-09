@@ -9,6 +9,7 @@
 import type { DayPlan } from "./engine/types";
 
 export type MockAlternative = {
+  kind: "mock";
   id: string;
   /** 대안이 출발 시각을 바꾸는 날짜 (KST YYYY-MM-DD) */
   date: string;
@@ -74,6 +75,7 @@ export function buildMockAlternatives(days: DayPlan[]): MockAlternative[] {
       const dropLast = shift === 120 && day.items.length >= 2;
       const dropped = dropLast ? [day.items[day.items.length - 1].placeId] : [];
       alternatives.push({
+        kind: "mock",
         id: `mock-${day.date}-${shift}`,
         date: day.date,
         shiftMinutes: shift,

@@ -5,8 +5,12 @@
  * #14 ver.0.4 확정: 필수 방문·방문일 고정 입력 없음(엔진 필드는 후속 PR에서 제거 예정),
  * 여행 속도·하루 여유는 사용자 설정이 아니라 내부 기본값.
  */
-import { generateItinerary, TripConstraintsSchema } from "../engine";
-import type { ItineraryResult, TripConstraints } from "../engine/types";
+import {
+  generateItinerary,
+  generateItineraryWithGatewayAlternatives,
+  TripConstraintsSchema,
+} from "../engine";
+import type { GatewayAlternative, ItineraryResult, TripConstraints } from "../engine/types";
 import { loadRepositories } from "../repositories/json";
 
 export type PlanRequest = {
@@ -28,8 +32,12 @@ export type PlanActionResult =
   | { ok: true; result: ItineraryResult }
   | { ok: false; code: "INVALID_REQUEST"; fieldErrors: Record<string, string> };
 
-export async function planItinerary(request: PlanRequest): Promise<PlanActionResult> {
-  const constraints: TripConstraints = {
+export type GatewayAlternativesActionResult =
+  | { ok: true; alternatives: GatewayAlternative[] }
+  | { ok: false; code: "INVALID_REQUEST"; fieldErrors: Record<string, string> };
+
+function constraintsFromRequest(request: PlanRequest): TripConstraints {
+  return {
     arrivalAt: request.arrivalAt,
     departureAt: request.departureAt,
     airportReadyAt: request.airportReadyAt,
@@ -40,14 +48,38 @@ export async function planItinerary(request: PlanRequest): Promise<PlanActionRes
     dailySlackMinutes: DEFAULT_DAILY_SLACK_MINUTES,
     airportArrivalDeadline: request.airportArrivalDeadline,
   };
+}
+
+function fieldErrorsOf(error: { issues: Array<{ path: PropertyKey[]; message: string }> }) {
+  const fieldErrors: Record<string, string> = {};
+  for (const issue of error.issues) {
+    const field = issue.path.join(".") || "request";
+    fieldErrors[field] ??= issue.message;
+  }
+  return fieldErrors;
+}
+
+export async function planItinerary(request: PlanRequest): Promise<PlanActionResult> {
+  const constraints = constraintsFromRequest(request);
   const parsed = TripConstraintsSchema.safeParse(constraints);
   if (!parsed.success) {
-    const fieldErrors: Record<string, string> = {};
-    for (const issue of parsed.error.issues) {
-      const field = issue.path.join(".") || "request";
-      fieldErrors[field] ??= issue.message;
-    }
-    return { ok: false, code: "INVALID_REQUEST", fieldErrors };
+    return { ok: false, code: "INVALID_REQUEST", fieldErrors: fieldErrorsOf(parsed.error) };
   }
-  return { ok: true, result: generateItinerary(constraints, loadRepositories()) };
+  return { ok: true, result: generateItinerary(parsed.data, loadRepositories()) };
+}
+
+/** 핵심 추천을 먼저 표시한 뒤 별도로 붙는 비차단 공항버스 전체 일정 대안. */
+export async function planGatewayAlternatives(
+  request: PlanRequest,
+): Promise<GatewayAlternativesActionResult> {
+  const constraints = constraintsFromRequest(request);
+  const parsed = TripConstraintsSchema.safeParse(constraints);
+  if (!parsed.success) {
+    return { ok: false, code: "INVALID_REQUEST", fieldErrors: fieldErrorsOf(parsed.error) };
+  }
+  const result = generateItineraryWithGatewayAlternatives(parsed.data, loadRepositories());
+  return {
+    ok: true,
+    alternatives: result.status === "planned" ? result.gatewayAlternatives ?? [] : [],
+  };
 }

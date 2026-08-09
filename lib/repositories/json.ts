@@ -18,8 +18,8 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { z } from "zod";
 import {
-  Actor, Work, Place, Station, TrainLeg, Flight, WorkPlaceRelation,
-  type ActorT, type WorkT, type PlaceT, type StationT, type TrainLegT, type FlightT,
+  Actor, Work, Place, Station, TrainLeg, GatewayLeg, Flight, WorkPlaceRelation,
+  type ActorT, type WorkT, type PlaceT, type StationT, type TrainLegT, type GatewayLegT, type FlightT,
   type WorkPlaceRelationT,
 } from "../types/schema";
 
@@ -29,6 +29,7 @@ export type Repositories = {
   places: PlaceT[];
   stations: StationT[];
   trainLegs: TrainLegT[];
+  gatewayLegs: GatewayLegT[];
   flights: FlightT[];
   workPlaceRelations: WorkPlaceRelationT[]; // #51 — 회차·장면·출처 관계 (장소 비복제)
 };
@@ -85,6 +86,11 @@ const SPECS: Record<SeedKey, Spec> = {
     file: "train-snapshot.json", kind: "TrainLeg", schema: TrainLeg,
     idOf: (t) => str(t.trainNo),
     dupKeyOf: (t) => `${t.trainNo}|${t.fromStationId}|${t.toStationId}|${utc(t.departAt)}`,
+  },
+  gatewayLegs: {
+    file: "gateway-legs.json", kind: "GatewayLeg", schema: GatewayLeg,
+    idOf: (g) => str(g.id),
+    dupKeyOf: (g) => String(g.id),
   },
   flights: {
     file: "flights-snapshot.json", kind: "Flight", schema: Flight,
@@ -247,6 +253,29 @@ function validate(
           if (!stationIds.has(leg[field])) {
             issues.push(formatIssue("trainLegs", leg, index, field, `존재하지 않는 역 참조: ${leg[field]}`));
           }
+        }
+      });
+    }
+    if (!failed.has("gatewayLegs")) {
+      parsed.gatewayLegs!.forEach((leg, index) => {
+        for (const field of ["fromStationId", "toStationId"] as const) {
+          if (!stationIds.has(leg[field])) {
+            issues.push(formatIssue("gatewayLegs", leg, index, field, `존재하지 않는 역 참조: ${leg[field]}`));
+          }
+        }
+        const fromAirport = parsed.stations!.find(({ id }) => id === leg.fromStationId)?.isAirport === true;
+        const toAirport = parsed.stations!.find(({ id }) => id === leg.toStationId)?.isAirport === true;
+        if (leg.direction === "outbound" && (!fromAirport || toAirport)) {
+          issues.push(formatIssue(
+            "gatewayLegs", leg, index, "direction",
+            "outbound는 공항역에서 비공항 앵커로 이동해야 합니다",
+          ));
+        }
+        if (leg.direction === "inbound" && (fromAirport || !toAirport)) {
+          issues.push(formatIssue(
+            "gatewayLegs", leg, index, "direction",
+            "inbound는 비공항 앵커에서 공항역으로 이동해야 합니다",
+          ));
         }
       });
     }

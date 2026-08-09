@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { generateItinerary } from "../engine";
+import { generateItinerary, generateItineraryWithGatewayAlternatives } from "../engine";
 import type { TripConstraints } from "../engine/types";
 import { loadRepositories, type Repositories } from "../repositories/json";
 
@@ -42,6 +42,7 @@ function repositories(): Repositories {
       leg("301", "station-jinbu", "station-seoul", "2026-08-12T16:00:00+09:00", "2026-08-12T18:00:00+09:00"),
       leg("302", "station-gangneung", "station-seoul", "2026-08-12T17:00:00+09:00", "2026-08-12T19:00:00+09:00"),
     ],
+    gatewayLegs: [],
     flights: [],
     workPlaceRelations: [],
   };
@@ -77,6 +78,35 @@ function leg(
   return { trainNo, fromStationId, toStationId, departAt, arriveAt };
 }
 
+function gatewayLeg(
+  id: string,
+  routeId: string,
+  direction: "outbound" | "inbound",
+  fromStationId: string,
+  toStationId: string,
+  departAt: string,
+  arriveAt: string,
+): Repositories["gatewayLegs"][number] {
+  return {
+    id,
+    routeId,
+    direction,
+    mode: "airport_bus",
+    fromStationId,
+    toStationId,
+    fromName: localized(fromStationId),
+    toName: localized(toStationId),
+    departAt,
+    arriveAt,
+    serviceName: localized("검증 공항버스"),
+    operator: localized("검증 운수사"),
+    sourceUrls: ["https://example.com/official-bus"],
+    verifiedAt: "2026-08-09",
+    scheduleKind: "observed_snapshot",
+    recheckRequired: true,
+  };
+}
+
 function kstIso(ms: number): string {
   const p = (n: number) => String(n).padStart(2, "0");
   const kst = new Date(ms + 9 * 3_600_000);
@@ -107,6 +137,98 @@ function constraints(
 }
 
 describe("generateItinerary", () => {
+  it("공항버스는 TrainLeg로 가장하지 않고 전체 일정 대안으로 생성된다 (#58)", () => {
+    const repos = repositories();
+    repos.stations.push({
+      id: "station-airport",
+      name: localized("공항"),
+      lineType: "AREX",
+      regionId: "seoul_metro",
+      isAirport: true,
+    });
+    repos.trainLegs = [
+      leg("KTX-OUT", "station-seoul", "station-gangneung", "2026-08-12T13:00:00+09:00", "2026-08-12T15:00:00+09:00"),
+      leg("KTX-IN", "station-gangneung", "station-seoul", "2026-08-14T11:00:00+09:00", "2026-08-14T13:00:00+09:00"),
+    ];
+    repos.gatewayLegs = [
+      gatewayLeg("bus-out", "route-gangwon", "outbound", "station-airport", "station-gangneung", "2026-08-12T12:00:00+09:00", "2026-08-12T15:55:00+09:00"),
+      gatewayLeg("bus-in", "route-gangwon", "inbound", "station-gangneung", "station-airport", "2026-08-14T12:00:00+09:00", "2026-08-14T15:50:00+09:00"),
+    ];
+
+    const result = generateItineraryWithGatewayAlternatives(constraints({
+      arrivalAt: "2026-08-12T10:00:00+09:00",
+      airportReadyAt: "2026-08-12T12:00:00+09:00",
+      departureAt: "2026-08-14T18:00:00+09:00",
+      airportArrivalDeadline: "2026-08-14T16:00:00+09:00",
+      airportStationId: "station-seoul", // 추천 철도형 fixture의 출발점
+      selectedActorIds: ["actor-a"],
+    }), repos);
+
+    expect(result.status).toBe("planned");
+    if (result.status !== "planned") return;
+    expect(result.gatewayAlternatives).toHaveLength(1);
+    const alternative = result.gatewayAlternatives?.[0];
+    expect(alternative?.kind).toBe("gateway_bus");
+    expect(alternative?.days.flatMap((day) => day.gatewayLegs ?? []).map(({ id }) => id))
+      .toEqual(["bus-out", "bus-in"]);
+    expect(alternative?.days.flatMap((day) => day.rides).some(({ trainNo }) => trainNo.includes("bus")))
+      .toBe(false);
+    expect(alternative?.days.flatMap((day) => day.regionWindows)
+      .some(({ startBoundary }) => startBoundary === "GATEWAY_ARRIVAL")).toBe(true);
+    expect(alternative?.schedule).toEqual({
+      kind: "observed_snapshot",
+      verifiedAt: "2026-08-09",
+      recheckRequired: true,
+    });
+  });
+
+  it("귀국 마감 뒤 도착하는 공항버스 대안은 생성하지 않는다 (#58)", () => {
+    const repos = repositories();
+    repos.stations.push({
+      id: "station-airport", name: localized("공항"), lineType: "AREX",
+      regionId: "seoul_metro", isAirport: true,
+    });
+    repos.gatewayLegs = [
+      gatewayLeg("bus-out", "route-gangwon", "outbound", "station-airport", "station-gangneung", "2026-08-12T07:00:00+09:00", "2026-08-12T10:00:00+09:00"),
+      gatewayLeg("bus-in", "route-gangwon", "inbound", "station-gangneung", "station-airport", "2026-08-12T17:00:00+09:00", "2026-08-12T21:00:00+09:00"),
+    ];
+    const result = generateItineraryWithGatewayAlternatives(
+      constraints({ airportStationId: "station-seoul" }), repos,
+    );
+    expect(result.status).toBe("planned");
+    if (result.status !== "planned") return;
+    expect(result.gatewayAlternatives).toBeUndefined();
+  });
+
+  it("합성 두 번째 목적지도 데이터 추가만으로 직행 대안이 생성된다 (#58 목적지 중립)", () => {
+    const repos = repositories();
+    repos.stations.push(
+      { id: "station-airport", name: localized("공항"), lineType: "AREX", regionId: "seoul_metro", isAirport: true },
+      { id: "station-synthetic", name: localized("합성 목적지"), lineType: "KTX", regionId: "yeongnam" },
+    );
+    repos.places = [place("place-synthetic", "work-1", "station-synthetic", {
+      type: "always_open", source: "fixture", verifiedAt: "2026-08-09",
+    })];
+    repos.trainLegs = [
+      leg("SYN-OUT", "station-seoul", "station-synthetic", "2026-08-12T08:00:00+09:00", "2026-08-12T10:00:00+09:00"),
+      leg("SYN-IN", "station-synthetic", "station-seoul", "2026-08-12T17:00:00+09:00", "2026-08-12T19:00:00+09:00"),
+    ];
+    repos.gatewayLegs = [
+      gatewayLeg("synthetic-out", "route-synthetic", "outbound", "station-airport", "station-synthetic", "2026-08-12T07:00:00+09:00", "2026-08-12T09:30:00+09:00"),
+      gatewayLeg("synthetic-in", "route-synthetic", "inbound", "station-synthetic", "station-airport", "2026-08-12T17:30:00+09:00", "2026-08-12T19:30:00+09:00"),
+    ];
+
+    const result = generateItineraryWithGatewayAlternatives(constraints({
+      airportStationId: "station-seoul",
+      selectedActorIds: [],
+      departureAt: "2026-08-12T22:00:00+09:00",
+      airportArrivalDeadline: "2026-08-12T20:00:00+09:00",
+    }), repos);
+    expect(result.status).toBe("planned");
+    if (result.status !== "planned") return;
+    expect(result.gatewayAlternatives?.[0]?.routeId).toBe("route-synthetic");
+  });
+
   it("결정적 왕복 일정 — 미확인 장소는 제외 대신 경고와 함께 배치된다 (#43)", () => {
     const result = generateItinerary(constraints(), repositories());
 
@@ -234,6 +356,34 @@ describe("generateItinerary", () => {
     expect(result.days.flatMap((day) => day.rides.map((ride) => ride.trainNo)))
       .toEqual([first.trainNo, second.trainNo, returnLeg?.trainNo]);
     expect(result.metrics.transferCount).toBe(0);
+  });
+
+  it("실스냅샷 김고은 데모에서 철도 추천과 강릉 직행버스 전체 대안이 함께 생성된다 (#58 E2E)", () => {
+    const real = loadRepositories();
+    const result = generateItineraryWithGatewayAlternatives(constraints({
+      arrivalAt: "2026-08-12T10:00:00+09:00",
+      airportReadyAt: "2026-08-12T12:00:00+09:00",
+      departureAt: "2026-08-14T18:00:00+09:00",
+      airportArrivalDeadline: "2026-08-14T16:00:00+09:00",
+      selectedActorIds: ["actor-kim-go-eun"],
+      selectedWorkIds: [],
+      excludedPlaceIds: [],
+      maxPlacesPerDay: 3,
+      dailySlackMinutes: 120,
+    }), real);
+
+    expect(result.status).toBe("planned");
+    if (result.status !== "planned") return;
+    expect(result.gatewayAlternatives?.some(({ routeId }) =>
+      routeId === "airport-bus-icn-t1-gangneung")).toBe(true);
+    const direct = result.gatewayAlternatives?.find(({ routeId }) =>
+      routeId === "airport-bus-icn-t1-gangneung");
+    expect(direct?.days.flatMap((day) => day.gatewayLegs ?? []).map(({ id }) => id))
+      .toEqual([
+        "airport-bus-icn-t1-gangneung-20260812-1200",
+        "airport-bus-gangneung-icn-t1-20260814-1200",
+      ]);
+    expect(direct?.metrics.departureSlackMinutes).toBe(130);
   });
 
   it("같은 열차 번호의 연속 구간은 환승으로 세지 않는다", () => {

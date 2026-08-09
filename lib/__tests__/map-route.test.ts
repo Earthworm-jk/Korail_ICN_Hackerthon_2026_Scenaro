@@ -23,6 +23,14 @@ describe("지도 동선 순서", () => {
     ).toEqual(["airport", "seoul", "gangneung", "seoul", "airport"]);
   });
 
+  it("공항버스 GatewayLeg도 열차와 같은 역 시퀀스 계약으로 표현한다 (#58 통합)", () => {
+    expect(routeStationSequence([
+      { fromStationId: "airport", toStationId: "gangneung" },
+      { fromStationId: "gangneung", toStationId: "seoul" },
+      { fromStationId: "seoul", toStationId: "airport" },
+    ])).toEqual(["airport", "gangneung", "seoul", "airport"]);
+  });
+
   it("환승으로 같은 역이 이어져도 한 번만 남긴다", () => {
     expect(
       routeStationSequence([

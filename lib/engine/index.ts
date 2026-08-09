@@ -8,6 +8,7 @@
 import type { Repositories } from "../repositories/json";
 import type { ItineraryResult, TripConstraints } from "./types";
 import { planItinerary } from "./planner";
+import { buildGatewayAlternatives } from "./gateway-alternatives";
 import { z } from "zod";
 
 // PR #30 리뷰 ③: Server Action 경계가 같은 계약을 safeParse해 잘못된 요청을
@@ -74,5 +75,22 @@ export function generateItinerary(
   constraints: TripConstraints,
   repos: Repositories,
 ): ItineraryResult {
-  return planItinerary(TripConstraintsSchema.parse(constraints), repos);
+  const parsed = TripConstraintsSchema.parse(constraints);
+  return planItinerary(parsed, repos);
+}
+
+/**
+ * #58 공항버스는 핵심 추천의 2초 응답을 막지 않는 후속 보강 결과다.
+ * 순수 엔진 E2E와 후속 Server Action에서만 명시적으로 호출한다.
+ */
+export function generateItineraryWithGatewayAlternatives(
+  constraints: TripConstraints,
+  repos: Repositories,
+): ItineraryResult {
+  const parsed = TripConstraintsSchema.parse(constraints);
+  const result = planItinerary(parsed, repos);
+  const gatewayAlternatives = buildGatewayAlternatives(parsed, repos, result);
+  return result.status === "planned" && gatewayAlternatives.length > 0
+    ? { ...result, gatewayAlternatives }
+    : result;
 }

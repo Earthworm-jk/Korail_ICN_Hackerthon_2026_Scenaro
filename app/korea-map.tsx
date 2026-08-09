@@ -295,7 +295,8 @@ export function KoreaMapPanel({
 
 /** 4단계 지도가 읽는 일정의 최소 형태 — 엔진 타입에 직접 묶지 않는다 */
 export type ItineraryDayLike = {
-  rides: readonly { fromStationId: string; toStationId: string }[];
+  rides: readonly { fromStationId: string; toStationId: string; departAt: string }[];
+  gatewayLegs?: readonly { fromStationId: string; toStationId: string; departAt: string }[];
   items: readonly { placeId: string }[];
 };
 
@@ -325,7 +326,12 @@ export function ItineraryRouteMap({
   sticky?: boolean;
   experienceOverlay?: ReactNode;
 }) {
-  const routeStationIds = routeStationSequence(days.flatMap((day) => day.rides));
+  // #58 통합: 공항버스 대안을 선택한 일정도 화면 타임라인과 같은 순서로 그린다.
+  // GatewayLeg를 빼면 지도 동선만 공항 구간이 사라져 일정과 모순된다.
+  const routeStationIds = routeStationSequence(days.flatMap((day) => [
+    ...(day.gatewayLegs ?? []),
+    ...day.rides,
+  ].sort((a, b) => Date.parse(a.departAt) - Date.parse(b.departAt))));
   const placedIds = new Set(days.flatMap((day) => day.items.map((item) => item.placeId)));
   const placed = places
     .filter((place) => placedIds.has(place.id))

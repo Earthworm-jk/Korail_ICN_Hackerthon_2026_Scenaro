@@ -51,6 +51,7 @@ function fixtureSeed(): RawSeedFiles {
       { id: "station-fx", name: KO_EN("역", "Station"), lineType: "KTX", regionId: "gangwon" },
     ],
     trainLegs: [],
+    gatewayLegs: [],
     flights: [],
     workPlaceRelations: [
       relation("work-for-place-yeongjin-fx", "place-yeongjin-fx"),

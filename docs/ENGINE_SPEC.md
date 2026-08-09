@@ -108,6 +108,26 @@ const Station = z.object({
   gatewayPriority: z.number().int().nonnegative().optional(),
   isAirport: z.boolean().optional(),
 });
+
+// #58: 열차로 가장하지 않는 목적지 중립 공항 진입 구간
+const GatewayLeg = z.object({
+  id: z.string(),
+  routeId: z.string(),
+  direction: z.enum(["outbound", "inbound"]),
+  mode: z.literal("airport_bus"),
+  fromStationId: z.string(),       // 플래너 권역 앵커
+  toStationId: z.string(),
+  fromName: LocalizedText,         // 실제 승차 터미널 표시명
+  toName: LocalizedText,
+  departAt: IsoDateTime,
+  arriveAt: IsoDateTime,
+  serviceName: LocalizedText,
+  operator: LocalizedText,
+  sourceUrls: z.array(HttpUrl).min(1),
+  verifiedAt: IsoDate,
+  scheduleKind: z.literal("observed_snapshot"),
+  recheckRequired: z.literal(true),
+});
 ```
 
 버퍼는 저장하지 않고 파생: `bufferMin = max(20, ceil(accessEstimate.minutes * 0.5))`. (#5)
@@ -124,6 +144,22 @@ const Station = z.object({
 6. 후보 일정 생성·비교   — 사전식 비교(아래 6.)로 최선 일정 선택
 7. 결과 조립           — days, rejectedPlaces(사유 코드), comparisonKeys, metrics
 ```
+
+철도 추천 일정과 별도로, 같은 `routeId`의 outbound/inbound `GatewayLeg` 쌍마다
+공항 준비시각 이후 출발·공항 도착 마감 이전 귀환을 먼저 하드 필터한다. 통과한 쌍은
+도착 권역 앵커에서 귀환 버스 출발 전까지 동일 플래너를 다시 실행하고, 버스 구간을 포함한
+`regionWindows[]`와 **전체 `days[]` 대안**을 만든다. 단일 열차 구간만 바꾸지 않는다.
+선택 촬영지와 같은 권역의 앵커만 후보가 되며 목적지 이름·강릉 ID를 알고리즘에 하드코딩하지 않는다.
+
+핵심 철도 추천의 NFR-PERF-001(2초)을 공항버스 전체 재계산이 막지 않도록 실행 경로를
+둘로 나눈다. `generateItinerary()`는 핵심 추천을 먼저 반환하고, UI는 별도
+`planGatewayAlternatives()` Server Action으로 공항버스 전체 대안을 비차단 보강한다.
+늦게 도착한 이전 요청의 대안은 요청 순번으로 폐기한다. 순수 엔진 회귀에서는
+`generateItineraryWithGatewayAlternatives()`로 결합 결과를 검증한다.
+
+현재 GatewayLeg는 미래 운행을 보장하는 예약 데이터가 아니라 공식 당일 API·예매처에서
+특정 편을 확인한 `observed_snapshot`이다. 결과에는 가장 오래된 `verifiedAt`을 보수적으로
+표시하고, `recheckRequired: true`에 따라 출발 전 운영사·예매처 재확인을 항상 안내한다.
 
 ### 지역 내 이동 모델 — 역 허브, 왕복 동일 추정 (PR #9 리뷰 A)
 
@@ -234,6 +270,7 @@ type ItineraryResult =
       warnings: CandidateWarning[];
       comparisonKeys: ComparisonKeys;     // '왜 이 일정인가' 화면 재사용 (#3)
       metrics: ItineraryMetrics;
+      gatewayAlternatives?: GatewayAlternative[]; // #58 비차단 후속 보강 전체 일정 대안
     }
   | {
       status: "empty";              // 정상 처리, 조건을 만족하는 일정 없음
