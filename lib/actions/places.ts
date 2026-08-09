@@ -29,7 +29,8 @@ export type PlaceCandidate = PlaceT & {
 
 export type CandidateResponse = {
   candidates: PlaceCandidate[];
-  stations: Pick<StationT, "id" | "name">[];
+  // isAirport는 v0.6 지도가 공항 점을 역과 다른 색으로 찍는 데 쓴다 (#14) — 표시 전용
+  stations: Pick<StationT, "id" | "name" | "isAirport">[];
   works: Pick<WorkT, "id" | "title">[];
 };
 
@@ -87,7 +88,7 @@ export async function getCandidatePlaces(selection: {
 
   return {
     candidates,
-    stations: repos.stations.map(({ id, name }) => ({ id, name })),
+    stations: repos.stations.map(({ id, name, isAirport }) => ({ id, name, isAirport })),
     works: repos.works.map(({ id, title }) => ({ id, title })),
   };
 }

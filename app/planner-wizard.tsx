@@ -44,13 +44,16 @@ import {
 import { fromKstLocalInput as fromLocalInput, toKstLocalInput as toLocalInput } from "@/lib/kst-datetime";
 import { formatFlightStatus } from "@/lib/flight-status";
 import { formatEpisodeLabel } from "@/lib/episode-label";
+import { splitSourceLink } from "@/lib/source-link";
 import { AlternativeTimetables } from "./alternative-timetables";
 import { AuthModal, TripsModal, useSaveStub, type SaveStatus } from "./save-stub";
 import { ExecutionSupport } from "./execution-support";
 import { GatewayAlternatives } from "./gateway-alternatives";
+import { ItineraryRouteMap, KoreaMapPanel, type MapPlace, type MapStation } from "./korea-map";
 import { ThemeExperienceCard } from "./theme-experience";
 import { getThemeExperience, type ThemeExperienceResult } from "@/lib/actions/theme-experience";
 import type { StationFacilitiesSnapshotT } from "@/lib/station-facilities";
+import type { StationCoordinatesSnapshotT } from "@/lib/station-coordinates";
 import type { DayPlan } from "@/lib/engine/types";
 
 const KST = "Asia/Seoul";
@@ -73,6 +76,9 @@ type FlightField = {
 };
 
 const STEPS: MessageKey[] = ["nav.step1", "nav.step2", "nav.step3", "nav.step4"];
+
+/** 3단계 후보 목록을 한 번에 보여주는 개수 — 나머지는 "더보기" */
+const PLACES_PAGE_SIZE = 5;
 
 /** #80 카드의 "OO 권역 일정과 연결" 문구 — 추천 권역과 같은 권역의 첫 일정 역 */
 function themeStationLabel(
@@ -134,7 +140,7 @@ function fmtMonthDay(at: string): string {
   return `${Number(month)}.${Number(day)}`;
 }
 
-function SummarySidebar({ arrivalAt, departureAt, readyAt, deadlineAt, actors, works, placeCount, locale, tr }: {
+function SummarySidebar({ arrivalAt, departureAt, readyAt, deadlineAt, actors, works, placeCount, locale, tr, collapsed, onToggle }: {
   arrivalAt: string;
   departureAt: string;
   readyAt: string;
@@ -144,6 +150,8 @@ function SummarySidebar({ arrivalAt, departureAt, readyAt, deadlineAt, actors, w
   placeCount: number;
   locale: Locale;
   tr: (key: MessageKey) => string;
+  collapsed: boolean;
+  onToggle: () => void;
 }) {
   const nights = Math.max(0, Math.round(
     (Date.parse(departureAt.split("T")[0]) - Date.parse(arrivalAt.split("T")[0])) / 86_400_000,
@@ -154,8 +162,19 @@ function SummarySidebar({ arrivalAt, departureAt, readyAt, deadlineAt, actors, w
   const hasContent = actors.length > 0 || works.length > 0;
   return (
     <aside aria-label={tr("summary.title")} className="border-b bg-sc-subtle px-5 py-4 md:border-b-0 md:border-r md:px-4 md:py-5">
-      <h3 className="text-sm font-medium">{tr("summary.title")}</h3>
-      <div className="mt-3 grid grid-cols-2 gap-3 md:grid-cols-1 md:gap-4">
+      <div className="flex items-center justify-between gap-2">
+        <h3 className="text-sm font-medium">{tr("summary.title")}</h3>
+        <button
+          type="button"
+          aria-expanded={!collapsed}
+          className="rounded border px-1.5 py-0.5 text-xs text-sc-muted hover:border-sc-blue hover:text-sc-blue"
+          onClick={onToggle}
+        >
+          {collapsed ? "＋" : "－"}
+          <span className="sr-only">{tr(collapsed ? "summary.expand" : "summary.collapse")}</span>
+        </button>
+      </div>
+      <div hidden={collapsed} className="mt-3 grid grid-cols-2 gap-3 md:grid-cols-1 md:gap-4">
         <div>
           <span className="block text-xs text-sc-muted">{tr("summary.period")}</span>
           <strong className="mt-0.5 block text-sm font-medium">
@@ -196,11 +215,14 @@ function SummarySidebar({ arrivalAt, departureAt, readyAt, deadlineAt, actors, w
   );
 }
 
-export default function PlannerWizard({ stationFacilities }: {
+export default function PlannerWizard({ stationFacilities, stationCoordinates }: {
   stationFacilities: StationFacilitiesSnapshotT;
+  stationCoordinates: StationCoordinatesSnapshotT;
 }) {
   const [locale, setLocale] = useState<Locale>("ko");
   const [step, setStep] = useState(1);
+  // 요약 사이드바 접기 — 접으면 본문(지도·일정)이 220px을 더 쓴다
+  const [summaryCollapsed, setSummaryCollapsed] = useState(false);
   const tr = useCallback((key: MessageKey) => t(locale, key), [locale]);
 
   // step 1 — 여행 조건
@@ -235,6 +257,8 @@ export default function PlannerWizard({ stationFacilities }: {
   const [candidateData, setCandidateData] = useState<CandidateResponse | null>(null);
   const [selectedPlaceIds, setSelectedPlaceIds] = useState<Set<string>>(new Set());
   const [sortBy, setSortBy] = useState<"relevance" | "official">("relevance");
+  // 후보 목록은 5곳씩 — 한 화면에 다 쏟으면 무엇을 고를지가 안 보인다. 표시 개수만 늘린다
+  const [visibleCount, setVisibleCount] = useState(PLACES_PAGE_SIZE);
 
   // step 4 — 결과. 전이 규칙·파생은 lib/itinerary-view 순수 함수로 고정 (PR #35 리뷰 3)
   const [view, dispatchView] = useReducer(reduceItineraryView, initialItineraryView);
@@ -341,6 +365,7 @@ export default function PlannerWizard({ stationFacilities }: {
     setSelectedPlaceIds(new Set(
       initialSelectedIds(data.candidates, new Set(selectedActors.map((a) => a.id))),
     ));
+    setVisibleCount(PLACES_PAGE_SIZE); // 새 후보는 처음부터 다시 센다
     setStep(3);
   }, [selectedActors, selectedWorks]);
 
@@ -438,6 +463,48 @@ export default function PlannerWizard({ stationFacilities }: {
     [sortedCandidates, selectedActors],
   );
 
+  // #14 v0.6 지도 — 좌표가 확인된 장소만 찍는다. 좌표 없는 장소(라라무리·오크밸리)는
+  // 임의 위치나 역 위치로 대체하지 않고 표시에서 빼되(A3), 몇 곳이 빠졌는지 지도 옆에 밝힌다.
+  const mapStations = useMemo<MapStation[]>(() => {
+    const seedById = new Map((candidateData?.stations ?? []).map((s) => [s.id, s]));
+    return stationCoordinates.stations.map((station) => ({
+      id: station.stationId,
+      name: seedById.get(station.stationId)?.name[locale] ?? station.sourceName,
+      latitude: station.latitude,
+      longitude: station.longitude,
+      isAirport: seedById.get(station.stationId)?.isAirport === true,
+    }));
+  }, [stationCoordinates, candidateData, locale]);
+
+  const mappablePlaces = useMemo<MapPlace[]>(
+    () =>
+      (candidateData?.candidates ?? [])
+        .filter((c) => c.latitude !== undefined && c.longitude !== undefined)
+        .map((c) => ({
+          id: c.id,
+          name: c.name[locale],
+          latitude: c.latitude as number,
+          longitude: c.longitude as number,
+          stationId: c.nearestStationId,
+          selected: selectedPlaceIds.has(c.id),
+        })),
+    [candidateData, locale, selectedPlaceIds],
+  );
+  // 지도에 못 실은 장소 수는 "지금 지도가 대상으로 삼는 집합" 기준이어야 한다.
+  // 전체 후보 기준으로 세면 "선택한 장소만 보기"를 켠 상태에서 좌표 없는 장소를 하나도
+  // 고르지 않았는데도 "2곳 미표시"가 남는다 (PR #83 리뷰).
+
+  // 3단계 지도 전용 표시 필터 — 지도 안에서만 도는 상태이며 선택·일정에는 영향이 없다
+  const [onlySelectedOnMap, setOnlySelectedOnMap] = useState(false);
+  const step3MapPlaces = onlySelectedOnMap
+    ? mappablePlaces.filter((place) => place.selected)
+    : mappablePlaces;
+  const step3MapScope = onlySelectedOnMap
+    ? (candidateData?.candidates ?? []).filter((c) => selectedPlaceIds.has(c.id))
+    : (candidateData?.candidates ?? []);
+  const step3OmittedCount = step3MapScope.length - step3MapPlaces.length;
+
+
   // #33 — availableMinutes 포맷 전용 (재계산 금지)
   const availableLabel = (minutes: number) => {
     const hours = Math.floor(minutes / 60);
@@ -483,7 +550,10 @@ export default function PlannerWizard({ stationFacilities }: {
 
   return (
     // #14 v0.6 시안 — 페이지는 subtle 배경, 앱은 라운드 카드(sc-app)
-    <div className="mx-auto max-w-3xl px-4 py-6 sm:px-6">
+    // 시안의 sc-app에는 max-width가 없다(브라우저 폭 전체). 3·4단계의 2단 그리드가
+    // 220px 요약 사이드바와 함께 들어가려면 폭이 필요해 max-w-6xl로 넓힌다 — 좁으면
+    // 지도 열이 시안의 minmax(320px) 아래로 눌린다.
+    <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6">
       <div className="overflow-hidden rounded-2xl border bg-sc-surface shadow-[0_18px_50px_var(--sc-shadow)]">
       <header className="flex flex-wrap items-center justify-between gap-3 border-b bg-sc-surface px-5 py-4">
         <div className="flex items-center gap-2.5">
@@ -521,7 +591,7 @@ export default function PlannerWizard({ stationFacilities }: {
       </nav>
 
       {/* #14 v0.6 sc-layout — 좌측 선택 요약 + 본문 (md 미만은 상단 밴드) */}
-      <div className="grid md:grid-cols-[220px_minmax(0,1fr)]">
+      <div className={`grid ${summaryCollapsed ? "md:grid-cols-[64px_minmax(0,1fr)]" : "md:grid-cols-[220px_minmax(0,1fr)]"}`}>
       <SummarySidebar
         arrivalAt={arrival.at}
         departureAt={departure.at}
@@ -532,6 +602,8 @@ export default function PlannerWizard({ stationFacilities }: {
         placeCount={selectedPlaceIds.size}
         locale={locale}
         tr={tr}
+        collapsed={summaryCollapsed}
+        onToggle={() => setSummaryCollapsed((on) => !on)}
       />
       <div className="min-w-0 p-5 sm:p-6">
 
@@ -733,9 +805,12 @@ export default function PlannerWizard({ stationFacilities }: {
               {tr("step3.noCandidates")}
             </p>
           )}
-          <ul className="mt-3 space-y-2">
+          {/* #14 v0.6 sc-place-layout — 좌측 후보 목록 + 우측 지도 (md 미만은 세로 적층) */}
+          <div className="mt-3 grid gap-[18px] md:grid-cols-[minmax(0,1.05fr)_minmax(300px,0.95fr)]">
+          <div className="min-w-0">
+          <ul className="space-y-2">
             {/* #43 확정: 미확인 후보도 같은 목록에서 선택 가능 — 카드에 경고 배지 */}
-            {candidateGroups.primary.map((c) => (
+            {candidateGroups.primary.slice(0, visibleCount).map((c) => (
               <PlaceCard key={c.id} candidate={c} locale={locale} tr={tr}
                 selected={selectedPlaceIds.has(c.id)}
                 stationName={stationName} workTitles={workTitles}
@@ -748,6 +823,18 @@ export default function PlannerWizard({ stationFacilities }: {
               />
             ))}
           </ul>
+          {candidateGroups.primary.length > visibleCount && (
+            <button
+              type="button"
+              className="mt-2 w-full rounded-lg border py-2 text-sm hover:bg-sc-subtle"
+              onClick={() => setVisibleCount((n) => n + PLACES_PAGE_SIZE)}
+            >
+              {tr("step3.showMore").replace(
+                "{n}",
+                String(candidateGroups.primary.length - visibleCount),
+              )}
+            </button>
+          )}
           {/* #51 합의 3 — 배우 선택 모드: 미등장 확정·미확인은 별도 구분 영역, 선택은 동일하게 가능 */}
           {candidateGroups.separated.length > 0 && (
             <div className="mt-4">
@@ -769,6 +856,25 @@ export default function PlannerWizard({ stationFacilities }: {
               </ul>
             </div>
           )}
+          </div>
+          <KoreaMapPanel
+            kind="places"
+            places={step3MapPlaces}
+            stations={mapStations}
+            omittedCount={step3OmittedCount}
+            tr={tr}
+            headingAction={
+              <button
+                type="button"
+                aria-pressed={onlySelectedOnMap}
+                className={`min-h-[30px] rounded-lg border px-2 py-1 text-xs ${onlySelectedOnMap ? "border-sc-blue bg-sc-blue-soft text-sc-blue" : ""}`}
+                onClick={() => setOnlySelectedOnMap((on) => !on)}
+              >
+                {tr("map.filterSelected")}
+              </button>
+            }
+          />
+          </div>
           <div className="mt-4 flex justify-between">
             <button className="rounded border px-4 py-2 text-sm" onClick={() => setStep(2)}>{tr("common.back")}</button>
             <button
@@ -812,6 +918,9 @@ export default function PlannerWizard({ stationFacilities }: {
                   tr={tr}
                 />
               )}
+              {/* #14 v0.6 sc-result-grid — 좌측 일정 타임라인 + 우측 지도·경고·실행 지원 */}
+              <div className="grid gap-[18px] md:grid-cols-[minmax(0,1fr)_minmax(360px,1fr)] md:items-start">
+                <div className="min-w-0 space-y-4">
               {displayedDays.map((day) => {
                 const baseDay = baseDays?.find((d) => d.date === day.date);
                 return (
@@ -866,6 +975,18 @@ export default function PlannerWizard({ stationFacilities }: {
                   </div>
                 );
               })}
+              </div>
+
+              <div className="min-w-0 space-y-4">
+              <ItineraryRouteMap
+                days={displayedDays}
+                places={mappablePlaces}
+                stations={mapStations}
+                tr={tr}
+                sticky
+                /* 테마체험 권역 오버레이·토글은 #78 P1 별도 스레드 몫 —
+                   experienceOverlay·headingAction 슬롯이 그 자리다 */
+              />
               {viewWarnings.length > 0 && (
                 // #43 수용 기준: 경고 누락 0건 — 배치는 유지하되 방문 전 확인을 안내
                 <div className="rounded-lg border border-sc-orange/30 bg-sc-orange-soft p-4">
@@ -910,6 +1031,8 @@ export default function PlannerWizard({ stationFacilities }: {
                 stationName={stationName}
                 tr={tr}
               />
+              </div>
+              </div>
             </div>
           )}
 
@@ -1000,6 +1123,9 @@ function PlaceCard({ candidate, locale, tr, selected, onToggle, stationName, wor
   presence?: "absent" | "unreviewed"; // #51 — 별도 구분 영역 카드의 사유 배지
   aiReason?: { ko: string; en: string } | null; // #48 — 검토된 관련 이유(점수 비노출)
 }) {
+  // 카드는 기본이 요약이다. 작품·회차·장면·검토 이유·출처를 한 번에 펼치면 후보 5개만으로
+  // 화면이 꽉 차서 "무엇을 고를지"가 안 보인다 — 판단에 필요한 것만 남기고 근거는 토글 뒤로.
+  const [showDetail, setShowDetail] = useState(false);
   const oh = candidate.openingHours;
   const hoursLabel =
     oh.type === "always_open" ? tr("step3.alwaysOpen")
@@ -1007,16 +1133,18 @@ function PlaceCard({ candidate, locale, tr, selected, onToggle, stationName, wor
     : null; // 미확인은 텍스트 대신 경고 배지 (#43)
   // PR #59 리뷰 1 — 시드의 출처 설명은 한국어 원문이라 영어 모드에서는 번역 가능한
   // 라벨·확인일만 표시한다. 출처 ko/en 구조화는 #4 다국어 범위에서 후속 결정.
-  const source = oh.type !== "unverified"
+  // URL은 문구에서 떼어내 링크 뒤로 숨긴다 — 카드가 도메인 문자열로 뒤덮이지 않게.
+  const sourceParts = oh.type !== "unverified" ? splitSourceLink(oh.source) : null;
+  const sourceLabel = oh.type !== "unverified" && sourceParts
     ? locale === "ko"
-      ? `${oh.source} · ${oh.verifiedAt} ${tr("step3.verifiedAt")}`
+      ? `${sourceParts.label} · ${oh.verifiedAt} ${tr("step3.verifiedAt")}`
       : `${tr("step3.officialSource")} · ${tr("step3.verifiedAt")} ${oh.verifiedAt}`
     : null;
 
   return (
     <li className={`rounded-lg border p-3 ${selected ? "border-sc-blue bg-sc-blue-soft/60" : ""}`}>
       <div className="flex items-start justify-between gap-2">
-        <div className="text-sm">
+        <div className="min-w-0 text-sm">
           <p className="font-medium">
             {candidate.name[locale]}
             <span className="ml-2 rounded bg-sc-subtle px-1.5 py-0.5 text-xs text-sc-muted">
@@ -1028,41 +1156,74 @@ function PlaceCard({ candidate, locale, tr, selected, onToggle, stationName, wor
               </span>
             )}
           </p>
-          <p className="mt-1 text-xs text-sc-muted">
-            {stationName(candidate.nearestStationId)} · {tr("step3.accessAbout")} {candidate.accessEstimate.minutes}{tr("step3.accessEstimate")}
-          </p>
-          {/* #51 계약 5·6·7 — 작품별 `작품명 · 회차` + 검증된 장면 설명, 회차 미확인은 작품명만.
-              회차는 locale 포맷(영문 Ep. N) — 숫자 패턴이 아니면 영어에서 숨김 */}
-          {candidate.relationDetails.length > 0 ? (
-            candidate.relationDetails.map((detail) => {
-              const episode = formatEpisodeLabel(locale, detail.episodeLabel);
-              return (
-                <p key={detail.workId} className="mt-0.5 text-xs text-sc-muted">
-                  <span className="font-medium">
-                    {workTitles([detail.workId])}
-                    {episode ? ` · ${episode}` : ""}
-                  </span>
-                  {detail.sceneNote ? ` — ${detail.sceneNote[locale]}` : ""}
-                </p>
-              );
-            })
-          ) : (
-            <p className="mt-0.5 text-xs text-sc-muted">{workTitles(candidate.workIds)}</p>
-          )}
-          {/* #48 — 검토된 항목의 관련 이유만 ko/en 표시, 내부 점수는 노출하지 않는다 */}
-          {aiReason && (
-            <p className="mt-0.5 text-xs text-sc-airport-text">
-              ✨ {tr("step3.aiReasonLabel")}: {aiReason[locale]}
-            </p>
-          )}
-          <p className="mt-0.5 text-xs text-sc-muted">
-            {hoursLabel ?? (
+          {/* 요약 — 어디인지, 얼마나 걸리는지, 열려 있는지. 고르는 데 필요한 것만 */}
+          <p className="mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-xs text-sc-muted">
+            <span>
+              {stationName(candidate.nearestStationId)} · {tr("step3.accessAbout")} {candidate.accessEstimate.minutes}{tr("step3.accessEstimate")}
+            </span>
+            {hoursLabel ? (
+              <span>· {hoursLabel}</span>
+            ) : (
               <span className="rounded bg-sc-orange-soft px-1.5 py-0.5 text-sc-orange-text">
                 ⚠️ {tr("step3.hoursUnverified")}
               </span>
             )}
-            {source ? ` · ${source}` : ""}
           </p>
+
+          <button
+            type="button"
+            aria-expanded={showDetail}
+            className="mt-1.5 text-xs text-sc-blue underline underline-offset-2"
+            onClick={() => setShowDetail((open) => !open)}
+          >
+            {tr(showDetail ? "step3.hideDetail" : "step3.showDetail")}
+          </button>
+
+          {showDetail && (
+            <div className="mt-1.5 border-t pt-1.5">
+              {/* #51 계약 5·6·7 — 작품별 `작품명 · 회차` + 검증된 장면 설명, 회차 미확인은 작품명만.
+                  회차는 locale 포맷(영문 Ep. N) — 숫자 패턴이 아니면 영어에서 숨김 */}
+              {candidate.relationDetails.length > 0 ? (
+                candidate.relationDetails.map((detail) => {
+                  const episode = formatEpisodeLabel(locale, detail.episodeLabel);
+                  return (
+                    <p key={detail.workId} className="text-xs text-sc-muted">
+                      <span className="font-medium">
+                        {workTitles([detail.workId])}
+                        {episode ? ` · ${episode}` : ""}
+                      </span>
+                      {detail.sceneNote ? ` — ${detail.sceneNote[locale]}` : ""}
+                    </p>
+                  );
+                })
+              ) : (
+                <p className="text-xs text-sc-muted">{workTitles(candidate.workIds)}</p>
+              )}
+              {/* #48 — 검토된 항목의 관련 이유만 ko/en 표시, 내부 점수는 노출하지 않는다 */}
+              {aiReason && (
+                <p className="mt-0.5 text-xs text-sc-airport-text">
+                  ✨ {tr("step3.aiReasonLabel")}: {aiReason[locale]}
+                </p>
+              )}
+              {sourceLabel && (
+                <p className="mt-0.5 text-xs text-sc-muted/80">
+                  {sourceParts?.url ? (
+                    <a
+                      href={sourceParts.url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="underline underline-offset-2 hover:text-sc-blue"
+                      title={tr("step3.sourceLink")}
+                    >
+                      {sourceLabel}
+                    </a>
+                  ) : (
+                    sourceLabel
+                  )}
+                </p>
+              )}
+            </div>
+          )}
         </div>
         <button
           className={`shrink-0 rounded px-3 py-1 text-sm ${selected ? "bg-sc-blue text-white" : "border"}`}
