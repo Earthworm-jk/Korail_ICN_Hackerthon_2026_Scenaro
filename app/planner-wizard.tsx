@@ -41,7 +41,10 @@ import { formatEpisodeLabel } from "@/lib/episode-label";
 import { AlternativeTimetables } from "./alternative-timetables";
 import { AuthModal, TripsModal, useSaveStub, type SaveStatus } from "./save-stub";
 import { ExecutionSupport } from "./execution-support";
+import { ThemeExperienceCard } from "./theme-experience";
+import { getThemeExperience, type ThemeExperienceResult } from "@/lib/actions/theme-experience";
 import type { StationFacilitiesSnapshotT } from "@/lib/station-facilities";
+import type { DayPlan } from "@/lib/engine/types";
 
 const KST = "Asia/Seoul";
 
@@ -63,6 +66,17 @@ type FlightField = {
 };
 
 const STEPS: MessageKey[] = ["nav.step1", "nav.step2", "nav.step3", "nav.step4"];
+
+/** #80 카드의 "OO 권역 일정과 연결" 문구 — 추천 권역과 같은 권역의 첫 일정 역 */
+function themeStationLabel(
+  days: DayPlan[],
+  result: ThemeExperienceResult | null,
+  stationName: (id: string) => string,
+): string | null {
+  if (result?.status !== "ok") return null;
+  const window = days.flatMap((day) => day.regionWindows).find((w) => w.regionId === result.regionId);
+  return window ? stationName(window.stationId) : null;
+}
 
 // #14 합의(2026-08-08): datetime-local은 시각 표기가 앱 locale이 아니라 브라우저 UI 언어를
 // 따라 영어 모드에 '오전/오후'가 남는다 — 날짜 input + 24시간제 시/분 select로 교체 (A6).
@@ -218,6 +232,24 @@ export default function PlannerWizard({ stationFacilities }: {
   // step 4 — 결과. 전이 규칙·파생은 lib/itinerary-view 순수 함수로 고정 (PR #35 리뷰 3)
   const [view, dispatchView] = useReducer(reduceItineraryView, initialItineraryView);
 
+  // #80 테마체험 권역 — 일정이 확정된 시점(생성 성공·재열람)에만 조회한다.
+  // 입력은 표시 중인 일정의 권역과 선택 작품뿐이며, 런타임 OpenAI 호출은 없다.
+  const [themeExperience, setThemeExperience] = useState<ThemeExperienceResult | null>(null);
+  const refreshThemeExperience = useCallback(async (days: DayPlan[] | null, workIds: string[]) => {
+    const regionIds = [
+      ...new Set((days ?? []).flatMap((day) => day.regionWindows.map((w) => w.regionId))),
+    ];
+    if (regionIds.length === 0 || workIds.length === 0) { setThemeExperience(null); return; }
+    try {
+      setThemeExperience(
+        await getThemeExperience({ selectedWorkIds: workIds, itineraryRegionIds: regionIds }),
+      );
+    } catch {
+      // 조회 실패도 계약 상태로 표현한다 — 검증 결과를 제시할 수 없다는 뜻은 '추천 불가'와 같다
+      setThemeExperience({ status: "unavailable" });
+    }
+  }, []);
+
   // 재열람 = 화면 교체가 아니라 저장 당시 조건의 복원 (PR #35 리뷰 3)
   // 입력·선택·후보 컨텍스트를 constraints에서 되살려, 이후 재계산이 저장 당시 조건으로 돈다
   const reopenRecord = useCallback(async (record: SavedItineraryStub) => {
@@ -240,8 +272,9 @@ export default function PlannerWizard({ stationFacilities }: {
     // (excluded의 여집합)이 단일 기준이라, 사용자가 직접 담았던 별도 구분 후보를 잃지 않는다
     setSelectedPlaceIds(new Set(initialCandidateIds(data.candidates).filter((id) => !excluded.has(id))));
     dispatchView({ type: "REOPEN", record });
+    void refreshThemeExperience(record.days, c.selectedWorkIds);
     setStep(4);
-  }, []);
+  }, [refreshThemeExperience]);
 
   const saveStub = useSaveStub((record) => {
     void reopenRecord(record);
@@ -315,17 +348,21 @@ export default function PlannerWizard({ stationFacilities }: {
     const constraints = currentConstraints();
     if (!constraints) return;
     dispatchView({ type: "PLAN_START" });
+    setThemeExperience(null);
     setStep(4);
     try {
       const res = await planItinerary(constraints);
       if (res.ok) {
         dispatchView({ type: "PLAN_SUCCESS", result: res.result });
         saveStub.markDirty();
+        if (res.result.status === "planned") {
+          void refreshThemeExperience(res.result.days, constraints.selectedWorkIds);
+        }
       } else dispatchView({ type: "PLAN_INVALID" }); // 1단계 검증을 우회한 요청 — 기존 결과 유지
     } catch {
       dispatchView({ type: "PLAN_FAILED" }); // 네트워크·서버 장애 — 기존 결과 유지
     }
-  }, [currentConstraints, saveStub]);
+  }, [currentConstraints, saveStub, refreshThemeExperience]);
 
   const baseDays = recommendedDays(view);
   const mockAlternatives = useMemo(
@@ -813,6 +850,13 @@ export default function PlannerWizard({ stationFacilities }: {
                   </ul>
                 </div>
               )}
+              {/* #80 — 권역 단위 테마체험 제안. 일정에는 자동으로 포함되지 않는다 (#14 v0.6) */}
+              <ThemeExperienceCard
+                result={themeExperience}
+                stationName={themeStationLabel(displayedDays, themeExperience, stationName)}
+                locale={locale}
+                tr={tr}
+              />
               {/* #24 A5 — 실행 지원: 일정에 등장하는 역만, 스냅샷 수록분만 안내 */}
               <ExecutionSupport
                 snapshot={stationFacilities}

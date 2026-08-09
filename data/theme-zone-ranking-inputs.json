@@ -1,0 +1,13 @@
+{
+  "inputRuleVersion": "v1",
+  "zones": [
+    {
+      "zoneId": "zone-seoul-jeongdong-daehan",
+      "text": "정동·덕수궁 대한제국 근대문화 권역 — 1897년 선포된 대한제국의 황궁 덕수궁과 정동 일대의 근대 건축·역사 공간을 걷는 권역."
+    },
+    {
+      "zoneId": "zone-seoul-bukchon-hanok",
+      "text": "북촌 한옥·전통문화 권역 — 경복궁과 창덕궁, 종묘 사이에 전통한옥이 밀집한 서울의 대표 전통 주거지역으로 한옥과 전통문화를 체험하는 권역."
+    }
+  ]
+}

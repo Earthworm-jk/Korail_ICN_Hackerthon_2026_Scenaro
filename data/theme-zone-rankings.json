@@ -1,0 +1,58 @@
+{
+  "meta": {
+    "model": "text-embedding-3-small",
+    "inputRuleVersion": "v1",
+    "generatedAt": "2026-08-09T18:31:43+09:00",
+    "badgeThreshold": 0.25
+  },
+  "rankings": [
+    {
+      "workId": "work-goblin",
+      "zoneId": "zone-seoul-bukchon-hanok",
+      "score": 0.171747,
+      "reviewed": false
+    },
+    {
+      "workId": "work-goblin",
+      "zoneId": "zone-seoul-jeongdong-daehan",
+      "score": 0.148765,
+      "reviewed": false
+    },
+    {
+      "workId": "work-little-women",
+      "zoneId": "zone-seoul-bukchon-hanok",
+      "score": 0.079042,
+      "reviewed": false
+    },
+    {
+      "workId": "work-little-women",
+      "zoneId": "zone-seoul-jeongdong-daehan",
+      "score": 0.074386,
+      "reviewed": false
+    },
+    {
+      "workId": "work-the-king",
+      "zoneId": "zone-seoul-bukchon-hanok",
+      "score": 0.180169,
+      "reviewed": false
+    },
+    {
+      "workId": "work-the-king",
+      "zoneId": "zone-seoul-jeongdong-daehan",
+      "score": 0.238779,
+      "reviewed": false
+    },
+    {
+      "workId": "work-yumi-cells",
+      "zoneId": "zone-seoul-bukchon-hanok",
+      "score": 0.118948,
+      "reviewed": false
+    },
+    {
+      "workId": "work-yumi-cells",
+      "zoneId": "zone-seoul-jeongdong-daehan",
+      "score": 0.064012,
+      "reviewed": false
+    }
+  ]
+}
