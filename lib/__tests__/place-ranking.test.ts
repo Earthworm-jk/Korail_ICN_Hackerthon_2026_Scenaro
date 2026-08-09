@@ -1,4 +1,8 @@
 import { describe, expect, it } from "vitest";
+import placeRankingsSeed from "../../data/place-rankings.json";
+import placesSeed from "../../data/places.json";
+import workPlaceRelationsSeed from "../../data/work-place-relations.json";
+import worksSeed from "../../data/works.json";
 import { createPlaceRankingSnapshotSchema, sortCandidatePlaces } from "../place-ranking";
 
 const ids = {
@@ -27,6 +31,32 @@ const snapshot = {
 };
 
 describe("촬영지 랭킹 스냅샷 계약 (#48)", () => {
+  it("실스냅은 참조·검토 계약과 공식 촬영 관계 12건을 충족한다", () => {
+    const schema = createPlaceRankingSnapshotSchema(
+      new Set(worksSeed.map(({ id }) => id)),
+      new Set(placesSeed.map(({ id }) => id)),
+    );
+    expect(schema.safeParse(placeRankingsSeed).success).toBe(true);
+    expect(placeRankingsSeed.meta).toMatchObject({
+      model: "text-embedding-3-small",
+      inputRuleVersion: "v1",
+      badgeThreshold: 0.25,
+    });
+    expect(placeRankingsSeed.rankings).toHaveLength(worksSeed.length * placesSeed.length);
+
+    const reviewedPairs = placeRankingsSeed.rankings
+      .filter(({ reviewed }) => reviewed)
+      .map(({ workId, placeId }) => `${workId}|${placeId}`)
+      .sort();
+    const relationPairs = workPlaceRelationsSeed
+      .map(({ workId, placeId }) => `${workId}|${placeId}`)
+      .sort();
+    expect(reviewedPairs).toEqual(relationPairs);
+    expect(placeRankingsSeed.rankings.filter(({ reviewed }) => reviewed).every(
+      ({ score, reason }) => score >= placeRankingsSeed.meta.badgeThreshold && Boolean(reason?.ko && reason.en),
+    )).toBe(true);
+  });
+
   it("검토 이력·노출 이유·참조가 유효한 스냅샷을 허용한다", () => {
     expect(createPlaceRankingSnapshotSchema(ids.works, ids.places).safeParse(snapshot).success).toBe(true);
   });
