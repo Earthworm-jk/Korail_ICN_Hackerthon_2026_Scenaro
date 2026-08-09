@@ -81,6 +81,12 @@ python scripts/build_place_rankings.py
 - 하한 `0.25`: 검토 통과 12쌍의 최저점 `0.259498`을 포함하면서 하한 미만을 미탑재·미검토와 동일하게 폴백하는 값
 - 검토 사유는 검증된 `WorkPlaceRelation.sceneNote` 내용을 ko/en으로 재사용하고, 일반 관광 추천은 추가하지 않았다.
 
-## 남은 범위
+## 런타임 연결 (구현됨)
 
-- 화면의 검토된 AI 설명 표시
+- `getCandidatePlaces` 서버 액션이 `data/place-rankings.json`을 로드해
+  (`lib/place-rankings-snapshot.ts` — 미탑재는 null, 계약 위반은 로드 실패)
+  후보별 **안전 파생값만** 응답에 싣는다: `aiRank`(선택 관련 작품 범위의
+  검토·배지 통과 점수 dense rank)·`aiReason`(검토된 관련 이유 ko/en).
+- 원시 점수·검토 메타(`score`·`reviewedBy` 등)는 RSC/액션 응답으로 직렬화되지 않는다
+  (PR #70 리뷰). 정렬·이유 모두 후보의 선택 관련 작품(relationDetails) 범위만 사용해
+  무관 작품 고득점이 순서에 영향을 주지 않는다.

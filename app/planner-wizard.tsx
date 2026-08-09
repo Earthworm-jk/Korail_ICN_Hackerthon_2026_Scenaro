@@ -288,7 +288,7 @@ export default function PlannerWizard({ stationFacilities }: {
 
   const sortedCandidates = useMemo(() => {
     if (!candidateData) return [];
-    // #48: 스냅샷 연결 전에는 기존 관계·출처·ID 순서로 결정적 폴백한다.
+    // #48 정렬 연결 — 서버가 파생한 aiRank(선택 관련 작품 범위)만 사용, 없으면 관계·출처·ID 폴백
     return sortCandidatePlaces(candidateData.candidates, sortBy === "relevance" ? "relevance" : "official_sources");
   }, [candidateData, sortBy]);
 
@@ -564,6 +564,7 @@ export default function PlannerWizard({ stationFacilities }: {
               <PlaceCard key={c.id} candidate={c} locale={locale} tr={tr}
                 selected={selectedPlaceIds.has(c.id)}
                 stationName={stationName} workTitles={workTitles}
+                aiReason={c.aiReason ?? null}
                 onToggle={() => {
                   const next = new Set(selectedPlaceIds);
                   if (next.has(c.id)) next.delete(c.id); else next.add(c.id);
@@ -582,6 +583,7 @@ export default function PlannerWizard({ stationFacilities }: {
                     selected={selectedPlaceIds.has(c.id)}
                     stationName={stationName} workTitles={workTitles}
                     presence={status}
+                    aiReason={c.aiReason ?? null}
                     onToggle={() => {
                       const next = new Set(selectedPlaceIds);
                       if (next.has(c.id)) next.delete(c.id); else next.add(c.id);
@@ -780,7 +782,7 @@ export default function PlannerWizard({ stationFacilities }: {
   );
 }
 
-function PlaceCard({ candidate, locale, tr, selected, onToggle, stationName, workTitles, presence }: {
+function PlaceCard({ candidate, locale, tr, selected, onToggle, stationName, workTitles, presence, aiReason }: {
   candidate: PlaceCandidate;
   locale: Locale;
   tr: (key: MessageKey) => string;
@@ -789,6 +791,7 @@ function PlaceCard({ candidate, locale, tr, selected, onToggle, stationName, wor
   stationName: (id: string) => string;
   workTitles: (ids: string[]) => string;
   presence?: "absent" | "unreviewed"; // #51 — 별도 구분 영역 카드의 사유 배지
+  aiReason?: { ko: string; en: string } | null; // #48 — 검토된 관련 이유(점수 비노출)
 }) {
   const oh = candidate.openingHours;
   const hoursLabel =
@@ -838,6 +841,12 @@ function PlaceCard({ candidate, locale, tr, selected, onToggle, stationName, wor
             })
           ) : (
             <p className="mt-0.5 text-xs text-gray-600">{workTitles(candidate.workIds)}</p>
+          )}
+          {/* #48 — 검토된 항목의 관련 이유만 ko/en 표시, 내부 점수는 노출하지 않는다 */}
+          {aiReason && (
+            <p className="mt-0.5 text-xs text-teal-700">
+              ✨ {tr("step3.aiReasonLabel")}: {aiReason[locale]}
+            </p>
           )}
           <p className="mt-0.5 text-xs text-gray-500">
             {hoursLabel ?? (
