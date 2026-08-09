@@ -56,6 +56,7 @@ describe("P1 검색 입력 해석", () => {
     });
     expect(result.actors).toEqual([]);
     expect(result.works).toEqual([]);
+    expect(result.interpretedByAi).toBeUndefined();
   });
 
   it("장소·장면 검색 제외 계약은 LLM 프롬프트에도 유지한다", async () => {
