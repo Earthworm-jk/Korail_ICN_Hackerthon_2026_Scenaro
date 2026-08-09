@@ -1,0 +1,132 @@
+{
+  "verifiedAt": "2026-08-09",
+  "sourceUrls": [
+    "https://www.data.go.kr/data/15111405/fileData.do",
+    "https://project-osrm.org/docs/"
+  ],
+  "works": [
+    {
+      "id": "work-goblin",
+      "sourceTitles": ["도깨비"],
+      "title": { "ko": "도깨비", "en": "Guardian: The Lonely and Great God" },
+      "year": 2016,
+      "actorIds": ["actor-kim-go-eun"]
+    },
+    {
+      "id": "work-yumi-cells",
+      "sourceTitles": ["유미의 세포들"],
+      "title": { "ko": "유미의 세포들", "en": "Yumi's Cells" },
+      "year": 2021,
+      "actorIds": ["actor-kim-go-eun"]
+    },
+    {
+      "id": "work-yumi-cells-2",
+      "sourceTitles": ["유미의 세포들 2"],
+      "title": { "ko": "유미의 세포들 2", "en": "Yumi's Cells 2" },
+      "year": 2022,
+      "actorIds": ["actor-kim-go-eun"]
+    },
+    {
+      "id": "work-little-women",
+      "sourceTitles": ["작은 아씨들"],
+      "title": { "ko": "작은 아씨들", "en": "Little Women" },
+      "year": 2022,
+      "actorIds": ["actor-kim-go-eun"]
+    },
+    {
+      "id": "work-the-king",
+      "sourceTitles": ["더 킹: 영원의 군주", "더 킹 : 영원의 군주"],
+      "title": { "ko": "더 킹: 영원의 군주", "en": "The King: Eternal Monarch" },
+      "year": 2020,
+      "actorIds": ["actor-kim-go-eun"]
+    },
+    {
+      "id": "work-encounter",
+      "sourceTitles": ["남자친구"],
+      "title": { "ko": "남자친구", "en": "Encounter" },
+      "year": 2018,
+      "actorIds": ["actor-park-bo-gum"]
+    },
+    {
+      "id": "work-record-of-youth",
+      "sourceTitles": ["청춘기록"],
+      "title": { "ko": "청춘기록", "en": "Record of Youth" },
+      "year": 2020,
+      "actorIds": ["actor-park-bo-gum"]
+    },
+    {
+      "id": "work-love-in-the-moonlight",
+      "sourceTitles": ["구르미 그린 달빛"],
+      "title": { "ko": "구르미 그린 달빛", "en": "Love in the Moonlight" },
+      "year": 2016,
+      "actorIds": ["actor-park-bo-gum"]
+    }
+  ],
+  "actors": [
+    {
+      "id": "actor-kim-go-eun",
+      "name": { "ko": "김고은", "en": "Kim Go-eun" },
+      "roleTokens": ["김고은", "지은탁", "은탁", "김유미", "유미", "오인주", "정태을"]
+    },
+    {
+      "id": "actor-park-bo-gum",
+      "name": { "ko": "박보검", "en": "Park Bo-gum" },
+      "roleTokens": ["박보검", "김진혁", "진혁", "사혜준", "혜준", "이영"]
+    }
+  ],
+  "seasonOverrides": {
+    "역사책방": "work-yumi-cells-2",
+    "화이트오페라 2호점": "work-yumi-cells-2",
+    "카페 인어": "work-yumi-cells-2"
+  },
+  "canonicalPlaceNames": {
+    "부산 다대포해수욕장": "다대포 해수욕장",
+    "별내휴게소": "남양주별내휴게소"
+  },
+  "addressOverrides": {
+    "왕창부대찌개": "경기도 연천군 전곡읍 은전로 82-10",
+    "소금빛서점": "인천광역시 강화군 강화읍 남문안길 7",
+    "부안영상테마파크": "전북특별자치도 부안군 변산면 격포로 309-64"
+  },
+  "placeTypeOverrides": {
+    "아난티 클럽 서울": "golf_club",
+    "부안영상테마파크": "filming_set"
+  },
+  "reincludeBlockedPlaces": [
+    "아난티 클럽 서울",
+    "부안영상테마파크"
+  ],
+  "excludedPlaces": {
+    "school": [
+      "중앙고등학교",
+      "건국대학교",
+      "덕성여자대학교",
+      "동국대학교",
+      "한국기술교육대학교 제1캠퍼스"
+    ],
+    "closed_or_not_currently_verifiable": [
+      "나주영상테마파크",
+      "모리셔스 브라운 신중동점",
+      "모리셔스 브라운 청라점",
+      "북촌진곰탕",
+      "카페 웍소베러 잔다리 (구 카페 요호)",
+      "커피베이 가산직영점",
+      "고고네닭도리탕",
+      "1953연남서서갈비",
+      "미니슈퍼",
+      "동백식당 인천본점",
+      "혜성마켓"
+    ]
+  },
+  "conditionalPlaces": {
+    "안성 석남사": "역에서 차량 약 51분 경계 장소로, 일정 확정 전 최신 지도 이동시간을 다시 확인해야 합니다.",
+    "죽림동성당": "역에서 차량 약 53분 경계 장소로, 일정 확정 전 최신 지도 이동시간을 다시 확인해야 합니다.",
+    "강촌레일파크": "역에서 차량 약 59분 경계 장소입니다. 실제 이용 지점과 예약 가능한 코스를 확인해야 합니다.",
+    "왕창부대찌개": "역에서 차량 약 58분 경계 장소로, 일정 확정 전 최신 지도 이동시간을 다시 확인해야 합니다.",
+    "용인 대장금 파크": "역에서 차량 약 52분 경계 장소로, 운영일과 최신 지도 이동시간을 확인해야 합니다.",
+    "소금빛서점": "역에서 차량 약 50분 경계 장소로, 영업 여부와 최신 지도 이동시간을 확인해야 합니다.",
+    "아침고요수목원": "역에서 차량 약 57분 경계 장소로, 운영시간과 최신 지도 이동시간을 확인해야 합니다.",
+    "아난티 클럽 서울": "골프클럽입니다. 회원·예약·숙박 조건에 따라 내부 이용이 제한될 수 있으며 외관 방문과 골프장 이용 가능 여부가 다릅니다.",
+    "부안영상테마파크": "공식 운영 일정과 임시 휴장 여부를 방문 전에 확인해야 합니다."
+  }
+}
