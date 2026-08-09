@@ -111,6 +111,17 @@ type PlanRequest = {
 //   { status: "empty",   days: [], rejectedPlaces, warnings }
 // empty는 정상 응답이며 comparisonKeys·metrics를 포함하지 않는다(허위 값 금지)
 
+// lib/actions/account.ts — #25 lazy login (Supabase Auth, 서버 세션 재검증 #36)
+getAccountStatus(): Promise<{ configured: boolean; authenticated: boolean }>;
+signIn(email, password) / signUp(email, password): Promise<{ ok: true } | { ok: false; reason: "NOT_CONFIGURED" | "AUTH_FAILED" }>;
+signOutAccount(): Promise<void>;
+// env(NEXT_PUBLIC_SUPABASE_*) 미설정 = NOT_CONFIGURED — UI는 in-memory 스텁(#35)으로 폴백(스텁 배지)
+
+// lib/actions/saved-itineraries.ts — #25 §6 저장·내 일정 (RLS 소유자 강제)
+saveItinerary(entry): Promise<{ ok: true; record } | { ok: false; reason: "NOT_CONFIGURED" | "UNAUTHENTICATED" | "STORAGE_FAILED" }>;
+listSavedItineraries(): Promise<{ ok: true; records; invalidCount } | { ok: false; reason }>;
+// schema_version은 앱 SAVED_SCHEMA_VERSION 명시 기록(기본값 의존 금지), 깨진 행은 목록 제외
+
 // lib/actions/flights.ts
 type FlightInfo = {
   flightNo: string;

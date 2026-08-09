@@ -21,4 +21,5 @@
 - **중복 판별**: `constraints_hash`는 조회용 인덱스만. #25 §6이 중복 시 "새로 저장 또는 덮어쓰기" 선택을 확정했으므로 UNIQUE로 막지 않고 앱이 안내 분기를 처리한다.
 - **재열람**: `snapshot_version`이 현재 스냅샷 기준일과 다르면 "이전 시간표 기준입니다 — 다시 계산하기" 안내(#25 §6).
 - **schema_version**: constraints 직렬화 계약 버전. 저장 액션은 DB 기본값에 의존하지 않고 앱의 `SAVED_SCHEMA_VERSION`(`lib/saved-itineraries-stub.ts`)을 **항상 명시적으로 기록**한다. v2 = 절대 시각 constraints(#14 차단 2, PR #42) — 기본값 변경은 후속 migration으로만.
-- **연결 코드**: 앱 쪽 인증·저장 액션은 8/11 슬롯에서 `lib/actions/`에 추가 예정. 그 전까지 UI는 in-memory 스텁(PR #35)으로 동작한다.
+- **연결 코드**: `lib/actions/account.ts`(로그인·가입·세션 재검증)·`lib/actions/saved-itineraries.ts`(저장·목록)로 연결됨. env 미설정이면 UI는 in-memory 스텁(PR #35)으로 폴백하고 스텁 배지를 단다 — 오프라인 데모 안전망.
+- **migrations 3번**(`20260812000000_set_updated_at_search_path.sql`): #36 리뷰 후속 조건인 트리거 함수 search_path 고정 — 다른 migration과 함께 순서대로 적용.
