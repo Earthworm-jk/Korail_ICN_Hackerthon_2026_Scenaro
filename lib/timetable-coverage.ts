@@ -1,0 +1,35 @@
+/**
+ * 열차 시간표 커버리지 판정 (#61 수록 기준 5 · #84 P0-3)
+ *
+ * #61이 확정한 MVP 수록 기준 5항목의 마지막은 "해당 역의 **왕복** KTX 시간표 스냅샷 확보"다.
+ * 한 방향 구간만 있는 역은 가는 열차는 있어도 돌아오는 열차가 없어 일정이 성립하지 않는다.
+ *
+ * 그래서 "구간에 한 번이라도 등장하는가"로 판정하면 안 된다. 그렇게 두면 단방향 수집분이
+ * 들어오는 순간, 실제로는 왕복이 불가능한 역이 "일정 안에 KTX 없음"(동적 실패)으로
+ * 표시된다 — 사실은 "시간표 범위 밖"(정적 미확보)인데도.
+ * PR #91 리뷰에서 지적받은 지점이다.
+ */
+
+export type CoverageLeg = {
+  fromStationId: string;
+  toStationId: string;
+};
+
+/**
+ * 왕복이 가능한 역 집합.
+ *
+ * 어떤 역 S가 포함되려면, S에서 나가는 구간과 그 반대 방향 구간이 **같은 상대역 T에 대해**
+ * 모두 있어야 한다 (S→T 와 T→S). 나가는 구간과 들어오는 구간이 서로 다른 축이면
+ * 그 역을 기점으로 한 왕복을 보장하지 못하므로 제외한다.
+ */
+export function roundTripStationIds(legs: readonly CoverageLeg[]): Set<string> {
+  const directed = new Set(legs.map((leg) => `${leg.fromStationId}\0${leg.toStationId}`));
+  const covered = new Set<string>();
+  for (const leg of legs) {
+    if (leg.fromStationId === leg.toStationId) continue;
+    if (!directed.has(`${leg.toStationId}\0${leg.fromStationId}`)) continue;
+    covered.add(leg.fromStationId);
+    covered.add(leg.toStationId);
+  }
+  return covered;
+}

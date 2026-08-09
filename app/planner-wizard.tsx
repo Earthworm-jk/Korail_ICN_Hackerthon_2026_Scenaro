@@ -524,8 +524,21 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates }:
 
 
   // PR #59 리뷰 1 — 엔진은 분 값만 내리고 라벨은 locale로 조합한다 (REQ-ITIN-006)
-  const accessLabel = (minutes: number) =>
-    `${tr("region.about")} ${minutes}${tr("region.minutes")} · ${tr("itinerary.estimateLabel")}`;
+  // #61 확정 표기 — 접근시간은 자동차 길찾기 기반 보수값이라 수단을 명시한다.
+  // "약 N분"만 두면 대중교통으로 읽힌다.
+  const accessLabel = (minutes: number) => tr("access.byCar").replace("{n}", String(minutes));
+
+  // #61 정적/동적 분리 — 같은 TRAIN_UNAVAILABLE도 원인이 둘이다.
+  // 앵커역 시간표를 아직 확보하지 못한 것과, 확보했는데 일정 안에 탈 열차가 없는 것.
+  // "연결 열차 없음"으로 뭉치면 갈 수 없는 곳을 추천한 것처럼 읽힌다.
+  const rejectionLabel = (reason: { code: string; placeId: string }) => {
+    const anchorId = candidateData?.candidates.find((c) => c.id === reason.placeId)?.nearestStationId;
+    const anchor = candidateData?.stations.find((s) => s.id === anchorId);
+    if (reason.code === "TRAIN_UNAVAILABLE" && anchor && !anchor.hasTimetable) {
+      return tr("reason.TRAIN_OUT_OF_COVERAGE");
+    }
+    return tr(`reason.${reason.code}` as MessageKey);
+  };
 
   const stationName = (id: string) =>
     candidateData?.stations.find((s) => s.id === id)?.name[locale] ?? id;
@@ -796,7 +809,9 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates }:
         <section>
           <h2 className="text-lg font-semibold">{tr("step3.title")}</h2>
           <p className="text-sm text-sc-muted">{tr("step3.subtitle")}</p>
-          <div className="mt-3 flex gap-2 text-sm">
+          {/* #61 — 접근시간이 대중교통으로 읽히지 않도록 목록 위에 한 번 고지 */}
+          <p className="mt-3 text-xs text-sc-muted">{tr("access.notice")}</p>
+          <div className="mt-2 flex gap-2 text-sm">
             {(["relevance", "official"] as const).map((mode) => (
               <button
                 key={mode}
@@ -899,6 +914,7 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates }:
         <section>
           <h2 className="text-lg font-semibold">{tr("step4.title")}</h2>
           <p className="text-sm text-sc-muted">{tr("step4.subtitle")}</p>
+          <p className="mt-1 text-xs text-sc-muted">{tr("access.notice")}</p>
 
           {view.planning && <p className="mt-6 text-center text-sm text-sc-muted">{tr("step4.generating")}</p>}
 
@@ -1041,7 +1057,7 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates }:
                   <ul className="mt-2 space-y-1 text-sm text-sc-orange-text">
                     {viewRejected.map((reason) => (
                       <li key={`${reason.placeId}-${reason.code}`}>
-                        {placeName(reason.placeId)} — {tr(`reason.${reason.code}` as MessageKey)}
+                        {placeName(reason.placeId)} — {rejectionLabel(reason)}
                       </li>
                     ))}
                   </ul>
@@ -1081,7 +1097,7 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates }:
                 <ul className="mt-2 space-y-1 text-sm text-sc-orange-text">
                   {view.result.rejectedPlaces.map((reason) => (
                     <li key={`${reason.placeId}-${reason.code}`}>
-                      {placeName(reason.placeId)} — {tr(`reason.${reason.code}` as MessageKey)}
+                      {placeName(reason.placeId)} — {rejectionLabel(reason)}
                     </li>
                   ))}
                 </ul>
@@ -1196,7 +1212,7 @@ function PlaceCard({ candidate, locale, tr, selected, onToggle, stationName, wor
           {/* 요약 — 어디인지, 얼마나 걸리는지, 열려 있는지. 고르는 데 필요한 것만 */}
           <p className="mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-xs text-sc-muted">
             <span>
-              {stationName(candidate.nearestStationId)} · {tr("step3.accessAbout")} {candidate.accessEstimate.minutes}{tr("step3.accessEstimate")}
+              {stationName(candidate.nearestStationId)} · {tr("access.byCar").replace("{n}", String(candidate.accessEstimate.minutes))}
             </span>
             {hoursLabel ? (
               <span>· {hoursLabel}</span>
