@@ -72,8 +72,14 @@ python scripts/build_place_rankings.py
 `badgeThreshold` 미만은 검토됐더라도 런타임 정렬에서 AI 점수 없음으로 취급한다.
 후보를 숨기지 않고 `officialSourceCount → placeId` 폴백을 사용한다.
 
+## 런타임 연결 (구현됨)
+
+- 서버 진입점이 `data/place-rankings.json`을 로드해(`lib/place-rankings-snapshot.ts` —
+  미탑재는 null, 계약 위반은 로드 실패) 3단계 관련성 정렬과 카드의 `검토된 관련 이유`
+  표시에 사용한다. 내부 점수는 노출하지 않으며, 이유는 후보의 선택 관련 작품
+  (relationDetails) 범위에서만 고른다.
+
 ## 남은 범위
 
 - 실제 API 실행과 점수 분포 확인
 - 사람 검토를 거친 `place-rankings.json` 확정
-- 화면의 검토된 AI 설명 표시

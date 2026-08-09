@@ -77,6 +77,36 @@ type RankablePlace = {
   officialSourceCount: number;
 };
 
+type Localized = z.infer<typeof LocalizedText>;
+
+/**
+ * #48 화면 표시 — 배지 기준을 넘는 검토 항목의 관련 이유(ko/en)만 반환한다.
+ * 내부 점수는 노출하지 않으며, 선택과 무관한 작품의 이유는 쓰지 않도록
+ * 호출부가 선택 관련 workIds(후보의 relationDetails 기준)를 넘긴다 (#65 규칙과 정합).
+ * 동점은 workId 오름차순으로 결정적이다.
+ */
+export function reviewedReasonFor(
+  placeId: string,
+  relevantWorkIds: readonly string[],
+  snapshot: PlaceRankingSnapshot | null | undefined,
+): Localized | null {
+  if (!snapshot) return null;
+  let best: { score: number; workId: string; reason: Localized } | null = null;
+  for (const ranking of snapshot.rankings) {
+    if (ranking.placeId !== placeId || !ranking.reviewed || !ranking.reason) continue;
+    if (ranking.score < snapshot.meta.badgeThreshold) continue;
+    if (!relevantWorkIds.includes(ranking.workId)) continue;
+    if (
+      !best
+      || ranking.score > best.score
+      || (ranking.score === best.score && ranking.workId.localeCompare(best.workId, "en") < 0)
+    ) {
+      best = { score: ranking.score, workId: ranking.workId, reason: ranking.reason };
+    }
+  }
+  return best?.reason ?? null;
+}
+
 export function sortCandidatePlaces<T extends RankablePlace>(
   candidates: readonly T[],
   sortBy: "relevance" | "official_sources",

@@ -14,7 +14,7 @@ import {
 } from "@/lib/actions/places";
 import { planItinerary } from "@/lib/actions/itinerary";
 import { excludedPlaceIdsFrom, initialCandidateIds, initialSelectedIds, splitByActorPresence } from "@/lib/candidates";
-import { sortCandidatePlaces } from "@/lib/place-ranking";
+import { reviewedReasonFor, sortCandidatePlaces, type PlaceRankingSnapshot } from "@/lib/place-ranking";
 import { getFlightInfo } from "@/lib/actions/flights";
 import { t, type Locale, type MessageKey } from "@/lib/i18n/messages";
 import { buildMockAlternatives, type MockAlternative } from "@/lib/alternatives-mock";
@@ -106,8 +106,9 @@ function DateTimeField({ value, onChange, className }: {
   );
 }
 
-export default function PlannerWizard({ stationFacilities }: {
+export default function PlannerWizard({ stationFacilities, placeRankings }: {
   stationFacilities: StationFacilitiesSnapshotT;
+  placeRankings: PlaceRankingSnapshot | null; // #48 — 미탑재(null)면 결정적 폴백
 }) {
   const [locale, setLocale] = useState<Locale>("ko");
   const [step, setStep] = useState(1);
@@ -288,9 +289,13 @@ export default function PlannerWizard({ stationFacilities }: {
 
   const sortedCandidates = useMemo(() => {
     if (!candidateData) return [];
-    // #48: 스냅샷 연결 전에는 기존 관계·출처·ID 순서로 결정적 폴백한다.
-    return sortCandidatePlaces(candidateData.candidates, sortBy === "relevance" ? "relevance" : "official_sources");
-  }, [candidateData, sortBy]);
+    // #48 정렬 연결 — 검토·배지 기준 통과 점수만 반영, 스냅샷 없으면 관계·출처·ID 폴백
+    return sortCandidatePlaces(
+      candidateData.candidates,
+      sortBy === "relevance" ? "relevance" : "official_sources",
+      placeRankings ?? undefined,
+    );
+  }, [candidateData, sortBy, placeRankings]);
 
   // #51 배우 선택 필터 — 등장 확정·작품 유래는 기본 목록, 미등장·미확인은 별도 구분(선택은 가능)
   const candidateGroups = useMemo(
@@ -564,6 +569,7 @@ export default function PlannerWizard({ stationFacilities }: {
               <PlaceCard key={c.id} candidate={c} locale={locale} tr={tr}
                 selected={selectedPlaceIds.has(c.id)}
                 stationName={stationName} workTitles={workTitles}
+                aiReason={reviewedReasonFor(c.id, c.relationDetails.map((d) => d.workId), placeRankings)}
                 onToggle={() => {
                   const next = new Set(selectedPlaceIds);
                   if (next.has(c.id)) next.delete(c.id); else next.add(c.id);
@@ -582,6 +588,7 @@ export default function PlannerWizard({ stationFacilities }: {
                     selected={selectedPlaceIds.has(c.id)}
                     stationName={stationName} workTitles={workTitles}
                     presence={status}
+                    aiReason={reviewedReasonFor(c.id, c.relationDetails.map((d) => d.workId), placeRankings)}
                     onToggle={() => {
                       const next = new Set(selectedPlaceIds);
                       if (next.has(c.id)) next.delete(c.id); else next.add(c.id);
@@ -780,7 +787,7 @@ export default function PlannerWizard({ stationFacilities }: {
   );
 }
 
-function PlaceCard({ candidate, locale, tr, selected, onToggle, stationName, workTitles, presence }: {
+function PlaceCard({ candidate, locale, tr, selected, onToggle, stationName, workTitles, presence, aiReason }: {
   candidate: PlaceCandidate;
   locale: Locale;
   tr: (key: MessageKey) => string;
@@ -789,6 +796,7 @@ function PlaceCard({ candidate, locale, tr, selected, onToggle, stationName, wor
   stationName: (id: string) => string;
   workTitles: (ids: string[]) => string;
   presence?: "absent" | "unreviewed"; // #51 — 별도 구분 영역 카드의 사유 배지
+  aiReason?: { ko: string; en: string } | null; // #48 — 검토된 관련 이유(점수 비노출)
 }) {
   const oh = candidate.openingHours;
   const hoursLabel =
@@ -838,6 +846,12 @@ function PlaceCard({ candidate, locale, tr, selected, onToggle, stationName, wor
             })
           ) : (
             <p className="mt-0.5 text-xs text-gray-600">{workTitles(candidate.workIds)}</p>
+          )}
+          {/* #48 — 검토된 항목의 관련 이유만 ko/en 표시, 내부 점수는 노출하지 않는다 */}
+          {aiReason && (
+            <p className="mt-0.5 text-xs text-teal-700">
+              ✨ {tr("step3.aiReasonLabel")}: {aiReason[locale]}
+            </p>
           )}
           <p className="mt-0.5 text-xs text-gray-500">
             {hoursLabel ?? (

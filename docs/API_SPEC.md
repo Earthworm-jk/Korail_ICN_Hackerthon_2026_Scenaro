@@ -32,6 +32,9 @@
 - **KTX 시간표**: `data/train-snapshot.json` 스냅샷만 사용. 실시간 조회 없음
 - **역 편의시설**: `data/station-facilities.json` 스냅샷만 사용
   (생성: `scripts/build_station_facilities.py`, 한국철도공사 편의시설정보 B551457). 실시간 조회 없음
+- **AI 촬영지 랭킹**: `data/place-rankings.json` 스냅샷만 사용
+  (생성: `scripts/build_place_rankings.py` — OpenAI 호출은 이 오프라인 스크립트에서만).
+  미탑재·미검토·하한 미달은 "점수 없음"으로 결정적 폴백 (#48, PLACE_RANKING.md)
 - **TourAPI·레일포털 등**: 오프라인 데이터 파이프라인(Python, 시드 생성 단계)에서만 사용.
   앱 런타임 호출 없음
 - 위 항목이 바뀌면(런타임 실호출 추가) 이 문서를 먼저 갱신한다 — "실호출만 수록" 원칙
