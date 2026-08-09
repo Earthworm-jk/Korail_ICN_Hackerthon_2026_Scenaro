@@ -21,7 +21,7 @@ import type {
 } from "./engine/types";
 
 /** 열차 한 편의 동일성 — 같은 편이 같은 구간을 같은 시각에 달리면 같은 탑승이다 */
-function rideKey(ride: TrainRide): string {
+function rideKey(ride: RideRef): string {
   return [ride.trainNo, ride.fromStationId, ride.toStationId, ride.departAt].join("\0");
 }
 
@@ -48,18 +48,28 @@ export type RideDiff = {
  * 무관한 구간까지 "못 타게 됐다"로 분류된다. 그 열차는 재최적화로 바뀐 것이지 사용자가
  * 놓친 것이 아니다.
  */
+/** 기존 일정의 특정 탑승을 가리키는 참조 — 동일성 규칙은 `rideKey`와 같다 */
+export type RideRef = Pick<
+  TrainRide,
+  "trainNo" | "fromStationId" | "toStationId" | "departAt"
+>;
+
 export type UnusableScope =
   /**
    * 여행 시작 경계가 뒤로 밀린 경우 — 항공 지연 등. 그 시각 이전 출발은 전부 탈 수 없다.
    */
   | { kind: "trip_start"; notBefore: string }
   /**
-   * 사용자가 특정 구간을 늦춘 경우 (#103 `transitOverrides`). **그 구간의 편만** 본다.
+   * 사용자가 **기존 일정의 특정 탑승**을 늦춘 경우 (#103 편집). 그 한 편만 본다.
    *
-   * 경로가 중간역에서 쪼개져 정확히 일치하는 구간이 없으면 `missed`는 비어 있다 —
+   * 구간(출발역·도착역)만으로는 부족하다 — 같은 OD가 여러 날 반복되면 앞선 날짜의
+   * 편까지 걸린다(PR #105 2차 리뷰). #103의 편집 UI는 기존 일정에서 열차를 고르므로
+   * 그 식별자를 그대로 넘긴다.
+   *
+   * 참조와 정확히 일치하는 탑승이 빠지지 않았다면 `missed`는 비어 있다 —
    * 판정할 수 없으면 판정하지 않는다.
    */
-  | { kind: "segment"; fromStationId: string; toStationId: string; notBefore: string };
+  | { kind: "ride"; ride: RideRef };
 
 export type DiffOptions = {
   unusable?: UnusableScope;
@@ -105,15 +115,16 @@ function daysOf(result: ItineraryResult): readonly DayPlan[] {
 /**
  * 이 탑승이 주어진 경계 때문에 탈 수 없게 됐는가.
  *
- * 시각만으로 판정하지 않는다 — `segment` 범위에서는 그 구간의 편만 본다. 앞선 날짜나
- * 다른 구간의 편은 경계보다 이르더라도 재최적화로 바뀐 것이지 못 타게 된 것이 아니다.
+ * 시각만으로도, 구간만으로도 판정하지 않는다. `ride` 범위에서는 사용자가 지목한 그
+ * 한 편과 정확히 일치할 때만 참이다 — 같은 OD가 다른 날짜에 또 있어도 그 편은
+ * 재최적화로 바뀐 것이지 못 타게 된 것이 아니다.
  */
 function becameUnusable(ride: TrainRide, scope: UnusableScope | undefined): boolean {
   if (scope === undefined) return false;
-  if (Date.parse(ride.departAt) >= Date.parse(scope.notBefore)) return false;
-  if (scope.kind === "trip_start") return true;
-  return ride.fromStationId === scope.fromStationId
-    && ride.toStationId === scope.toStationId;
+  if (scope.kind === "trip_start") {
+    return Date.parse(ride.departAt) < Date.parse(scope.notBefore);
+  }
+  return rideKey(ride) === rideKey(scope.ride);
 }
 
 /**

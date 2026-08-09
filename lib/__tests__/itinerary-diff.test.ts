@@ -82,56 +82,48 @@ describe("일정 재계산 전후 비교 (#103)", () => {
   });
 
   describe("못 타게 된 편 판정 범위 (PR #105 리뷰)", () => {
-    // 첫날 부산행과 둘째날 강릉행이 모두 빠졌고, 둘 다 경계보다 이르다.
-    // 사용자가 늦춘 것은 둘째날 서울→강릉 하나뿐이다.
+    // 1일차와 3일차에 **같은 OD**(서울→강릉)가 있고, 사용자가 늦춘 것은 3일차 편뿐이다.
+    // 재최적화로 1일차 편까지 빠져도 그건 놓친 것이 아니다.
+    const firstDay = ride("00815", "station-seoul", "station-gangneung", "2026-08-12T04:55:00.000Z");
+    const thirdDay = ride("00815", "station-seoul", "station-gangneung", "2026-08-14T04:55:00.000Z");
     const before = planned([
-      day("2026-08-12", [ride("00033", "station-seoul", "station-busan", "2026-08-12T04:18:00.000Z")], []),
-      day("2026-08-13", [ride("00815", "station-seoul", "station-gangneung", "2026-08-13T04:55:00.000Z")], []),
+      day("2026-08-12", [firstDay], []),
+      day("2026-08-14", [thirdDay], []),
     ]);
     const after = planned([
-      day("2026-08-13", [ride("00819", "station-seoul", "station-gangneung", "2026-08-13T08:29:00.000Z")], []),
+      day("2026-08-14", [ride("00819", "station-seoul", "station-gangneung", "2026-08-14T08:29:00.000Z")], []),
     ]);
-    const notBefore = "2026-08-13T07:55:00.000Z";
 
-    it("구간을 지정하면 그 구간의 편만 못 타게 된 것으로 본다", () => {
+    it("앞선 날짜에 같은 OD가 있어도 사용자가 지목한 탑승만 못 타게 된 것으로 본다", () => {
       const diff = diffItineraries(before, after, {
-        unusable: {
-          kind: "segment",
-          fromStationId: "station-seoul",
-          toStationId: "station-gangneung",
-          notBefore,
-        },
+        unusable: { kind: "ride", ride: thirdDay },
       });
-      expect(diff.rides.dropped.map((r) => r.trainNo).sort()).toEqual(["00033", "00815"]);
-      // 첫날 부산행은 경계보다 이르지만 사용자가 늦춘 구간이 아니다 — 재최적화로 바뀐 것이다
-      expect(diff.rides.missed.map((r) => r.trainNo)).toEqual(["00815"]);
+      expect(diff.rides.dropped).toHaveLength(2);
+      expect(diff.rides.missed).toEqual([thirdDay]);
     });
 
     it("여행 시작 경계가 밀린 경우에는 이전 출발 전부가 대상이다", () => {
       const diff = diffItineraries(before, after, {
-        unusable: { kind: "trip_start", notBefore },
+        unusable: { kind: "trip_start", notBefore: "2026-08-14T07:55:00.000Z" },
       });
-      expect(diff.rides.missed.map((r) => r.trainNo).sort()).toEqual(["00033", "00815"]);
+      expect(diff.rides.missed.map((r) => r.departAt).sort())
+        .toEqual([firstDay.departAt, thirdDay.departAt]);
     });
 
-    it("경로가 쪼개져 일치하는 구간이 없으면 판정하지 않는다", () => {
-      // 서울→강릉이 아니라 서울→청량리·청량리→강릉으로 쪼개진 경우
-      const split = planned([
-        day("2026-08-13", [
-          ride("00815", "station-seoul", "station-cheongnyangni", "2026-08-13T04:55:00.000Z"),
-          ride("00815", "station-cheongnyangni", "station-gangneung", "2026-08-13T05:20:00.000Z"),
-        ], []),
-      ]);
-      const diff = diffItineraries(split, planned([]), {
-        unusable: {
-          kind: "segment",
-          fromStationId: "station-seoul",
-          toStationId: "station-gangneung",
-          notBefore,
-        },
+    it("지목한 탑승이 그대로 유지되면 판정하지 않는다", () => {
+      const diff = diffItineraries(before, planned([day("2026-08-14", [thirdDay], [])]), {
+        unusable: { kind: "ride", ride: thirdDay },
       });
-      expect(diff.rides.dropped).toHaveLength(2);
+      expect(diff.rides.kept).toEqual([thirdDay]);
       expect(diff.rides.missed).toEqual([]);
+    });
+
+    it("같은 편이라도 출발 시각이 다르면 다른 탑승이다", () => {
+      const diff = diffItineraries(before, after, {
+        // 같은 열차번호·같은 구간이지만 1일차 편을 지목한 경우
+        unusable: { kind: "ride", ride: firstDay },
+      });
+      expect(diff.rides.missed).toEqual([firstDay]);
     });
   });
 
