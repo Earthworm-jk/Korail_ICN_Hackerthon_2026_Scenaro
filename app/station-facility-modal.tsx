@@ -7,11 +7,12 @@
  * - 스냅샷에 없는 역은 호출부에서 이미 제외한다. 여기서 추정값을 만들지 않는다
  * - 아이콘은 외부 라이브러리 없이 인라인 SVG. 색은 --sc-* 토큰만 사용
  */
-import { useEffect, useId, useRef, useState } from "react";
+import { useId, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import type { StationFacilityT } from "@/lib/station-facilities";
 import type { MessageKey } from "@/lib/i18n/messages";
 import { facilityEntries, type FacilityEntryId } from "@/lib/station-facility-entries";
+import { useModalDismiss } from "./use-modal-dismiss";
 
 const ICON_PROPS = {
   viewBox: "0 0 24 24",
@@ -40,8 +41,6 @@ const ICONS: Record<FacilityEntryId, ReactNode> = {
     <svg {...ICON_PROPS}><circle cx="12" cy="12" r="9" /><path d="M12 11v5" /><circle cx="12" cy="7.8" r="0.9" fill="currentColor" stroke="none" /></svg>
   ),
 };
-
-const FOCUSABLE = 'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])';
 
 /** 목록 버튼 안 요약 — 있는 시설만 아이콘으로 (한눈에 비교하는 용도) */
 export function FacilitySummaryIcons({ facility, tr }: {
@@ -74,43 +73,8 @@ export function StationFacilityModal({ facility, stationName, fetchedAt, onClose
   const dialogRef = useRef<HTMLDivElement>(null);
   const [tab, setTab] = useState<TabId>("facilities");
 
-  // PR #93 리뷰 차단: aria-modal 선언과 실제 동작을 일치시킨다.
-  // 열릴 때 모달 안으로 포커스를 옮기고, Tab을 내부에 가두고, 닫히면 트리거로 되돌린다.
-  useEffect(() => {
-    const previouslyFocused = document.activeElement as HTMLElement | null;
-    const focusablesIn = () => [
-      ...(dialogRef.current?.querySelectorAll<HTMLElement>(FOCUSABLE) ?? []),
-    ].filter((element) => !element.hasAttribute("disabled"));
-
-    focusablesIn()[0]?.focus();
-
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        onClose();
-        return;
-      }
-      if (event.key !== "Tab") return;
-      const items = focusablesIn();
-      if (items.length === 0) return;
-      const first = items[0];
-      const last = items[items.length - 1];
-      const active = document.activeElement;
-      const inside = dialogRef.current?.contains(active ?? null) ?? false;
-      if (event.shiftKey && (!inside || active === first)) {
-        event.preventDefault();
-        last.focus();
-      } else if (!event.shiftKey && (!inside || active === last)) {
-        event.preventDefault();
-        first.focus();
-      }
-    };
-
-    window.addEventListener("keydown", onKeyDown);
-    return () => {
-      window.removeEventListener("keydown", onKeyDown);
-      previouslyFocused?.focus();
-    };
-  }, [onClose]);
+  // PR #93 리뷰 차단: aria-modal 선언과 실제 동작을 일치시킨다 (구현은 useModalDismiss 공유)
+  useModalDismiss(dialogRef, onClose);
 
   const entries = facilityEntries(facility);
   const tabButton = (id: TabId, labelKey: MessageKey) => (

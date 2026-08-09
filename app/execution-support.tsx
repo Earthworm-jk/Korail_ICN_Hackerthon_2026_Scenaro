@@ -1,31 +1,27 @@
 "use client";
 /**
- * 실행 지원 — 결과 화면 하단 안내 (#24 A5 최소선 · #6 "코레일 실행 지원 정보 표시")
- * - 검증된 공항 진입·귀국 이동 안내 각 1개 (공항철도 직통, SOURCES.md 철도 절 근거)
+ * 역 시설·짐 보관 — 결과 화면 하단 안내 (#24 A5 최소선 · #6 "코레일 실행 지원 정보 표시")
  * - 일정에 등장하는 역의 편의시설 (station-facilities.json 스냅샷, 수록 역만 표시)
  * - 역을 누르면 그 역의 시설과 짐 보관 안내를 팝업 탭으로 본다 (짐 보관은 전 일정 공통)
+ *
+ * 공항 진입·귀국 이동 안내는 이 카드에 없다 — 일정의 열차 줄 팝업(TrainLegModal)으로 옮겼다.
+ * 같은 시각을 일정과 이 카드 두 자리에서 말하던 중복을 없애기 위해서다.
+ * 카드 이름도 남은 내용에 맞춰 바꿨다("실행 지원"이 무엇을 하는 곳인지 말하지 않았다).
  */
 import { useState } from "react";
 import type { StationFacilitiesSnapshotT } from "@/lib/station-facilities";
 import type { MessageKey } from "@/lib/i18n/messages";
 import { FacilitySummaryIcons, StationFacilityModal } from "./station-facility-modal";
 
-// PR #59 리뷰 2 — AREX 안내는 일정에 실제 공항역 구간이 있을 때만 방향별로 표시한다.
-// 공항버스 직행형(#14 GatewayLeg)이 합류하면 그 일정에는 이 카드가 나오면 안 된다.
-const AIRPORT_STATION_ID = "station-incheon-airport-t1";
-
-export function ExecutionSupport({ snapshot, stationIds, rides, stationName, tr }: {
+export function ExecutionSupport({ snapshot, stationIds, stationName, tr }: {
   snapshot: StationFacilitiesSnapshotT;
   stationIds: string[]; // 표시 중인 일정에 등장하는 역 (등장 순서 유지·중복 제거는 호출부)
-  rides: { fromStationId: string; toStationId: string }[]; // 표시 중인 일정의 열차 구간 전부
   stationName: (id: string) => string;
   tr: (key: MessageKey) => string;
 }) {
   const facilityOf = new Map(snapshot.stations.map((s) => [s.stationId, s]));
   const covered = stationIds.filter((id) => facilityOf.has(id));
   const hasMissing = covered.length < stationIds.length;
-  const showArrivalGuide = rides.some((r) => r.fromStationId === AIRPORT_STATION_ID);
-  const showReturnGuide = rides.some((r) => r.toStationId === AIRPORT_STATION_ID);
 
   // 역별 상세는 팝업으로만 — 목록에는 있는 시설 아이콘 요약만 둔다
   const [openStationId, setOpenStationId] = useState<string | null>(null);
@@ -35,34 +31,6 @@ export function ExecutionSupport({ snapshot, stationIds, rides, stationName, tr 
     <div className="rounded-lg border p-4">
       <h3 className="font-medium">{tr("support.title")}</h3>
       <p className="mt-0.5 text-xs text-sc-muted">{tr("support.subtitle")}</p>
-
-      {(showArrivalGuide || showReturnGuide) && (
-        <div className="mt-3 grid gap-3 sm:grid-cols-2">
-          {showArrivalGuide && (
-            <div className="rounded border bg-sc-subtle/60 p-3">
-              <h4 className="text-sm font-medium">✈️ {tr("support.arrivalTitle")}</h4>
-              <ol className="mt-1 list-decimal space-y-0.5 pl-5 text-sm text-sc-text/80">
-                <li>{tr("support.arrivalStep1")}</li>
-                <li>{tr("support.arrivalStep2")}</li>
-                <li>{tr("support.arrivalStep3")}</li>
-              </ol>
-              <p className="mt-1.5 text-xs text-sc-muted/70">{tr("support.arexSource")}</p>
-            </div>
-          )}
-
-          {showReturnGuide && (
-            <div className="rounded border bg-sc-subtle/60 p-3">
-              <h4 className="text-sm font-medium">🛫 {tr("support.returnTitle")}</h4>
-              <ol className="mt-1 list-decimal space-y-0.5 pl-5 text-sm text-sc-text/80">
-                <li>{tr("support.returnStep1")}</li>
-                <li>{tr("support.returnStep2")}</li>
-                <li>{tr("support.returnStep3")}</li>
-              </ol>
-              <p className="mt-1.5 text-xs text-sc-muted/70">{tr("support.arexSource")}</p>
-            </div>
-          )}
-        </div>
-      )}
 
       {/* 짐 보관은 역 팝업의 탭으로 옮겼다. 수록 역이 하나도 없어 팝업 경로가 없을 때만
           여기에 그대로 남겨 안내가 사라지지 않게 한다. */}

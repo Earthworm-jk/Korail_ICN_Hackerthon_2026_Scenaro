@@ -54,6 +54,7 @@ import { ExecutionSupport } from "./execution-support";
 import { GatewayAlternatives } from "./gateway-alternatives";
 import { ItineraryRouteMap, KoreaMapPanel, type MapPlace, type MapStation } from "./korea-map";
 import { ThemeExperienceCard, ThemeExperienceMapOverlay } from "./theme-experience";
+import { TrainLegModal, type TrainLegDetail } from "./train-leg-modal";
 import { getThemeExperience, type ThemeExperienceResult } from "@/lib/actions/theme-experience";
 import type { StationFacilitiesSnapshotT } from "@/lib/station-facilities";
 import type { StationCoordinatesSnapshotT } from "@/lib/station-coordinates";
@@ -286,6 +287,8 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
   const [themeExperience, setThemeExperience] = useState<ThemeExperienceResult | null>(null);
   // #14 v0.6 — 지도 권역 표시는 기본 숨김. 카드 버튼과 지도 헤딩 버튼이 같은 상태를 쓴다.
   const [themeMapVisible, setThemeMapVisible] = useState(false);
+  // 인수인계 G — 열차 줄을 누르면 그 구간의 시각·출처를 팝업으로 본다 (화면 아래 카드 중복 제거)
+  const [openTrainLeg, setOpenTrainLeg] = useState<TrainLegDetail | null>(null);
   // PR #82 리뷰 비차단 — 연속 재계산에서 먼저 보낸 요청의 늦은 응답이 최신 화면을 덮지 않게
   // 요청 순번을 붙이고, 자기 순번이 아니면 응답을 버린다.
   const themeRequestRef = useRef(0);
@@ -1050,10 +1053,26 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
                           <span className="ml-2 text-xs text-sc-muted/70">{leg.serviceName[locale]} · {leg.operator[locale]}</span>
                         </li>
                       ))}
+                      {/* 열차 줄은 누르면 그 구간의 시각·소요시간·출처가 팝업으로 열린다 (인수인계 G).
+                          점선 밑줄이 눌린다는 표시다 — 안내 문구를 따로 두지 않는다. */}
                       {day.rides.map((ride) => (
-                        <li key={`${ride.trainNo}-${ride.departAt}`} className="text-sc-text/80">
-                          🚆 {fmtTime(ride.departAt)} {stationName(ride.fromStationId)} → {fmtTime(ride.arriveAt)} {stationName(ride.toStationId)}
-                          <span className="ml-2 text-xs text-sc-muted/70">{tr("step4.train")} {ride.trainNo}</span>
+                        <li key={`${ride.trainNo}-${ride.departAt}`}>
+                          <button
+                            type="button"
+                            className="-mx-1 w-full rounded border border-transparent px-1 py-0.5 text-left text-sc-text/80 hover:border-sc-blue"
+                            onClick={() => setOpenTrainLeg({
+                              trainNo: ride.trainNo,
+                              fromName: stationName(ride.fromStationId),
+                              toName: stationName(ride.toStationId),
+                              departAt: ride.departAt,
+                              arriveAt: ride.arriveAt,
+                            })}
+                          >
+                            🚆 {fmtTime(ride.departAt)} {stationName(ride.fromStationId)} → {fmtTime(ride.arriveAt)} {stationName(ride.toStationId)}
+                            <span className="ml-2 text-xs text-sc-muted/70 underline decoration-dotted underline-offset-2">
+                              {tr("step4.train")} {ride.trainNo}
+                            </span>
+                          </button>
                         </li>
                       ))}
                       {/* #14: 장소 단위 시각 미표기 — 역 단위 활용시간은 regionWindows로 표시 (#33) */}
@@ -1189,7 +1208,7 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
                 mapVisible={themeMapVisible}
                 onToggleMap={() => setThemeMapVisible((visible) => !visible)}
               />
-              {/* #24 A5 — 실행 지원: 일정에 등장하는 역만, 스냅샷 수록분만 안내 */}
+              {/* #24 A5 — 역 시설·짐 보관: 일정에 등장하는 역만, 스냅샷 수록분만 안내 */}
               <ExecutionSupport
                 snapshot={stationFacilities}
                 stationIds={[...new Set(displayedDays.flatMap((day) => [
@@ -1197,12 +1216,15 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
                   ...(day.gatewayLegs ?? []).flatMap((leg) => [leg.fromStationId, leg.toStationId]),
                   ...day.regionWindows.map((window) => window.stationId),
                 ]))]}
-                rides={displayedDays.flatMap((day) => day.rides)}
                 stationName={stationName}
                 tr={tr}
               />
               </div>
               </div>
+
+              {openTrainLeg && (
+                <TrainLegModal leg={openTrainLeg} onClose={() => setOpenTrainLeg(null)} tr={tr} />
+              )}
             </div>
           )}
 
