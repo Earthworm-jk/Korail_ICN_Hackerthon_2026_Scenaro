@@ -58,6 +58,7 @@ STATION_NAME_MAP: dict[str, str] = {
     "station-jinbu": "진부(오대산)역",
     "station-manjong": "만종역",
     "station-jeonju": "전주역",
+    "station-yongsan": "용산역",
     # station-incheon-airport-t1: 공항철도(주) 운영 — 원천 밖 (build_station_facilities.py와 동일)
 }
 

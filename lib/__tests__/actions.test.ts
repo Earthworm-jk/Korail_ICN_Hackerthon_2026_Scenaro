@@ -238,6 +238,46 @@ describe("#56 열차 스냅샷 권역 확장 — 실데이터 회귀", () => {
     }
   });
 
+  it("용산 경유가 KTX만으로 성립한다 — 개별 이동 예외 없이 환승 가능 (#72)", () => {
+    // 서울역↔용산은 지하철 개별 이동(#61 예외)이 아니라 호남선·전라선 KTX 한 정거장이다.
+    // 이 전제가 깨지면(= 서울↔용산 구간이 스냅샷에서 사라지면) 용산 착발편 전체가
+    // 도달 불가가 되므로, 환승 여유 15분을 넘기는 조합이 실제로 있는지 데이터로 고정한다.
+    const legs = loadRepositories().trainLegs;
+    const at = (iso: string) => Date.parse(iso);
+    const toYongsan = legs.filter((l) =>
+      l.fromStationId === "station-seoul" && l.toStationId === "station-yongsan");
+    const toJeonju = legs.filter((l) =>
+      l.fromStationId === "station-yongsan" && l.toStationId === "station-jeonju");
+    expect(toYongsan.length).toBeGreaterThan(0);
+
+    const connections = toYongsan.flatMap((first) =>
+      toJeonju.filter((second) =>
+        second.trainNo !== first.trainNo
+        && at(second.departAt) - at(first.arriveAt) >= 15 * 60_000));
+    expect(connections.length).toBeGreaterThan(0);
+
+    // 용산만 거치는 열차(서울역 미정차)가 실제로 있어야 이 확장이 값을 한다
+    const directDepartures = new Set(legs
+      .filter((l) => l.fromStationId === "station-seoul" && l.toStationId === "station-jeonju")
+      .map((l) => l.departAt));
+    expect(connections.some((l) => !directDepartures.has(l.departAt))).toBe(true);
+  });
+
+  it("같은 열차를 중간역에서 쪼개 타지 않는다 — 용산 경유 표시 회귀 (#72)", async () => {
+    // 스냅샷에 중간역 구간이 생기면 한 번 탑승이 두 leg로도 표현된다(전주→용산→서울 00508).
+    // 그대로 두면 화면에 "용산역에서 내렸다 3분 뒤 같은 열차 재탑승"으로 나온다.
+    for (const placeId of ["place-gyeonggijeon-shrine", "place-bexco"]) {
+      const res = await planOnly(placeId);
+      expect(res.ok).toBe(true);
+      if (!res.ok || res.result.status !== "planned") continue;
+      for (const day of res.result.days) {
+        const sameTrainRuns = day.rides.filter((ride, index) =>
+          index > 0 && day.rides[index - 1].trainNo === ride.trainNo);
+        expect(sameTrainRuns, `${placeId} ${day.date}`).toEqual([]);
+      }
+    }
+  });
+
   it("전주 앵커 경기전이 단독 선택 시 배치된다 — 전라선 팩 (#72 · #56 3단계)", async () => {
     // 서울역↔전주 직결 KTX 스냅샷 수록 전에는 이 장소가 TRAIN_UNAVAILABLE로 빠졌다.
     // 후보에서 감추는 대신 데이터를 채우는 방향(팀 결정)의 회귀다.
