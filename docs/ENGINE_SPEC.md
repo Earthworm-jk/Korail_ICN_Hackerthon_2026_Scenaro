@@ -147,13 +147,16 @@ const GatewayLeg = z.object({
 
 철도 추천 일정과 별도로, 같은 `routeId`의 outbound/inbound `GatewayLeg` 쌍마다
 공항 준비시각 이후 출발·공항 도착 마감 이전 귀환을 먼저 하드 필터한다. 통과한 쌍은
-도착 권역 앵커에서 귀환 버스 출발 전까지 동일 플래너를 다시 실행하고, 버스 구간을 포함한
+도착 권역 앵커에서 귀환 버스 출발 전까지 플래너를 실행하고, 버스 구간을 포함한
 `regionWindows[]`와 **전체 `days[]` 대안**을 만든다. 단일 열차 구간만 바꾸지 않는다.
 선택 촬영지와 같은 권역의 앵커만 후보가 되며 목적지 이름·강릉 ID를 알고리즘에 하드코딩하지 않는다.
 
 핵심 철도 추천의 NFR-PERF-001(2초)을 공항버스 전체 재계산이 막지 않도록 실행 경로를
 둘로 나눈다. `generateItinerary()`는 핵심 추천을 먼저 반환하고, UI는 별도
-`planGatewayAlternatives()` Server Action으로 공항버스 전체 대안을 비차단 보강한다.
+`planGatewayAlternatives(request, baseline)` Server Action으로 공항버스 전체 대안을 비차단 보강한다.
+`baseline`은 핵심 추천에서 축약한 중복 없는 방문 장소 ID와 지역 사용 시간 합뿐이며,
+대안의 `effects` 비교값에만 쓴다. Action은 이 입력을 검증한 뒤 핵심 철도 추천을 다시 계산하지
+않고 공항버스 후보만 생성한다. baseline은 권한·저장 판단의 신뢰 입력이 아니다.
 늦게 도착한 이전 요청의 대안은 요청 순번으로 폐기한다. 순수 엔진 회귀에서는
 `generateItineraryWithGatewayAlternatives()`로 결합 결과를 검증한다.
 
@@ -335,7 +338,8 @@ PR 필수 체크로 활성화(팀 규칙 CI 절).
 
 ## 9. 성능·기타
 
-- 재계산 목표 2초 이내(REQ-EDIT-001, NFR-PERF-001).
+- 핵심 철도 재계산은 후보 50곳에서 2초 이내(REQ-EDIT-001, NFR-PERF-001).
+- 핵심 추천과 공항버스 전체 대안을 결합한 엔진 경로는 후보 50곳에서 5초 이내(NFR-PERF-002, #87).
 - 열차 시간표·항공은 스냅샷 기준. 항공 실호출 1건은 어댑터 계층에서 5초 폴백(REQ-DATA-003).
 - 엔진 단위 테스트는 Vitest, UI 없이 실행 가능해야 한다.
 

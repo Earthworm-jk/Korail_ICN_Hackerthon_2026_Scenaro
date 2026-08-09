@@ -45,6 +45,7 @@ import { fromKstLocalInput as fromLocalInput, toKstLocalInput as toLocalInput } 
 import { formatFlightStatus } from "@/lib/flight-status";
 import { formatEpisodeLabel } from "@/lib/episode-label";
 import { splitSourceLink } from "@/lib/source-link";
+import { gatewayPlanningBaselineOf } from "@/lib/engine/gateway-baseline";
 import { AlternativeTimetables } from "./alternative-timetables";
 import { AuthModal, TripsModal, useSaveStub, type SaveStatus } from "./save-stub";
 import { ExecutionSupport } from "./execution-support";
@@ -393,13 +394,16 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates }:
         dispatchView({ type: "PLAN_SUCCESS", result: res.result });
         saveStub.markDirty();
         if (res.result.status === "planned") {
+          const baseline = gatewayPlanningBaselineOf(res.result);
           // 핵심 철도 추천을 먼저 보여주고, 더 비싼 전체 공항버스 재계산은 비차단으로 붙인다.
-          void planGatewayAlternatives(constraints).then((gateway) => {
-            if (sequence !== planSequence.current || !gateway.ok) return;
-            dispatchView({ type: "GATEWAY_ALTERNATIVES_SUCCESS", alternatives: gateway.alternatives });
-          }).catch(() => {
-            // 선택 대안 보강 실패는 이미 생성된 핵심 추천을 실패 상태로 되돌리지 않는다.
-          });
+          if (baseline) {
+            void planGatewayAlternatives(constraints, baseline).then((gateway) => {
+              if (sequence !== planSequence.current || !gateway.ok) return;
+              dispatchView({ type: "GATEWAY_ALTERNATIVES_SUCCESS", alternatives: gateway.alternatives });
+            }).catch(() => {
+              // 선택 대안 보강 실패는 이미 생성된 핵심 추천을 실패 상태로 되돌리지 않는다.
+            });
+          }
           void refreshThemeExperience(res.result.days, constraints.selectedWorkIds);
         }
       } else dispatchView({ type: "PLAN_INVALID" }); // 1단계 검증을 우회한 요청 — 기존 결과 유지
