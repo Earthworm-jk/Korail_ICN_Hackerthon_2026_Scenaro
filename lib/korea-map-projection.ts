@@ -70,6 +70,7 @@ export const ROUTE_CURVE_ALPHA = 0.45;
  *
  * 이 곡선은 실제 버스·택시·도보 경로가 아니라 일정의 지역 관계를 잇는 보조 시각화다
  * (#14 §6). 실경로처럼 읽히지 않도록 역·공항 지점만 잇고 중간 경유지를 만들지 않는다.
+ * 철도 구간은 이 곡선이 아니라 실제 선로 선형(polylinePath)으로 그린다.
  */
 export function catmullRomPath(points: readonly MapPosition[], alpha = ROUTE_CURVE_ALPHA): string {
   if (points.length === 0) return "";
@@ -126,4 +127,17 @@ export function catmullRomPath(points: readonly MapPosition[], alpha = ROUTE_CUR
   else if (count === 3) push(x2, y2);
 
   return out.join("");
+}
+
+/**
+ * 꼭짓점을 그대로 잇는 폴리라인 → SVG path.
+ *
+ * 실제 선로 선형(data/rail-geometry.json)을 그리는 데 쓴다. 여기서는 곡선을 씌우지 않는다 —
+ * OSM way의 꼭짓점 자체가 선로가 휘는 자리이고, 스플라인을 얹으면 원천에 없는 곡률이 생긴다.
+ * 매끈함보다 "화면의 선이 실제 선로다"가 이 표시의 근거다.
+ */
+export function polylinePath(points: readonly MapPosition[]): string {
+  if (points.length === 0) return "";
+  const [first, ...rest] = points;
+  return `M${first.x},${first.y}` + rest.map((point) => `L${point.x},${point.y}`).join("");
 }
