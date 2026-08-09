@@ -11,11 +11,14 @@ import { PLACE_TYPE_ICON, PLACE_TYPE_FALLBACK_ICON, placeTypeIcon } from "../pla
  * 조용히 사라지거나 조용히 들어오는 것을 막는다.
  */
 describe("장소 유형 시드", () => {
-  it("현재 시드 14곳은 모두 유형이 분류돼 있다", () => {
+  it("시드의 모든 장소가 유형이 분류돼 있다", () => {
     const { places } = loadRepositories();
     const unclassified = places.filter((p) => p.placeType === undefined).map((p) => p.id);
     expect(unclassified).toEqual([]);
-    expect(places.length).toBe(14);
+    // PR #113 리뷰 — 총개수는 고정하지 않는다. #72로 30-50곳까지 늘어나므로, 15번째 장소가
+    // placeType까지 제대로 채워져도 실패하는 테스트가 된다. 다만 시드가 비면 위 단언이
+    // 공허하게 통과하므로 비어 있지 않음만 확인한다.
+    expect(places.length).toBeGreaterThan(0);
   });
 
   it("유형 값이 스키마 어휘 안에 있다", () => {
