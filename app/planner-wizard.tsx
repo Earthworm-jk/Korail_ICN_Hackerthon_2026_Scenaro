@@ -56,13 +56,55 @@ function fmtTime(iso: string): string {
 
 type FlightField = {
   flightNo: string;
-  at: string; // datetime-local (KST)
+  at: string; // "YYYY-MM-DDTHH:mm" (KST) — 위젯 교체 후에도 직렬화 형식 유지 (#14)
   notFound: boolean;
   source?: "live" | "snapshot"; // 조회 출처 — 폴백 여부 표시 (API_SPEC 2.1)
   status?: string; // 운항 상태 문구 — live 조회 시
 };
 
 const STEPS: MessageKey[] = ["nav.step1", "nav.step2", "nav.step3", "nav.step4"];
+
+// #14 합의(2026-08-08): datetime-local은 시각 표기가 앱 locale이 아니라 브라우저 UI 언어를
+// 따라 영어 모드에 '오전/오후'가 남는다 — 날짜 input + 24시간제 시/분 select로 교체 (A6).
+// 값 형식("YYYY-MM-DDTHH:mm" KST)·검증·touched 규칙은 그대로다.
+const pad2 = (n: number) => String(n).padStart(2, "0");
+const HOURS = Array.from({ length: 24 }, (_, i) => pad2(i));
+const MINUTES = Array.from({ length: 60 }, (_, i) => pad2(i));
+
+function DateTimeField({ value, onChange, className }: {
+  value: string;
+  onChange: (value: string) => void;
+  className?: string;
+}) {
+  const [date = "", time = ""] = value.split("T");
+  const [hour = "00", minute = "00"] = time.split(":");
+  const emit = (d: string, h: string, m: string) => onChange(d ? `${d}T${h}:${m}` : "");
+  return (
+    <div className={`flex items-center gap-1.5 ${className ?? ""}`}>
+      <input
+        type="date"
+        className="min-w-0 flex-1 rounded border px-2 py-1 text-sm"
+        value={date}
+        onChange={(e) => emit(e.target.value, hour, minute)}
+      />
+      <select
+        className="rounded border px-1.5 py-1 text-sm"
+        value={hour}
+        onChange={(e) => emit(date, e.target.value, minute)}
+      >
+        {HOURS.map((h) => <option key={h} value={h}>{h}</option>)}
+      </select>
+      <span className="text-sm text-gray-400">:</span>
+      <select
+        className="rounded border px-1.5 py-1 text-sm"
+        value={minute}
+        onChange={(e) => emit(date, hour, e.target.value)}
+      >
+        {MINUTES.map((m) => <option key={m} value={m}>{m}</option>)}
+      </select>
+    </div>
+  );
+}
 
 export default function PlannerWizard({ stationFacilities }: {
   stationFacilities: StationFacilitiesSnapshotT;
@@ -370,13 +412,10 @@ export default function PlannerWizard({ stationFacilities }: {
                   </p>
                 )}
                 <label className="mt-3 block text-xs text-gray-500">{tr("step1.scheduledAt")}</label>
-                <input
-                  type="datetime-local"
-                  className="mt-1 w-full rounded border px-2 py-1 text-sm"
+                <DateTimeField
+                  className="mt-1"
                   value={field.at}
-                  onChange={(e) =>
-                    (direction === "arrival" ? setArrivalAtInput : setDepartureAtInput)(e.target.value)
-                  }
+                  onChange={direction === "arrival" ? setArrivalAtInput : setDepartureAtInput}
                 />
               </div>
             ))}
@@ -384,11 +423,10 @@ export default function PlannerWizard({ stationFacilities }: {
           <div className="mt-4 grid gap-4 sm:grid-cols-2">
             <div className="rounded-lg border p-4">
               <label className="text-sm font-medium">{tr("step1.airportReady")}</label>
-              <input
-                type="datetime-local"
-                className="mt-2 w-full rounded border px-2 py-1 text-sm"
+              <DateTimeField
+                className="mt-2"
                 value={airportReady.at}
-                onChange={(e) => setAirportReady({ at: e.target.value, touched: true })}
+                onChange={(at) => setAirportReady({ at, touched: true })}
               />
               {readySlackMin !== null && readySlackMin >= 0 && (
                 <p className="mt-1 text-xs text-gray-500">
@@ -398,11 +436,10 @@ export default function PlannerWizard({ stationFacilities }: {
             </div>
             <div className="rounded-lg border p-4">
               <label className="text-sm font-medium">{tr("step1.airportDeadline")}</label>
-              <input
-                type="datetime-local"
-                className="mt-2 w-full rounded border px-2 py-1 text-sm"
+              <DateTimeField
+                className="mt-2"
                 value={airportDeadline.at}
-                onChange={(e) => setAirportDeadline({ at: e.target.value, touched: true })}
+                onChange={(at) => setAirportDeadline({ at, touched: true })}
               />
               {deadlineSlackMin !== null && deadlineSlackMin >= 0 && (
                 <p className="mt-1 text-xs text-gray-500">
