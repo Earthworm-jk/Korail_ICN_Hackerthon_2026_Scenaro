@@ -309,9 +309,12 @@ export function KoreaMapPanel({
   // 보이는 창. 좌표계(360×430)는 그대로고 이 값만 움직인다
   const [view, setView] = useState<Viewport>(BASE_VIEWPORT);
   const svgRef = useRef<SVGSVGElement | null>(null);
-  /** 화면에 닿아 있는 포인터 — 2개면 핀치 */
+  /**
+   * 끌고 있는 포인터의 마지막 위치.
+   * 여러 개를 들고 있는 이유는 버튼을 바꿔 잡거나 포인터가 겹칠 때 마지막 위치를 잃지 않기
+   * 위해서다 — 두 손가락 제스처(핀치)는 다루지 않는다. 모바일 대응은 MVP 범위 밖이다(PR #111).
+   */
   const pointersRef = useRef(new Map<number, { x: number; y: number }>());
-  const pinchDistanceRef = useRef(0);
   /** 이벤트 핸들러가 최신 창을 읽는 통로 — 휠은 갱신을 기다리지 않고 지금 판단해야 한다 */
   const viewRef = useRef(view);
   useEffect(() => {
@@ -411,10 +414,6 @@ export function KoreaMapPanel({
     const pointers = pointersRef.current;
     pointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
     event.currentTarget.setPointerCapture(event.pointerId);
-    if (pointers.size === 2) {
-      const [a, b] = [...pointers.values()];
-      pinchDistanceRef.current = Math.hypot(a.x - b.x, a.y - b.y);
-    }
   }, []);
 
   const handlePointerMove = useCallback((event: ReactPointerEvent<SVGSVGElement>) => {
@@ -426,20 +425,7 @@ export function KoreaMapPanel({
     const rect = svgRef.current?.getBoundingClientRect();
     if (!rect || rect.width === 0 || rect.height === 0) return;
 
-    // 두 손가락 — 벌린 만큼 확대, 중심은 두 손가락 사이
-    if (pointers.size >= 2) {
-      const [a, b] = [...pointers.values()];
-      const distance = Math.hypot(a.x - b.x, a.y - b.y);
-      const before = pinchDistanceRef.current || distance;
-      pinchDistanceRef.current = distance;
-      if (before <= 0 || distance <= 0) return;
-      const midX = (a.x + b.x) / 2;
-      const midY = (a.y + b.y) / 2;
-      setView((v) => zoomAt(v, distance / before, pointFromClient(v, rect, midX, midY)));
-      return;
-    }
-
-    // 한 손가락·마우스 드래그 — 화면 이동량을 표시 단위로 환산해 그대로 옮긴다
+    // 드래그 팬 — 화면 이동량을 표시 단위로 환산해 그대로 옮긴다
     const dx = event.clientX - previous.x;
     const dy = event.clientY - previous.y;
     setView((v) => panBy(v, (dx / rect.width) * v.width, (dy / rect.height) * v.height));
@@ -447,7 +433,6 @@ export function KoreaMapPanel({
 
   const handlePointerEnd = useCallback((event: ReactPointerEvent<SVGSVGElement>) => {
     pointersRef.current.delete(event.pointerId);
-    if (pointersRef.current.size < 2) pinchDistanceRef.current = 0;
     if (event.currentTarget.hasPointerCapture(event.pointerId)) {
       event.currentTarget.releasePointerCapture(event.pointerId);
     }
@@ -570,12 +555,6 @@ export function KoreaMapPanel({
           onPointerMove={handlePointerMove}
           onPointerUp={handlePointerEnd}
           onPointerCancel={handlePointerEnd}
-          /**
-           * 확대 전에는 세로 스와이프를 페이지에 양보한다 (pan-y). 4단계 지도는 sticky라
-           * 화면을 거의 채우는데, 처음부터 손가락을 다 가져가면 그 위에서는 페이지가 스크롤되지
-           * 않는다. 확대한 뒤에는 지도를 끄는 게 목적이므로 제스처를 전부 받는다.
-           */
-          style={{ touchAction: zoomed ? "none" : "pan-y" }}
           className={`block w-full focus-visible:outline-2 focus-visible:outline-sc-blue ${zoomed ? "cursor-grab active:cursor-grabbing" : ""}`}
         >
           <desc>{tr(isRoute ? "map.descRoute" : "map.descPlaces")}</desc>

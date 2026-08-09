@@ -252,7 +252,7 @@ export const messages = {
     "map.zoomIn": "지도 확대",
     "map.zoomOut": "지도 축소",
     "map.resetView": "전체 지도로 되돌리기",
-    "map.zoomHint": "휠·두 손가락으로 확대하고 끌어서 옮길 수 있습니다.",
+    "map.zoomHint": "휠로 확대·축소하고 끌어서 옮길 수 있습니다.",
 
     // 이 묶음이 어느 언어인지 — 지도 오버레이가 데이터(권역명 등)의 언어를 고를 때 읽는다.
     // 화면에 그대로 나오지 않는 유일한 값이다.
@@ -501,7 +501,7 @@ export const messages = {
     "map.zoomIn": "Zoom in",
     "map.zoomOut": "Zoom out",
     "map.resetView": "Reset to the whole map",
-    "map.zoomHint": "Scroll or pinch to zoom, drag to move the map.",
+    "map.zoomHint": "Scroll to zoom, drag to move the map.",
 
     // Which locale this bundle is — read by map overlays to pick the language of data names.
     "app.locale": "en",
