@@ -55,7 +55,7 @@ describe("지도 표시 창", () => {
   });
 
   it("확대해도 기준점은 제자리에 남는다", () => {
-    const view = focusOn(project(36.5, 127.8), 2); // 경계에 안 닿는 내륙 지점
+    const view = focusOn(project(36.5, 127.8), 2);
     const focus = { x: view.x + view.width * 0.3, y: view.y + view.height * 0.7 };
     const zoomed = zoomAt(view, ZOOM_STEP, focus);
 
@@ -112,7 +112,6 @@ describe("지도 표시 창", () => {
     const view = fitTo(points);
 
     for (const point of points) expect(contains(view, point)).toBe(true);
-    // 가장자리에 붙지 않는다 — 라벨이 놓일 자리가 남아야 한다
     for (const point of points) {
       expect(point.x - view.x).toBeGreaterThan(view.width * 0.05);
       expect(view.x + view.width - point.x).toBeGreaterThan(view.width * 0.05);
@@ -125,7 +124,6 @@ describe("지도 표시 창", () => {
     expect(scaleOf(view)).toBeGreaterThanOrEqual(MIN_SCALE);
     for (const point of spread) expect(contains(view, point)).toBe(true);
 
-    // 기본 창 네 모서리처럼 더 넓게 퍼진 입력이면 전체 보기로 떨어진다
     const corners = [
       { x: BASE_VIEWPORT.x, y: BASE_VIEWPORT.y },
       { x: BASE_VIEWPORT.x + BASE_VIEWPORT.width, y: BASE_VIEWPORT.y + BASE_VIEWPORT.height },
@@ -137,12 +135,6 @@ describe("지도 표시 창", () => {
     expect(fitTo([])).toEqual(BASE_VIEWPORT);
   });
 
-  /**
-   * 휠 배율 (PR #111 리뷰).
-   *
-   * 이벤트마다 고정 배수를 곱하면 트랙패드에서 네 건(1.5^4 = 5.06)만에 상한에 닿아 지도를
-   * 제어할 수 없다. 배율 변화가 이벤트 횟수가 아니라 총 이동량에 비례한다는 것을 고정한다.
-   */
   describe("휠 배율", () => {
     it("한 칸(deltaY 100)은 정확히 한 단계다", () => {
       expect(wheelZoomFactor(-100)).toBeCloseTo(ZOOM_STEP, 9);
@@ -172,16 +164,16 @@ describe("지도 표시 창", () => {
     });
 
     it("작은 delta가 여러 건 와도 한 제스처가 상한으로 튀지 않는다", () => {
-      // 트랙패드가 한 번 쓸 때 보내는 정도 — 4px짜리 20건
       let view = BASE_VIEWPORT;
       for (let i = 0; i < 20; i += 1) view = zoomByStep(view, wheelZoomFactor(-4));
       expect(scaleOf(view)).toBeLessThan(MAX_SCALE);
       expect(scaleOf(view)).toBeCloseTo(Math.pow(ZOOM_STEP, 0.8), 6);
 
-      // 고정 1.5배였다면 네 건 만에 상한이었다 — 회귀하면 여기서 걸린다
+      // 고정 1.5배를 네 번 적용해도 이제 도시 단위 상한(12배)까지 한 번에 튀지 않는다.
       let fixed = BASE_VIEWPORT;
       for (let i = 0; i < 4; i += 1) fixed = zoomByStep(fixed, ZOOM_STEP);
-      expect(scaleOf(fixed)).toBeCloseTo(MAX_SCALE, 6);
+      expect(scaleOf(fixed)).toBeCloseTo(Math.pow(ZOOM_STEP, 4), 6);
+      expect(scaleOf(fixed)).toBeLessThan(MAX_SCALE);
     });
 
     it("이벤트 하나가 한 단계를 넘지 못한다", () => {
@@ -190,10 +182,8 @@ describe("지도 표시 창", () => {
     });
 
     it("줄·페이지 단위를 픽셀로 정규화한다", () => {
-      // deltaMode 1 = 줄(16px), 2 = 쪽(800px)
       expect(wheelZoomFactor(-100 / 16, 1)).toBeCloseTo(wheelZoomFactor(-100), 9);
       expect(wheelZoomFactor(-100 / 800, 2)).toBeCloseTo(wheelZoomFactor(-100), 9);
-      // 쪽 단위 한 건은 상한에 걸려 한 단계까지만
       expect(wheelZoomFactor(-1, 2)).toBeCloseTo(ZOOM_STEP, 9);
     });
   });
@@ -202,6 +192,7 @@ describe("지도 표시 창", () => {
     expect(screenUnit(BASE_VIEWPORT)).toBe(1);
     expect(screenUnit(focusOn(seoul, 2))).toBeCloseTo(0.5, 9);
     expect(screenUnit(focusOn(seoul, 4))).toBeCloseTo(0.25, 9);
+    expect(screenUnit(focusOn(seoul, MAX_SCALE))).toBeCloseTo(1 / MAX_SCALE, 9);
   });
 
   it("망가진 창도 한계 안으로 되돌린다", () => {
