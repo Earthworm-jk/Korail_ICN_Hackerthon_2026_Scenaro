@@ -48,7 +48,8 @@ SCALE = 1983.2751905175248
 TRANSLATE_X = -4234.162150478736
 TRANSLATE_Y = 1675.0702691478289
 
-# 우리 스냅샷의 구간은 모두 아래 세 축 안에 있다. 전라선은 열차 스냅샷 범위 밖이라 뺀다.
+# 우리 스냅샷의 구간은 모두 아래 네 축 안에 있다 — 열차 스냅샷의 OD 전부가 축에 걸리는지는
+# lib/__tests__/rail-geometry.test.ts가 잠근다. 스냅샷에 새 역이 들어오면 축도 함께 늘려야 한다.
 #
 # 축마다 받는 방식이 다르다:
 #   relation — OSM에 완결된 route 관계가 있는 축. 관계의 way를 순서대로 이으면 끝난다.
@@ -108,6 +109,11 @@ AXES = [
 
 # 역이 이 노선 위에 있다고 볼 최대 거리(m). 선로 정점과 역 좌표는 정확히 겹치지 않는다.
 STATION_SNAP_METERS = 2500
+# spliced 축에서 앞 조각 끝과 다음 조각 시작이 떨어져도 좋은 최대 거리(m).
+# 두 관계가 같은 역에서 만나므로 실제로는 역 구내 표현 차이 수준이다 — 서울-용산 이음매 실측 157m
+# (경부선 관계의 용산 최근접점과 전라선 관계 시작점이 승강장 반대편을 가리킨다).
+# 이보다 벌어지면 그 사이를 직선으로 메우게 되므로 굽지 않고 멈춘다 (PR #96 리뷰 비차단 2).
+SPLICE_SEAM_METERS = 500
 # 투영 좌표계에서의 단순화 허용오차. 1 단위가 약 1.4km이고 화면에서 약 2px이므로
 # 0.2는 약 280m — 눈에 보이는 굴곡은 남기고 점 수만 줄인다.
 SIMPLIFY_TOLERANCE = 0.2
@@ -333,7 +339,17 @@ def axis_line(spec: dict, seed_by_id: dict) -> list[tuple[float, float]]:
                 f"      {part['from']} → {part['to']}: {len(piece)}점"
                 f" (관계 {start}-{end}, 스냅 {start_distance:.0f}m/{end_distance:.0f}m)"
             )
-            # 이음매의 첫 점은 앞 조각의 끝점과 같은 역이다 — 한 번만 남긴다
+            # 이음매의 첫 점은 앞 조각의 끝점과 같은 역이다 — 한 번만 남긴다.
+            # 다만 버리기 전에 실제로 붙어 있는지 확인한다. 원천 관계가 바뀌어 두 조각이
+            # 떨어지면, 그 공백을 직선으로 조용히 이어 실제로는 없는 선형을 만들게 된다.
+            if line:
+                seam = haversine_m(line[-1], piece[0])
+                if seam > SPLICE_SEAM_METERS:
+                    raise SystemExit(
+                        f"{spec['id']} 이음매가 {seam/1000:.2f}km 벌어져 있다"
+                        f" (한계 {SPLICE_SEAM_METERS}m) — 관계 지오메트리를 다시 확인할 것"
+                    )
+                print(f"      이음매 간격 {seam:.0f}m")
             line.extend(piece if not line else piece[1:])
             time.sleep(3)
         return line
