@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import catalogSeed from "../../data/filming-catalog.json";
 import plannerPlaces from "../../data/places.json";
 import {
   deriveFilmingCatalogCandidates,
@@ -71,7 +72,7 @@ describe("전체 촬영지 카탈로그", () => {
       .toBe("더 킹: 영원의 군주");
   });
 
-  it("작품은 전체 관계, 배우는 장면 등장 확정 관계만 엄격하게 반환한다", () => {
+  it("작품은 전사 관계 전체, 배우는 원천 문구 일치 관계만 반환한다", () => {
     const goblin = deriveFilmingCatalogCandidates(catalog, {
       selectedActorIds: [],
       selectedWorkIds: ["work-goblin"],
@@ -84,12 +85,12 @@ describe("전체 촬영지 카탈로그", () => {
     });
     expect(kim.length).toBeGreaterThan(0);
     expect(kim.every(({ relations }) => relations.every((relation) =>
-      relation.actorPresenceReviewed === true
-        && relation.featuredActorIds?.includes("actor-kim-go-eun") === true,
+      relation.actorPresenceMatches?.some(({ actorId, method }) =>
+        actorId === "actor-kim-go-eun" && method === "source_text_match") === true,
     ))).toBe(true);
   });
 
-  it("공유·이민호·김태리는 기존 엄격 장면 근거로 검색 후보를 갖는다", () => {
+  it("공유·이민호·김태리는 감사 가능한 원천 문구 일치 후보를 갖는다", () => {
     const expected = new Map([
       ["actor-gong-yoo", 26],
       ["actor-lee-min-ho", 19],
@@ -102,10 +103,38 @@ describe("전체 촬영지 카탈로그", () => {
       });
       expect(candidates.flatMap(({ relations }) => relations), actorId).toHaveLength(relationCount);
       expect(candidates.every(({ relations }) => relations.every((relation) =>
-        relation.actorPresenceReviewed === true
-          && relation.featuredActorIds?.includes(actorId) === true,
+        relation.actorPresenceMatches?.some((match) =>
+          match.actorId === actorId
+            && match.method === "source_text_match"
+            && match.excerpt === relation.sceneNote.ko
+            && match.matchedTokens.length > 0) === true,
       )), actorId).toBe(true);
     }
+  });
+
+  it("#92 A/B provenance와 사람 검토 필드를 카탈로그 전사 상태로 가장하지 않는다", () => {
+    expect(catalog.metadata.actorCandidateMethod).toBe("source_text_match_not_ab_verified");
+    expect(catalog.relations.every(({ catalogReviewStatus }) =>
+      catalogReviewStatus === "source_transcribed")).toBe(true);
+    for (const relation of catalogSeed.relations) {
+      expect(relation).not.toHaveProperty("reviewed");
+      expect(relation).not.toHaveProperty("featuredActorIds");
+      expect(relation).not.toHaveProperty("actorPresenceReviewed");
+      expect(relation).not.toHaveProperty("actorPresenceVerification");
+    }
+  });
+
+  it("미번역 영문과 자유 문자열 역 이름을 앱 조인 키로 사용하지 않는 정책을 명시한다", () => {
+    expect(catalog.metadata.englishDisplayPolicy).toBe("hide_ko_fallback");
+    expect(catalog.metadata.nearestStationReference).toBe("display_name_only_not_join_key");
+  });
+
+  it("접근시간은 모든 장소에 OSRM 선별 추정치와 재확인 의무를 함께 기록한다", () => {
+    expect(catalog.places.every(({ accessEstimate }) =>
+      accessEstimate.method === "osrm_screening"
+        && accessEstimate.recheckRequired
+        && accessEstimate.minutes <= 60)).toBe(true);
+    for (const place of catalogSeed.places) expect(place).not.toHaveProperty("driveMinutes");
   });
 
   it("배우가 현장에 없고 이름만 언급된 더 킹 관계는 이민호 배우 후보에서 제외한다", () => {

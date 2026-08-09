@@ -176,7 +176,12 @@ def main() -> None:
             "latitude": float(reviewed["lat"]),
             "longitude": float(reviewed["lon"]),
             "nearestStationName": str(reviewed["station"]),
-            "driveMinutes": round(float(reviewed["minutes"]), 1),
+            "accessEstimate": {
+                "minutes": round(float(reviewed["minutes"]), 1),
+                "method": "osrm_screening",
+                "verifiedAt": policy["verifiedAt"],
+                "recheckRequired": True,
+            },
             "status": place_status,
             "workIds": work_ids,
             "verifiedAt": policy["verifiedAt"],
@@ -197,36 +202,36 @@ def main() -> None:
             description = normalized(str(raw.get("장소설명", "")))
             work_id = str(item["workId"])
             work = next(work for work in policy["works"] if work["id"] == work_id)
-            featured_actor_ids = []
+            actor_presence_matches = []
             for actor_id in work["actorIds"]:
                 actor = actors_by_id[actor_id]
                 excluded_places = actor_presence_exclusions.get(actor_id, set())
-                if (
-                    str(item["canonicalName"]) not in excluded_places
-                    and any(token in description for token in actor["roleTokens"])
-                ):
-                    featured_actor_ids.append(actor_id)
+                matched_tokens = sorted({
+                    token for token in actor["roleTokens"] if token in description
+                })
+                if str(item["canonicalName"]) not in excluded_places and matched_tokens:
+                    actor_presence_matches.append({
+                        "actorId": actor_id,
+                        "method": "source_text_match",
+                        "matchedTokens": matched_tokens,
+                        "excerpt": description,
+                    })
             relation = {
                 "workId": work_id,
                 "placeId": place_id,
                 "sourceRowId": str(raw.get("연번", "")),
+                "sourceSnapshotPath": "data/raw/filming_locations_20260807.csv",
                 "sourcePlaceName": normalized(str(raw.get("장소명", item["canonicalName"]))),
                 "sceneNote": {"ko": description, "en": description},
                 "sourceUrls": [policy["sourceUrls"][0]],
                 "verifiedAt": policy["verifiedAt"],
-                "reviewed": True,
+                "catalogReviewStatus": "source_transcribed",
             }
-            # 등장 근거가 있는 관계만 #51의 확정 상태(ⓐ)로 승격한다. 토큰이
-            # 없다는 사실은 미등장 근거가 아니므로 ⓑ가 아니라 미검토(ⓒ)로 둔다.
-            if featured_actor_ids:
-                relation["featuredActorIds"] = featured_actor_ids
-                relation["actorPresenceReviewed"] = True
-                relation["actorPresenceVerification"] = {
-                    "method": "automatic",
-                    "grade": "B",
-                    "decision": "confirmed",
-                    "evidenceSourceUrls": [policy["sourceUrls"][0]],
-                }
+            # This is a searchable source-text candidate, not #92 A/B actor
+            # presence verification.  Keep the excerpt and exact matched tokens
+            # auditable without assigning a verification grade.
+            if actor_presence_matches:
+                relation["actorPresenceMatches"] = actor_presence_matches
             relations.append(relation)
 
     works = [
@@ -268,6 +273,9 @@ def main() -> None:
             "sourceUrls": policy["sourceUrls"],
             "plannerSeedSeparated": True,
             "translationStatus": "ko_fallback",
+            "englishDisplayPolicy": "hide_ko_fallback",
+            "actorCandidateMethod": "source_text_match_not_ab_verified",
+            "nearestStationReference": "display_name_only_not_join_key",
             "accessScreeningMethod": "OSRM estimated driving time; recheck boundary locations before itinerary use",
         },
         "actors": actors,
