@@ -41,6 +41,12 @@
     "regionId": "yeongnam"
   },
   {
+    "id": "station-yongsan",
+    "name": { "ko": "용산역", "en": "Yongsan Station" },
+    "lineType": "KTX",
+    "regionId": "seoul_metro"
+  },
+  {
     "id": "station-jeonju",
     "name": { "ko": "전주역", "en": "Jeonju Station" },
     "lineType": "KTX",

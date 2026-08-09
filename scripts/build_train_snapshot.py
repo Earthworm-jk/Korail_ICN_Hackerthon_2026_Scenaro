@@ -70,6 +70,12 @@ STOPOVER_OD_PAIRS: list[tuple[tuple[str, str], tuple[str, str], bool]] = [
     # 종단 행에는 보이지 않는 중간 정차이며(진부와 동일 구조), 서울역 정차편은 전량 KTX
     # 계열이지만 원천이 KTX 전용선이 아니므로 등급 필터를 켠다.
     (("station-seoul", "서울"), ("station-jeonju", "전주"), True),
+    # 용산 경유 (#72) — 전라선 KTX의 절반 이상이 용산 착발이라 직결만 쓰면 오후가 비는데,
+    # 서울역↔용산은 호남선·전라선 KTX가 실제로 잇는 한 정거장(4-7분)이다. 지하철 개별
+    # 이동 예외(#61)를 쓰지 않고 KTX 전용 계약 안에서 해결된다. 환승은 엔진의
+    # MIN_TRANSFER_MINUTES(15분)가 처리한다.
+    (("station-seoul", "서울"), ("station-yongsan", "용산"), True),
+    (("station-yongsan", "용산"), ("station-jeonju", "전주"), True),
     # 춘천은 KTX 컷라인으로 MVP 비범위(#56·#61)
 ]
 STOPOVER_SOURCE_OFFSET_DAYS = 7  # 같은 요일 매핑 — SOURCES.md에 기준일과 함께 명시

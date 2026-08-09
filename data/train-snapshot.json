@@ -161,6 +161,13 @@
     "arriveAt": "2026-08-12T07:01:00+09:00"
   },
   {
+    "trainNo": "00405",
+    "fromStationId": "station-seoul",
+    "toStationId": "station-yongsan",
+    "departAt": "2026-08-12T06:22:00+09:00",
+    "arriveAt": "2026-08-12T06:28:00+09:00"
+  },
+  {
     "trainNo": "00502",
     "fromStationId": "station-jeonju",
     "toStationId": "station-seoul",
@@ -168,11 +175,25 @@
     "arriveAt": "2026-08-12T08:26:00+09:00"
   },
   {
+    "trainNo": "00502",
+    "fromStationId": "station-jeonju",
+    "toStationId": "station-yongsan",
+    "departAt": "2026-08-12T06:29:00+09:00",
+    "arriveAt": "2026-08-12T08:17:00+09:00"
+  },
+  {
     "trainNo": "00804",
     "fromStationId": "station-jinbu",
     "toStationId": "station-seoul",
     "departAt": "2026-08-12T06:37:00+09:00",
     "arriveAt": "2026-08-12T08:38:00+09:00"
+  },
+  {
+    "trainNo": "00473",
+    "fromStationId": "station-seoul",
+    "toStationId": "station-yongsan",
+    "departAt": "2026-08-12T06:44:00+09:00",
+    "arriveAt": "2026-08-12T06:48:00+09:00"
   },
   {
     "trainNo": "00803",
@@ -200,6 +221,20 @@
     "fromStationId": "station-seoul",
     "toStationId": "station-jeonju",
     "departAt": "2026-08-12T07:03:00+09:00",
+    "arriveAt": "2026-08-12T08:57:00+09:00"
+  },
+  {
+    "trainNo": "00503",
+    "fromStationId": "station-seoul",
+    "toStationId": "station-yongsan",
+    "departAt": "2026-08-12T07:03:00+09:00",
+    "arriveAt": "2026-08-12T07:07:00+09:00"
+  },
+  {
+    "trainNo": "00503",
+    "fromStationId": "station-yongsan",
+    "toStationId": "station-jeonju",
+    "departAt": "2026-08-12T07:10:00+09:00",
     "arriveAt": "2026-08-12T08:57:00+09:00"
   },
   {
@@ -231,6 +266,13 @@
     "arriveAt": "2026-08-12T09:20:00+09:00"
   },
   {
+    "trainNo": "00504",
+    "fromStationId": "station-jeonju",
+    "toStationId": "station-yongsan",
+    "departAt": "2026-08-12T07:26:00+09:00",
+    "arriveAt": "2026-08-12T09:09:00+09:00"
+  },
+  {
     "trainNo": "00803",
     "fromStationId": "station-jinbu",
     "toStationId": "station-gangneung",
@@ -250,6 +292,13 @@
     "toStationId": "station-manjong",
     "departAt": "2026-08-12T07:28:00+09:00",
     "arriveAt": "2026-08-12T08:22:00+09:00"
+  },
+  {
+    "trainNo": "00581",
+    "fromStationId": "station-yongsan",
+    "toStationId": "station-jeonju",
+    "departAt": "2026-08-12T07:43:00+09:00",
+    "arriveAt": "2026-08-12T09:59:00+09:00"
   },
   {
     "trainNo": "00013",
@@ -329,6 +378,20 @@
     "arriveAt": "2026-08-12T11:34:00+09:00"
   },
   {
+    "trainNo": "00404",
+    "fromStationId": "station-yongsan",
+    "toStationId": "station-seoul",
+    "departAt": "2026-08-12T08:21:00+09:00",
+    "arriveAt": "2026-08-12T08:26:00+09:00"
+  },
+  {
+    "trainNo": "00502",
+    "fromStationId": "station-yongsan",
+    "toStationId": "station-seoul",
+    "departAt": "2026-08-12T08:21:00+09:00",
+    "arriveAt": "2026-08-12T08:26:00+09:00"
+  },
+  {
     "trainNo": "00806",
     "fromStationId": "station-manjong",
     "toStationId": "station-seoul",
@@ -355,6 +418,13 @@
     "toStationId": "station-seoul",
     "departAt": "2026-08-12T08:37:00+09:00",
     "arriveAt": "2026-08-12T09:57:00+09:00"
+  },
+  {
+    "trainNo": "00505",
+    "fromStationId": "station-yongsan",
+    "toStationId": "station-jeonju",
+    "departAt": "2026-08-12T08:41:00+09:00",
+    "arriveAt": "2026-08-12T10:20:00+09:00"
   },
   {
     "trainNo": "00018",
@@ -399,6 +469,20 @@
     "arriveAt": "2026-08-12T10:36:00+09:00"
   },
   {
+    "trainNo": "00542",
+    "fromStationId": "station-jeonju",
+    "toStationId": "station-yongsan",
+    "departAt": "2026-08-12T09:13:00+09:00",
+    "arriveAt": "2026-08-12T10:56:00+09:00"
+  },
+  {
+    "trainNo": "00504",
+    "fromStationId": "station-yongsan",
+    "toStationId": "station-seoul",
+    "departAt": "2026-08-12T09:15:00+09:00",
+    "arriveAt": "2026-08-12T09:20:00+09:00"
+  },
+  {
     "trainNo": "00805",
     "fromStationId": "station-manjong",
     "toStationId": "station-gangneung",
@@ -411,6 +495,13 @@
     "toStationId": "station-seoul",
     "departAt": "2026-08-12T09:26:00+09:00",
     "arriveAt": "2026-08-12T11:53:00+09:00"
+  },
+  {
+    "trainNo": "00472",
+    "fromStationId": "station-yongsan",
+    "toStationId": "station-seoul",
+    "departAt": "2026-08-12T09:27:00+09:00",
+    "arriveAt": "2026-08-12T09:32:00+09:00"
   },
   {
     "trainNo": "00101",
@@ -434,11 +525,25 @@
     "arriveAt": "2026-08-12T11:38:00+09:00"
   },
   {
+    "trainNo": "00507",
+    "fromStationId": "station-seoul",
+    "toStationId": "station-yongsan",
+    "departAt": "2026-08-12T09:45:00+09:00",
+    "arriveAt": "2026-08-12T09:52:00+09:00"
+  },
+  {
     "trainNo": "00024",
     "fromStationId": "station-busan",
     "toStationId": "station-seoul",
     "departAt": "2026-08-12T09:49:00+09:00",
     "arriveAt": "2026-08-12T12:33:00+09:00"
+  },
+  {
+    "trainNo": "00507",
+    "fromStationId": "station-yongsan",
+    "toStationId": "station-jeonju",
+    "departAt": "2026-08-12T09:54:00+09:00",
+    "arriveAt": "2026-08-12T11:38:00+09:00"
   },
   {
     "trainNo": "00809",
@@ -460,6 +565,20 @@
     "toStationId": "station-busan",
     "departAt": "2026-08-12T09:58:00+09:00",
     "arriveAt": "2026-08-12T12:46:00+09:00"
+  },
+  {
+    "trainNo": "00506",
+    "fromStationId": "station-jeonju",
+    "toStationId": "station-yongsan",
+    "departAt": "2026-08-12T10:04:00+09:00",
+    "arriveAt": "2026-08-12T11:36:00+09:00"
+  },
+  {
+    "trainNo": "00585",
+    "fromStationId": "station-yongsan",
+    "toStationId": "station-jeonju",
+    "departAt": "2026-08-12T10:05:00+09:00",
+    "arriveAt": "2026-08-12T12:25:00+09:00"
   },
   {
     "trainNo": "00123",
@@ -497,6 +616,13 @@
     "arriveAt": "2026-08-12T13:04:00+09:00"
   },
   {
+    "trainNo": "00413",
+    "fromStationId": "station-seoul",
+    "toStationId": "station-yongsan",
+    "departAt": "2026-08-12T10:32:00+09:00",
+    "arriveAt": "2026-08-12T10:38:00+09:00"
+  },
+  {
     "trainNo": "00810",
     "fromStationId": "station-gangneung",
     "toStationId": "station-seoul",
@@ -509,6 +635,13 @@
     "toStationId": "station-gangneung",
     "departAt": "2026-08-12T10:43:00+09:00",
     "arriveAt": "2026-08-12T11:00:00+09:00"
+  },
+  {
+    "trainNo": "00509",
+    "fromStationId": "station-yongsan",
+    "toStationId": "station-jeonju",
+    "departAt": "2026-08-12T10:53:00+09:00",
+    "arriveAt": "2026-08-12T12:46:00+09:00"
   },
   {
     "trainNo": "00025",
@@ -560,6 +693,13 @@
     "arriveAt": "2026-08-12T13:38:00+09:00"
   },
   {
+    "trainNo": "00508",
+    "fromStationId": "station-jeonju",
+    "toStationId": "station-yongsan",
+    "departAt": "2026-08-12T11:43:00+09:00",
+    "arriveAt": "2026-08-12T13:31:00+09:00"
+  },
+  {
     "trainNo": "00812",
     "fromStationId": "station-jinbu",
     "toStationId": "station-seoul",
@@ -581,11 +721,32 @@
     "arriveAt": "2026-08-12T14:51:00+09:00"
   },
   {
+    "trainNo": "00415",
+    "fromStationId": "station-seoul",
+    "toStationId": "station-yongsan",
+    "departAt": "2026-08-12T12:09:00+09:00",
+    "arriveAt": "2026-08-12T12:15:00+09:00"
+  },
+  {
     "trainNo": "00511",
     "fromStationId": "station-seoul",
     "toStationId": "station-jeonju",
     "departAt": "2026-08-12T12:09:00+09:00",
     "arriveAt": "2026-08-12T14:01:00+09:00"
+  },
+  {
+    "trainNo": "00511",
+    "fromStationId": "station-seoul",
+    "toStationId": "station-yongsan",
+    "departAt": "2026-08-12T12:09:00+09:00",
+    "arriveAt": "2026-08-12T12:15:00+09:00"
+  },
+  {
+    "trainNo": "00587",
+    "fromStationId": "station-yongsan",
+    "toStationId": "station-jeonju",
+    "departAt": "2026-08-12T12:11:00+09:00",
+    "arriveAt": "2026-08-12T14:32:00+09:00"
   },
   {
     "trainNo": "00811",
@@ -607,6 +768,13 @@
     "toStationId": "station-manjong",
     "departAt": "2026-08-12T12:11:00+09:00",
     "arriveAt": "2026-08-12T13:24:00+09:00"
+  },
+  {
+    "trainNo": "00511",
+    "fromStationId": "station-yongsan",
+    "toStationId": "station-jeonju",
+    "departAt": "2026-08-12T12:18:00+09:00",
+    "arriveAt": "2026-08-12T14:01:00+09:00"
   },
   {
     "trainNo": "00812",
@@ -644,11 +812,25 @@
     "arriveAt": "2026-08-12T15:07:00+09:00"
   },
   {
+    "trainNo": "00412",
+    "fromStationId": "station-yongsan",
+    "toStationId": "station-seoul",
+    "departAt": "2026-08-12T12:25:00+09:00",
+    "arriveAt": "2026-08-12T12:29:00+09:00"
+  },
+  {
     "trainNo": "00814",
     "fromStationId": "station-jinbu",
     "toStationId": "station-seoul",
     "departAt": "2026-08-12T12:44:00+09:00",
     "arriveAt": "2026-08-12T14:35:00+09:00"
+  },
+  {
+    "trainNo": "00543",
+    "fromStationId": "station-yongsan",
+    "toStationId": "station-jeonju",
+    "departAt": "2026-08-12T12:45:00+09:00",
+    "arriveAt": "2026-08-12T14:22:00+09:00"
   },
   {
     "trainNo": "AREX-E113",
@@ -728,6 +910,27 @@
     "arriveAt": "2026-08-12T14:11:00+09:00"
   },
   {
+    "trainNo": "00582",
+    "fromStationId": "station-jeonju",
+    "toStationId": "station-yongsan",
+    "departAt": "2026-08-12T13:29:00+09:00",
+    "arriveAt": "2026-08-12T15:57:00+09:00"
+  },
+  {
+    "trainNo": "00414",
+    "fromStationId": "station-yongsan",
+    "toStationId": "station-seoul",
+    "departAt": "2026-08-12T13:34:00+09:00",
+    "arriveAt": "2026-08-12T13:38:00+09:00"
+  },
+  {
+    "trainNo": "00508",
+    "fromStationId": "station-yongsan",
+    "toStationId": "station-seoul",
+    "departAt": "2026-08-12T13:34:00+09:00",
+    "arriveAt": "2026-08-12T13:38:00+09:00"
+  },
+  {
     "trainNo": "00815",
     "fromStationId": "station-seoul",
     "toStationId": "station-gangneung",
@@ -770,11 +973,25 @@
     "arriveAt": "2026-08-12T14:51:00+09:00"
   },
   {
+    "trainNo": "00513",
+    "fromStationId": "station-yongsan",
+    "toStationId": "station-jeonju",
+    "departAt": "2026-08-12T14:10:00+09:00",
+    "arriveAt": "2026-08-12T15:53:00+09:00"
+  },
+  {
     "trainNo": "00038",
     "fromStationId": "station-busan",
     "toStationId": "station-seoul",
     "departAt": "2026-08-12T14:20:00+09:00",
     "arriveAt": "2026-08-12T16:53:00+09:00"
+  },
+  {
+    "trainNo": "00512",
+    "fromStationId": "station-jeonju",
+    "toStationId": "station-yongsan",
+    "departAt": "2026-08-12T14:20:00+09:00",
+    "arriveAt": "2026-08-12T16:09:00+09:00"
   },
   {
     "trainNo": "00039",
@@ -791,10 +1008,24 @@
     "arriveAt": "2026-08-12T15:17:00+09:00"
   },
   {
+    "trainNo": "00583",
+    "fromStationId": "station-yongsan",
+    "toStationId": "station-jeonju",
+    "departAt": "2026-08-12T14:39:00+09:00",
+    "arriveAt": "2026-08-12T17:07:00+09:00"
+  },
+  {
     "trainNo": "00042",
     "fromStationId": "station-busan",
     "toStationId": "station-seoul",
     "departAt": "2026-08-12T14:54:00+09:00",
+    "arriveAt": "2026-08-12T17:28:00+09:00"
+  },
+  {
+    "trainNo": "00588",
+    "fromStationId": "station-jeonju",
+    "toStationId": "station-yongsan",
+    "departAt": "2026-08-12T14:57:00+09:00",
     "arriveAt": "2026-08-12T17:28:00+09:00"
   },
   {
@@ -826,6 +1057,13 @@
     "arriveAt": "2026-08-12T17:13:00+09:00"
   },
   {
+    "trainNo": "00514",
+    "fromStationId": "station-jeonju",
+    "toStationId": "station-yongsan",
+    "departAt": "2026-08-12T15:23:00+09:00",
+    "arriveAt": "2026-08-12T17:06:00+09:00"
+  },
+  {
     "trainNo": "00108",
     "fromStationId": "station-busan",
     "toStationId": "station-seoul",
@@ -838,6 +1076,13 @@
     "toStationId": "station-seoul",
     "departAt": "2026-08-12T15:30:00+09:00",
     "arriveAt": "2026-08-12T16:39:00+09:00"
+  },
+  {
+    "trainNo": "00418",
+    "fromStationId": "station-yongsan",
+    "toStationId": "station-seoul",
+    "departAt": "2026-08-12T15:33:00+09:00",
+    "arriveAt": "2026-08-12T15:38:00+09:00"
   },
   {
     "trainNo": "00859",
@@ -917,6 +1162,13 @@
     "arriveAt": "2026-08-12T18:11:00+09:00"
   },
   {
+    "trainNo": "00516",
+    "fromStationId": "station-jeonju",
+    "toStationId": "station-yongsan",
+    "departAt": "2026-08-12T16:22:00+09:00",
+    "arriveAt": "2026-08-12T18:03:00+09:00"
+  },
+  {
     "trainNo": "00094",
     "fromStationId": "station-busan",
     "toStationId": "station-seoul",
@@ -924,10 +1176,31 @@
     "arriveAt": "2026-08-12T19:14:00+09:00"
   },
   {
+    "trainNo": "00427",
+    "fromStationId": "station-seoul",
+    "toStationId": "station-yongsan",
+    "departAt": "2026-08-12T16:35:00+09:00",
+    "arriveAt": "2026-08-12T16:40:00+09:00"
+  },
+  {
     "trainNo": "00515",
     "fromStationId": "station-seoul",
     "toStationId": "station-jeonju",
     "departAt": "2026-08-12T16:35:00+09:00",
+    "arriveAt": "2026-08-12T18:25:00+09:00"
+  },
+  {
+    "trainNo": "00515",
+    "fromStationId": "station-seoul",
+    "toStationId": "station-yongsan",
+    "departAt": "2026-08-12T16:35:00+09:00",
+    "arriveAt": "2026-08-12T16:40:00+09:00"
+  },
+  {
+    "trainNo": "00515",
+    "fromStationId": "station-yongsan",
+    "toStationId": "station-jeonju",
+    "departAt": "2026-08-12T16:44:00+09:00",
     "arriveAt": "2026-08-12T18:25:00+09:00"
   },
   {
@@ -1008,6 +1281,20 @@
     "arriveAt": "2026-08-12T18:45:00+09:00"
   },
   {
+    "trainNo": "00422",
+    "fromStationId": "station-yongsan",
+    "toStationId": "station-seoul",
+    "departAt": "2026-08-12T17:09:00+09:00",
+    "arriveAt": "2026-08-12T17:13:00+09:00"
+  },
+  {
+    "trainNo": "00514",
+    "fromStationId": "station-yongsan",
+    "toStationId": "station-seoul",
+    "departAt": "2026-08-12T17:09:00+09:00",
+    "arriveAt": "2026-08-12T17:13:00+09:00"
+  },
+  {
     "trainNo": "00820",
     "fromStationId": "station-jinbu",
     "toStationId": "station-seoul",
@@ -1036,10 +1323,31 @@
     "arriveAt": "2026-08-12T18:19:00+09:00"
   },
   {
+    "trainNo": "00429",
+    "fromStationId": "station-seoul",
+    "toStationId": "station-yongsan",
+    "departAt": "2026-08-12T17:37:00+09:00",
+    "arriveAt": "2026-08-12T17:42:00+09:00"
+  },
+  {
     "trainNo": "00517",
     "fromStationId": "station-seoul",
     "toStationId": "station-jeonju",
     "departAt": "2026-08-12T17:37:00+09:00",
+    "arriveAt": "2026-08-12T19:23:00+09:00"
+  },
+  {
+    "trainNo": "00517",
+    "fromStationId": "station-seoul",
+    "toStationId": "station-yongsan",
+    "departAt": "2026-08-12T17:37:00+09:00",
+    "arriveAt": "2026-08-12T17:42:00+09:00"
+  },
+  {
+    "trainNo": "00517",
+    "fromStationId": "station-yongsan",
+    "toStationId": "station-jeonju",
+    "departAt": "2026-08-12T17:46:00+09:00",
     "arriveAt": "2026-08-12T19:23:00+09:00"
   },
   {
@@ -1064,6 +1372,13 @@
     "arriveAt": "2026-08-12T20:35:00+09:00"
   },
   {
+    "trainNo": "00518",
+    "fromStationId": "station-jeonju",
+    "toStationId": "station-yongsan",
+    "departAt": "2026-08-12T17:58:00+09:00",
+    "arriveAt": "2026-08-12T19:38:00+09:00"
+  },
+  {
     "trainNo": "00054",
     "fromStationId": "station-busan",
     "toStationId": "station-seoul",
@@ -1076,6 +1391,13 @@
     "toStationId": "station-gangneung",
     "departAt": "2026-08-12T18:04:00+09:00",
     "arriveAt": "2026-08-12T18:21:00+09:00"
+  },
+  {
+    "trainNo": "00516",
+    "fromStationId": "station-yongsan",
+    "toStationId": "station-seoul",
+    "departAt": "2026-08-12T18:06:00+09:00",
+    "arriveAt": "2026-08-12T18:11:00+09:00"
   },
   {
     "trainNo": "00055",
@@ -1118,6 +1440,13 @@
     "toStationId": "station-seoul",
     "departAt": "2026-08-12T18:42:00+09:00",
     "arriveAt": "2026-08-12T22:05:00+09:00"
+  },
+  {
+    "trainNo": "00519",
+    "fromStationId": "station-yongsan",
+    "toStationId": "station-jeonju",
+    "departAt": "2026-08-12T18:48:00+09:00",
+    "arriveAt": "2026-08-12T20:31:00+09:00"
   },
   {
     "trainNo": "00822",
@@ -1190,11 +1519,25 @@
     "arriveAt": "2026-08-12T21:59:00+09:00"
   },
   {
+    "trainNo": "00433",
+    "fromStationId": "station-seoul",
+    "toStationId": "station-yongsan",
+    "departAt": "2026-08-12T19:30:00+09:00",
+    "arriveAt": "2026-08-12T19:35:00+09:00"
+  },
+  {
     "trainNo": "00520",
     "fromStationId": "station-jeonju",
     "toStationId": "station-seoul",
     "departAt": "2026-08-12T19:33:00+09:00",
     "arriveAt": "2026-08-12T21:27:00+09:00"
+  },
+  {
+    "trainNo": "00520",
+    "fromStationId": "station-jeonju",
+    "toStationId": "station-yongsan",
+    "departAt": "2026-08-12T19:33:00+09:00",
+    "arriveAt": "2026-08-12T21:18:00+09:00"
   },
   {
     "trainNo": "00061",
@@ -1260,6 +1603,34 @@
     "arriveAt": "2026-08-12T21:52:00+09:00"
   },
   {
+    "trainNo": "00521",
+    "fromStationId": "station-yongsan",
+    "toStationId": "station-jeonju",
+    "departAt": "2026-08-12T20:09:00+09:00",
+    "arriveAt": "2026-08-12T21:46:00+09:00"
+  },
+  {
+    "trainNo": "00428",
+    "fromStationId": "station-yongsan",
+    "toStationId": "station-seoul",
+    "departAt": "2026-08-12T20:11:00+09:00",
+    "arriveAt": "2026-08-12T20:15:00+09:00"
+  },
+  {
+    "trainNo": "00584",
+    "fromStationId": "station-jeonju",
+    "toStationId": "station-yongsan",
+    "departAt": "2026-08-12T20:16:00+09:00",
+    "arriveAt": "2026-08-12T22:41:00+09:00"
+  },
+  {
+    "trainNo": "00482",
+    "fromStationId": "station-yongsan",
+    "toStationId": "station-seoul",
+    "departAt": "2026-08-12T20:17:00+09:00",
+    "arriveAt": "2026-08-12T20:21:00+09:00"
+  },
+  {
     "trainNo": "00821",
     "fromStationId": "station-manjong",
     "toStationId": "station-gangneung",
@@ -1295,6 +1666,13 @@
     "arriveAt": "2026-08-12T21:20:00+09:00"
   },
   {
+    "trainNo": "00541",
+    "fromStationId": "station-yongsan",
+    "toStationId": "station-jeonju",
+    "departAt": "2026-08-12T20:34:00+09:00",
+    "arriveAt": "2026-08-12T22:13:00+09:00"
+  },
+  {
     "trainNo": "00112",
     "fromStationId": "station-busan",
     "toStationId": "station-seoul",
@@ -1323,6 +1701,13 @@
     "arriveAt": "2026-08-12T22:41:00+09:00"
   },
   {
+    "trainNo": "00544",
+    "fromStationId": "station-jeonju",
+    "toStationId": "station-yongsan",
+    "departAt": "2026-08-12T20:47:00+09:00",
+    "arriveAt": "2026-08-12T22:33:00+09:00"
+  },
+  {
     "trainNo": "00109",
     "fromStationId": "station-seoul",
     "toStationId": "station-busan",
@@ -1349,6 +1734,13 @@
     "toStationId": "station-seoul",
     "departAt": "2026-08-12T21:21:00+09:00",
     "arriveAt": "2026-08-12T22:34:00+09:00"
+  },
+  {
+    "trainNo": "00520",
+    "fromStationId": "station-yongsan",
+    "toStationId": "station-seoul",
+    "departAt": "2026-08-12T21:22:00+09:00",
+    "arriveAt": "2026-08-12T21:27:00+09:00"
   },
   {
     "trainNo": "00068",
@@ -1398,6 +1790,20 @@
     "toStationId": "station-gangneung",
     "departAt": "2026-08-12T21:41:00+09:00",
     "arriveAt": "2026-08-12T21:58:00+09:00"
+  },
+  {
+    "trainNo": "00522",
+    "fromStationId": "station-jeonju",
+    "toStationId": "station-yongsan",
+    "departAt": "2026-08-12T21:44:00+09:00",
+    "arriveAt": "2026-08-12T23:25:00+09:00"
+  },
+  {
+    "trainNo": "00523",
+    "fromStationId": "station-yongsan",
+    "toStationId": "station-jeonju",
+    "departAt": "2026-08-12T21:48:00+09:00",
+    "arriveAt": "2026-08-12T23:18:00+09:00"
   },
   {
     "trainNo": "00071",
@@ -1477,6 +1883,20 @@
     "arriveAt": "2026-08-13T00:13:00+09:00"
   },
   {
+    "trainNo": "00434",
+    "fromStationId": "station-yongsan",
+    "toStationId": "station-seoul",
+    "departAt": "2026-08-12T22:37:00+09:00",
+    "arriveAt": "2026-08-12T22:41:00+09:00"
+  },
+  {
+    "trainNo": "00544",
+    "fromStationId": "station-yongsan",
+    "toStationId": "station-seoul",
+    "departAt": "2026-08-12T22:37:00+09:00",
+    "arriveAt": "2026-08-12T22:41:00+09:00"
+  },
+  {
     "trainNo": "00825",
     "fromStationId": "station-manjong",
     "toStationId": "station-gangneung",
@@ -1489,6 +1909,13 @@
     "toStationId": "station-seoul",
     "departAt": "2026-08-12T23:02:00+09:00",
     "arriveAt": "2026-08-13T00:13:00+09:00"
+  },
+  {
+    "trainNo": "00524",
+    "fromStationId": "station-jeonju",
+    "toStationId": "station-yongsan",
+    "departAt": "2026-08-12T23:12:00+09:00",
+    "arriveAt": "2026-08-13T00:41:00+09:00"
   },
   {
     "trainNo": "00828",
@@ -1673,6 +2100,13 @@
     "arriveAt": "2026-08-13T07:03:00+09:00"
   },
   {
+    "trainNo": "00405",
+    "fromStationId": "station-seoul",
+    "toStationId": "station-yongsan",
+    "departAt": "2026-08-13T06:22:00+09:00",
+    "arriveAt": "2026-08-13T06:29:00+09:00"
+  },
+  {
     "trainNo": "00502",
     "fromStationId": "station-jeonju",
     "toStationId": "station-seoul",
@@ -1680,11 +2114,25 @@
     "arriveAt": "2026-08-13T08:24:00+09:00"
   },
   {
+    "trainNo": "00502",
+    "fromStationId": "station-jeonju",
+    "toStationId": "station-yongsan",
+    "departAt": "2026-08-13T06:28:00+09:00",
+    "arriveAt": "2026-08-13T08:11:00+09:00"
+  },
+  {
     "trainNo": "00804",
     "fromStationId": "station-jinbu",
     "toStationId": "station-seoul",
     "departAt": "2026-08-13T06:38:00+09:00",
     "arriveAt": "2026-08-13T08:33:00+09:00"
+  },
+  {
+    "trainNo": "00473",
+    "fromStationId": "station-seoul",
+    "toStationId": "station-yongsan",
+    "departAt": "2026-08-13T06:44:00+09:00",
+    "arriveAt": "2026-08-13T06:49:00+09:00"
   },
   {
     "trainNo": "00803",
@@ -1712,6 +2160,20 @@
     "fromStationId": "station-seoul",
     "toStationId": "station-jeonju",
     "departAt": "2026-08-13T07:03:00+09:00",
+    "arriveAt": "2026-08-13T08:54:00+09:00"
+  },
+  {
+    "trainNo": "00503",
+    "fromStationId": "station-seoul",
+    "toStationId": "station-yongsan",
+    "departAt": "2026-08-13T07:03:00+09:00",
+    "arriveAt": "2026-08-13T07:08:00+09:00"
+  },
+  {
+    "trainNo": "00503",
+    "fromStationId": "station-yongsan",
+    "toStationId": "station-jeonju",
+    "departAt": "2026-08-13T07:10:00+09:00",
     "arriveAt": "2026-08-13T08:54:00+09:00"
   },
   {
@@ -1762,6 +2224,20 @@
     "toStationId": "station-seoul",
     "departAt": "2026-08-13T07:29:00+09:00",
     "arriveAt": "2026-08-13T09:20:00+09:00"
+  },
+  {
+    "trainNo": "00504",
+    "fromStationId": "station-jeonju",
+    "toStationId": "station-yongsan",
+    "departAt": "2026-08-13T07:29:00+09:00",
+    "arriveAt": "2026-08-13T09:11:00+09:00"
+  },
+  {
+    "trainNo": "00581",
+    "fromStationId": "station-yongsan",
+    "toStationId": "station-jeonju",
+    "departAt": "2026-08-13T07:45:00+09:00",
+    "arriveAt": "2026-08-13T10:03:00+09:00"
   },
   {
     "trainNo": "00013",
@@ -1834,6 +2310,20 @@
     "arriveAt": "2026-08-13T11:33:00+09:00"
   },
   {
+    "trainNo": "00404",
+    "fromStationId": "station-yongsan",
+    "toStationId": "station-seoul",
+    "departAt": "2026-08-13T08:19:00+09:00",
+    "arriveAt": "2026-08-13T08:24:00+09:00"
+  },
+  {
+    "trainNo": "00502",
+    "fromStationId": "station-yongsan",
+    "toStationId": "station-seoul",
+    "departAt": "2026-08-13T08:19:00+09:00",
+    "arriveAt": "2026-08-13T08:24:00+09:00"
+  },
+  {
     "trainNo": "00122",
     "fromStationId": "station-busan",
     "toStationId": "station-seoul",
@@ -1867,6 +2357,13 @@
     "toStationId": "station-seoul",
     "departAt": "2026-08-13T08:37:00+09:00",
     "arriveAt": "2026-08-13T09:53:00+09:00"
+  },
+  {
+    "trainNo": "00505",
+    "fromStationId": "station-yongsan",
+    "toStationId": "station-jeonju",
+    "departAt": "2026-08-13T08:40:00+09:00",
+    "arriveAt": "2026-08-13T10:18:00+09:00"
   },
   {
     "trainNo": "00018",
@@ -1918,11 +2415,32 @@
     "arriveAt": "2026-08-13T10:04:00+09:00"
   },
   {
+    "trainNo": "00504",
+    "fromStationId": "station-yongsan",
+    "toStationId": "station-seoul",
+    "departAt": "2026-08-13T09:16:00+09:00",
+    "arriveAt": "2026-08-13T09:20:00+09:00"
+  },
+  {
+    "trainNo": "00542",
+    "fromStationId": "station-jeonju",
+    "toStationId": "station-yongsan",
+    "departAt": "2026-08-13T09:16:00+09:00",
+    "arriveAt": "2026-08-13T10:57:00+09:00"
+  },
+  {
     "trainNo": "00022",
     "fromStationId": "station-busan",
     "toStationId": "station-seoul",
     "departAt": "2026-08-13T09:26:00+09:00",
     "arriveAt": "2026-08-13T11:53:00+09:00"
+  },
+  {
+    "trainNo": "00472",
+    "fromStationId": "station-yongsan",
+    "toStationId": "station-seoul",
+    "departAt": "2026-08-13T09:27:00+09:00",
+    "arriveAt": "2026-08-13T09:32:00+09:00"
   },
   {
     "trainNo": "00101",
@@ -1946,11 +2464,25 @@
     "arriveAt": "2026-08-13T11:38:00+09:00"
   },
   {
+    "trainNo": "00507",
+    "fromStationId": "station-seoul",
+    "toStationId": "station-yongsan",
+    "departAt": "2026-08-13T09:45:00+09:00",
+    "arriveAt": "2026-08-13T09:51:00+09:00"
+  },
+  {
     "trainNo": "00024",
     "fromStationId": "station-busan",
     "toStationId": "station-seoul",
     "departAt": "2026-08-13T09:49:00+09:00",
     "arriveAt": "2026-08-13T12:33:00+09:00"
+  },
+  {
+    "trainNo": "00507",
+    "fromStationId": "station-yongsan",
+    "toStationId": "station-jeonju",
+    "departAt": "2026-08-13T09:55:00+09:00",
+    "arriveAt": "2026-08-13T11:38:00+09:00"
   },
   {
     "trainNo": "00809",
@@ -1972,6 +2504,20 @@
     "toStationId": "station-busan",
     "departAt": "2026-08-13T09:58:00+09:00",
     "arriveAt": "2026-08-13T12:46:00+09:00"
+  },
+  {
+    "trainNo": "00506",
+    "fromStationId": "station-jeonju",
+    "toStationId": "station-yongsan",
+    "departAt": "2026-08-13T10:02:00+09:00",
+    "arriveAt": "2026-08-13T11:38:00+09:00"
+  },
+  {
+    "trainNo": "00585",
+    "fromStationId": "station-yongsan",
+    "toStationId": "station-jeonju",
+    "departAt": "2026-08-13T10:04:00+09:00",
+    "arriveAt": "2026-08-13T12:29:00+09:00"
   },
   {
     "trainNo": "00123",
@@ -2009,6 +2555,13 @@
     "arriveAt": "2026-08-13T13:04:00+09:00"
   },
   {
+    "trainNo": "00413",
+    "fromStationId": "station-seoul",
+    "toStationId": "station-yongsan",
+    "departAt": "2026-08-13T10:32:00+09:00",
+    "arriveAt": "2026-08-13T10:37:00+09:00"
+  },
+  {
     "trainNo": "00810",
     "fromStationId": "station-gangneung",
     "toStationId": "station-seoul",
@@ -2021,6 +2574,13 @@
     "toStationId": "station-gangneung",
     "departAt": "2026-08-13T10:46:00+09:00",
     "arriveAt": "2026-08-13T11:04:00+09:00"
+  },
+  {
+    "trainNo": "00509",
+    "fromStationId": "station-yongsan",
+    "toStationId": "station-jeonju",
+    "departAt": "2026-08-13T10:54:00+09:00",
+    "arriveAt": "2026-08-13T12:41:00+09:00"
   },
   {
     "trainNo": "00025",
@@ -2072,6 +2632,13 @@
     "arriveAt": "2026-08-13T13:36:00+09:00"
   },
   {
+    "trainNo": "00508",
+    "fromStationId": "station-jeonju",
+    "toStationId": "station-yongsan",
+    "departAt": "2026-08-13T11:39:00+09:00",
+    "arriveAt": "2026-08-13T13:28:00+09:00"
+  },
+  {
     "trainNo": "00812",
     "fromStationId": "station-jinbu",
     "toStationId": "station-seoul",
@@ -2093,11 +2660,32 @@
     "arriveAt": "2026-08-13T14:51:00+09:00"
   },
   {
+    "trainNo": "00415",
+    "fromStationId": "station-seoul",
+    "toStationId": "station-yongsan",
+    "departAt": "2026-08-13T12:08:00+09:00",
+    "arriveAt": "2026-08-13T12:14:00+09:00"
+  },
+  {
     "trainNo": "00511",
     "fromStationId": "station-seoul",
     "toStationId": "station-jeonju",
     "departAt": "2026-08-13T12:08:00+09:00",
     "arriveAt": "2026-08-13T14:03:00+09:00"
+  },
+  {
+    "trainNo": "00511",
+    "fromStationId": "station-seoul",
+    "toStationId": "station-yongsan",
+    "departAt": "2026-08-13T12:08:00+09:00",
+    "arriveAt": "2026-08-13T12:14:00+09:00"
+  },
+  {
+    "trainNo": "00587",
+    "fromStationId": "station-yongsan",
+    "toStationId": "station-jeonju",
+    "departAt": "2026-08-13T12:11:00+09:00",
+    "arriveAt": "2026-08-13T14:37:00+09:00"
   },
   {
     "trainNo": "00811",
@@ -2119,6 +2707,13 @@
     "toStationId": "station-manjong",
     "departAt": "2026-08-13T12:11:00+09:00",
     "arriveAt": "2026-08-13T13:23:00+09:00"
+  },
+  {
+    "trainNo": "00511",
+    "fromStationId": "station-yongsan",
+    "toStationId": "station-jeonju",
+    "departAt": "2026-08-13T12:18:00+09:00",
+    "arriveAt": "2026-08-13T14:03:00+09:00"
   },
   {
     "trainNo": "00812",
@@ -2149,11 +2744,25 @@
     "arriveAt": "2026-08-13T15:07:00+09:00"
   },
   {
+    "trainNo": "00412",
+    "fromStationId": "station-yongsan",
+    "toStationId": "station-seoul",
+    "departAt": "2026-08-13T12:28:00+09:00",
+    "arriveAt": "2026-08-13T12:33:00+09:00"
+  },
+  {
     "trainNo": "00814",
     "fromStationId": "station-jinbu",
     "toStationId": "station-seoul",
     "departAt": "2026-08-13T12:44:00+09:00",
     "arriveAt": "2026-08-13T14:34:00+09:00"
+  },
+  {
+    "trainNo": "00543",
+    "fromStationId": "station-yongsan",
+    "toStationId": "station-jeonju",
+    "departAt": "2026-08-13T12:46:00+09:00",
+    "arriveAt": "2026-08-13T14:26:00+09:00"
   },
   {
     "trainNo": "00813",
@@ -2219,6 +2828,27 @@
     "arriveAt": "2026-08-13T14:16:00+09:00"
   },
   {
+    "trainNo": "00582",
+    "fromStationId": "station-jeonju",
+    "toStationId": "station-yongsan",
+    "departAt": "2026-08-13T13:28:00+09:00",
+    "arriveAt": "2026-08-13T15:58:00+09:00"
+  },
+  {
+    "trainNo": "00414",
+    "fromStationId": "station-yongsan",
+    "toStationId": "station-seoul",
+    "departAt": "2026-08-13T13:31:00+09:00",
+    "arriveAt": "2026-08-13T13:36:00+09:00"
+  },
+  {
+    "trainNo": "00508",
+    "fromStationId": "station-yongsan",
+    "toStationId": "station-seoul",
+    "departAt": "2026-08-13T13:31:00+09:00",
+    "arriveAt": "2026-08-13T13:36:00+09:00"
+  },
+  {
     "trainNo": "00815",
     "fromStationId": "station-seoul",
     "toStationId": "station-gangneung",
@@ -2247,6 +2877,13 @@
     "arriveAt": "2026-08-13T14:16:00+09:00"
   },
   {
+    "trainNo": "00513",
+    "fromStationId": "station-yongsan",
+    "toStationId": "station-jeonju",
+    "departAt": "2026-08-13T14:10:00+09:00",
+    "arriveAt": "2026-08-13T15:54:00+09:00"
+  },
+  {
     "trainNo": "00813",
     "fromStationId": "station-manjong",
     "toStationId": "station-gangneung",
@@ -2259,6 +2896,13 @@
     "toStationId": "station-seoul",
     "departAt": "2026-08-13T14:20:00+09:00",
     "arriveAt": "2026-08-13T16:53:00+09:00"
+  },
+  {
+    "trainNo": "00512",
+    "fromStationId": "station-jeonju",
+    "toStationId": "station-yongsan",
+    "departAt": "2026-08-13T14:21:00+09:00",
+    "arriveAt": "2026-08-13T16:07:00+09:00"
   },
   {
     "trainNo": "00039",
@@ -2275,11 +2919,25 @@
     "arriveAt": "2026-08-13T15:21:00+09:00"
   },
   {
+    "trainNo": "00583",
+    "fromStationId": "station-yongsan",
+    "toStationId": "station-jeonju",
+    "departAt": "2026-08-13T14:39:00+09:00",
+    "arriveAt": "2026-08-13T17:12:00+09:00"
+  },
+  {
     "trainNo": "00042",
     "fromStationId": "station-busan",
     "toStationId": "station-seoul",
     "departAt": "2026-08-13T14:54:00+09:00",
     "arriveAt": "2026-08-13T17:28:00+09:00"
+  },
+  {
+    "trainNo": "00588",
+    "fromStationId": "station-jeonju",
+    "toStationId": "station-yongsan",
+    "departAt": "2026-08-13T14:57:00+09:00",
+    "arriveAt": "2026-08-13T17:19:00+09:00"
   },
   {
     "trainNo": "00844",
@@ -2317,6 +2975,13 @@
     "arriveAt": "2026-08-13T16:42:00+09:00"
   },
   {
+    "trainNo": "00418",
+    "fromStationId": "station-yongsan",
+    "toStationId": "station-seoul",
+    "departAt": "2026-08-13T15:33:00+09:00",
+    "arriveAt": "2026-08-13T15:37:00+09:00"
+  },
+  {
     "trainNo": "00859",
     "fromStationId": "station-manjong",
     "toStationId": "station-gangneung",
@@ -2329,6 +2994,13 @@
     "toStationId": "station-seoul",
     "departAt": "2026-08-13T15:35:00+09:00",
     "arriveAt": "2026-08-13T17:19:00+09:00"
+  },
+  {
+    "trainNo": "00514",
+    "fromStationId": "station-jeonju",
+    "toStationId": "station-yongsan",
+    "departAt": "2026-08-13T15:35:00+09:00",
+    "arriveAt": "2026-08-13T17:09:00+09:00"
   },
   {
     "trainNo": "00816",
@@ -2401,6 +3073,13 @@
     "arriveAt": "2026-08-13T18:13:00+09:00"
   },
   {
+    "trainNo": "00516",
+    "fromStationId": "station-jeonju",
+    "toStationId": "station-yongsan",
+    "departAt": "2026-08-13T16:19:00+09:00",
+    "arriveAt": "2026-08-13T18:05:00+09:00"
+  },
+  {
     "trainNo": "00094",
     "fromStationId": "station-busan",
     "toStationId": "station-seoul",
@@ -2408,10 +3087,31 @@
     "arriveAt": "2026-08-13T19:14:00+09:00"
   },
   {
+    "trainNo": "00427",
+    "fromStationId": "station-seoul",
+    "toStationId": "station-yongsan",
+    "departAt": "2026-08-13T16:36:00+09:00",
+    "arriveAt": "2026-08-13T16:42:00+09:00"
+  },
+  {
     "trainNo": "00515",
     "fromStationId": "station-seoul",
     "toStationId": "station-jeonju",
     "departAt": "2026-08-13T16:36:00+09:00",
+    "arriveAt": "2026-08-13T18:29:00+09:00"
+  },
+  {
+    "trainNo": "00515",
+    "fromStationId": "station-seoul",
+    "toStationId": "station-yongsan",
+    "departAt": "2026-08-13T16:36:00+09:00",
+    "arriveAt": "2026-08-13T16:42:00+09:00"
+  },
+  {
+    "trainNo": "00515",
+    "fromStationId": "station-yongsan",
+    "toStationId": "station-jeonju",
+    "departAt": "2026-08-13T16:45:00+09:00",
     "arriveAt": "2026-08-13T18:29:00+09:00"
   },
   {
@@ -2492,6 +3192,20 @@
     "arriveAt": "2026-08-13T18:52:00+09:00"
   },
   {
+    "trainNo": "00422",
+    "fromStationId": "station-yongsan",
+    "toStationId": "station-seoul",
+    "departAt": "2026-08-13T17:08:00+09:00",
+    "arriveAt": "2026-08-13T17:13:00+09:00"
+  },
+  {
+    "trainNo": "00514",
+    "fromStationId": "station-yongsan",
+    "toStationId": "station-seoul",
+    "departAt": "2026-08-13T17:13:00+09:00",
+    "arriveAt": "2026-08-13T17:19:00+09:00"
+  },
+  {
     "trainNo": "00820",
     "fromStationId": "station-jinbu",
     "toStationId": "station-seoul",
@@ -2520,10 +3234,31 @@
     "arriveAt": "2026-08-13T18:20:00+09:00"
   },
   {
+    "trainNo": "00429",
+    "fromStationId": "station-seoul",
+    "toStationId": "station-yongsan",
+    "departAt": "2026-08-13T17:40:00+09:00",
+    "arriveAt": "2026-08-13T17:44:00+09:00"
+  },
+  {
     "trainNo": "00517",
     "fromStationId": "station-seoul",
     "toStationId": "station-jeonju",
     "departAt": "2026-08-13T17:40:00+09:00",
+    "arriveAt": "2026-08-13T19:20:00+09:00"
+  },
+  {
+    "trainNo": "00517",
+    "fromStationId": "station-seoul",
+    "toStationId": "station-yongsan",
+    "departAt": "2026-08-13T17:40:00+09:00",
+    "arriveAt": "2026-08-13T17:44:00+09:00"
+  },
+  {
+    "trainNo": "00517",
+    "fromStationId": "station-yongsan",
+    "toStationId": "station-jeonju",
+    "departAt": "2026-08-13T17:48:00+09:00",
     "arriveAt": "2026-08-13T19:20:00+09:00"
   },
   {
@@ -2539,6 +3274,13 @@
     "toStationId": "station-seoul",
     "departAt": "2026-08-13T17:52:00+09:00",
     "arriveAt": "2026-08-13T19:19:00+09:00"
+  },
+  {
+    "trainNo": "00518",
+    "fromStationId": "station-jeonju",
+    "toStationId": "station-yongsan",
+    "departAt": "2026-08-13T17:57:00+09:00",
+    "arriveAt": "2026-08-13T19:40:00+09:00"
   },
   {
     "trainNo": "00053",
@@ -2560,6 +3302,13 @@
     "toStationId": "station-gangneung",
     "departAt": "2026-08-13T18:06:00+09:00",
     "arriveAt": "2026-08-13T18:24:00+09:00"
+  },
+  {
+    "trainNo": "00516",
+    "fromStationId": "station-yongsan",
+    "toStationId": "station-seoul",
+    "departAt": "2026-08-13T18:08:00+09:00",
+    "arriveAt": "2026-08-13T18:13:00+09:00"
   },
   {
     "trainNo": "00055",
@@ -2602,6 +3351,13 @@
     "toStationId": "station-seoul",
     "departAt": "2026-08-13T18:42:00+09:00",
     "arriveAt": "2026-08-13T22:05:00+09:00"
+  },
+  {
+    "trainNo": "00519",
+    "fromStationId": "station-yongsan",
+    "toStationId": "station-jeonju",
+    "departAt": "2026-08-13T18:48:00+09:00",
+    "arriveAt": "2026-08-13T20:27:00+09:00"
   },
   {
     "trainNo": "00822",
@@ -2674,11 +3430,25 @@
     "arriveAt": "2026-08-13T21:59:00+09:00"
   },
   {
+    "trainNo": "00433",
+    "fromStationId": "station-seoul",
+    "toStationId": "station-yongsan",
+    "departAt": "2026-08-13T19:30:00+09:00",
+    "arriveAt": "2026-08-13T19:34:00+09:00"
+  },
+  {
     "trainNo": "00520",
     "fromStationId": "station-jeonju",
     "toStationId": "station-seoul",
     "departAt": "2026-08-13T19:33:00+09:00",
     "arriveAt": "2026-08-13T21:22:00+09:00"
+  },
+  {
+    "trainNo": "00520",
+    "fromStationId": "station-jeonju",
+    "toStationId": "station-yongsan",
+    "departAt": "2026-08-13T19:33:00+09:00",
+    "arriveAt": "2026-08-13T21:14:00+09:00"
   },
   {
     "trainNo": "00061",
@@ -2744,11 +3514,39 @@
     "arriveAt": "2026-08-13T21:50:00+09:00"
   },
   {
+    "trainNo": "00428",
+    "fromStationId": "station-yongsan",
+    "toStationId": "station-seoul",
+    "departAt": "2026-08-13T20:08:00+09:00",
+    "arriveAt": "2026-08-13T20:13:00+09:00"
+  },
+  {
+    "trainNo": "00521",
+    "fromStationId": "station-yongsan",
+    "toStationId": "station-jeonju",
+    "departAt": "2026-08-13T20:09:00+09:00",
+    "arriveAt": "2026-08-13T21:47:00+09:00"
+  },
+  {
+    "trainNo": "00584",
+    "fromStationId": "station-jeonju",
+    "toStationId": "station-yongsan",
+    "departAt": "2026-08-13T20:16:00+09:00",
+    "arriveAt": "2026-08-13T22:39:00+09:00"
+  },
+  {
     "trainNo": "00821",
     "fromStationId": "station-manjong",
     "toStationId": "station-gangneung",
     "departAt": "2026-08-13T20:17:00+09:00",
     "arriveAt": "2026-08-13T21:09:00+09:00"
+  },
+  {
+    "trainNo": "00482",
+    "fromStationId": "station-yongsan",
+    "toStationId": "station-seoul",
+    "departAt": "2026-08-13T20:18:00+09:00",
+    "arriveAt": "2026-08-13T20:22:00+09:00"
   },
   {
     "trainNo": "00062",
@@ -2779,6 +3577,13 @@
     "arriveAt": "2026-08-13T21:19:00+09:00"
   },
   {
+    "trainNo": "00541",
+    "fromStationId": "station-yongsan",
+    "toStationId": "station-jeonju",
+    "departAt": "2026-08-13T20:34:00+09:00",
+    "arriveAt": "2026-08-13T22:14:00+09:00"
+  },
+  {
     "trainNo": "00112",
     "fromStationId": "station-busan",
     "toStationId": "station-seoul",
@@ -2807,6 +3612,13 @@
     "arriveAt": "2026-08-13T22:42:00+09:00"
   },
   {
+    "trainNo": "00544",
+    "fromStationId": "station-jeonju",
+    "toStationId": "station-yongsan",
+    "departAt": "2026-08-13T20:47:00+09:00",
+    "arriveAt": "2026-08-13T22:35:00+09:00"
+  },
+  {
     "trainNo": "00109",
     "fromStationId": "station-seoul",
     "toStationId": "station-busan",
@@ -2826,6 +3638,13 @@
     "toStationId": "station-gangneung",
     "departAt": "2026-08-13T21:16:00+09:00",
     "arriveAt": "2026-08-13T21:59:00+09:00"
+  },
+  {
+    "trainNo": "00520",
+    "fromStationId": "station-yongsan",
+    "toStationId": "station-seoul",
+    "departAt": "2026-08-13T21:17:00+09:00",
+    "arriveAt": "2026-08-13T21:22:00+09:00"
   },
   {
     "trainNo": "00824",
@@ -2882,6 +3701,20 @@
     "toStationId": "station-gangneung",
     "departAt": "2026-08-13T21:42:00+09:00",
     "arriveAt": "2026-08-13T21:59:00+09:00"
+  },
+  {
+    "trainNo": "00522",
+    "fromStationId": "station-jeonju",
+    "toStationId": "station-yongsan",
+    "departAt": "2026-08-13T21:43:00+09:00",
+    "arriveAt": "2026-08-13T23:30:00+09:00"
+  },
+  {
+    "trainNo": "00523",
+    "fromStationId": "station-yongsan",
+    "toStationId": "station-jeonju",
+    "departAt": "2026-08-13T21:48:00+09:00",
+    "arriveAt": "2026-08-13T23:14:00+09:00"
   },
   {
     "trainNo": "00071",
@@ -2961,6 +3794,20 @@
     "arriveAt": "2026-08-14T00:11:00+09:00"
   },
   {
+    "trainNo": "00434",
+    "fromStationId": "station-yongsan",
+    "toStationId": "station-seoul",
+    "departAt": "2026-08-13T22:38:00+09:00",
+    "arriveAt": "2026-08-13T22:42:00+09:00"
+  },
+  {
+    "trainNo": "00544",
+    "fromStationId": "station-yongsan",
+    "toStationId": "station-seoul",
+    "departAt": "2026-08-13T22:38:00+09:00",
+    "arriveAt": "2026-08-13T22:42:00+09:00"
+  },
+  {
     "trainNo": "00825",
     "fromStationId": "station-manjong",
     "toStationId": "station-gangneung",
@@ -2973,6 +3820,13 @@
     "toStationId": "station-seoul",
     "departAt": "2026-08-13T23:02:00+09:00",
     "arriveAt": "2026-08-14T00:11:00+09:00"
+  },
+  {
+    "trainNo": "00524",
+    "fromStationId": "station-jeonju",
+    "toStationId": "station-yongsan",
+    "departAt": "2026-08-13T23:11:00+09:00",
+    "arriveAt": "2026-08-14T00:43:00+09:00"
   },
   {
     "trainNo": "00828",
@@ -3164,6 +4018,13 @@
     "arriveAt": "2026-08-14T09:16:00+09:00"
   },
   {
+    "trainNo": "00405",
+    "fromStationId": "station-seoul",
+    "toStationId": "station-yongsan",
+    "departAt": "2026-08-14T06:23:00+09:00",
+    "arriveAt": "2026-08-14T06:28:00+09:00"
+  },
+  {
     "trainNo": "00502",
     "fromStationId": "station-jeonju",
     "toStationId": "station-seoul",
@@ -3171,11 +4032,25 @@
     "arriveAt": "2026-08-14T08:23:00+09:00"
   },
   {
+    "trainNo": "00502",
+    "fromStationId": "station-jeonju",
+    "toStationId": "station-yongsan",
+    "departAt": "2026-08-14T06:26:00+09:00",
+    "arriveAt": "2026-08-14T08:14:00+09:00"
+  },
+  {
     "trainNo": "00804",
     "fromStationId": "station-jinbu",
     "toStationId": "station-seoul",
     "departAt": "2026-08-14T06:38:00+09:00",
     "arriveAt": "2026-08-14T08:33:00+09:00"
+  },
+  {
+    "trainNo": "00473",
+    "fromStationId": "station-seoul",
+    "toStationId": "station-yongsan",
+    "departAt": "2026-08-14T06:44:00+09:00",
+    "arriveAt": "2026-08-14T06:49:00+09:00"
   },
   {
     "trainNo": "00171",
@@ -3210,6 +4085,20 @@
     "fromStationId": "station-seoul",
     "toStationId": "station-jeonju",
     "departAt": "2026-08-14T07:03:00+09:00",
+    "arriveAt": "2026-08-14T09:02:00+09:00"
+  },
+  {
+    "trainNo": "00503",
+    "fromStationId": "station-seoul",
+    "toStationId": "station-yongsan",
+    "departAt": "2026-08-14T07:03:00+09:00",
+    "arriveAt": "2026-08-14T07:07:00+09:00"
+  },
+  {
+    "trainNo": "00503",
+    "fromStationId": "station-yongsan",
+    "toStationId": "station-jeonju",
+    "departAt": "2026-08-14T07:10:00+09:00",
     "arriveAt": "2026-08-14T09:02:00+09:00"
   },
   {
@@ -3248,6 +4137,13 @@
     "arriveAt": "2026-08-14T09:20:00+09:00"
   },
   {
+    "trainNo": "00504",
+    "fromStationId": "station-jeonju",
+    "toStationId": "station-yongsan",
+    "departAt": "2026-08-14T07:28:00+09:00",
+    "arriveAt": "2026-08-14T09:08:00+09:00"
+  },
+  {
     "trainNo": "00806",
     "fromStationId": "station-gangneung",
     "toStationId": "station-seoul",
@@ -3260,6 +4156,13 @@
     "toStationId": "station-manjong",
     "departAt": "2026-08-14T07:28:00+09:00",
     "arriveAt": "2026-08-14T08:20:00+09:00"
+  },
+  {
+    "trainNo": "00581",
+    "fromStationId": "station-yongsan",
+    "toStationId": "station-jeonju",
+    "departAt": "2026-08-14T07:44:00+09:00",
+    "arriveAt": "2026-08-14T09:58:00+09:00"
   },
   {
     "trainNo": "00086",
@@ -3339,6 +4242,20 @@
     "arriveAt": "2026-08-14T11:33:00+09:00"
   },
   {
+    "trainNo": "00404",
+    "fromStationId": "station-yongsan",
+    "toStationId": "station-seoul",
+    "departAt": "2026-08-14T08:17:00+09:00",
+    "arriveAt": "2026-08-14T08:23:00+09:00"
+  },
+  {
+    "trainNo": "00502",
+    "fromStationId": "station-yongsan",
+    "toStationId": "station-seoul",
+    "departAt": "2026-08-14T08:17:00+09:00",
+    "arriveAt": "2026-08-14T08:23:00+09:00"
+  },
+  {
     "trainNo": "00122",
     "fromStationId": "station-busan",
     "toStationId": "station-seoul",
@@ -3372,6 +4289,13 @@
     "toStationId": "station-seoul",
     "departAt": "2026-08-14T08:37:00+09:00",
     "arriveAt": "2026-08-14T09:51:00+09:00"
+  },
+  {
+    "trainNo": "00505",
+    "fromStationId": "station-yongsan",
+    "toStationId": "station-jeonju",
+    "departAt": "2026-08-14T08:42:00+09:00",
+    "arriveAt": "2026-08-14T10:22:00+09:00"
   },
   {
     "trainNo": "00018",
@@ -3416,6 +4340,20 @@
     "arriveAt": "2026-08-14T11:49:00+09:00"
   },
   {
+    "trainNo": "00542",
+    "fromStationId": "station-jeonju",
+    "toStationId": "station-yongsan",
+    "departAt": "2026-08-14T09:14:00+09:00",
+    "arriveAt": "2026-08-14T11:00:00+09:00"
+  },
+  {
+    "trainNo": "00504",
+    "fromStationId": "station-yongsan",
+    "toStationId": "station-seoul",
+    "departAt": "2026-08-14T09:15:00+09:00",
+    "arriveAt": "2026-08-14T09:20:00+09:00"
+  },
+  {
     "trainNo": "00805",
     "fromStationId": "station-manjong",
     "toStationId": "station-gangneung",
@@ -3428,6 +4366,13 @@
     "toStationId": "station-seoul",
     "departAt": "2026-08-14T09:26:00+09:00",
     "arriveAt": "2026-08-14T11:53:00+09:00"
+  },
+  {
+    "trainNo": "00472",
+    "fromStationId": "station-yongsan",
+    "toStationId": "station-seoul",
+    "departAt": "2026-08-14T09:27:00+09:00",
+    "arriveAt": "2026-08-14T09:32:00+09:00"
   },
   {
     "trainNo": "00101",
@@ -3444,11 +4389,25 @@
     "arriveAt": "2026-08-14T11:37:00+09:00"
   },
   {
+    "trainNo": "00507",
+    "fromStationId": "station-seoul",
+    "toStationId": "station-yongsan",
+    "departAt": "2026-08-14T09:47:00+09:00",
+    "arriveAt": "2026-08-14T09:51:00+09:00"
+  },
+  {
     "trainNo": "00024",
     "fromStationId": "station-busan",
     "toStationId": "station-seoul",
     "departAt": "2026-08-14T09:49:00+09:00",
     "arriveAt": "2026-08-14T12:33:00+09:00"
+  },
+  {
+    "trainNo": "00507",
+    "fromStationId": "station-yongsan",
+    "toStationId": "station-jeonju",
+    "departAt": "2026-08-14T09:55:00+09:00",
+    "arriveAt": "2026-08-14T11:37:00+09:00"
   },
   {
     "trainNo": "00809",
@@ -3470,6 +4429,20 @@
     "toStationId": "station-busan",
     "departAt": "2026-08-14T09:58:00+09:00",
     "arriveAt": "2026-08-14T12:46:00+09:00"
+  },
+  {
+    "trainNo": "00506",
+    "fromStationId": "station-jeonju",
+    "toStationId": "station-yongsan",
+    "departAt": "2026-08-14T10:03:00+09:00",
+    "arriveAt": "2026-08-14T11:37:00+09:00"
+  },
+  {
+    "trainNo": "00585",
+    "fromStationId": "station-yongsan",
+    "toStationId": "station-jeonju",
+    "departAt": "2026-08-14T10:04:00+09:00",
+    "arriveAt": "2026-08-14T12:29:00+09:00"
   },
   {
     "trainNo": "00123",
@@ -3507,6 +4480,13 @@
     "arriveAt": "2026-08-14T13:04:00+09:00"
   },
   {
+    "trainNo": "00413",
+    "fromStationId": "station-seoul",
+    "toStationId": "station-yongsan",
+    "departAt": "2026-08-14T10:32:00+09:00",
+    "arriveAt": "2026-08-14T10:38:00+09:00"
+  },
+  {
     "trainNo": "00810",
     "fromStationId": "station-gangneung",
     "toStationId": "station-seoul",
@@ -3519,6 +4499,13 @@
     "toStationId": "station-gangneung",
     "departAt": "2026-08-14T10:42:00+09:00",
     "arriveAt": "2026-08-14T11:00:00+09:00"
+  },
+  {
+    "trainNo": "00509",
+    "fromStationId": "station-yongsan",
+    "toStationId": "station-jeonju",
+    "departAt": "2026-08-14T10:54:00+09:00",
+    "arriveAt": "2026-08-14T12:40:00+09:00"
   },
   {
     "trainNo": "00025",
@@ -3570,6 +4557,13 @@
     "arriveAt": "2026-08-14T13:42:00+09:00"
   },
   {
+    "trainNo": "00508",
+    "fromStationId": "station-jeonju",
+    "toStationId": "station-yongsan",
+    "departAt": "2026-08-14T11:47:00+09:00",
+    "arriveAt": "2026-08-14T13:34:00+09:00"
+  },
+  {
     "trainNo": "00812",
     "fromStationId": "station-jinbu",
     "toStationId": "station-seoul",
@@ -3591,11 +4585,32 @@
     "arriveAt": "2026-08-14T14:51:00+09:00"
   },
   {
+    "trainNo": "00415",
+    "fromStationId": "station-seoul",
+    "toStationId": "station-yongsan",
+    "departAt": "2026-08-14T12:08:00+09:00",
+    "arriveAt": "2026-08-14T12:15:00+09:00"
+  },
+  {
     "trainNo": "00511",
     "fromStationId": "station-seoul",
     "toStationId": "station-jeonju",
     "departAt": "2026-08-14T12:08:00+09:00",
     "arriveAt": "2026-08-14T14:08:00+09:00"
+  },
+  {
+    "trainNo": "00511",
+    "fromStationId": "station-seoul",
+    "toStationId": "station-yongsan",
+    "departAt": "2026-08-14T12:08:00+09:00",
+    "arriveAt": "2026-08-14T12:15:00+09:00"
+  },
+  {
+    "trainNo": "00587",
+    "fromStationId": "station-yongsan",
+    "toStationId": "station-jeonju",
+    "departAt": "2026-08-14T12:11:00+09:00",
+    "arriveAt": "2026-08-14T14:35:00+09:00"
   },
   {
     "trainNo": "00811",
@@ -3626,6 +4641,13 @@
     "arriveAt": "2026-08-14T13:27:00+09:00"
   },
   {
+    "trainNo": "00511",
+    "fromStationId": "station-yongsan",
+    "toStationId": "station-jeonju",
+    "departAt": "2026-08-14T12:19:00+09:00",
+    "arriveAt": "2026-08-14T14:08:00+09:00"
+  },
+  {
     "trainNo": "00814",
     "fromStationId": "station-gangneung",
     "toStationId": "station-seoul",
@@ -3638,6 +4660,13 @@
     "toStationId": "station-jinbu",
     "departAt": "2026-08-14T12:23:00+09:00",
     "arriveAt": "2026-08-14T12:43:00+09:00"
+  },
+  {
+    "trainNo": "00412",
+    "fromStationId": "station-yongsan",
+    "toStationId": "station-seoul",
+    "departAt": "2026-08-14T12:24:00+09:00",
+    "arriveAt": "2026-08-14T12:28:00+09:00"
   },
   {
     "trainNo": "00029",
@@ -3703,6 +4732,13 @@
     "arriveAt": "2026-08-14T16:28:00+09:00"
   },
   {
+    "trainNo": "00589",
+    "fromStationId": "station-yongsan",
+    "toStationId": "station-jeonju",
+    "departAt": "2026-08-14T13:15:00+09:00",
+    "arriveAt": "2026-08-14T15:39:00+09:00"
+  },
+  {
     "trainNo": "00124",
     "fromStationId": "station-busan",
     "toStationId": "station-seoul",
@@ -3738,11 +4774,32 @@
     "arriveAt": "2026-08-14T16:07:00+09:00"
   },
   {
+    "trainNo": "00582",
+    "fromStationId": "station-jeonju",
+    "toStationId": "station-yongsan",
+    "departAt": "2026-08-14T13:29:00+09:00",
+    "arriveAt": "2026-08-14T15:57:00+09:00"
+  },
+  {
     "trainNo": "AREX-W113",
     "fromStationId": "station-seoul",
     "toStationId": "station-incheon-airport-t1",
     "departAt": "2026-08-14T13:30:00+09:00",
     "arriveAt": "2026-08-14T14:13:00+09:00"
+  },
+  {
+    "trainNo": "00414",
+    "fromStationId": "station-yongsan",
+    "toStationId": "station-seoul",
+    "departAt": "2026-08-14T13:37:00+09:00",
+    "arriveAt": "2026-08-14T13:42:00+09:00"
+  },
+  {
+    "trainNo": "00508",
+    "fromStationId": "station-yongsan",
+    "toStationId": "station-seoul",
+    "departAt": "2026-08-14T13:37:00+09:00",
+    "arriveAt": "2026-08-14T13:42:00+09:00"
   },
   {
     "trainNo": "00815",
@@ -3787,11 +4844,25 @@
     "arriveAt": "2026-08-14T15:01:00+09:00"
   },
   {
+    "trainNo": "00513",
+    "fromStationId": "station-yongsan",
+    "toStationId": "station-jeonju",
+    "departAt": "2026-08-14T14:12:00+09:00",
+    "arriveAt": "2026-08-14T15:54:00+09:00"
+  },
+  {
     "trainNo": "00038",
     "fromStationId": "station-busan",
     "toStationId": "station-seoul",
     "departAt": "2026-08-14T14:20:00+09:00",
     "arriveAt": "2026-08-14T16:53:00+09:00"
+  },
+  {
+    "trainNo": "00512",
+    "fromStationId": "station-jeonju",
+    "toStationId": "station-yongsan",
+    "departAt": "2026-08-14T14:23:00+09:00",
+    "arriveAt": "2026-08-14T16:07:00+09:00"
   },
   {
     "trainNo": "00869",
@@ -3820,6 +4891,13 @@
     "toStationId": "station-seoul",
     "departAt": "2026-08-14T14:54:00+09:00",
     "arriveAt": "2026-08-14T17:28:00+09:00"
+  },
+  {
+    "trainNo": "00588",
+    "fromStationId": "station-jeonju",
+    "toStationId": "station-yongsan",
+    "departAt": "2026-08-14T14:57:00+09:00",
+    "arriveAt": "2026-08-14T17:26:00+09:00"
   },
   {
     "trainNo": "00092",
@@ -3864,6 +4942,13 @@
     "arriveAt": "2026-08-14T17:16:00+09:00"
   },
   {
+    "trainNo": "00514",
+    "fromStationId": "station-jeonju",
+    "toStationId": "station-yongsan",
+    "departAt": "2026-08-14T15:23:00+09:00",
+    "arriveAt": "2026-08-14T17:08:00+09:00"
+  },
+  {
     "trainNo": "00108",
     "fromStationId": "station-busan",
     "toStationId": "station-seoul",
@@ -3883,6 +4968,13 @@
     "toStationId": "station-gangneung",
     "departAt": "2026-08-14T15:33:00+09:00",
     "arriveAt": "2026-08-14T16:17:00+09:00"
+  },
+  {
+    "trainNo": "00418",
+    "fromStationId": "station-yongsan",
+    "toStationId": "station-seoul",
+    "departAt": "2026-08-14T15:35:00+09:00",
+    "arriveAt": "2026-08-14T15:39:00+09:00"
   },
   {
     "trainNo": "00816",
@@ -3976,6 +5068,13 @@
     "arriveAt": "2026-08-14T18:13:00+09:00"
   },
   {
+    "trainNo": "00516",
+    "fromStationId": "station-jeonju",
+    "toStationId": "station-yongsan",
+    "departAt": "2026-08-14T16:22:00+09:00",
+    "arriveAt": "2026-08-14T18:05:00+09:00"
+  },
+  {
     "trainNo": "00094",
     "fromStationId": "station-busan",
     "toStationId": "station-seoul",
@@ -3983,10 +5082,31 @@
     "arriveAt": "2026-08-14T19:14:00+09:00"
   },
   {
+    "trainNo": "00427",
+    "fromStationId": "station-seoul",
+    "toStationId": "station-yongsan",
+    "departAt": "2026-08-14T16:36:00+09:00",
+    "arriveAt": "2026-08-14T16:41:00+09:00"
+  },
+  {
     "trainNo": "00515",
     "fromStationId": "station-seoul",
     "toStationId": "station-jeonju",
     "departAt": "2026-08-14T16:36:00+09:00",
+    "arriveAt": "2026-08-14T18:25:00+09:00"
+  },
+  {
+    "trainNo": "00515",
+    "fromStationId": "station-seoul",
+    "toStationId": "station-yongsan",
+    "departAt": "2026-08-14T16:36:00+09:00",
+    "arriveAt": "2026-08-14T16:41:00+09:00"
+  },
+  {
+    "trainNo": "00515",
+    "fromStationId": "station-yongsan",
+    "toStationId": "station-jeonju",
+    "departAt": "2026-08-14T16:45:00+09:00",
     "arriveAt": "2026-08-14T18:25:00+09:00"
   },
   {
@@ -4074,6 +5194,20 @@
     "arriveAt": "2026-08-14T18:52:00+09:00"
   },
   {
+    "trainNo": "00422",
+    "fromStationId": "station-yongsan",
+    "toStationId": "station-seoul",
+    "departAt": "2026-08-14T17:11:00+09:00",
+    "arriveAt": "2026-08-14T17:16:00+09:00"
+  },
+  {
+    "trainNo": "00514",
+    "fromStationId": "station-yongsan",
+    "toStationId": "station-seoul",
+    "departAt": "2026-08-14T17:11:00+09:00",
+    "arriveAt": "2026-08-14T17:16:00+09:00"
+  },
+  {
     "trainNo": "00051",
     "fromStationId": "station-seoul",
     "toStationId": "station-busan",
@@ -4102,6 +5236,13 @@
     "arriveAt": "2026-08-14T18:22:00+09:00"
   },
   {
+    "trainNo": "00429",
+    "fromStationId": "station-seoul",
+    "toStationId": "station-yongsan",
+    "departAt": "2026-08-14T17:44:00+09:00",
+    "arriveAt": "2026-08-14T17:48:00+09:00"
+  },
+  {
     "trainNo": "00517",
     "fromStationId": "station-seoul",
     "toStationId": "station-jeonju",
@@ -4109,11 +5250,25 @@
     "arriveAt": "2026-08-14T19:28:00+09:00"
   },
   {
+    "trainNo": "00517",
+    "fromStationId": "station-seoul",
+    "toStationId": "station-yongsan",
+    "departAt": "2026-08-14T17:44:00+09:00",
+    "arriveAt": "2026-08-14T17:48:00+09:00"
+  },
+  {
     "trainNo": "00126",
     "fromStationId": "station-busan",
     "toStationId": "station-seoul",
     "departAt": "2026-08-14T17:50:00+09:00",
     "arriveAt": "2026-08-14T21:11:00+09:00"
+  },
+  {
+    "trainNo": "00517",
+    "fromStationId": "station-yongsan",
+    "toStationId": "station-jeonju",
+    "departAt": "2026-08-14T17:52:00+09:00",
+    "arriveAt": "2026-08-14T19:28:00+09:00"
   },
   {
     "trainNo": "00820",
@@ -4137,6 +5292,13 @@
     "arriveAt": "2026-08-14T18:40:00+09:00"
   },
   {
+    "trainNo": "00518",
+    "fromStationId": "station-jeonju",
+    "toStationId": "station-yongsan",
+    "departAt": "2026-08-14T17:56:00+09:00",
+    "arriveAt": "2026-08-14T19:38:00+09:00"
+  },
+  {
     "trainNo": "00053",
     "fromStationId": "station-seoul",
     "toStationId": "station-busan",
@@ -4156,6 +5318,13 @@
     "toStationId": "station-gangneung",
     "departAt": "2026-08-14T18:06:00+09:00",
     "arriveAt": "2026-08-14T18:23:00+09:00"
+  },
+  {
+    "trainNo": "00516",
+    "fromStationId": "station-yongsan",
+    "toStationId": "station-seoul",
+    "departAt": "2026-08-14T18:08:00+09:00",
+    "arriveAt": "2026-08-14T18:13:00+09:00"
   },
   {
     "trainNo": "00055",
@@ -4198,6 +5367,13 @@
     "toStationId": "station-seoul",
     "departAt": "2026-08-14T18:42:00+09:00",
     "arriveAt": "2026-08-14T22:05:00+09:00"
+  },
+  {
+    "trainNo": "00519",
+    "fromStationId": "station-yongsan",
+    "toStationId": "station-jeonju",
+    "departAt": "2026-08-14T18:48:00+09:00",
+    "arriveAt": "2026-08-14T20:31:00+09:00"
   },
   {
     "trainNo": "00822",
@@ -4291,6 +5467,13 @@
     "arriveAt": "2026-08-14T19:38:00+09:00"
   },
   {
+    "trainNo": "00433",
+    "fromStationId": "station-seoul",
+    "toStationId": "station-yongsan",
+    "departAt": "2026-08-14T19:32:00+09:00",
+    "arriveAt": "2026-08-14T19:36:00+09:00"
+  },
+  {
     "trainNo": "00061",
     "fromStationId": "station-seoul",
     "toStationId": "station-busan",
@@ -4303,6 +5486,13 @@
     "toStationId": "station-seoul",
     "departAt": "2026-08-14T19:35:00+09:00",
     "arriveAt": "2026-08-14T21:27:00+09:00"
+  },
+  {
+    "trainNo": "00520",
+    "fromStationId": "station-jeonju",
+    "toStationId": "station-yongsan",
+    "departAt": "2026-08-14T19:35:00+09:00",
+    "arriveAt": "2026-08-14T21:19:00+09:00"
   },
   {
     "trainNo": "00822",
@@ -4375,6 +5565,20 @@
     "arriveAt": "2026-08-14T20:24:00+09:00"
   },
   {
+    "trainNo": "00492",
+    "fromStationId": "station-yongsan",
+    "toStationId": "station-seoul",
+    "departAt": "2026-08-14T20:08:00+09:00",
+    "arriveAt": "2026-08-14T20:13:00+09:00"
+  },
+  {
+    "trainNo": "00521",
+    "fromStationId": "station-yongsan",
+    "toStationId": "station-jeonju",
+    "departAt": "2026-08-14T20:10:00+09:00",
+    "arriveAt": "2026-08-14T21:46:00+09:00"
+  },
+  {
     "trainNo": "00198",
     "fromStationId": "station-busan",
     "toStationId": "station-seoul",
@@ -4387,6 +5591,20 @@
     "toStationId": "station-busan",
     "departAt": "2026-08-14T20:13:00+09:00",
     "arriveAt": "2026-08-14T22:42:00+09:00"
+  },
+  {
+    "trainNo": "00584",
+    "fromStationId": "station-jeonju",
+    "toStationId": "station-yongsan",
+    "departAt": "2026-08-14T20:16:00+09:00",
+    "arriveAt": "2026-08-14T22:46:00+09:00"
+  },
+  {
+    "trainNo": "00488",
+    "fromStationId": "station-yongsan",
+    "toStationId": "station-seoul",
+    "departAt": "2026-08-14T20:17:00+09:00",
+    "arriveAt": "2026-08-14T20:21:00+09:00"
   },
   {
     "trainNo": "00821",
@@ -4422,6 +5640,13 @@
     "toStationId": "station-manjong",
     "departAt": "2026-08-14T20:30:00+09:00",
     "arriveAt": "2026-08-14T21:18:00+09:00"
+  },
+  {
+    "trainNo": "00541",
+    "fromStationId": "station-yongsan",
+    "toStationId": "station-jeonju",
+    "departAt": "2026-08-14T20:34:00+09:00",
+    "arriveAt": "2026-08-14T22:13:00+09:00"
   },
   {
     "trainNo": "00112",
@@ -4487,6 +5712,13 @@
     "arriveAt": "2026-08-14T22:35:00+09:00"
   },
   {
+    "trainNo": "00520",
+    "fromStationId": "station-yongsan",
+    "toStationId": "station-seoul",
+    "departAt": "2026-08-14T21:22:00+09:00",
+    "arriveAt": "2026-08-14T21:27:00+09:00"
+  },
+  {
     "trainNo": "00068",
     "fromStationId": "station-busan",
     "toStationId": "station-seoul",
@@ -4529,11 +5761,25 @@
     "arriveAt": "2026-08-15T00:21:00+09:00"
   },
   {
+    "trainNo": "00522",
+    "fromStationId": "station-jeonju",
+    "toStationId": "station-yongsan",
+    "departAt": "2026-08-14T21:44:00+09:00",
+    "arriveAt": "2026-08-14T23:27:00+09:00"
+  },
+  {
     "trainNo": "00823",
     "fromStationId": "station-jinbu",
     "toStationId": "station-gangneung",
     "departAt": "2026-08-14T21:44:00+09:00",
     "arriveAt": "2026-08-14T22:02:00+09:00"
+  },
+  {
+    "trainNo": "00523",
+    "fromStationId": "station-yongsan",
+    "toStationId": "station-jeonju",
+    "departAt": "2026-08-14T21:48:00+09:00",
+    "arriveAt": "2026-08-14T23:17:00+09:00"
   },
   {
     "trainNo": "00071",
@@ -4620,6 +5866,13 @@
     "arriveAt": "2026-08-15T00:14:00+09:00"
   },
   {
+    "trainNo": "00434",
+    "fromStationId": "station-yongsan",
+    "toStationId": "station-seoul",
+    "departAt": "2026-08-14T22:37:00+09:00",
+    "arriveAt": "2026-08-14T22:41:00+09:00"
+  },
+  {
     "trainNo": "00097",
     "fromStationId": "station-seoul",
     "toStationId": "station-busan",
@@ -4639,6 +5892,13 @@
     "toStationId": "station-seoul",
     "departAt": "2026-08-14T23:04:00+09:00",
     "arriveAt": "2026-08-15T00:14:00+09:00"
+  },
+  {
+    "trainNo": "00524",
+    "fromStationId": "station-jeonju",
+    "toStationId": "station-yongsan",
+    "departAt": "2026-08-14T23:12:00+09:00",
+    "arriveAt": "2026-08-15T00:43:00+09:00"
   },
   {
     "trainNo": "00828",

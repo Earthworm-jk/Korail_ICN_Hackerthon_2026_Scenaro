@@ -118,27 +118,31 @@ def runinfo_stop(trn_no: str, date: str, sn: int, stn: str, stop_se: str,
 
 
 def jeolla_runinfo_items(date: str) -> list[dict]:
-    """전라선 팩(#72) 실적 fixture — 서울·전주는 중간 정차다(2026-08-05 실측 시각 반영).
+    """전라선 팩(#72) 실적 fixture — 서울·용산·전주는 모두 중간 정차다(2026-08-05 실측 시각).
 
     00503·00502는 실제 편성이고, 01501·00599는 **가드용 합성 행**이다. 실측상 서울역에
     정차하는 전주행은 전량 KTX 계열이지만, 등급 필터가 그 우연에 기대지 않음을 고정한다
-    (일반열차 전라선은 용산 착발이라 서울역 정차 데이터에 안 잡힌다)."""
+    (실제로 용산 축에는 ITX-마음·새마을·무궁화가 섞여 들어온다)."""
     stop = lambda *args: runinfo_stop(*args, line="전라선")  # noqa: E731
     return [
         stop("00503", date, 1, "행신", "시발", None, "06:45", "D"),
         stop("00503", date, 2, "서울", "여객승하차", "07:00", "07:03", "D"),
-        stop("00503", date, 3, "전주", "여객승하차", "08:57", "08:59", "D"),
-        stop("00503", date, 4, "여수엑스포", "종착", "10:30", None, "D"),
+        stop("00503", date, 3, "용산", "여객승하차", "07:07", "07:09", "D"),
+        stop("00503", date, 4, "전주", "여객승하차", "08:57", "08:59", "D"),
+        stop("00503", date, 5, "여수엑스포", "종착", "10:30", None, "D"),
         stop("00502", date, 1, "여수엑스포", "시발", None, "04:55", "U"),
         stop("00502", date, 2, "전주", "여객승하차", "06:27", "06:29", "U"),
-        stop("00502", date, 3, "서울", "여객승하차", "08:26", "08:29", "U"),
-        stop("00502", date, 4, "행신", "종착", "08:50", None, "U"),
+        stop("00502", date, 3, "용산", "여객승하차", "08:17", "08:21", "U"),
+        stop("00502", date, 4, "서울", "여객승하차", "08:26", "08:29", "U"),
+        stop("00502", date, 5, "행신", "종착", "08:50", None, "U"),
         stop("01501", date, 1, "서울", "시발", None, "13:00", "D"),          # ITX-새마을 — 등급으로 제외
-        stop("01501", date, 2, "전주", "여객승하차", "16:10", "16:12", "D"),
-        stop("01501", date, 3, "여수엑스포", "종착", "18:00", None, "D"),
+        stop("01501", date, 2, "용산", "여객승하차", "13:05", "13:07", "D"),
+        stop("01501", date, 3, "전주", "여객승하차", "16:10", "16:12", "D"),
+        stop("01501", date, 4, "여수엑스포", "종착", "18:00", None, "D"),
         stop("00599", date, 1, "서울", "시발", None, "14:00", "D"),          # 등급 미확인 — 보수적 제외
-        stop("00599", date, 2, "전주", "여객승하차", "17:10", "17:12", "D"),
-        stop("00599", date, 3, "여수엑스포", "종착", "19:00", None, "D"),
+        stop("00599", date, 2, "용산", "여객승하차", "14:05", "14:07", "D"),
+        stop("00599", date, 3, "전주", "여객승하차", "17:10", "17:12", "D"),
+        stop("00599", date, 4, "여수엑스포", "종착", "19:00", None, "D"),
     ]
 
 
@@ -169,7 +173,8 @@ def runinfo_row_of(items: list[dict], trn_no: str, stn_nm: str) -> dict:
 TAGO_STATIONS = [{"nodename": "서울", "nodeid": "NAT010000"},
                  {"nodename": "강릉", "nodeid": "NAT601936"},
                  {"nodename": "부산", "nodeid": "NAT014445"},
-                 {"nodename": "전주", "nodeid": "NAT040257"}]
+                 {"nodename": "전주", "nodeid": "NAT040257"},
+                 {"nodename": "용산", "nodeid": "NAT010032"}]
 
 # 열차번호 → TAGO 공식 등급 fixture. 00999·00599는 의도적으로 없음(등급 미확인 케이스)
 TAGO_GRADES = {"00101": "KTX", "00102": "KTX-산천(A-type)", "01001": "ITX-새마을",
@@ -294,9 +299,10 @@ class EmptyResponseGuardTest(unittest.TestCase):
         self.assertEqual(legs[0].trainNo, "00801")
         # 데모 OD 밖 행(서울→대전 00001)은 legs에 포함되지 않는다
         self.assertNotIn("00001", {leg.trainNo for leg in legs})
-        # 시종착(계획) 3일 × 2쌍(강릉·부산) 양방향 + 중간 정차(실적) 3일 × 10건
-        # (진부·만종 경유 왕복 8 + 전라선 서울↔전주 왕복 2 — 비KTX·등급 미확인 제외 후)
-        self.assertEqual(len(legs), len(pipeline.DATES) * 4 + len(pipeline.DATES) * 10)
+        # 시종착(계획) 3일 × 2쌍(강릉·부산) 양방향 + 중간 정차(실적) 3일 × 14건
+        # (진부·만종 경유 왕복 8 + 전라선 서울↔전주·서울↔용산·용산↔전주 왕복 6
+        #  — 비KTX·등급 미확인 제외 후)
+        self.assertEqual(len(legs), len(pipeline.DATES) * 4 + len(pipeline.DATES) * 14)
 
 
 class StopoverContractTest(unittest.TestCase):
