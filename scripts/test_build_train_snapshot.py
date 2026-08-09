@@ -76,19 +76,26 @@ def runinfo_stop(trn_no: str, date: str, sn: int, stn: str, stop_se: str,
 
 
 def runinfo_items(date: str) -> list[dict]:
-    """실적 일별 fixture — 하행 00801(서울-진부-강릉)·상행 00802(강릉-진부-서울)와
-    계획에 없는 열차 99999(allowlist 제외 검증용)"""
+    """실적 일별 fixture — 하행 00801(서울-만종-진부-강릉)·상행 00802(강릉-진부-만종-서울)와
+    계획에 없는 열차 99999(allowlist 제외 검증용). 만종은 #56 2단계 실운행 패턴 반영."""
     return [
         runinfo_stop("00801", date, 1, "서울", "시발", None, "05:06", "D"),
-        runinfo_stop("00801", date, 2, "진부", "여객승하차", "06:30", "06:32", "D"),
-        runinfo_stop("00801", date, 3, "강릉", "종착", "07:01", None, "D"),
+        runinfo_stop("00801", date, 2, "만종", "여객승하차", "06:00", "06:02", "D"),
+        runinfo_stop("00801", date, 3, "진부", "여객승하차", "06:30", "06:32", "D"),
+        runinfo_stop("00801", date, 4, "강릉", "종착", "07:01", None, "D"),
         runinfo_stop("00802", date, 1, "강릉", "시발", None, "08:00", "U"),
         runinfo_stop("00802", date, 2, "진부", "여객승하차", "08:28", "08:30", "U"),
-        runinfo_stop("00802", date, 3, "서울", "종착", "09:58", None, "U"),
+        runinfo_stop("00802", date, 3, "만종", "여객승하차", "09:00", "09:02", "U"),
+        runinfo_stop("00802", date, 4, "서울", "종착", "09:58", None, "U"),
         runinfo_stop("99999", date, 1, "서울", "시발", None, "10:00", "D"),
         runinfo_stop("99999", date, 2, "진부", "여객승하차", "11:30", "11:32", "D"),
         runinfo_stop("99999", date, 3, "강릉", "종착", "12:00", None, "D"),
     ]
+
+
+def runinfo_row_of(items: list[dict], trn_no: str, stn_nm: str) -> dict:
+    """위치 인덱스 대신 (열차, 역)으로 fixture 행을 찾는다 — 역 추가에도 변조 대상이 안 흔들린다"""
+    return next(row for row in items if row["trn_no"] == trn_no and row["stn_nm"] == stn_nm)
 
 
 def korail_side_effect(runinfo_mutate=None):
@@ -193,8 +200,8 @@ class EmptyResponseGuardTest(unittest.TestCase):
         self.assertEqual(legs[0].trainNo, "00801")
         # 데모 OD 밖 행(서울→부산 00001)은 legs에 포함되지 않는다
         self.assertNotIn("00001", {leg.trainNo for leg in legs})
-        # 시종착(계획) 3일 × 양방향 각 1건 + 중간 정차(실적) 3일 × 4건(진부 경유 왕복)
-        self.assertEqual(len(legs), len(pipeline.DATES) * 2 + len(pipeline.DATES) * 4)
+        # 시종착(계획) 3일 × 양방향 각 1건 + 중간 정차(실적) 3일 × 8건(진부·만종 경유 왕복)
+        self.assertEqual(len(legs), len(pipeline.DATES) * 2 + len(pipeline.DATES) * 8)
 
 
 class StopoverContractTest(unittest.TestCase):
@@ -279,7 +286,8 @@ class StopoverContractTest(unittest.TestCase):
     def test_정차_순서가_중복되면_중단한다(self) -> None:
         def duplicate_sn(items, date):
             broken = [dict(row) for row in items]
-            broken[2]["trn_run_sn"] = "2"  # 00801 강릉 순서를 진부와 중복시킨다
+            jinbu_sn = runinfo_row_of(broken, "00801", "진부")["trn_run_sn"]
+            runinfo_row_of(broken, "00801", "강릉")["trn_run_sn"] = jinbu_sn  # 순서 중복
             return broken
 
         with mock.patch.object(pipeline, "get_json", side_effect=korail_side_effect(duplicate_sn)):
@@ -291,7 +299,8 @@ class StopoverContractTest(unittest.TestCase):
         def invert_time(items, date):
             day = f"{date[0:4]}-{date[4:6]}-{date[6:8]}"
             broken = [dict(row) for row in items]
-            broken[1]["trn_arvl_dt"] = f"{day} 23:59:00.0"  # 00801 진부 도착이 강릉 도착보다 늦다
+            # 00801 진부 도착이 강릉 도착보다 늦어진다
+            runinfo_row_of(broken, "00801", "진부")["trn_arvl_dt"] = f"{day} 23:59:00.0"
             return broken
 
         with mock.patch.object(pipeline, "get_json", side_effect=korail_side_effect(invert_time)):

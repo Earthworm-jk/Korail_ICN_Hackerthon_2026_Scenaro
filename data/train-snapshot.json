@@ -7,6 +7,13 @@
     "arriveAt": "2026-08-12T07:03:00+09:00"
   },
   {
+    "trainNo": "00801",
+    "fromStationId": "station-seoul",
+    "toStationId": "station-manjong",
+    "departAt": "2026-08-12T05:06:00+09:00",
+    "arriveAt": "2026-08-12T06:17:00+09:00"
+  },
+  {
     "trainNo": "00802",
     "fromStationId": "station-gangneung",
     "toStationId": "station-seoul",
@@ -19,6 +26,13 @@
     "toStationId": "station-jinbu",
     "departAt": "2026-08-12T05:20:00+09:00",
     "arriveAt": "2026-08-12T05:40:00+09:00"
+  },
+  {
+    "trainNo": "00802",
+    "fromStationId": "station-gangneung",
+    "toStationId": "station-manjong",
+    "departAt": "2026-08-12T05:20:00+09:00",
+    "arriveAt": "2026-08-12T06:07:00+09:00"
   },
   {
     "trainNo": "00803",
@@ -35,10 +49,24 @@
     "arriveAt": "2026-08-12T07:26:00+09:00"
   },
   {
+    "trainNo": "00803",
+    "fromStationId": "station-seoul",
+    "toStationId": "station-manjong",
+    "departAt": "2026-08-12T05:40:00+09:00",
+    "arriveAt": "2026-08-12T06:52:00+09:00"
+  },
+  {
     "trainNo": "00802",
     "fromStationId": "station-jinbu",
     "toStationId": "station-seoul",
     "departAt": "2026-08-12T05:41:00+09:00",
+    "arriveAt": "2026-08-12T07:24:00+09:00"
+  },
+  {
+    "trainNo": "00802",
+    "fromStationId": "station-manjong",
+    "toStationId": "station-seoul",
+    "departAt": "2026-08-12T06:10:00+09:00",
     "arriveAt": "2026-08-12T07:24:00+09:00"
   },
   {
@@ -57,10 +85,45 @@
   },
   {
     "trainNo": "00804",
+    "fromStationId": "station-gangneung",
+    "toStationId": "station-manjong",
+    "departAt": "2026-08-12T06:16:00+09:00",
+    "arriveAt": "2026-08-12T07:09:00+09:00"
+  },
+  {
+    "trainNo": "00801",
+    "fromStationId": "station-manjong",
+    "toStationId": "station-gangneung",
+    "departAt": "2026-08-12T06:18:00+09:00",
+    "arriveAt": "2026-08-12T07:01:00+09:00"
+  },
+  {
+    "trainNo": "00804",
     "fromStationId": "station-jinbu",
     "toStationId": "station-seoul",
     "departAt": "2026-08-12T06:37:00+09:00",
     "arriveAt": "2026-08-12T08:38:00+09:00"
+  },
+  {
+    "trainNo": "00803",
+    "fromStationId": "station-manjong",
+    "toStationId": "station-gangneung",
+    "departAt": "2026-08-12T06:55:00+09:00",
+    "arriveAt": "2026-08-12T07:45:00+09:00"
+  },
+  {
+    "trainNo": "00804",
+    "fromStationId": "station-manjong",
+    "toStationId": "station-seoul",
+    "departAt": "2026-08-12T07:11:00+09:00",
+    "arriveAt": "2026-08-12T08:38:00+09:00"
+  },
+  {
+    "trainNo": "00851",
+    "fromStationId": "station-manjong",
+    "toStationId": "station-gangneung",
+    "departAt": "2026-08-12T07:21:00+09:00",
+    "arriveAt": "2026-08-12T08:01:00+09:00"
   },
   {
     "trainNo": "00803",
@@ -77,11 +140,25 @@
     "arriveAt": "2026-08-12T09:30:00+09:00"
   },
   {
+    "trainNo": "00806",
+    "fromStationId": "station-gangneung",
+    "toStationId": "station-manjong",
+    "departAt": "2026-08-12T07:28:00+09:00",
+    "arriveAt": "2026-08-12T08:22:00+09:00"
+  },
+  {
     "trainNo": "00840",
     "fromStationId": "station-jinbu",
     "toStationId": "station-seoul",
     "departAt": "2026-08-12T08:04:00+09:00",
     "arriveAt": "2026-08-12T09:57:00+09:00"
+  },
+  {
+    "trainNo": "00805",
+    "fromStationId": "station-seoul",
+    "toStationId": "station-manjong",
+    "departAt": "2026-08-12T08:07:00+09:00",
+    "arriveAt": "2026-08-12T09:13:00+09:00"
   },
   {
     "trainNo": "00808",
@@ -99,10 +176,31 @@
   },
   {
     "trainNo": "00808",
+    "fromStationId": "station-gangneung",
+    "toStationId": "station-manjong",
+    "departAt": "2026-08-12T08:10:00+09:00",
+    "arriveAt": "2026-08-12T09:04:00+09:00"
+  },
+  {
+    "trainNo": "00806",
+    "fromStationId": "station-manjong",
+    "toStationId": "station-seoul",
+    "departAt": "2026-08-12T08:24:00+09:00",
+    "arriveAt": "2026-08-12T09:35:00+09:00"
+  },
+  {
+    "trainNo": "00808",
     "fromStationId": "station-jinbu",
     "toStationId": "station-seoul",
     "departAt": "2026-08-12T08:32:00+09:00",
     "arriveAt": "2026-08-12T10:36:00+09:00"
+  },
+  {
+    "trainNo": "00840",
+    "fromStationId": "station-manjong",
+    "toStationId": "station-seoul",
+    "departAt": "2026-08-12T08:37:00+09:00",
+    "arriveAt": "2026-08-12T09:57:00+09:00"
   },
   {
     "trainNo": "00807",
@@ -119,6 +217,27 @@
     "arriveAt": "2026-08-12T10:40:00+09:00"
   },
   {
+    "trainNo": "00807",
+    "fromStationId": "station-seoul",
+    "toStationId": "station-manjong",
+    "departAt": "2026-08-12T08:57:00+09:00",
+    "arriveAt": "2026-08-12T10:10:00+09:00"
+  },
+  {
+    "trainNo": "00808",
+    "fromStationId": "station-manjong",
+    "toStationId": "station-seoul",
+    "departAt": "2026-08-12T09:06:00+09:00",
+    "arriveAt": "2026-08-12T10:36:00+09:00"
+  },
+  {
+    "trainNo": "00805",
+    "fromStationId": "station-manjong",
+    "toStationId": "station-gangneung",
+    "departAt": "2026-08-12T09:15:00+09:00",
+    "arriveAt": "2026-08-12T10:05:00+09:00"
+  },
+  {
     "trainNo": "00809",
     "fromStationId": "station-seoul",
     "toStationId": "station-gangneung",
@@ -126,11 +245,32 @@
     "arriveAt": "2026-08-12T11:58:00+09:00"
   },
   {
+    "trainNo": "00809",
+    "fromStationId": "station-seoul",
+    "toStationId": "station-manjong",
+    "departAt": "2026-08-12T09:57:00+09:00",
+    "arriveAt": "2026-08-12T11:09:00+09:00"
+  },
+  {
+    "trainNo": "00807",
+    "fromStationId": "station-manjong",
+    "toStationId": "station-gangneung",
+    "departAt": "2026-08-12T10:12:00+09:00",
+    "arriveAt": "2026-08-12T11:00:00+09:00"
+  },
+  {
     "trainNo": "00856",
     "fromStationId": "station-gangneung",
     "toStationId": "station-jinbu",
     "departAt": "2026-08-12T10:17:00+09:00",
     "arriveAt": "2026-08-12T10:37:00+09:00"
+  },
+  {
+    "trainNo": "00856",
+    "fromStationId": "station-gangneung",
+    "toStationId": "station-manjong",
+    "departAt": "2026-08-12T10:17:00+09:00",
+    "arriveAt": "2026-08-12T11:02:00+09:00"
   },
   {
     "trainNo": "00810",
@@ -154,6 +294,13 @@
     "arriveAt": "2026-08-12T12:40:00+09:00"
   },
   {
+    "trainNo": "00809",
+    "fromStationId": "station-manjong",
+    "toStationId": "station-gangneung",
+    "departAt": "2026-08-12T11:11:00+09:00",
+    "arriveAt": "2026-08-12T12:00:00+09:00"
+  },
+  {
     "trainNo": "00812",
     "fromStationId": "station-gangneung",
     "toStationId": "station-seoul",
@@ -166,6 +313,13 @@
     "toStationId": "station-jinbu",
     "departAt": "2026-08-12T11:28:00+09:00",
     "arriveAt": "2026-08-12T11:48:00+09:00"
+  },
+  {
+    "trainNo": "00812",
+    "fromStationId": "station-gangneung",
+    "toStationId": "station-manjong",
+    "departAt": "2026-08-12T11:28:00+09:00",
+    "arriveAt": "2026-08-12T12:16:00+09:00"
   },
   {
     "trainNo": "00812",
@@ -187,6 +341,20 @@
     "toStationId": "station-jinbu",
     "departAt": "2026-08-12T12:11:00+09:00",
     "arriveAt": "2026-08-12T13:58:00+09:00"
+  },
+  {
+    "trainNo": "00811",
+    "fromStationId": "station-seoul",
+    "toStationId": "station-manjong",
+    "departAt": "2026-08-12T12:11:00+09:00",
+    "arriveAt": "2026-08-12T13:24:00+09:00"
+  },
+  {
+    "trainNo": "00812",
+    "fromStationId": "station-manjong",
+    "toStationId": "station-seoul",
+    "departAt": "2026-08-12T12:18:00+09:00",
+    "arriveAt": "2026-08-12T13:28:00+09:00"
   },
   {
     "trainNo": "AREX-E112",
@@ -231,6 +399,20 @@
     "arriveAt": "2026-08-12T14:56:00+09:00"
   },
   {
+    "trainNo": "00813",
+    "fromStationId": "station-seoul",
+    "toStationId": "station-manjong",
+    "departAt": "2026-08-12T12:55:00+09:00",
+    "arriveAt": "2026-08-12T14:05:00+09:00"
+  },
+  {
+    "trainNo": "00811",
+    "fromStationId": "station-manjong",
+    "toStationId": "station-gangneung",
+    "departAt": "2026-08-12T13:26:00+09:00",
+    "arriveAt": "2026-08-12T14:17:00+09:00"
+  },
+  {
     "trainNo": "AREX-E114",
     "fromStationId": "station-incheon-airport-t1",
     "toStationId": "station-seoul",
@@ -245,6 +427,13 @@
     "arriveAt": "2026-08-12T15:54:00+09:00"
   },
   {
+    "trainNo": "00815",
+    "fromStationId": "station-seoul",
+    "toStationId": "station-manjong",
+    "departAt": "2026-08-12T13:55:00+09:00",
+    "arriveAt": "2026-08-12T15:04:00+09:00"
+  },
+  {
     "trainNo": "00811",
     "fromStationId": "station-jinbu",
     "toStationId": "station-gangneung",
@@ -252,11 +441,25 @@
     "arriveAt": "2026-08-12T14:17:00+09:00"
   },
   {
+    "trainNo": "00813",
+    "fromStationId": "station-manjong",
+    "toStationId": "station-gangneung",
+    "departAt": "2026-08-12T14:07:00+09:00",
+    "arriveAt": "2026-08-12T14:55:00+09:00"
+  },
+  {
     "trainNo": "AREX-E115",
     "fromStationId": "station-incheon-airport-t1",
     "toStationId": "station-seoul",
     "departAt": "2026-08-12T14:08:00+09:00",
     "arriveAt": "2026-08-12T14:51:00+09:00"
+  },
+  {
+    "trainNo": "00869",
+    "fromStationId": "station-manjong",
+    "toStationId": "station-gangneung",
+    "departAt": "2026-08-12T14:32:00+09:00",
+    "arriveAt": "2026-08-12T15:17:00+09:00"
   },
   {
     "trainNo": "00844",
@@ -271,6 +474,27 @@
     "toStationId": "station-jinbu",
     "departAt": "2026-08-12T15:03:00+09:00",
     "arriveAt": "2026-08-12T16:43:00+09:00"
+  },
+  {
+    "trainNo": "00815",
+    "fromStationId": "station-manjong",
+    "toStationId": "station-gangneung",
+    "departAt": "2026-08-12T15:06:00+09:00",
+    "arriveAt": "2026-08-12T15:55:00+09:00"
+  },
+  {
+    "trainNo": "00844",
+    "fromStationId": "station-manjong",
+    "toStationId": "station-seoul",
+    "departAt": "2026-08-12T15:30:00+09:00",
+    "arriveAt": "2026-08-12T16:39:00+09:00"
+  },
+  {
+    "trainNo": "00859",
+    "fromStationId": "station-manjong",
+    "toStationId": "station-gangneung",
+    "departAt": "2026-08-12T15:34:00+09:00",
+    "arriveAt": "2026-08-12T16:18:00+09:00"
   },
   {
     "trainNo": "00816",
@@ -292,6 +516,13 @@
     "toStationId": "station-jinbu",
     "departAt": "2026-08-12T16:11:00+09:00",
     "arriveAt": "2026-08-12T18:02:00+09:00"
+  },
+  {
+    "trainNo": "00817",
+    "fromStationId": "station-seoul",
+    "toStationId": "station-manjong",
+    "departAt": "2026-08-12T16:11:00+09:00",
+    "arriveAt": "2026-08-12T17:23:00+09:00"
   },
   {
     "trainNo": "00818",
@@ -320,6 +551,13 @@
     "toStationId": "station-jinbu",
     "departAt": "2026-08-12T17:01:00+09:00",
     "arriveAt": "2026-08-12T17:21:00+09:00"
+  },
+  {
+    "trainNo": "00820",
+    "fromStationId": "station-gangneung",
+    "toStationId": "station-manjong",
+    "departAt": "2026-08-12T17:01:00+09:00",
+    "arriveAt": "2026-08-12T17:49:00+09:00"
   },
   {
     "trainNo": "00819",
@@ -351,10 +589,45 @@
   },
   {
     "trainNo": "00817",
+    "fromStationId": "station-manjong",
+    "toStationId": "station-gangneung",
+    "departAt": "2026-08-12T17:26:00+09:00",
+    "arriveAt": "2026-08-12T18:21:00+09:00"
+  },
+  {
+    "trainNo": "00864",
+    "fromStationId": "station-gangneung",
+    "toStationId": "station-manjong",
+    "departAt": "2026-08-12T17:27:00+09:00",
+    "arriveAt": "2026-08-12T18:19:00+09:00"
+  },
+  {
+    "trainNo": "00820",
+    "fromStationId": "station-manjong",
+    "toStationId": "station-seoul",
+    "departAt": "2026-08-12T17:52:00+09:00",
+    "arriveAt": "2026-08-12T19:15:00+09:00"
+  },
+  {
+    "trainNo": "00817",
     "fromStationId": "station-jinbu",
     "toStationId": "station-gangneung",
     "departAt": "2026-08-12T18:04:00+09:00",
     "arriveAt": "2026-08-12T18:21:00+09:00"
+  },
+  {
+    "trainNo": "00847",
+    "fromStationId": "station-seoul",
+    "toStationId": "station-manjong",
+    "departAt": "2026-08-12T18:22:00+09:00",
+    "arriveAt": "2026-08-12T19:32:00+09:00"
+  },
+  {
+    "trainNo": "00868",
+    "fromStationId": "station-gangneung",
+    "toStationId": "station-manjong",
+    "departAt": "2026-08-12T18:23:00+09:00",
+    "arriveAt": "2026-08-12T19:15:00+09:00"
   },
   {
     "trainNo": "00822",
@@ -371,6 +644,13 @@
     "arriveAt": "2026-08-12T19:08:00+09:00"
   },
   {
+    "trainNo": "00822",
+    "fromStationId": "station-gangneung",
+    "toStationId": "station-manjong",
+    "departAt": "2026-08-12T18:48:00+09:00",
+    "arriveAt": "2026-08-12T19:45:00+09:00"
+  },
+  {
     "trainNo": "00819",
     "fromStationId": "station-jinbu",
     "toStationId": "station-gangneung",
@@ -385,11 +665,32 @@
     "arriveAt": "2026-08-12T21:09:00+09:00"
   },
   {
+    "trainNo": "00821",
+    "fromStationId": "station-seoul",
+    "toStationId": "station-manjong",
+    "departAt": "2026-08-12T18:58:00+09:00",
+    "arriveAt": "2026-08-12T20:15:00+09:00"
+  },
+  {
     "trainNo": "00822",
     "fromStationId": "station-jinbu",
     "toStationId": "station-seoul",
     "departAt": "2026-08-12T19:09:00+09:00",
     "arriveAt": "2026-08-12T21:07:00+09:00"
+  },
+  {
+    "trainNo": "00822",
+    "fromStationId": "station-manjong",
+    "toStationId": "station-seoul",
+    "departAt": "2026-08-12T19:47:00+09:00",
+    "arriveAt": "2026-08-12T21:07:00+09:00"
+  },
+  {
+    "trainNo": "00849",
+    "fromStationId": "station-seoul",
+    "toStationId": "station-manjong",
+    "departAt": "2026-08-12T19:50:00+09:00",
+    "arriveAt": "2026-08-12T20:58:00+09:00"
   },
   {
     "trainNo": "00823",
@@ -406,11 +707,25 @@
     "arriveAt": "2026-08-12T21:40:00+09:00"
   },
   {
+    "trainNo": "00823",
+    "fromStationId": "station-seoul",
+    "toStationId": "station-manjong",
+    "departAt": "2026-08-12T20:01:00+09:00",
+    "arriveAt": "2026-08-12T21:15:00+09:00"
+  },
+  {
     "trainNo": "00846",
     "fromStationId": "station-jinbu",
     "toStationId": "station-seoul",
     "departAt": "2026-08-12T20:02:00+09:00",
     "arriveAt": "2026-08-12T21:52:00+09:00"
+  },
+  {
+    "trainNo": "00821",
+    "fromStationId": "station-manjong",
+    "toStationId": "station-gangneung",
+    "departAt": "2026-08-12T20:17:00+09:00",
+    "arriveAt": "2026-08-12T21:09:00+09:00"
   },
   {
     "trainNo": "00824",
@@ -420,11 +735,53 @@
     "arriveAt": "2026-08-12T22:32:00+09:00"
   },
   {
+    "trainNo": "00824",
+    "fromStationId": "station-gangneung",
+    "toStationId": "station-manjong",
+    "departAt": "2026-08-12T20:30:00+09:00",
+    "arriveAt": "2026-08-12T21:20:00+09:00"
+  },
+  {
+    "trainNo": "00846",
+    "fromStationId": "station-manjong",
+    "toStationId": "station-seoul",
+    "departAt": "2026-08-12T20:37:00+09:00",
+    "arriveAt": "2026-08-12T21:52:00+09:00"
+  },
+  {
+    "trainNo": "00823",
+    "fromStationId": "station-manjong",
+    "toStationId": "station-gangneung",
+    "departAt": "2026-08-12T21:16:00+09:00",
+    "arriveAt": "2026-08-12T21:58:00+09:00"
+  },
+  {
+    "trainNo": "00824",
+    "fromStationId": "station-manjong",
+    "toStationId": "station-seoul",
+    "departAt": "2026-08-12T21:21:00+09:00",
+    "arriveAt": "2026-08-12T22:34:00+09:00"
+  },
+  {
     "trainNo": "00825",
     "fromStationId": "station-seoul",
     "toStationId": "station-gangneung",
     "departAt": "2026-08-12T21:31:00+09:00",
     "arriveAt": "2026-08-12T23:41:00+09:00"
+  },
+  {
+    "trainNo": "00825",
+    "fromStationId": "station-seoul",
+    "toStationId": "station-manjong",
+    "departAt": "2026-08-12T21:31:00+09:00",
+    "arriveAt": "2026-08-12T22:46:00+09:00"
+  },
+  {
+    "trainNo": "00826",
+    "fromStationId": "station-gangneung",
+    "toStationId": "station-manjong",
+    "departAt": "2026-08-12T21:33:00+09:00",
+    "arriveAt": "2026-08-12T22:16:00+09:00"
   },
   {
     "trainNo": "00823",
@@ -448,6 +805,20 @@
     "arriveAt": "2026-08-12T23:45:00+09:00"
   },
   {
+    "trainNo": "00827",
+    "fromStationId": "station-seoul",
+    "toStationId": "station-manjong",
+    "departAt": "2026-08-12T22:14:00+09:00",
+    "arriveAt": "2026-08-12T23:20:00+09:00"
+  },
+  {
+    "trainNo": "00826",
+    "fromStationId": "station-manjong",
+    "toStationId": "station-seoul",
+    "departAt": "2026-08-12T22:19:00+09:00",
+    "arriveAt": "2026-08-12T23:28:00+09:00"
+  },
+  {
     "trainNo": "00828",
     "fromStationId": "station-gangneung",
     "toStationId": "station-seoul",
@@ -455,11 +826,46 @@
     "arriveAt": "2026-08-13T00:25:00+09:00"
   },
   {
+    "trainNo": "00828",
+    "fromStationId": "station-gangneung",
+    "toStationId": "station-manjong",
+    "departAt": "2026-08-12T22:27:00+09:00",
+    "arriveAt": "2026-08-12T23:15:00+09:00"
+  },
+  {
     "trainNo": "00848",
     "fromStationId": "station-jinbu",
     "toStationId": "station-seoul",
     "departAt": "2026-08-12T22:29:00+09:00",
     "arriveAt": "2026-08-13T00:13:00+09:00"
+  },
+  {
+    "trainNo": "00825",
+    "fromStationId": "station-manjong",
+    "toStationId": "station-gangneung",
+    "departAt": "2026-08-12T22:48:00+09:00",
+    "arriveAt": "2026-08-12T23:40:00+09:00"
+  },
+  {
+    "trainNo": "00848",
+    "fromStationId": "station-manjong",
+    "toStationId": "station-seoul",
+    "departAt": "2026-08-12T23:02:00+09:00",
+    "arriveAt": "2026-08-13T00:13:00+09:00"
+  },
+  {
+    "trainNo": "00828",
+    "fromStationId": "station-manjong",
+    "toStationId": "station-seoul",
+    "departAt": "2026-08-12T23:17:00+09:00",
+    "arriveAt": "2026-08-13T00:26:00+09:00"
+  },
+  {
+    "trainNo": "00827",
+    "fromStationId": "station-manjong",
+    "toStationId": "station-gangneung",
+    "departAt": "2026-08-12T23:22:00+09:00",
+    "arriveAt": "2026-08-13T00:05:00+09:00"
   },
   {
     "trainNo": "00827",
@@ -476,6 +882,13 @@
     "arriveAt": "2026-08-13T07:03:00+09:00"
   },
   {
+    "trainNo": "00801",
+    "fromStationId": "station-seoul",
+    "toStationId": "station-manjong",
+    "departAt": "2026-08-13T05:06:00+09:00",
+    "arriveAt": "2026-08-13T06:17:00+09:00"
+  },
+  {
     "trainNo": "00802",
     "fromStationId": "station-gangneung",
     "toStationId": "station-seoul",
@@ -488,6 +901,13 @@
     "toStationId": "station-jinbu",
     "departAt": "2026-08-13T05:20:00+09:00",
     "arriveAt": "2026-08-13T05:39:00+09:00"
+  },
+  {
+    "trainNo": "00802",
+    "fromStationId": "station-gangneung",
+    "toStationId": "station-manjong",
+    "departAt": "2026-08-13T05:20:00+09:00",
+    "arriveAt": "2026-08-13T06:08:00+09:00"
   },
   {
     "trainNo": "00802",
@@ -508,6 +928,20 @@
     "fromStationId": "station-seoul",
     "toStationId": "station-jinbu",
     "departAt": "2026-08-13T05:40:00+09:00",
+    "arriveAt": "2026-08-13T07:24:00+09:00"
+  },
+  {
+    "trainNo": "00803",
+    "fromStationId": "station-seoul",
+    "toStationId": "station-manjong",
+    "departAt": "2026-08-13T05:40:00+09:00",
+    "arriveAt": "2026-08-13T06:48:00+09:00"
+  },
+  {
+    "trainNo": "00802",
+    "fromStationId": "station-manjong",
+    "toStationId": "station-seoul",
+    "departAt": "2026-08-13T06:10:00+09:00",
     "arriveAt": "2026-08-13T07:24:00+09:00"
   },
   {
@@ -526,10 +960,45 @@
   },
   {
     "trainNo": "00804",
+    "fromStationId": "station-gangneung",
+    "toStationId": "station-manjong",
+    "departAt": "2026-08-13T06:16:00+09:00",
+    "arriveAt": "2026-08-13T07:08:00+09:00"
+  },
+  {
+    "trainNo": "00801",
+    "fromStationId": "station-manjong",
+    "toStationId": "station-gangneung",
+    "departAt": "2026-08-13T06:18:00+09:00",
+    "arriveAt": "2026-08-13T07:03:00+09:00"
+  },
+  {
+    "trainNo": "00804",
     "fromStationId": "station-jinbu",
     "toStationId": "station-seoul",
     "departAt": "2026-08-13T06:38:00+09:00",
     "arriveAt": "2026-08-13T08:33:00+09:00"
+  },
+  {
+    "trainNo": "00803",
+    "fromStationId": "station-manjong",
+    "toStationId": "station-gangneung",
+    "departAt": "2026-08-13T06:52:00+09:00",
+    "arriveAt": "2026-08-13T07:44:00+09:00"
+  },
+  {
+    "trainNo": "00804",
+    "fromStationId": "station-manjong",
+    "toStationId": "station-seoul",
+    "departAt": "2026-08-13T07:11:00+09:00",
+    "arriveAt": "2026-08-13T08:33:00+09:00"
+  },
+  {
+    "trainNo": "00851",
+    "fromStationId": "station-manjong",
+    "toStationId": "station-gangneung",
+    "departAt": "2026-08-13T07:20:00+09:00",
+    "arriveAt": "2026-08-13T07:58:00+09:00"
   },
   {
     "trainNo": "00803",
@@ -544,6 +1013,20 @@
     "toStationId": "station-seoul",
     "departAt": "2026-08-13T07:28:00+09:00",
     "arriveAt": "2026-08-13T09:30:00+09:00"
+  },
+  {
+    "trainNo": "00806",
+    "fromStationId": "station-gangneung",
+    "toStationId": "station-manjong",
+    "departAt": "2026-08-13T07:28:00+09:00",
+    "arriveAt": "2026-08-13T08:21:00+09:00"
+  },
+  {
+    "trainNo": "00805",
+    "fromStationId": "station-seoul",
+    "toStationId": "station-manjong",
+    "departAt": "2026-08-13T08:00:00+09:00",
+    "arriveAt": "2026-08-13T09:07:00+09:00"
   },
   {
     "trainNo": "00840",
@@ -568,10 +1051,31 @@
   },
   {
     "trainNo": "00808",
+    "fromStationId": "station-gangneung",
+    "toStationId": "station-manjong",
+    "departAt": "2026-08-13T08:10:00+09:00",
+    "arriveAt": "2026-08-13T09:02:00+09:00"
+  },
+  {
+    "trainNo": "00806",
+    "fromStationId": "station-manjong",
+    "toStationId": "station-seoul",
+    "departAt": "2026-08-13T08:23:00+09:00",
+    "arriveAt": "2026-08-13T09:37:00+09:00"
+  },
+  {
+    "trainNo": "00808",
     "fromStationId": "station-jinbu",
     "toStationId": "station-seoul",
     "departAt": "2026-08-13T08:30:00+09:00",
     "arriveAt": "2026-08-13T10:20:00+09:00"
+  },
+  {
+    "trainNo": "00840",
+    "fromStationId": "station-manjong",
+    "toStationId": "station-seoul",
+    "departAt": "2026-08-13T08:37:00+09:00",
+    "arriveAt": "2026-08-13T09:53:00+09:00"
   },
   {
     "trainNo": "00807",
@@ -588,6 +1092,27 @@
     "arriveAt": "2026-08-13T10:44:00+09:00"
   },
   {
+    "trainNo": "00807",
+    "fromStationId": "station-seoul",
+    "toStationId": "station-manjong",
+    "departAt": "2026-08-13T08:58:00+09:00",
+    "arriveAt": "2026-08-13T10:12:00+09:00"
+  },
+  {
+    "trainNo": "00808",
+    "fromStationId": "station-manjong",
+    "toStationId": "station-seoul",
+    "departAt": "2026-08-13T09:03:00+09:00",
+    "arriveAt": "2026-08-13T10:20:00+09:00"
+  },
+  {
+    "trainNo": "00805",
+    "fromStationId": "station-manjong",
+    "toStationId": "station-gangneung",
+    "departAt": "2026-08-13T09:10:00+09:00",
+    "arriveAt": "2026-08-13T10:04:00+09:00"
+  },
+  {
     "trainNo": "00809",
     "fromStationId": "station-seoul",
     "toStationId": "station-gangneung",
@@ -595,11 +1120,32 @@
     "arriveAt": "2026-08-13T11:58:00+09:00"
   },
   {
+    "trainNo": "00809",
+    "fromStationId": "station-seoul",
+    "toStationId": "station-manjong",
+    "departAt": "2026-08-13T09:55:00+09:00",
+    "arriveAt": "2026-08-13T11:10:00+09:00"
+  },
+  {
+    "trainNo": "00807",
+    "fromStationId": "station-manjong",
+    "toStationId": "station-gangneung",
+    "departAt": "2026-08-13T10:15:00+09:00",
+    "arriveAt": "2026-08-13T11:04:00+09:00"
+  },
+  {
     "trainNo": "00856",
     "fromStationId": "station-gangneung",
     "toStationId": "station-jinbu",
     "departAt": "2026-08-13T10:17:00+09:00",
     "arriveAt": "2026-08-13T10:37:00+09:00"
+  },
+  {
+    "trainNo": "00856",
+    "fromStationId": "station-gangneung",
+    "toStationId": "station-manjong",
+    "departAt": "2026-08-13T10:17:00+09:00",
+    "arriveAt": "2026-08-13T11:00:00+09:00"
   },
   {
     "trainNo": "00810",
@@ -623,6 +1169,13 @@
     "arriveAt": "2026-08-13T12:42:00+09:00"
   },
   {
+    "trainNo": "00809",
+    "fromStationId": "station-manjong",
+    "toStationId": "station-gangneung",
+    "departAt": "2026-08-13T11:11:00+09:00",
+    "arriveAt": "2026-08-13T11:58:00+09:00"
+  },
+  {
     "trainNo": "00812",
     "fromStationId": "station-gangneung",
     "toStationId": "station-seoul",
@@ -635,6 +1188,13 @@
     "toStationId": "station-jinbu",
     "departAt": "2026-08-13T11:28:00+09:00",
     "arriveAt": "2026-08-13T11:48:00+09:00"
+  },
+  {
+    "trainNo": "00812",
+    "fromStationId": "station-gangneung",
+    "toStationId": "station-manjong",
+    "departAt": "2026-08-13T11:28:00+09:00",
+    "arriveAt": "2026-08-13T12:16:00+09:00"
   },
   {
     "trainNo": "00812",
@@ -656,6 +1216,20 @@
     "toStationId": "station-jinbu",
     "departAt": "2026-08-13T12:11:00+09:00",
     "arriveAt": "2026-08-13T13:56:00+09:00"
+  },
+  {
+    "trainNo": "00811",
+    "fromStationId": "station-seoul",
+    "toStationId": "station-manjong",
+    "departAt": "2026-08-13T12:11:00+09:00",
+    "arriveAt": "2026-08-13T13:23:00+09:00"
+  },
+  {
+    "trainNo": "00812",
+    "fromStationId": "station-manjong",
+    "toStationId": "station-seoul",
+    "departAt": "2026-08-13T12:18:00+09:00",
+    "arriveAt": "2026-08-13T13:30:00+09:00"
   },
   {
     "trainNo": "00814",
@@ -686,6 +1260,20 @@
     "arriveAt": "2026-08-13T14:56:00+09:00"
   },
   {
+    "trainNo": "00813",
+    "fromStationId": "station-seoul",
+    "toStationId": "station-manjong",
+    "departAt": "2026-08-13T12:55:00+09:00",
+    "arriveAt": "2026-08-13T14:08:00+09:00"
+  },
+  {
+    "trainNo": "00811",
+    "fromStationId": "station-manjong",
+    "toStationId": "station-gangneung",
+    "departAt": "2026-08-13T13:24:00+09:00",
+    "arriveAt": "2026-08-13T14:16:00+09:00"
+  },
+  {
     "trainNo": "00815",
     "fromStationId": "station-seoul",
     "toStationId": "station-gangneung",
@@ -693,11 +1281,32 @@
     "arriveAt": "2026-08-13T15:54:00+09:00"
   },
   {
+    "trainNo": "00815",
+    "fromStationId": "station-seoul",
+    "toStationId": "station-manjong",
+    "departAt": "2026-08-13T13:55:00+09:00",
+    "arriveAt": "2026-08-13T15:07:00+09:00"
+  },
+  {
     "trainNo": "00811",
     "fromStationId": "station-jinbu",
     "toStationId": "station-gangneung",
     "departAt": "2026-08-13T13:58:00+09:00",
     "arriveAt": "2026-08-13T14:16:00+09:00"
+  },
+  {
+    "trainNo": "00813",
+    "fromStationId": "station-manjong",
+    "toStationId": "station-gangneung",
+    "departAt": "2026-08-13T14:10:00+09:00",
+    "arriveAt": "2026-08-13T14:58:00+09:00"
+  },
+  {
+    "trainNo": "00869",
+    "fromStationId": "station-manjong",
+    "toStationId": "station-gangneung",
+    "departAt": "2026-08-13T14:36:00+09:00",
+    "arriveAt": "2026-08-13T15:21:00+09:00"
   },
   {
     "trainNo": "00844",
@@ -712,6 +1321,27 @@
     "toStationId": "station-jinbu",
     "departAt": "2026-08-13T15:01:00+09:00",
     "arriveAt": "2026-08-13T16:42:00+09:00"
+  },
+  {
+    "trainNo": "00815",
+    "fromStationId": "station-manjong",
+    "toStationId": "station-gangneung",
+    "departAt": "2026-08-13T15:09:00+09:00",
+    "arriveAt": "2026-08-13T15:57:00+09:00"
+  },
+  {
+    "trainNo": "00844",
+    "fromStationId": "station-manjong",
+    "toStationId": "station-seoul",
+    "departAt": "2026-08-13T15:30:00+09:00",
+    "arriveAt": "2026-08-13T16:42:00+09:00"
+  },
+  {
+    "trainNo": "00859",
+    "fromStationId": "station-manjong",
+    "toStationId": "station-gangneung",
+    "departAt": "2026-08-13T15:34:00+09:00",
+    "arriveAt": "2026-08-13T16:16:00+09:00"
   },
   {
     "trainNo": "00816",
@@ -733,6 +1363,13 @@
     "toStationId": "station-jinbu",
     "departAt": "2026-08-13T16:11:00+09:00",
     "arriveAt": "2026-08-13T18:04:00+09:00"
+  },
+  {
+    "trainNo": "00817",
+    "fromStationId": "station-seoul",
+    "toStationId": "station-manjong",
+    "departAt": "2026-08-13T16:11:00+09:00",
+    "arriveAt": "2026-08-13T17:25:00+09:00"
   },
   {
     "trainNo": "00818",
@@ -761,6 +1398,13 @@
     "toStationId": "station-jinbu",
     "departAt": "2026-08-13T17:01:00+09:00",
     "arriveAt": "2026-08-13T17:21:00+09:00"
+  },
+  {
+    "trainNo": "00820",
+    "fromStationId": "station-gangneung",
+    "toStationId": "station-manjong",
+    "departAt": "2026-08-13T17:01:00+09:00",
+    "arriveAt": "2026-08-13T17:50:00+09:00"
   },
   {
     "trainNo": "00819",
@@ -792,10 +1436,45 @@
   },
   {
     "trainNo": "00817",
+    "fromStationId": "station-manjong",
+    "toStationId": "station-gangneung",
+    "departAt": "2026-08-13T17:27:00+09:00",
+    "arriveAt": "2026-08-13T18:24:00+09:00"
+  },
+  {
+    "trainNo": "00864",
+    "fromStationId": "station-gangneung",
+    "toStationId": "station-manjong",
+    "departAt": "2026-08-13T17:27:00+09:00",
+    "arriveAt": "2026-08-13T18:20:00+09:00"
+  },
+  {
+    "trainNo": "00820",
+    "fromStationId": "station-manjong",
+    "toStationId": "station-seoul",
+    "departAt": "2026-08-13T17:52:00+09:00",
+    "arriveAt": "2026-08-13T19:19:00+09:00"
+  },
+  {
+    "trainNo": "00817",
     "fromStationId": "station-jinbu",
     "toStationId": "station-gangneung",
     "departAt": "2026-08-13T18:06:00+09:00",
     "arriveAt": "2026-08-13T18:24:00+09:00"
+  },
+  {
+    "trainNo": "00847",
+    "fromStationId": "station-seoul",
+    "toStationId": "station-manjong",
+    "departAt": "2026-08-13T18:21:00+09:00",
+    "arriveAt": "2026-08-13T19:27:00+09:00"
+  },
+  {
+    "trainNo": "00868",
+    "fromStationId": "station-gangneung",
+    "toStationId": "station-manjong",
+    "departAt": "2026-08-13T18:24:00+09:00",
+    "arriveAt": "2026-08-13T19:17:00+09:00"
   },
   {
     "trainNo": "00822",
@@ -812,6 +1491,13 @@
     "arriveAt": "2026-08-13T19:07:00+09:00"
   },
   {
+    "trainNo": "00822",
+    "fromStationId": "station-gangneung",
+    "toStationId": "station-manjong",
+    "departAt": "2026-08-13T18:48:00+09:00",
+    "arriveAt": "2026-08-13T19:45:00+09:00"
+  },
+  {
     "trainNo": "00819",
     "fromStationId": "station-jinbu",
     "toStationId": "station-gangneung",
@@ -826,11 +1512,32 @@
     "arriveAt": "2026-08-13T21:09:00+09:00"
   },
   {
+    "trainNo": "00821",
+    "fromStationId": "station-seoul",
+    "toStationId": "station-manjong",
+    "departAt": "2026-08-13T18:58:00+09:00",
+    "arriveAt": "2026-08-13T20:15:00+09:00"
+  },
+  {
     "trainNo": "00822",
     "fromStationId": "station-jinbu",
     "toStationId": "station-seoul",
     "departAt": "2026-08-13T19:09:00+09:00",
     "arriveAt": "2026-08-13T21:03:00+09:00"
+  },
+  {
+    "trainNo": "00822",
+    "fromStationId": "station-manjong",
+    "toStationId": "station-seoul",
+    "departAt": "2026-08-13T19:48:00+09:00",
+    "arriveAt": "2026-08-13T21:03:00+09:00"
+  },
+  {
+    "trainNo": "00849",
+    "fromStationId": "station-seoul",
+    "toStationId": "station-manjong",
+    "departAt": "2026-08-13T19:50:00+09:00",
+    "arriveAt": "2026-08-13T20:58:00+09:00"
   },
   {
     "trainNo": "00823",
@@ -847,11 +1554,25 @@
     "arriveAt": "2026-08-13T21:40:00+09:00"
   },
   {
+    "trainNo": "00823",
+    "fromStationId": "station-seoul",
+    "toStationId": "station-manjong",
+    "departAt": "2026-08-13T20:01:00+09:00",
+    "arriveAt": "2026-08-13T21:15:00+09:00"
+  },
+  {
     "trainNo": "00846",
     "fromStationId": "station-jinbu",
     "toStationId": "station-seoul",
     "departAt": "2026-08-13T20:03:00+09:00",
     "arriveAt": "2026-08-13T21:50:00+09:00"
+  },
+  {
+    "trainNo": "00821",
+    "fromStationId": "station-manjong",
+    "toStationId": "station-gangneung",
+    "departAt": "2026-08-13T20:17:00+09:00",
+    "arriveAt": "2026-08-13T21:09:00+09:00"
   },
   {
     "trainNo": "00824",
@@ -861,11 +1582,53 @@
     "arriveAt": "2026-08-13T22:32:00+09:00"
   },
   {
+    "trainNo": "00824",
+    "fromStationId": "station-gangneung",
+    "toStationId": "station-manjong",
+    "departAt": "2026-08-13T20:30:00+09:00",
+    "arriveAt": "2026-08-13T21:19:00+09:00"
+  },
+  {
+    "trainNo": "00846",
+    "fromStationId": "station-manjong",
+    "toStationId": "station-seoul",
+    "departAt": "2026-08-13T20:37:00+09:00",
+    "arriveAt": "2026-08-13T21:50:00+09:00"
+  },
+  {
+    "trainNo": "00823",
+    "fromStationId": "station-manjong",
+    "toStationId": "station-gangneung",
+    "departAt": "2026-08-13T21:16:00+09:00",
+    "arriveAt": "2026-08-13T21:59:00+09:00"
+  },
+  {
+    "trainNo": "00824",
+    "fromStationId": "station-manjong",
+    "toStationId": "station-seoul",
+    "departAt": "2026-08-13T21:20:00+09:00",
+    "arriveAt": "2026-08-13T22:35:00+09:00"
+  },
+  {
     "trainNo": "00825",
     "fromStationId": "station-seoul",
     "toStationId": "station-gangneung",
     "departAt": "2026-08-13T21:31:00+09:00",
     "arriveAt": "2026-08-13T23:41:00+09:00"
+  },
+  {
+    "trainNo": "00825",
+    "fromStationId": "station-seoul",
+    "toStationId": "station-manjong",
+    "departAt": "2026-08-13T21:32:00+09:00",
+    "arriveAt": "2026-08-13T22:47:00+09:00"
+  },
+  {
+    "trainNo": "00826",
+    "fromStationId": "station-gangneung",
+    "toStationId": "station-manjong",
+    "departAt": "2026-08-13T21:33:00+09:00",
+    "arriveAt": "2026-08-13T22:17:00+09:00"
   },
   {
     "trainNo": "00823",
@@ -889,6 +1652,20 @@
     "arriveAt": "2026-08-13T23:45:00+09:00"
   },
   {
+    "trainNo": "00827",
+    "fromStationId": "station-seoul",
+    "toStationId": "station-manjong",
+    "departAt": "2026-08-13T22:14:00+09:00",
+    "arriveAt": "2026-08-13T23:20:00+09:00"
+  },
+  {
+    "trainNo": "00826",
+    "fromStationId": "station-manjong",
+    "toStationId": "station-seoul",
+    "departAt": "2026-08-13T22:20:00+09:00",
+    "arriveAt": "2026-08-13T23:31:00+09:00"
+  },
+  {
     "trainNo": "00828",
     "fromStationId": "station-gangneung",
     "toStationId": "station-seoul",
@@ -896,11 +1673,46 @@
     "arriveAt": "2026-08-14T00:25:00+09:00"
   },
   {
+    "trainNo": "00828",
+    "fromStationId": "station-gangneung",
+    "toStationId": "station-manjong",
+    "departAt": "2026-08-13T22:27:00+09:00",
+    "arriveAt": "2026-08-13T23:16:00+09:00"
+  },
+  {
     "trainNo": "00848",
     "fromStationId": "station-jinbu",
     "toStationId": "station-seoul",
     "departAt": "2026-08-13T22:30:00+09:00",
     "arriveAt": "2026-08-14T00:11:00+09:00"
+  },
+  {
+    "trainNo": "00825",
+    "fromStationId": "station-manjong",
+    "toStationId": "station-gangneung",
+    "departAt": "2026-08-13T22:49:00+09:00",
+    "arriveAt": "2026-08-13T23:45:00+09:00"
+  },
+  {
+    "trainNo": "00848",
+    "fromStationId": "station-manjong",
+    "toStationId": "station-seoul",
+    "departAt": "2026-08-13T23:02:00+09:00",
+    "arriveAt": "2026-08-14T00:11:00+09:00"
+  },
+  {
+    "trainNo": "00828",
+    "fromStationId": "station-manjong",
+    "toStationId": "station-seoul",
+    "departAt": "2026-08-13T23:18:00+09:00",
+    "arriveAt": "2026-08-14T00:30:00+09:00"
+  },
+  {
+    "trainNo": "00827",
+    "fromStationId": "station-manjong",
+    "toStationId": "station-gangneung",
+    "departAt": "2026-08-13T23:22:00+09:00",
+    "arriveAt": "2026-08-14T00:05:00+09:00"
   },
   {
     "trainNo": "00827",
@@ -917,6 +1729,13 @@
     "arriveAt": "2026-08-14T07:03:00+09:00"
   },
   {
+    "trainNo": "00801",
+    "fromStationId": "station-seoul",
+    "toStationId": "station-manjong",
+    "departAt": "2026-08-14T05:06:00+09:00",
+    "arriveAt": "2026-08-14T06:15:00+09:00"
+  },
+  {
     "trainNo": "00802",
     "fromStationId": "station-gangneung",
     "toStationId": "station-seoul",
@@ -929,6 +1748,13 @@
     "toStationId": "station-jinbu",
     "departAt": "2026-08-14T05:20:00+09:00",
     "arriveAt": "2026-08-14T05:40:00+09:00"
+  },
+  {
+    "trainNo": "00802",
+    "fromStationId": "station-gangneung",
+    "toStationId": "station-manjong",
+    "departAt": "2026-08-14T05:20:00+09:00",
+    "arriveAt": "2026-08-14T06:08:00+09:00"
   },
   {
     "trainNo": "00803",
@@ -945,10 +1771,24 @@
     "arriveAt": "2026-08-14T07:24:00+09:00"
   },
   {
+    "trainNo": "00803",
+    "fromStationId": "station-seoul",
+    "toStationId": "station-manjong",
+    "departAt": "2026-08-14T05:40:00+09:00",
+    "arriveAt": "2026-08-14T06:49:00+09:00"
+  },
+  {
     "trainNo": "00802",
     "fromStationId": "station-jinbu",
     "toStationId": "station-seoul",
     "departAt": "2026-08-14T05:41:00+09:00",
+    "arriveAt": "2026-08-14T07:24:00+09:00"
+  },
+  {
+    "trainNo": "00802",
+    "fromStationId": "station-manjong",
+    "toStationId": "station-seoul",
+    "departAt": "2026-08-14T06:11:00+09:00",
     "arriveAt": "2026-08-14T07:24:00+09:00"
   },
   {
@@ -967,10 +1807,45 @@
   },
   {
     "trainNo": "00804",
+    "fromStationId": "station-gangneung",
+    "toStationId": "station-manjong",
+    "departAt": "2026-08-14T06:16:00+09:00",
+    "arriveAt": "2026-08-14T07:09:00+09:00"
+  },
+  {
+    "trainNo": "00801",
+    "fromStationId": "station-manjong",
+    "toStationId": "station-gangneung",
+    "departAt": "2026-08-14T06:18:00+09:00",
+    "arriveAt": "2026-08-14T07:02:00+09:00"
+  },
+  {
+    "trainNo": "00804",
     "fromStationId": "station-jinbu",
     "toStationId": "station-seoul",
     "departAt": "2026-08-14T06:38:00+09:00",
     "arriveAt": "2026-08-14T08:33:00+09:00"
+  },
+  {
+    "trainNo": "00803",
+    "fromStationId": "station-manjong",
+    "toStationId": "station-gangneung",
+    "departAt": "2026-08-14T06:52:00+09:00",
+    "arriveAt": "2026-08-14T07:44:00+09:00"
+  },
+  {
+    "trainNo": "00804",
+    "fromStationId": "station-manjong",
+    "toStationId": "station-seoul",
+    "departAt": "2026-08-14T07:11:00+09:00",
+    "arriveAt": "2026-08-14T08:33:00+09:00"
+  },
+  {
+    "trainNo": "00851",
+    "fromStationId": "station-manjong",
+    "toStationId": "station-gangneung",
+    "departAt": "2026-08-14T07:21:00+09:00",
+    "arriveAt": "2026-08-14T08:00:00+09:00"
   },
   {
     "trainNo": "00803",
@@ -987,11 +1862,25 @@
     "arriveAt": "2026-08-14T09:30:00+09:00"
   },
   {
+    "trainNo": "00806",
+    "fromStationId": "station-gangneung",
+    "toStationId": "station-manjong",
+    "departAt": "2026-08-14T07:28:00+09:00",
+    "arriveAt": "2026-08-14T08:20:00+09:00"
+  },
+  {
     "trainNo": "00840",
     "fromStationId": "station-jinbu",
     "toStationId": "station-seoul",
     "departAt": "2026-08-14T08:03:00+09:00",
     "arriveAt": "2026-08-14T09:51:00+09:00"
+  },
+  {
+    "trainNo": "00805",
+    "fromStationId": "station-seoul",
+    "toStationId": "station-manjong",
+    "departAt": "2026-08-14T08:08:00+09:00",
+    "arriveAt": "2026-08-14T09:16:00+09:00"
   },
   {
     "trainNo": "00808",
@@ -1009,10 +1898,31 @@
   },
   {
     "trainNo": "00808",
+    "fromStationId": "station-gangneung",
+    "toStationId": "station-manjong",
+    "departAt": "2026-08-14T08:10:00+09:00",
+    "arriveAt": "2026-08-14T09:01:00+09:00"
+  },
+  {
+    "trainNo": "00806",
+    "fromStationId": "station-manjong",
+    "toStationId": "station-seoul",
+    "departAt": "2026-08-14T08:22:00+09:00",
+    "arriveAt": "2026-08-14T09:31:00+09:00"
+  },
+  {
+    "trainNo": "00808",
     "fromStationId": "station-jinbu",
     "toStationId": "station-seoul",
     "departAt": "2026-08-14T08:30:00+09:00",
     "arriveAt": "2026-08-14T10:21:00+09:00"
+  },
+  {
+    "trainNo": "00840",
+    "fromStationId": "station-manjong",
+    "toStationId": "station-seoul",
+    "departAt": "2026-08-14T08:37:00+09:00",
+    "arriveAt": "2026-08-14T09:51:00+09:00"
   },
   {
     "trainNo": "00807",
@@ -1029,6 +1939,27 @@
     "arriveAt": "2026-08-14T10:40:00+09:00"
   },
   {
+    "trainNo": "00807",
+    "fromStationId": "station-seoul",
+    "toStationId": "station-manjong",
+    "departAt": "2026-08-14T08:59:00+09:00",
+    "arriveAt": "2026-08-14T10:10:00+09:00"
+  },
+  {
+    "trainNo": "00808",
+    "fromStationId": "station-manjong",
+    "toStationId": "station-seoul",
+    "departAt": "2026-08-14T09:04:00+09:00",
+    "arriveAt": "2026-08-14T10:21:00+09:00"
+  },
+  {
+    "trainNo": "00805",
+    "fromStationId": "station-manjong",
+    "toStationId": "station-gangneung",
+    "departAt": "2026-08-14T09:17:00+09:00",
+    "arriveAt": "2026-08-14T10:09:00+09:00"
+  },
+  {
     "trainNo": "00809",
     "fromStationId": "station-seoul",
     "toStationId": "station-gangneung",
@@ -1036,11 +1967,32 @@
     "arriveAt": "2026-08-14T11:58:00+09:00"
   },
   {
+    "trainNo": "00809",
+    "fromStationId": "station-seoul",
+    "toStationId": "station-manjong",
+    "departAt": "2026-08-14T09:55:00+09:00",
+    "arriveAt": "2026-08-14T11:10:00+09:00"
+  },
+  {
+    "trainNo": "00807",
+    "fromStationId": "station-manjong",
+    "toStationId": "station-gangneung",
+    "departAt": "2026-08-14T10:12:00+09:00",
+    "arriveAt": "2026-08-14T11:00:00+09:00"
+  },
+  {
     "trainNo": "00856",
     "fromStationId": "station-gangneung",
     "toStationId": "station-jinbu",
     "departAt": "2026-08-14T10:17:00+09:00",
     "arriveAt": "2026-08-14T10:37:00+09:00"
+  },
+  {
+    "trainNo": "00856",
+    "fromStationId": "station-gangneung",
+    "toStationId": "station-manjong",
+    "departAt": "2026-08-14T10:17:00+09:00",
+    "arriveAt": "2026-08-14T11:02:00+09:00"
   },
   {
     "trainNo": "00810",
@@ -1064,6 +2016,13 @@
     "arriveAt": "2026-08-14T12:40:00+09:00"
   },
   {
+    "trainNo": "00809",
+    "fromStationId": "station-manjong",
+    "toStationId": "station-gangneung",
+    "departAt": "2026-08-14T11:11:00+09:00",
+    "arriveAt": "2026-08-14T11:58:00+09:00"
+  },
+  {
     "trainNo": "00812",
     "fromStationId": "station-gangneung",
     "toStationId": "station-seoul",
@@ -1076,6 +2035,13 @@
     "toStationId": "station-jinbu",
     "departAt": "2026-08-14T11:28:00+09:00",
     "arriveAt": "2026-08-14T11:48:00+09:00"
+  },
+  {
+    "trainNo": "00812",
+    "fromStationId": "station-gangneung",
+    "toStationId": "station-manjong",
+    "departAt": "2026-08-14T11:28:00+09:00",
+    "arriveAt": "2026-08-14T12:16:00+09:00"
   },
   {
     "trainNo": "00812",
@@ -1099,6 +2065,20 @@
     "arriveAt": "2026-08-14T13:57:00+09:00"
   },
   {
+    "trainNo": "00811",
+    "fromStationId": "station-seoul",
+    "toStationId": "station-manjong",
+    "departAt": "2026-08-14T12:16:00+09:00",
+    "arriveAt": "2026-08-14T13:23:00+09:00"
+  },
+  {
+    "trainNo": "00812",
+    "fromStationId": "station-manjong",
+    "toStationId": "station-seoul",
+    "departAt": "2026-08-14T12:18:00+09:00",
+    "arriveAt": "2026-08-14T13:27:00+09:00"
+  },
+  {
     "trainNo": "00814",
     "fromStationId": "station-gangneung",
     "toStationId": "station-seoul",
@@ -1120,6 +2100,13 @@
     "arriveAt": "2026-08-14T14:35:00+09:00"
   },
   {
+    "trainNo": "00857",
+    "fromStationId": "station-manjong",
+    "toStationId": "station-gangneung",
+    "departAt": "2026-08-14T12:49:00+09:00",
+    "arriveAt": "2026-08-14T13:33:00+09:00"
+  },
+  {
     "trainNo": "AREX-W112",
     "fromStationId": "station-seoul",
     "toStationId": "station-incheon-airport-t1",
@@ -1132,6 +2119,20 @@
     "toStationId": "station-gangneung",
     "departAt": "2026-08-14T12:55:00+09:00",
     "arriveAt": "2026-08-14T14:56:00+09:00"
+  },
+  {
+    "trainNo": "00813",
+    "fromStationId": "station-seoul",
+    "toStationId": "station-manjong",
+    "departAt": "2026-08-14T12:56:00+09:00",
+    "arriveAt": "2026-08-14T14:09:00+09:00"
+  },
+  {
+    "trainNo": "00811",
+    "fromStationId": "station-manjong",
+    "toStationId": "station-gangneung",
+    "departAt": "2026-08-14T13:25:00+09:00",
+    "arriveAt": "2026-08-14T14:16:00+09:00"
   },
   {
     "trainNo": "AREX-W113",
@@ -1148,6 +2149,13 @@
     "arriveAt": "2026-08-14T15:54:00+09:00"
   },
   {
+    "trainNo": "00815",
+    "fromStationId": "station-seoul",
+    "toStationId": "station-manjong",
+    "departAt": "2026-08-14T13:55:00+09:00",
+    "arriveAt": "2026-08-14T15:04:00+09:00"
+  },
+  {
     "trainNo": "00811",
     "fromStationId": "station-jinbu",
     "toStationId": "station-gangneung",
@@ -1160,6 +2168,20 @@
     "toStationId": "station-incheon-airport-t1",
     "departAt": "2026-08-14T14:10:00+09:00",
     "arriveAt": "2026-08-14T14:53:00+09:00"
+  },
+  {
+    "trainNo": "00813",
+    "fromStationId": "station-manjong",
+    "toStationId": "station-gangneung",
+    "departAt": "2026-08-14T14:11:00+09:00",
+    "arriveAt": "2026-08-14T15:01:00+09:00"
+  },
+  {
+    "trainNo": "00869",
+    "fromStationId": "station-manjong",
+    "toStationId": "station-gangneung",
+    "departAt": "2026-08-14T14:37:00+09:00",
+    "arriveAt": "2026-08-14T15:20:00+09:00"
   },
   {
     "trainNo": "AREX-W115",
@@ -1183,6 +2205,27 @@
     "arriveAt": "2026-08-14T16:43:00+09:00"
   },
   {
+    "trainNo": "00815",
+    "fromStationId": "station-manjong",
+    "toStationId": "station-gangneung",
+    "departAt": "2026-08-14T15:06:00+09:00",
+    "arriveAt": "2026-08-14T15:54:00+09:00"
+  },
+  {
+    "trainNo": "00844",
+    "fromStationId": "station-manjong",
+    "toStationId": "station-seoul",
+    "departAt": "2026-08-14T15:30:00+09:00",
+    "arriveAt": "2026-08-14T16:41:00+09:00"
+  },
+  {
+    "trainNo": "00859",
+    "fromStationId": "station-manjong",
+    "toStationId": "station-gangneung",
+    "departAt": "2026-08-14T15:33:00+09:00",
+    "arriveAt": "2026-08-14T16:17:00+09:00"
+  },
+  {
     "trainNo": "00816",
     "fromStationId": "station-gangneung",
     "toStationId": "station-seoul",
@@ -1190,11 +2233,25 @@
     "arriveAt": "2026-08-14T17:41:00+09:00"
   },
   {
+    "trainNo": "00861",
+    "fromStationId": "station-manjong",
+    "toStationId": "station-gangneung",
+    "departAt": "2026-08-14T15:56:00+09:00",
+    "arriveAt": "2026-08-14T16:35:00+09:00"
+  },
+  {
     "trainNo": "00862",
     "fromStationId": "station-gangneung",
     "toStationId": "station-jinbu",
     "departAt": "2026-08-14T16:00:00+09:00",
     "arriveAt": "2026-08-14T16:20:00+09:00"
+  },
+  {
+    "trainNo": "00862",
+    "fromStationId": "station-gangneung",
+    "toStationId": "station-manjong",
+    "departAt": "2026-08-14T16:00:00+09:00",
+    "arriveAt": "2026-08-14T16:45:00+09:00"
   },
   {
     "trainNo": "00817",
@@ -1211,6 +2268,13 @@
     "arriveAt": "2026-08-14T18:04:00+09:00"
   },
   {
+    "trainNo": "00817",
+    "fromStationId": "station-seoul",
+    "toStationId": "station-manjong",
+    "departAt": "2026-08-14T16:11:00+09:00",
+    "arriveAt": "2026-08-14T17:25:00+09:00"
+  },
+  {
     "trainNo": "00818",
     "fromStationId": "station-gangneung",
     "toStationId": "station-seoul",
@@ -1225,6 +2289,13 @@
     "arriveAt": "2026-08-14T17:05:00+09:00"
   },
   {
+    "trainNo": "00863",
+    "fromStationId": "station-manjong",
+    "toStationId": "station-gangneung",
+    "departAt": "2026-08-14T16:50:00+09:00",
+    "arriveAt": "2026-08-14T17:28:00+09:00"
+  },
+  {
     "trainNo": "00820",
     "fromStationId": "station-gangneung",
     "toStationId": "station-seoul",
@@ -1237,6 +2308,13 @@
     "toStationId": "station-jinbu",
     "departAt": "2026-08-14T17:02:00+09:00",
     "arriveAt": "2026-08-14T17:22:00+09:00"
+  },
+  {
+    "trainNo": "00820",
+    "fromStationId": "station-gangneung",
+    "toStationId": "station-manjong",
+    "departAt": "2026-08-14T17:02:00+09:00",
+    "arriveAt": "2026-08-14T17:50:00+09:00"
   },
   {
     "trainNo": "00819",
@@ -1267,6 +2345,27 @@
     "arriveAt": "2026-08-14T19:13:00+09:00"
   },
   {
+    "trainNo": "00817",
+    "fromStationId": "station-manjong",
+    "toStationId": "station-gangneung",
+    "departAt": "2026-08-14T17:27:00+09:00",
+    "arriveAt": "2026-08-14T18:23:00+09:00"
+  },
+  {
+    "trainNo": "00864",
+    "fromStationId": "station-gangneung",
+    "toStationId": "station-manjong",
+    "departAt": "2026-08-14T17:28:00+09:00",
+    "arriveAt": "2026-08-14T18:22:00+09:00"
+  },
+  {
+    "trainNo": "00820",
+    "fromStationId": "station-manjong",
+    "toStationId": "station-seoul",
+    "departAt": "2026-08-14T17:52:00+09:00",
+    "arriveAt": "2026-08-14T19:13:00+09:00"
+  },
+  {
     "trainNo": "00866",
     "fromStationId": "station-gangneung",
     "toStationId": "station-jinbu",
@@ -1274,11 +2373,32 @@
     "arriveAt": "2026-08-14T18:11:00+09:00"
   },
   {
+    "trainNo": "00866",
+    "fromStationId": "station-gangneung",
+    "toStationId": "station-manjong",
+    "departAt": "2026-08-14T17:52:00+09:00",
+    "arriveAt": "2026-08-14T18:40:00+09:00"
+  },
+  {
     "trainNo": "00817",
     "fromStationId": "station-jinbu",
     "toStationId": "station-gangneung",
     "departAt": "2026-08-14T18:06:00+09:00",
     "arriveAt": "2026-08-14T18:23:00+09:00"
+  },
+  {
+    "trainNo": "00847",
+    "fromStationId": "station-seoul",
+    "toStationId": "station-manjong",
+    "departAt": "2026-08-14T18:21:00+09:00",
+    "arriveAt": "2026-08-14T19:27:00+09:00"
+  },
+  {
+    "trainNo": "00868",
+    "fromStationId": "station-gangneung",
+    "toStationId": "station-manjong",
+    "departAt": "2026-08-14T18:23:00+09:00",
+    "arriveAt": "2026-08-14T19:15:00+09:00"
   },
   {
     "trainNo": "00822",
@@ -1295,6 +2415,13 @@
     "arriveAt": "2026-08-14T19:09:00+09:00"
   },
   {
+    "trainNo": "00822",
+    "fromStationId": "station-gangneung",
+    "toStationId": "station-manjong",
+    "departAt": "2026-08-14T18:49:00+09:00",
+    "arriveAt": "2026-08-14T19:45:00+09:00"
+  },
+  {
     "trainNo": "00819",
     "fromStationId": "station-jinbu",
     "toStationId": "station-gangneung",
@@ -1307,6 +2434,13 @@
     "toStationId": "station-gangneung",
     "departAt": "2026-08-14T18:58:00+09:00",
     "arriveAt": "2026-08-14T21:09:00+09:00"
+  },
+  {
+    "trainNo": "00821",
+    "fromStationId": "station-seoul",
+    "toStationId": "station-manjong",
+    "departAt": "2026-08-14T18:58:00+09:00",
+    "arriveAt": "2026-08-14T20:17:00+09:00"
   },
   {
     "trainNo": "00822",
@@ -1323,6 +2457,20 @@
     "arriveAt": "2026-08-14T19:38:00+09:00"
   },
   {
+    "trainNo": "00822",
+    "fromStationId": "station-manjong",
+    "toStationId": "station-seoul",
+    "departAt": "2026-08-14T19:47:00+09:00",
+    "arriveAt": "2026-08-14T21:03:00+09:00"
+  },
+  {
+    "trainNo": "00849",
+    "fromStationId": "station-seoul",
+    "toStationId": "station-manjong",
+    "departAt": "2026-08-14T19:50:00+09:00",
+    "arriveAt": "2026-08-14T21:01:00+09:00"
+  },
+  {
     "trainNo": "00823",
     "fromStationId": "station-seoul",
     "toStationId": "station-gangneung",
@@ -1335,6 +2483,13 @@
     "toStationId": "station-jinbu",
     "departAt": "2026-08-14T20:01:00+09:00",
     "arriveAt": "2026-08-14T21:42:00+09:00"
+  },
+  {
+    "trainNo": "00823",
+    "fromStationId": "station-seoul",
+    "toStationId": "station-manjong",
+    "departAt": "2026-08-14T20:01:00+09:00",
+    "arriveAt": "2026-08-14T21:17:00+09:00"
   },
   {
     "trainNo": "00846",
@@ -1351,11 +2506,39 @@
     "arriveAt": "2026-08-14T20:24:00+09:00"
   },
   {
+    "trainNo": "00821",
+    "fromStationId": "station-manjong",
+    "toStationId": "station-gangneung",
+    "departAt": "2026-08-14T20:19:00+09:00",
+    "arriveAt": "2026-08-14T21:13:00+09:00"
+  },
+  {
     "trainNo": "00824",
     "fromStationId": "station-gangneung",
     "toStationId": "station-seoul",
     "departAt": "2026-08-14T20:30:00+09:00",
     "arriveAt": "2026-08-14T22:32:00+09:00"
+  },
+  {
+    "trainNo": "00824",
+    "fromStationId": "station-gangneung",
+    "toStationId": "station-manjong",
+    "departAt": "2026-08-14T20:30:00+09:00",
+    "arriveAt": "2026-08-14T21:18:00+09:00"
+  },
+  {
+    "trainNo": "00846",
+    "fromStationId": "station-manjong",
+    "toStationId": "station-seoul",
+    "departAt": "2026-08-14T20:37:00+09:00",
+    "arriveAt": "2026-08-14T21:50:00+09:00"
+  },
+  {
+    "trainNo": "00867",
+    "fromStationId": "station-manjong",
+    "toStationId": "station-gangneung",
+    "departAt": "2026-08-14T20:46:00+09:00",
+    "arriveAt": "2026-08-14T21:28:00+09:00"
   },
   {
     "trainNo": "00867",
@@ -1365,11 +2548,39 @@
     "arriveAt": "2026-08-14T21:28:00+09:00"
   },
   {
+    "trainNo": "00823",
+    "fromStationId": "station-manjong",
+    "toStationId": "station-gangneung",
+    "departAt": "2026-08-14T21:18:00+09:00",
+    "arriveAt": "2026-08-14T22:02:00+09:00"
+  },
+  {
+    "trainNo": "00824",
+    "fromStationId": "station-manjong",
+    "toStationId": "station-seoul",
+    "departAt": "2026-08-14T21:20:00+09:00",
+    "arriveAt": "2026-08-14T22:35:00+09:00"
+  },
+  {
     "trainNo": "00825",
     "fromStationId": "station-seoul",
     "toStationId": "station-gangneung",
     "departAt": "2026-08-14T21:31:00+09:00",
     "arriveAt": "2026-08-14T23:41:00+09:00"
+  },
+  {
+    "trainNo": "00825",
+    "fromStationId": "station-seoul",
+    "toStationId": "station-manjong",
+    "departAt": "2026-08-14T21:32:00+09:00",
+    "arriveAt": "2026-08-14T22:48:00+09:00"
+  },
+  {
+    "trainNo": "00826",
+    "fromStationId": "station-gangneung",
+    "toStationId": "station-manjong",
+    "departAt": "2026-08-14T21:33:00+09:00",
+    "arriveAt": "2026-08-14T22:16:00+09:00"
   },
   {
     "trainNo": "00823",
@@ -1400,6 +2611,20 @@
     "arriveAt": "2026-08-14T23:45:00+09:00"
   },
   {
+    "trainNo": "00827",
+    "fromStationId": "station-seoul",
+    "toStationId": "station-manjong",
+    "departAt": "2026-08-14T22:14:00+09:00",
+    "arriveAt": "2026-08-14T23:19:00+09:00"
+  },
+  {
+    "trainNo": "00826",
+    "fromStationId": "station-manjong",
+    "toStationId": "station-seoul",
+    "departAt": "2026-08-14T22:19:00+09:00",
+    "arriveAt": "2026-08-14T23:26:00+09:00"
+  },
+  {
     "trainNo": "00828",
     "fromStationId": "station-gangneung",
     "toStationId": "station-seoul",
@@ -1407,11 +2632,46 @@
     "arriveAt": "2026-08-15T00:25:00+09:00"
   },
   {
+    "trainNo": "00828",
+    "fromStationId": "station-gangneung",
+    "toStationId": "station-manjong",
+    "departAt": "2026-08-14T22:27:00+09:00",
+    "arriveAt": "2026-08-14T23:16:00+09:00"
+  },
+  {
     "trainNo": "00848",
     "fromStationId": "station-jinbu",
     "toStationId": "station-seoul",
     "departAt": "2026-08-14T22:32:00+09:00",
     "arriveAt": "2026-08-15T00:14:00+09:00"
+  },
+  {
+    "trainNo": "00825",
+    "fromStationId": "station-manjong",
+    "toStationId": "station-gangneung",
+    "departAt": "2026-08-14T22:49:00+09:00",
+    "arriveAt": "2026-08-14T23:42:00+09:00"
+  },
+  {
+    "trainNo": "00848",
+    "fromStationId": "station-manjong",
+    "toStationId": "station-seoul",
+    "departAt": "2026-08-14T23:04:00+09:00",
+    "arriveAt": "2026-08-15T00:14:00+09:00"
+  },
+  {
+    "trainNo": "00828",
+    "fromStationId": "station-manjong",
+    "toStationId": "station-seoul",
+    "departAt": "2026-08-14T23:18:00+09:00",
+    "arriveAt": "2026-08-15T00:29:00+09:00"
+  },
+  {
+    "trainNo": "00827",
+    "fromStationId": "station-manjong",
+    "toStationId": "station-gangneung",
+    "departAt": "2026-08-14T23:22:00+09:00",
+    "arriveAt": "2026-08-15T00:05:00+09:00"
   },
   {
     "trainNo": "00827",
