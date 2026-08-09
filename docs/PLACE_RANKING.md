@@ -25,7 +25,7 @@
     "model": "text-embedding-model",
     "inputRuleVersion": "v1",
     "generatedAt": "2026-08-08T12:00:00+09:00",
-    "badgeThreshold": 0.7
+    "badgeThreshold": 0.25
   },
   "rankings": [
     {
@@ -63,6 +63,7 @@ python scripts/build_place_rankings.py
 ```
 
 - 모델 기본값: `text-embedding-3-small`
+- 배지 기본값: `0.25` (v1 실스냅 검토 하한)
 - 입력: `data/place-ranking-inputs.json`의 한국어 작품 4개 + 장소 12개
 - 비용 방어: 한 번에 최대 100개·총 50,000자까지만 호출
 - 출력: 모든 작품×장소 조합을 `reviewed: false`로 생성
@@ -72,8 +73,20 @@ python scripts/build_place_rankings.py
 `badgeThreshold` 미만은 검토됐더라도 런타임 정렬에서 AI 점수 없음으로 취급한다.
 후보를 숨기지 않고 `officialSourceCount → placeId` 폴백을 사용한다.
 
-## 남은 범위
+## v1 실스냅 검토 (2026-08-09)
 
-- 실제 API 실행과 점수 분포 확인
-- 사람 검토를 거친 `place-rankings.json` 확정
-- 화면의 검토된 AI 설명 표시
+- API 입력: 16개·1,014자·1,078토큰, API 호출 1회
+- 작품×장소: 48쌍, 점수 분포 `0.104232~0.461840`
+- 검토 통과: `WorkPlaceRelation` 공식 촬영 관계와 일치하는 12쌍
+- 하한 `0.25`: 검토 통과 12쌍의 최저점 `0.259498`을 포함하면서 하한 미만을 미탑재·미검토와 동일하게 폴백하는 값
+- 검토 사유는 검증된 `WorkPlaceRelation.sceneNote` 내용을 ko/en으로 재사용하고, 일반 관광 추천은 추가하지 않았다.
+
+## 런타임 연결 (구현됨)
+
+- `getCandidatePlaces` 서버 액션이 `data/place-rankings.json`을 로드해
+  (`lib/place-rankings-snapshot.ts` — 미탑재는 null, 계약 위반은 로드 실패)
+  후보별 **안전 파생값만** 응답에 싣는다: `aiRank`(선택 관련 작품 범위의
+  검토·배지 통과 점수 dense rank)·`aiReason`(검토된 관련 이유 ko/en).
+- 원시 점수·검토 메타(`score`·`reviewedBy` 등)는 RSC/액션 응답으로 직렬화되지 않는다
+  (PR #70 리뷰). 정렬·이유 모두 후보의 선택 관련 작품(relationDetails) 범위만 사용해
+  무관 작품 고득점이 순서에 영향을 주지 않는다.

@@ -72,33 +72,75 @@ export function createPlaceRankingSnapshotSchema(workIds: ReadonlySet<string>, p
 
 type RankablePlace = {
   id: string;
-  workIds: string[];
   relation: "selected_work" | "actor_other_work";
   officialSourceCount: number;
+  aiRank?: number; // #48 — 서버 파생 순위(1=최고). 원시 점수는 클라이언트로 내리지 않는다
 };
+
+type Localized = z.infer<typeof LocalizedText>;
+
+export type AiRelevance = { aiRank: number; aiReason?: Localized };
+
+/**
+ * #48 서버 파생 — 후보별 AI 관련성 순위·검토된 이유.
+ * PR #70 리뷰 반영: ① 원시 점수·검토 메타는 RSC/액션 응답으로 직렬화하지 않도록
+ * 순위(aiRank, dense rank)와 이유(ko/en)만 파생한다. ② 정렬·이유 모두 후보의
+ * 선택 관련 작품(relationDetails) 범위만 사용한다 — 무관 작품 고득점은 순서에 영향 없음(#65 정합).
+ * 미검토·하한 미달·스냅샷 없음은 파생 없음(폴백). 동점은 workId 오름차순으로 결정적.
+ */
+export function deriveAiRelevance(
+  candidates: readonly { id: string; relationDetails: { workId: string }[] }[],
+  snapshot: PlaceRankingSnapshot | null | undefined,
+): Map<string, AiRelevance> {
+  if (!snapshot) return new Map();
+  const eligible = new Map<string, { score: number; workId: string; reason?: Localized }>();
+  for (const ranking of snapshot.rankings) {
+    if (!ranking.reviewed || ranking.score < snapshot.meta.badgeThreshold) continue;
+    eligible.set(`${ranking.workId}|${ranking.placeId}`, {
+      score: ranking.score,
+      workId: ranking.workId,
+      reason: ranking.reason,
+    });
+  }
+
+  const best = new Map<string, { score: number; workId: string; reason?: Localized }>();
+  for (const candidate of candidates) {
+    for (const detail of candidate.relationDetails) {
+      const hit = eligible.get(`${detail.workId}|${candidate.id}`);
+      if (!hit) continue;
+      const current = best.get(candidate.id);
+      if (
+        !current
+        || hit.score > current.score
+        || (hit.score === current.score && hit.workId.localeCompare(current.workId, "en") < 0)
+      ) {
+        best.set(candidate.id, hit);
+      }
+    }
+  }
+
+  const uniqueScores = [...new Set([...best.values()].map(({ score }) => score))].sort((a, b) => b - a);
+  const rankOf = new Map(uniqueScores.map((score, index) => [score, index + 1]));
+  return new Map(
+    [...best].map(([placeId, { score, reason }]) => [
+      placeId,
+      { aiRank: rankOf.get(score)!, aiReason: reason },
+    ]),
+  );
+}
 
 export function sortCandidatePlaces<T extends RankablePlace>(
   candidates: readonly T[],
   sortBy: "relevance" | "official_sources",
-  snapshot?: PlaceRankingSnapshot,
 ): T[] {
-  const scores = new Map<string, number>();
-  const scoreThreshold = snapshot?.meta.badgeThreshold ?? Infinity;
-  for (const ranking of snapshot?.rankings ?? []) {
-    // #48 부분 스냅샷: 미검토·하한 미달은 모두 AI 점수 없음으로 취급한다.
-    if (ranking.reviewed && ranking.score >= scoreThreshold) {
-      scores.set(`${ranking.workId}|${ranking.placeId}`, ranking.score);
-    }
-  }
-
-  const scoreOf = (candidate: T): number =>
-    Math.max(...candidate.workIds.map((workId) => scores.get(`${workId}|${candidate.id}`) ?? -Infinity));
+  // #48: aiRank는 서버가 선택 관련 작품 범위로 파생한 순위 — 없으면 출처·ID 폴백
+  const rankOf = (candidate: T): number => candidate.aiRank ?? Infinity;
   const relationOf = (candidate: T): number => candidate.relation === "selected_work" ? 0 : 1;
 
   return [...candidates].sort((a, b) =>
     sortBy === "relevance"
       ? relationOf(a) - relationOf(b)
-        || scoreOf(b) - scoreOf(a)
+        || rankOf(a) - rankOf(b)
         || b.officialSourceCount - a.officialSourceCount
         || a.id.localeCompare(b.id, "en")
       : b.officialSourceCount - a.officialSourceCount
