@@ -19,6 +19,10 @@ const EXPECTED_CATEGORIES = {
   "place-gyeonggijeon-shrine": "culture_venue",
   "place-bexco": "culture_venue",
   "place-busan-cinema-center": "culture_venue",
+  "place-simgok-port": "nature_walk",
+  "place-sacheonjin-beach": "nature_walk",
+  "place-sonnollim-workshop": "brief_exterior",
+  "place-gwanghalluwon-garden": "culture_venue",
 } as const;
 
 const EXPECTED_OFFICIAL_SOURCES = {
@@ -48,7 +52,7 @@ describe("보수 체류 추정 기준 (#84 P0-4)", () => {
     });
   });
 
-  it("현재 데모 14곳은 검토한 유형과 category_default 또는 공식 근거를 모두 가진다", () => {
+  it("현재 런타임 18곳은 검토한 유형과 category_default 또는 공식 근거를 모두 가진다", () => {
     const places = loadRepositories().places;
     expect(places).toHaveLength(Object.keys(EXPECTED_CATEGORIES).length);
     for (const place of places) {

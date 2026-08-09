@@ -58,6 +58,7 @@ STATION_NAME_MAP: dict[str, str] = {
     "station-jinbu": "진부(오대산)역",
     "station-manjong": "만종역",
     "station-jeonju": "전주역",
+    "station-namwon": "남원역",
     "station-yongsan": "용산역",
     # station-incheon-airport-t1: 공항철도(주) 운영 — 원천 밖 (build_station_facilities.py와 동일)
 }
@@ -82,6 +83,13 @@ FALLBACK_COORDINATES: dict[str, dict] = {
         ),
         "sourceRef": "https://www.openstreetmap.org/node/10591459522",
         "verifiedAt": "2026-08-09",
+    },
+    "station-namwon": {
+        "latitude": 35.411053,
+        "longitude": 127.362289,
+        "sourceNote": "국가철도공단 좌표 재생성 전 보조 출처 — Wikimedia Commons 사진 위치와 역 주소 대조",
+        "sourceRef": "https://commons.wikimedia.org/wiki/File:Namwon_Station_2013-02-13.jpg",
+        "verifiedAt": "2026-08-10",
     },
 }
 

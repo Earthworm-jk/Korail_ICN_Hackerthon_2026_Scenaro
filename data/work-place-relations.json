@@ -248,5 +248,106 @@
     ],
     "verifiedAt": "2026-08-09",
     "reviewed": true
+  },
+  {
+    "workId": "work-encounter",
+    "placeId": "place-simgok-port",
+    "sceneNote": {
+      "ko": "《남자친구》에서 김진혁(박보검)이 혼자 간 항구",
+      "en": "The port Kim Jin-hyeok (Park Bo-gum) visits alone in Encounter"
+    },
+    "featuredActorIds": ["actor-park-bo-gum"],
+    "actorPresenceReviewed": true,
+    "actorPresenceVerification": {
+      "method": "manual",
+      "grade": "A",
+      "decision": "confirmed",
+      "evidenceSourceUrls": ["https://www.data.go.kr/data/15111405/fileData.do"]
+    },
+    "sourceUrls": ["https://www.data.go.kr/data/15111405/fileData.do"],
+    "verifiedAt": "2026-08-09",
+    "reviewed": true
+  },
+  {
+    "workId": "work-encounter",
+    "placeId": "place-sacheonjin-beach",
+    "sceneNote": {
+      "ko": "《남자친구》에서 송혜교와 박보검이 함께 간 바닷가",
+      "en": "The seaside visited by Song Hye-kyo and Park Bo-gum in Encounter"
+    },
+    "featuredActorIds": ["actor-park-bo-gum"],
+    "actorPresenceReviewed": true,
+    "actorPresenceVerification": {
+      "method": "manual",
+      "grade": "A",
+      "decision": "confirmed",
+      "evidenceSourceUrls": ["https://www.data.go.kr/data/15111405/fileData.do"]
+    },
+    "sourceUrls": [
+      "https://www.data.go.kr/data/15111405/fileData.do",
+      "https://korean.visitkorea.or.kr/detail/ms_detail.do?cotid=0e6ecc88-6d72-4c42-9782-8468136487e3"
+    ],
+    "verifiedAt": "2026-08-09",
+    "reviewed": true
+  },
+  {
+    "workId": "work-encounter",
+    "placeId": "place-sonnollim-workshop",
+    "episodeLabel": "16화",
+    "sceneNote": {
+      "ko": "김진혁(박보검)이 공방 앞에서 차수현의 사진을 찍는 마지막 회 장면",
+      "en": "The finale scene where Kim Jin-hyeok (Park Bo-gum) photographs Cha Soo-hyun outside the workshop"
+    },
+    "featuredActorIds": ["actor-park-bo-gum"],
+    "actorPresenceReviewed": true,
+    "actorPresenceVerification": {
+      "method": "manual",
+      "grade": "A",
+      "decision": "confirmed",
+      "evidenceSourceUrls": ["https://www.data.go.kr/data/15111405/fileData.do"]
+    },
+    "sourceUrls": ["https://www.data.go.kr/data/15111405/fileData.do"],
+    "verifiedAt": "2026-08-09",
+    "reviewed": true
+  },
+  {
+    "workId": "work-love-in-the-moonlight",
+    "placeId": "place-gwanghalluwon-garden",
+    "episodeLabel": "1화·5화",
+    "sceneNote": {
+      "ko": "효명세자(박보검)가 영주각에서 공부하는 척하고 홍라온을 구하는 장면",
+      "en": "Scenes where Crown Prince Hyomyeong (Park Bo-gum) pretends to study and rescues Hong Ra-on"
+    },
+    "featuredActorIds": ["actor-park-bo-gum"],
+    "actorPresenceReviewed": true,
+    "actorPresenceVerification": {
+      "method": "manual",
+      "grade": "A",
+      "decision": "confirmed",
+      "evidenceSourceUrls": ["https://www.data.go.kr/data/15111405/fileData.do"]
+    },
+    "sourceUrls": ["https://www.data.go.kr/data/15111405/fileData.do"],
+    "verifiedAt": "2026-08-09",
+    "reviewed": true
+  },
+  {
+    "workId": "work-record-of-youth",
+    "placeId": "place-gwanghalluwon-garden",
+    "episodeLabel": "9화",
+    "sceneNote": {
+      "ko": "사혜준(박보검)이 사극 드라마를 촬영하는 장면",
+      "en": "The scene where Sa Hye-jun (Park Bo-gum) films a historical drama"
+    },
+    "featuredActorIds": ["actor-park-bo-gum"],
+    "actorPresenceReviewed": true,
+    "actorPresenceVerification": {
+      "method": "manual",
+      "grade": "A",
+      "decision": "confirmed",
+      "evidenceSourceUrls": ["https://www.data.go.kr/data/15111405/fileData.do"]
+    },
+    "sourceUrls": ["https://www.data.go.kr/data/15111405/fileData.do"],
+    "verifiedAt": "2026-08-09",
+    "reviewed": true
   }
 ]

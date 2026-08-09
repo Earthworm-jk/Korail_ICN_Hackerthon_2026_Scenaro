@@ -96,14 +96,22 @@ AXES = [
         # 용산을 반드시 지난다. 그래서 두 관계를 역 기준으로 잘라 붙인 선형이
         # 우회가 아니라 실제 열차가 밟는 선로 그대로다:
         #   서울-용산  경부선 KTX 관계에서 (용산은 그 관계 42번째 점, 역과 118m)
-        #   용산-전주  전라선 KTX 관계 그대로 (용산 시작, 전주 끝)
+        #   용산-남원  전라선 회랑의 실제 railway=rail 그래프에서 최단 선로
+        # OSM rel/11314593은 전주에서 끝나 남원을 포함하지 않으므로 남원 승격 후에는
+        # 관계를 연장해 직선으로 메우지 않고, 실제 OSM way 그래프를 사용한다.
         # 선형을 지어내지 않는다는 규율은 그대로다 — 두 조각 모두 OSM way 지오메트리다.
         "parts": [
             {"relationId": 11214334, "from": "station-seoul", "to": "station-yongsan"},
-            {"relationId": 11314593, "from": "station-yongsan", "to": "station-jeonju"},
+            {
+                "mode": "graph",
+                "bbox": (35.35, 126.75, 37.60, 127.55),
+                "cacheKey": "rail-jeolla-yongsan-namwon",
+                "from": "station-yongsan",
+                "to": "station-namwon",
+            },
         ],
-        "endpoints": ("station-seoul", "station-jeonju"),
-        "via": ["station-yongsan"],
+        "endpoints": ("station-seoul", "station-namwon"),
+        "via": ["station-yongsan", "station-jeonju"],
     },
 ]
 
@@ -320,18 +328,46 @@ def relation_line(relation_id: int) -> list[tuple[float, float]]:
     return stitch(payload["elements"][0]["members"])
 
 
+def graph_line(spec: dict, seed_by_id: dict) -> list[tuple[float, float]]:
+    south, west, north, east = spec["bbox"]
+    print(f"    회랑 railway=rail 전체 수신 ({south},{west},{north},{east})")
+    payload = overpass(
+        f'[out:json][timeout:300];way["railway"="rail"]({south},{west},{north},{east});out geom;',
+        cache_key=spec.get("cacheKey", f"rail-{spec.get('id', 'part')}"),
+    )
+    adjacency = build_graph(payload["elements"])
+    component = largest_component(adjacency)
+    print(f"    그래프 {len(adjacency)}노드 → 최대 성분 {len(component)}노드")
+
+    def snap(station_id: str):
+        target = seed_by_id[station_id]
+        return min(component, key=lambda node: haversine_m(target, node))
+
+    a = spec.get("from", spec.get("endpoints", (None, None))[0])
+    b = spec.get("to", spec.get("endpoints", (None, None))[1])
+    path = shortest_path(adjacency, snap(a), snap(b))
+    length_km = sum(haversine_m(p, q) for p, q in zip(path, path[1:])) / 1000
+    print(f"    {a} → {b}: {len(path)}점, 선로 {length_km:.1f} km")
+    return path
+
+
 def axis_line(spec: dict, seed_by_id: dict) -> list[tuple[float, float]]:
     """축 하나의 (lat, lon) 선형을 얻는다."""
     if spec["mode"] == "spliced":
         line: list[tuple[float, float]] = []
         for part in spec["parts"]:
-            raw = relation_line(part["relationId"])
+            raw = (
+                graph_line(part, seed_by_id)
+                if part.get("mode") == "graph"
+                else relation_line(part["relationId"])
+            )
             start, start_distance = nearest_index(raw, seed_by_id[part["from"]])
             end, end_distance = nearest_index(raw, seed_by_id[part["to"]])
             for station_id, distance in ((part["from"], start_distance), (part["to"], end_distance)):
                 if distance > STATION_SNAP_METERS:
                     raise SystemExit(
-                        f"{station_id}이 rel/{part['relationId']} 선형에서 {distance/1000:.1f}km 떨어져 있다"
+                        f"{station_id}이 {part.get('relationId', part.get('cacheKey'))} "
+                        f"선형에서 {distance/1000:.1f}km 떨어져 있다"
                     )
             # 관계가 반대 방향이면 뒤집어 붙인다 — 축은 endpoints 순서로 진행해야 한다
             piece = raw[start : end + 1] if start <= end else list(reversed(raw[end : start + 1]))
@@ -357,25 +393,7 @@ def axis_line(spec: dict, seed_by_id: dict) -> list[tuple[float, float]]:
     if spec["mode"] == "relation":
         return relation_line(spec["relationId"])
 
-    south, west, north, east = spec["bbox"]
-    print(f"    회랑 railway=rail 전체 수신 ({south},{west},{north},{east})")
-    payload = overpass(
-        f'[out:json][timeout:300];way["railway"="rail"]({south},{west},{north},{east});out geom;',
-        cache_key=f"rail-{spec['id']}",
-    )
-    adjacency = build_graph(payload["elements"])
-    component = largest_component(adjacency)
-    print(f"    그래프 {len(adjacency)}노드 → 최대 성분 {len(component)}노드")
-
-    def snap(station_id: str):
-        target = seed_by_id[station_id]
-        return min(component, key=lambda node: haversine_m(target, node))
-
-    a, b = spec["endpoints"]
-    path = shortest_path(adjacency, snap(a), snap(b))
-    length_km = sum(haversine_m(p, q) for p, q in zip(path, path[1:])) / 1000
-    print(f"    {a} → {b}: {len(path)}점, 선로 {length_km:.1f} km")
-    return path
+    return graph_line({**spec, "cacheKey": f"rail-{spec['id']}"}, seed_by_id)
 
 
 def build() -> dict:

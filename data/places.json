@@ -477,5 +477,115 @@
     "address": "부산광역시 해운대구 수영강변대로 120",
     "latitude": 35.171178,
     "longitude": 129.12715
+  },
+  {
+    "id": "place-simgok-port",
+    "name": { "ko": "심곡항", "en": "Simgok Port" },
+    "workIds": ["work-encounter"],
+    "nearestStationId": "station-gangneung",
+    "accessEstimate": {
+      "minutes": 37,
+      "source": "네이버지도 자동차 길찾기 강릉역→심곡항 37분·24km (2026-08-09; 실시간 교통·교통수단 보장 아님)",
+      "verifiedAt": "2026-08-09"
+    },
+    "openingHours": {
+      "type": "always_open",
+      "source": "한국문화정보원 촬영지 원천의 매일 00:00~24:00 표기 https://www.data.go.kr/data/15111405/fileData.do",
+      "verifiedAt": "2026-08-09"
+    },
+    "stayMinutes": 60,
+    "stayMetadata": { "category": "nature_walk", "basis": "category_default" },
+    "verificationLevel": "교차확인",
+    "officialSourceCount": 1,
+    "reasonText": {
+      "ko": "《남자친구》에서 김진혁이 혼자 찾은 강릉 항구 촬영지예요.",
+      "en": "A Gangneung port featured as a place Kim Jin-hyeok visits alone in Encounter."
+    },
+    "address": "강원도 강릉시 강동면 심곡리 157-1",
+    "latitude": 37.665245,
+    "longitude": 129.053082
+  },
+  {
+    "id": "place-sacheonjin-beach",
+    "name": { "ko": "사천진해수욕장·사천진항", "en": "Sacheonjin Beach and Port" },
+    "workIds": ["work-encounter"],
+    "nearestStationId": "station-gangneung",
+    "accessEstimate": {
+      "minutes": 20,
+      "source": "네이버지도 자동차 길찾기 강릉역→사천진해변 20분·12km (2026-08-09; 실시간 교통·교통수단 보장 아님)",
+      "verifiedAt": "2026-08-09"
+    },
+    "openingHours": {
+      "type": "always_open",
+      "source": "한국문화정보원 촬영지 원천의 매일 00:00~24:00 표기 및 한국관광공사 사천진항 안내 https://korean.visitkorea.or.kr/detail/ms_detail.do?cotid=0e6ecc88-6d72-4c42-9782-8468136487e3",
+      "verifiedAt": "2026-08-09"
+    },
+    "stayMinutes": 60,
+    "stayMetadata": { "category": "nature_walk", "basis": "category_default" },
+    "verificationLevel": "교차확인",
+    "officialSourceCount": 2,
+    "reasonText": {
+      "ko": "《남자친구》에서 두 주인공이 함께 찾은 강릉 바닷가 촬영지예요.",
+      "en": "A Gangneung seaside location visited by the two leads in Encounter."
+    },
+    "address": "강원도 강릉시 사천면 사천진리 266-2",
+    "latitude": 37.842094,
+    "longitude": 128.874568
+  },
+  {
+    "id": "place-sonnollim-workshop",
+    "name": { "ko": "손놀림 공방", "en": "Sonnollim Workshop" },
+    "workIds": ["work-encounter"],
+    "nearestStationId": "station-seoul",
+    "accessEstimate": {
+      "minutes": 27,
+      "source": "네이버지도 자동차 길찾기 서울역→손놀림 공방 27분·7.2km (2026-08-09; 실시간 교통·교통수단 보장 아님)",
+      "verifiedAt": "2026-08-09"
+    },
+    "openingHours": {
+      "type": "always_open",
+      "source": "한국문화정보원 촬영지 원천의 매일 00:00~24:00(예약 필수) 표기; 일정은 외관 방문 기준 https://www.data.go.kr/data/15111405/fileData.do",
+      "verifiedAt": "2026-08-09"
+    },
+    "stayMinutes": 45,
+    "stayMetadata": { "category": "brief_exterior", "basis": "category_default" },
+    "verificationLevel": "원본확인",
+    "officialSourceCount": 1,
+    "reasonText": {
+      "ko": "《남자친구》 마지막 회의 재회 장면 촬영지예요. 내부 체험은 별도 예약이 필요해요.",
+      "en": "A filming location from Encounter's finale. Indoor activities require a separate reservation."
+    },
+    "address": "서울특별시 종로구 낙산성곽서1길 19-1",
+    "latitude": 37.57789,
+    "longitude": 127.007932
+  },
+  {
+    "id": "place-gwanghalluwon-garden",
+    "name": { "ko": "광한루원", "en": "Gwanghalluwon Garden" },
+    "workIds": ["work-love-in-the-moonlight", "work-record-of-youth"],
+    "nearestStationId": "station-namwon",
+    "accessEstimate": {
+      "minutes": 7,
+      "source": "네이버지도 자동차 길찾기 남원역→광한루원 7분·2.6km (2026-08-09; 실시간 교통·교통수단 보장 아님)",
+      "verifiedAt": "2026-08-09"
+    },
+    "openingHours": {
+      "type": "hours",
+      "open": "08:00",
+      "close": "19:00",
+      "source": "한국문화정보원 촬영지 원천의 하절기 08:00~19:00 표기 https://www.data.go.kr/data/15111405/fileData.do",
+      "verifiedAt": "2026-08-09"
+    },
+    "stayMinutes": 60,
+    "stayMetadata": { "category": "culture_venue", "basis": "category_default" },
+    "verificationLevel": "원본확인",
+    "officialSourceCount": 1,
+    "reasonText": {
+      "ko": "《구르미 그린 달빛》과 《청춘기록》의 박보검 등장 장면을 함께 잇는 남원 촬영지예요.",
+      "en": "A Namwon location connecting Park Bo-gum scenes from Love in the Moonlight and Record of Youth."
+    },
+    "address": "전라북도 남원시 요천로 1447",
+    "latitude": 35.403918,
+    "longitude": 127.379758
   }
 ]

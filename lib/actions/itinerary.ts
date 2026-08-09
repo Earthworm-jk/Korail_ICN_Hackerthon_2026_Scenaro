@@ -78,6 +78,33 @@ function fieldErrorsOf(error: { issues: Array<{ path: PropertyKey[]; message: st
   return fieldErrors;
 }
 
+/**
+ * Server Action의 ID 배열은 신뢰 입력이 아니다. Zod 구조 검증만 통과한 미등록 ID를
+ * 엔진까지 넘기면 assertReferences()의 RangeError가 사용자 요청 밖으로 새어 나온다.
+ * 엔진은 내부 호출의 빠른 실패를 유지하고, 공개 Action은 필드 오류로 정규화한다.
+ */
+function referenceErrorsOf(
+  constraints: TripConstraints,
+  repos: Repositories,
+): Record<string, string> {
+  const errors: Record<string, string> = {};
+  const knownActors = new Set(repos.actors.map(({ id }) => id));
+  const knownWorks = new Set(repos.works.map(({ id }) => id));
+  const knownPlaces = new Set(repos.places.map(({ id }) => id));
+
+  const actorIds = [
+    ...(constraints.selectedActorIds ?? []),
+    ...(constraints.selectedActorId ? [constraints.selectedActorId] : []),
+  ];
+  const unknownActor = actorIds.find((id) => !knownActors.has(id));
+  const unknownWork = constraints.selectedWorkIds.find((id) => !knownWorks.has(id));
+  const unknownPlace = constraints.excludedPlaceIds.find((id) => !knownPlaces.has(id));
+  if (unknownActor) errors.selectedActorIds = `unknown actor id: ${unknownActor}`;
+  if (unknownWork) errors.selectedWorkIds = `unknown work id: ${unknownWork}`;
+  if (unknownPlace) errors.excludedPlaceIds = `unknown place id: ${unknownPlace}`;
+  return errors;
+}
+
 function validateGatewayBaseline(
   input: GatewayPlanningBaseline,
   constraints: TripConstraints,
@@ -117,7 +144,12 @@ export async function planItinerary(request: PlanRequest): Promise<PlanActionRes
   if (!parsed.success) {
     return { ok: false, code: "INVALID_REQUEST", fieldErrors: fieldErrorsOf(parsed.error) };
   }
-  return { ok: true, result: generateItinerary(parsed.data, loadRepositories()) };
+  const repos = loadRepositories();
+  const referenceErrors = referenceErrorsOf(parsed.data, repos);
+  if (Object.keys(referenceErrors).length > 0) {
+    return { ok: false, code: "INVALID_REQUEST", fieldErrors: referenceErrors };
+  }
+  return { ok: true, result: generateItinerary(parsed.data, repos) };
 }
 
 /** 핵심 추천을 먼저 표시한 뒤 별도로 붙는 비차단 공항버스 전체 일정 대안. */
@@ -131,6 +163,10 @@ export async function planGatewayAlternatives(
     return { ok: false, code: "INVALID_REQUEST", fieldErrors: fieldErrorsOf(parsed.error) };
   }
   const repos = loadRepositories();
+  const referenceErrors = referenceErrorsOf(parsed.data, repos);
+  if (Object.keys(referenceErrors).length > 0) {
+    return { ok: false, code: "INVALID_REQUEST", fieldErrors: referenceErrors };
+  }
   const checkedBaseline = validateGatewayBaseline(baseline, parsed.data, repos);
   if (!checkedBaseline.success) {
     return {

@@ -1,34 +1,12 @@
 [
-  {
-    "id": "work-goblin",
-    "title": {
-      "ko": "도깨비",
-      "en": "Guardian: The Lonely and Great God"
-    },
-    "year": 2016
-  },
-  {
-    "id": "work-yumi-cells",
-    "title": {
-      "ko": "유미의 세포들",
-      "en": "Yumi's Cells"
-    },
-    "year": 2021
-  },
-  {
-    "id": "work-little-women",
-    "title": {
-      "ko": "작은 아씨들",
-      "en": "Little Women"
-    },
-    "year": 2022
-  },
-  {
-    "id": "work-the-king",
-    "title": {
-      "ko": "더 킹: 영원의 군주",
-      "en": "The King: Eternal Monarch"
-    },
-    "year": 2020
-  }
+  { "id": "work-goblin", "title": { "ko": "도깨비", "en": "Guardian: The Lonely and Great God" }, "year": 2016 },
+  { "id": "work-yumi-cells", "title": { "ko": "유미의 세포들", "en": "Yumi's Cells" }, "year": 2021 },
+  { "id": "work-yumi-cells-2", "title": { "ko": "유미의 세포들 2", "en": "Yumi's Cells 2" }, "year": 2022 },
+  { "id": "work-little-women", "title": { "ko": "작은 아씨들", "en": "Little Women" }, "year": 2022 },
+  { "id": "work-the-king", "title": { "ko": "더 킹: 영원의 군주", "en": "The King: Eternal Monarch" }, "year": 2020 },
+  { "id": "work-encounter", "title": { "ko": "남자친구", "en": "Encounter" }, "year": 2018 },
+  { "id": "work-record-of-youth", "title": { "ko": "청춘기록", "en": "Record of Youth" }, "year": 2020 },
+  { "id": "work-love-in-the-moonlight", "title": { "ko": "구르미 그린 달빛", "en": "Love in the Moonlight" }, "year": 2016 },
+  { "id": "work-mr-sunshine", "title": { "ko": "미스터 션샤인", "en": "Mr. Sunshine" }, "year": 2018 },
+  { "id": "work-twenty-five-twenty-one", "title": { "ko": "스물다섯 스물하나", "en": "Twenty-Five Twenty-One" }, "year": 2022 }
 ]

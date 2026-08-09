@@ -169,8 +169,11 @@ describe("전체 촬영지 카탈로그", () => {
     });
   });
 
-  it("플래너의 시간표 검증 시드는 기존 14곳과 분리한다", () => {
-    expect(plannerPlaces).toHaveLength(14);
+  it("광역 210곳 중 박보검 검증 배치 4곳만 플래너에 승격한다", () => {
+    expect(plannerPlaces).toHaveLength(18);
+    for (const name of ["심곡항", "사천진해수욕장·사천진항", "손놀림 공방", "광한루원"]) {
+      expect(plannerPlaces.some(({ name: localized }) => localized.ko === name), name).toBe(true);
+    }
     expect(plannerPlaces.some(({ name }) => name.ko === "강촌레일파크")).toBe(false);
   });
 });

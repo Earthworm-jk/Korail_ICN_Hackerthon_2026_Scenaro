@@ -5,6 +5,35 @@ import { searchEntities } from "../actions/search";
 // 장소명·별칭은 검색 대상이 아니다 (#51 최종 검색 범위 — 배우·작품만).
 
 describe("searchEntities — 배우·작품 ko/en 자동완성 (#51)", () => {
+  it("승격된 5명·10편을 실제 Repository에서 검색한다", async () => {
+    const actors = [
+      ["김고은", "actor-kim-go-eun"],
+      ["박보검", "actor-park-bo-gum"],
+      ["공유", "actor-gong-yoo"],
+      ["이민호", "actor-lee-min-ho"],
+      ["김태리", "actor-kim-tae-ri"],
+    ] as const;
+    const works = [
+      ["도깨비", "work-goblin"],
+      ["유미의 세포들", "work-yumi-cells"],
+      ["유미의 세포들 2", "work-yumi-cells-2"],
+      ["작은 아씨들", "work-little-women"],
+      ["더 킹: 영원의 군주", "work-the-king"],
+      ["남자친구", "work-encounter"],
+      ["청춘기록", "work-record-of-youth"],
+      ["구르미 그린 달빛", "work-love-in-the-moonlight"],
+      ["미스터 션샤인", "work-mr-sunshine"],
+      ["스물다섯 스물하나", "work-twenty-five-twenty-one"],
+    ] as const;
+
+    for (const [query, id] of actors) {
+      expect((await searchEntities(query)).actors.map((actor) => actor.id)).toContain(id);
+    }
+    for (const [query, id] of works) {
+      expect((await searchEntities(query)).works.map((work) => work.id)).toContain(id);
+    }
+  });
+
   it("한국어 부분 일치로 배우·작품을 찾는다", async () => {
     const byActor = await searchEntities("김고");
     expect(byActor.actors.map((a) => a.id)).toContain("actor-kim-go-eun");

@@ -34,6 +34,7 @@ describe("역 좌표 스냅샷", () => {
     expect(fallbacks.map((s) => s.stationId).sort()).toEqual([
       "station-incheon-airport-t1",
       "station-jinbu",
+      "station-namwon",
     ]);
     for (const station of fallbacks) {
       expect(station.sourceRef, station.stationId).toMatch(/^https:\/\//);
