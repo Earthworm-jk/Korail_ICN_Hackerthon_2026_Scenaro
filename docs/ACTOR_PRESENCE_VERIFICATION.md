@@ -19,6 +19,11 @@ LLM의 작품 출연 지식이나 `작품 촬영지 → 주연 배우 등장` �
 관계 provenance 교차검증까지 구현됐다. 수집 큐, OpenAI Web Search·Structured Outputs 실호출,
 Supabase 적재, 만료·재검증 작업은 아직 구현되지 않은 후속 범위다.
 
+근거 레코드의 `extractionMethod`는 판단 필드를 구조화한 방식(`model_assisted` 또는 `manual`)을
+뜻한다. 관계 provenance의 `actorPresenceVerification.method`는 그 근거를 바탕으로 관계를 최종
+검증·승격한 방식(`automatic` 또는 `manual`)이다. 추출과 최종 검증은 서로 다른 단계이므로 두
+필드를 별도로 보존한다.
+
 목표 파이프라인은 다음과 같다.
 
 1. 신규·누락 관계를 비동기 수집 큐에 넣는다.

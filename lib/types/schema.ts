@@ -147,6 +147,7 @@ export const WorkPlaceRelation = z
     // PR #63 리뷰: 미검토(ⓒ)의 표현은 '생략' 하나뿐 — false 명시는 네 번째 상태가 되므로 금지
     actorPresenceReviewed: z.literal(true).optional(),
     actorPresenceVerification: z.object({
+      // 근거 추출 방식이 아니라 관계의 최종 검증·승격 방식이다.
       method: z.enum(["manual", "automatic"]),
       grade: z.enum(["A", "B"]),
       decision: z.enum(["confirmed", "absent"]),

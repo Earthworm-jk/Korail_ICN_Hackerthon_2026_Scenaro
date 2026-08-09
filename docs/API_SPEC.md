@@ -54,7 +54,8 @@
   `actor-presence-evidence.json`의 모델 보조 추출값을 `lib/actor-presence-verification.ts`가
   출처 등급·명시성·독립 출처 수로 결합해 A/B만 승격하는 판정·재현 경계다. Web Search,
   Structured Outputs, 비동기 수집 큐와 Supabase 적재는 후속 구현이며, 미확정·충돌은 배우
-  후보에서 제외한다 (`ACTOR_PRESENCE_VERIFICATION.md`).
+  후보에서 제외한다. 근거의 `extractionMethod`(모델 보조/수동)와 관계의 최종 검증
+  `method`(자동/수동)는 서로 다른 단계다 (`ACTOR_PRESENCE_VERIFICATION.md`).
 - **TourAPI·레일포털 등**: 오프라인 데이터 파이프라인(Python, 시드 생성 단계)에서만 사용.
   앱 런타임 호출 없음
 - 위 항목이 바뀌면(런타임 실호출 추가) 이 문서를 먼저 갱신한다 — "실호출만 수록" 원칙

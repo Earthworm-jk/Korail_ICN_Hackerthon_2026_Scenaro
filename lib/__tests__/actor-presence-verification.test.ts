@@ -73,6 +73,16 @@ describe("배우–장면 자동 검증 판정", () => {
 describe("저장된 자동 검증 입력 재현", () => {
   const records = evidenceSeed.map((record) => ActorPresenceEvidenceRecordSchema.parse(record));
 
+  it("모델 보조와 수동 근거 추출 방식을 모두 표현한다", () => {
+    const modelAssisted = records[0];
+    expect(modelAssisted.extractionMethod).toBe("model_assisted");
+    expect(ActorPresenceEvidenceRecordSchema.parse({
+      ...modelAssisted,
+      id: `${modelAssisted.id}--manual`,
+      extractionMethod: "manual",
+    }).extractionMethod).toBe("manual");
+  });
+
   it("커밋된 근거 레코드로 기대 판정을 다시 계산한다", () => {
     for (const record of records) {
       expect(decideActorPresence(record.evidence), record.id).toEqual(record.expectedDecision);
