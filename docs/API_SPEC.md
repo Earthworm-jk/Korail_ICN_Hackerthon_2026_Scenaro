@@ -71,6 +71,7 @@ UI의 서버 접점은 Route Handler 대신 **Server Actions**를 기본으로 �
 searchEntities(query: string): Promise<{
   actors: ActorSummary[];   // id, name(ko/en)
   works: WorkSummary[];
+  interpretedByAi?: true;   // LLM 보조로 allowlist ID가 확정된 경우만. 원시 응답·확신도 미노출
 }>;
 // REQ-SRCH-003·004. ko/en 결정적 검색 우선. 0건일 때만 #78 LLM 보조를 시도하며,
 // 키 없음·오류·낮은 확신은 빈 배열 (REQ-SRCH-008은 UI 처리)
