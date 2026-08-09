@@ -46,10 +46,13 @@ SNAPSHOT_PATH = REPO_ROOT / "data" / "train-snapshot.json"
 # 데모 기준일 (SOURCES.md와 동일하게 유지)
 DATES = ["20260812", "20260813", "20260814"]
 
-# (우리 역 id, API 역 이름) — OD 양방향 모두 조회한다. 시종착 OD만 가능(운행계획 v2의 한계, #56 실측)
-OD_PAIRS: list[tuple[tuple[str, str], tuple[str, str]]] = [
-    (("station-seoul", "서울"), ("station-gangneung", "강릉")),
-    (("station-seoul", "서울"), ("station-busan", "부산")),  # 경부선 팩 (#72 부산 채택)
+# (우리 역 id, API 역 이름, KTX 전용 필터) — OD 양방향 모두 조회한다.
+# 시종착 OD만 가능(운행계획 v2의 한계, #56 실측). 운행계획 응답에는 열차 종류 필드가 없어
+# (PR #75 리뷰 실측) 일반열차가 섞이는 구간은 TAGO 공식 등급(traingradename)으로
+# KTX 계열만 걸러 수록한다. 강릉 축은 KTX 전용선이라 무필터 경로를 유지한다(기존 축 비회귀).
+OD_PAIRS: list[tuple[tuple[str, str], tuple[str, str], bool]] = [
+    (("station-seoul", "서울"), ("station-gangneung", "강릉"), False),
+    (("station-seoul", "서울"), ("station-busan", "부산"), True),  # 경부선 팩 (#72) — 무궁화·ITX 혼입 구간
 ]
 
 # 중간 정차(경유역) OD — 운행계획(runPlan2)에는 중간 정차 행이 없어(#56 실측 2026-08-09)
@@ -73,8 +76,8 @@ PRESERVE_STATION = "station-incheon-airport-t1"
 TAGO_BASE = os.environ.get("TAGO_BASE", "https://apis.data.go.kr/1613000/TrainInfo")
 TAGO_STATION_OP = os.environ.get("TAGO_STATION_OP", "GetCtyAcctoTrainSttnList")
 TAGO_TIMETABLE_OP = os.environ.get("TAGO_TIMETABLE_OP", "GetStrtpntAlocFndTrainInfo")
-# 역 이름 → nodeid 조회 도시코드 — TAGO는 구형 2자리 체계 (서울 11, 강원 32, 전북 35)
-TAGO_CITY_CODES = [11, 32, 35]
+# 역 이름 → nodeid 조회 도시코드 — TAGO는 구형 2자리 체계 (서울 11, 부산 21, 강원 32, 전북 35)
+TAGO_CITY_CODES = [11, 21, 32, 35]
 
 # ---- KORAIL (한국철도공사_열차운행정보, 공공데이터포털 B551457) — 주 데이터 -----------
 # 2026-08-08 공식 주소 확인(#49 지영): 별도 코레일 포털 키 불필요 — data.go.kr에서
@@ -216,10 +219,10 @@ def fetch_tago_station_ids(key: str, names: set[str]) -> dict[str, str]:
 
 
 def fetch_tago_legs(key: str) -> list[Leg]:
-    names = {name for pair in OD_PAIRS for (_id, name) in pair}
+    names = {name for from_pair, to_pair, _ktx in OD_PAIRS for (_id, name) in (from_pair, to_pair)}
     node_ids = fetch_tago_station_ids(key, names)
     legs: list[Leg] = []
-    for (from_id, from_name), (to_id, to_name) in OD_PAIRS:
+    for (from_id, from_name), (to_id, to_name), _ktx_only in OD_PAIRS:
         for date in DATES:
             for (a_id, a_name), (b_id, b_name) in [((from_id, from_name), (to_id, to_name)),
                                                    ((to_id, to_name), (from_id, from_name))]:
@@ -373,10 +376,42 @@ def fetch_korail_stopover_legs(key: str, allowed_by_date: dict[str, set[str]]) -
     return legs
 
 
+def fetch_tago_train_grades(key: str, station_names: set[str]) -> dict[str, str]:
+    """열차번호 → TAGO 공식 등급(traingradename) 누적 맵.
+
+    운행계획 v2에는 열차 종류 필드가 없어(PR #75 리뷰 실측) KTX 전용 필터 구간의
+    종류 판별에만 사용한다. 시각·운행 여부의 근거는 계속 운행계획이며, TAGO 시각은
+    쓰지 않는다(교차검증 전용 계약 유지). TAGO가 조회일 D에 D-1·D 행을 섞어 주고
+    커버리지가 불완전하므로 데모일 ±1일을 누적해 판별률을 높인다."""
+    node_ids = fetch_tago_station_ids(key, station_names)
+    dates = sorted({shift_ymd(date, delta) for date in DATES for delta in (-1, 0, 1)})
+    names = sorted(station_names)
+    grades: dict[str, str] = {}
+    for a_name in names:
+        for b_name in names:
+            if a_name == b_name:
+                continue
+            for date in dates:
+                payload = get_json(TAGO_BASE, TAGO_TIMETABLE_OP, key, {
+                    "numOfRows": "300", "pageNo": "1", "_type": "json",
+                    "depPlaceId": node_ids[a_name], "arrPlaceId": node_ids[b_name],
+                    "depPlandTime": date,
+                })
+                for item in items_of(payload):
+                    train_no = str(item.get("trainno", "")).zfill(5)
+                    grade = str(item.get("traingradename", "")).strip()
+                    if train_no and grade:
+                        grades[train_no] = grade
+    return grades
+
+
 def fetch_korail_legs(key: str) -> list[Leg]:
     legs: list[Leg] = []
     day_rows = {date: fetch_korail_day(key, date) for date in DATES}
-    for (from_id, from_name), (to_id, to_name) in OD_PAIRS:
+    filtered_names = {name for from_pair, to_pair, ktx_only in OD_PAIRS if ktx_only
+                      for (_id, name) in (from_pair, to_pair)}
+    grades = fetch_tago_train_grades(key, filtered_names) if filtered_names else {}
+    for (from_id, from_name), (to_id, to_name), ktx_only in OD_PAIRS:
         for date in DATES:
             for (a_id, a_name), (b_id, b_name) in [((from_id, from_name), (to_id, to_name)),
                                                    ((to_id, to_name), (from_id, from_name))]:
@@ -385,6 +420,25 @@ def fetch_korail_legs(key: str) -> list[Leg]:
                          and str(row.get("arvl_stn_nm", "")).strip() == b_name]
                 if not items:
                     raise ApiError(f"[방어] 정상 응답이지만 결과 0건: {a_name}→{b_name} {date} — 기존 스냅샷을 변경하지 않습니다")
+                if ktx_only:
+                    kept, dropped_non_ktx, dropped_unknown = [], [], []
+                    for row in items:
+                        train_no = str(row["trn_no"]).zfill(5)
+                        grade = grades.get(train_no)
+                        if grade is None:
+                            dropped_unknown.append(train_no)
+                        elif grade.startswith("KTX"):
+                            kept.append(row)
+                        else:
+                            dropped_non_ktx.append(f"{train_no}({grade})")
+                    # 무음 절단 금지 — 제외 내역을 반드시 출력한다
+                    print(f"[KTX 필터] {a_name}→{b_name} {date}: 수록 {len(kept)} / "
+                          f"비KTX 제외 {len(dropped_non_ktx)} {dropped_non_ktx[:6]} / "
+                          f"등급 미확인 제외 {len(dropped_unknown)} {dropped_unknown[:6]}")
+                    if not kept:
+                        raise ApiError(
+                            f"[방어] KTX 확인 편 0건: {a_name}→{b_name} {date} — 기존 스냅샷을 변경하지 않습니다")
+                    items = kept
                 for item in items:
                     legs.append(Leg(
                         trainNo=str(item["trn_no"]).zfill(5),

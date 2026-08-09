@@ -116,16 +116,36 @@ def runinfo_row_of(items: list[dict], trn_no: str, stn_nm: str) -> dict:
     return next(row for row in items if row["trn_no"] == trn_no and row["stn_nm"] == stn_nm)
 
 
-def korail_side_effect(runinfo_mutate=None):
-    """오퍼레이션별 fixture 분기 — 계획은 요청 일자, 실적은 요청 일자(=데모일-7)로 생성"""
+TAGO_STATIONS = [{"nodename": "서울", "nodeid": "NAT010000"},
+                 {"nodename": "강릉", "nodeid": "NAT601936"},
+                 {"nodename": "부산", "nodeid": "NAT014445"}]
+
+# 열차번호 → TAGO 공식 등급 fixture. 00999는 의도적으로 없음(등급 미확인 케이스)
+TAGO_GRADES = {"00101": "KTX", "00102": "KTX-산천(A-type)", "01001": "ITX-새마을"}
+
+
+def korail_side_effect(runinfo_mutate=None, plan_mutate=None):
+    """오퍼레이션별 fixture 분기 — 계획·실적·TAGO(등급 판별용)를 모두 흉내 낸다"""
     def responder(base, op, key, params, timeout=10.0):
+        if op == pipeline.TAGO_STATION_OP:
+            return payload_with(TAGO_STATIONS)
+        if op == pipeline.TAGO_TIMETABLE_OP:
+            date = params["depPlandTime"]
+            return payload_with([
+                {"trainno": no, "traingradename": grade,
+                 "depplandtime": f"{date}050000", "arrplandtime": f"{date}080000"}
+                for no, grade in TAGO_GRADES.items()
+            ])
         date = params["cond[run_ymd::EQ]"]
         if op == pipeline.KORAIL_RUNINFO_OP:
             items = runinfo_items(date)
             if runinfo_mutate is not None:
                 items = runinfo_mutate(items, date)
             return payload_with(items)
-        return payload_with(plan_items(date))
+        items = plan_items(date)
+        if plan_mutate is not None:
+            items = plan_mutate(items, date)
+        return payload_with(items)
     return responder
 
 
@@ -138,8 +158,11 @@ class EmptyResponseGuardTest(unittest.TestCase):
         self.assertIn("20260812", str(caught.exception))  # 날짜 맥락 포함
 
     def test_데모_OD가_일별_응답에_없으면_중단한다(self) -> None:
-        # 전 노선 응답 자체는 정상이지만 서울↔강릉 행이 없는 경우 — OD 맥락으로 중단
-        with mock.patch.object(pipeline, "get_json", return_value=payload_with([KORAIL_ITEM_OTHER_OD])):
+        # 전 노선 응답 자체는 정상이지만 데모 OD 행이 없는 경우 — OD 맥락으로 중단
+        def only_other(items, date):
+            return [KORAIL_ITEM_OTHER_OD]
+
+        with mock.patch.object(pipeline, "get_json", side_effect=korail_side_effect(plan_mutate=only_other)):
             with self.assertRaises(pipeline.ApiError) as caught:
                 pipeline.fetch_korail_legs("dummy-key")
         self.assertIn("결과 0건", str(caught.exception))
@@ -190,7 +213,7 @@ class EmptyResponseGuardTest(unittest.TestCase):
                                      {"nodename": "강릉", "nodeid": "NAT601936"},
                                      {"nodename": "부산", "nodeid": "NAT014445"}])
             date = params["depPlandTime"]
-            return payload_with([{"trainno": "801",
+            return payload_with([{"trainno": "801", "traingradename": "KTX-이음",
                                   "depplandtime": f"{date}050600", "arrplandtime": f"{date}070300"}])
 
         before = pipeline.SNAPSHOT_PATH.read_text(encoding="utf-8")
@@ -266,7 +289,11 @@ class StopoverContractTest(unittest.TestCase):
                      trn_arvl_dt=f"{nd} 00:20:00.0"),
             ]
 
+        base_responder = korail_side_effect()
+
         def plan_with_00803(base, op, key, params, timeout=10.0):
+            if op in (pipeline.TAGO_STATION_OP, pipeline.TAGO_TIMETABLE_OP):
+                return base_responder(base, op, key, params, timeout)
             date = params["cond[run_ymd::EQ]"]
             if op == pipeline.KORAIL_RUNINFO_OP:
                 return payload_with(add_overnight(runinfo_items(date), date))
@@ -337,6 +364,51 @@ class StopoverContractTest(unittest.TestCase):
             with self.assertRaises(pipeline.ApiError) as caught:
                 pipeline.fetch_korail_legs("dummy-key")
         self.assertIn("요청 일자 밖", str(caught.exception))
+
+
+class KtxGradeFilterTest(unittest.TestCase):
+    """PR #75 리뷰 차단 반영: 운행계획 응답엔 열차 종류 필드가 없어(실측) KTX 전용 구간은
+    TAGO 공식 등급으로 걸러 수록한다. 시각은 계속 계획 원값이며 TAGO 시각은 쓰지 않는다.
+    강릉 축(무필터)은 등급 조회 없이 기존 경로를 유지한다 — 기존 테스트의 00801 수록이 그 회귀다."""
+
+    def test_비KTX와_등급_미확인은_수록하지_않는다(self) -> None:
+        def add_mixed(items, date):
+            day = f"{date[0:4]}-{date[4:6]}-{date[6:8]}"
+            return items + [
+                dict(KORAIL_ITEM_BUSAN, trn_no="01001",
+                     trn_plan_dptre_dt=f"{day} 07:00:00.0", trn_plan_arvl_dt=f"{day} 12:20:00.0"),
+                dict(KORAIL_ITEM_BUSAN, trn_no="00999",
+                     trn_plan_dptre_dt=f"{day} 07:30:00.0", trn_plan_arvl_dt=f"{day} 10:20:00.0"),
+            ]
+
+        with mock.patch.object(pipeline, "get_json", side_effect=korail_side_effect(plan_mutate=add_mixed)):
+            legs = pipeline.fetch_korail_legs("dummy-key")
+        busan = {leg.trainNo for leg in legs
+                 if "station-busan" in (leg.fromStationId, leg.toStationId)}
+        self.assertIn("00101", busan)  # TAGO 등급 KTX — 수록
+        self.assertNotIn("01001", busan)  # ITX-새마을 — 제외
+        self.assertNotIn("00999", busan)  # 등급 미확인 — 보수적으로 제외
+        # 무필터 축(강릉)은 등급 fixture에 없어도 그대로 수록된다
+        self.assertIn("00801", {leg.trainNo for leg in legs})
+
+    def test_KTX_확인_편이_0건이면_중단하고_스냅샷이_불변이다(self) -> None:
+        def busan_itx_only(items, date):
+            out = []
+            for row in items:
+                if row["arvl_stn_nm"] == "부산" or row["dptre_stn_nm"] == "부산":
+                    out.append(dict(row, trn_no="01001"))
+                else:
+                    out.append(row)
+            return out
+
+        before = pipeline.SNAPSHOT_PATH.read_text(encoding="utf-8")
+        with mock.patch.object(pipeline, "get_json", side_effect=korail_side_effect(plan_mutate=busan_itx_only)):
+            with self.assertRaises(pipeline.ApiError) as caught:
+                pipeline.fetch_korail_legs("dummy-key")
+            self.assertIn("KTX 확인 편 0건", str(caught.exception))
+            exit_code = pipeline.main_with_args(["--source", "korail"], service_key="dummy-key")
+        self.assertEqual(exit_code, 1)
+        self.assertEqual(pipeline.SNAPSHOT_PATH.read_text(encoding="utf-8"), before)
 
 
 if __name__ == "__main__":
