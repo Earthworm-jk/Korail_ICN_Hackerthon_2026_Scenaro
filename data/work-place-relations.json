@@ -184,20 +184,5 @@
     ],
     "verifiedAt": "2026-08-08",
     "reviewed": true
-  },
-  {
-    "workId": "work-the-king",
-    "placeId": "place-gyeonggijeon-shrine",
-    "sceneNote": {
-      "ko": "이곤이 박물관을 방문하는 장면",
-      "en": "The scene where Lee Gon visits the museum"
-    },
-    "featuredActorIds": [],
-    "actorPresenceReviewed": true,
-    "sourceUrls": [
-      "https://www.data.go.kr/data/15111405/fileData.do"
-    ],
-    "verifiedAt": "2026-08-08",
-    "reviewed": true
   }
 ]

@@ -332,39 +332,5 @@
     "address": "서울특별시 중구 세종대로 99",
     "latitude": 37.565924,
     "longitude": 126.97501
-  },
-  {
-    "id": "place-gyeonggijeon-shrine",
-    "name": {
-      "ko": "경기전",
-      "en": "Gyeonggijeon Shrine"
-    },
-    "workIds": [
-      "work-the-king"
-    ],
-    "nearestStationId": "station-jeonju",
-    "accessEstimate": {
-      "minutes": 20,
-      "source": "카카오맵 자동차 길찾기 전주역→경기전 16분·5.5km의 5분 올림값 (2026-08-08; 실시간 교통·교통수단 보장 아님)",
-      "verifiedAt": "2026-08-08"
-    },
-    "openingHours": {
-      "type": "hours",
-      "open": "09:00",
-      "close": "20:00",
-      "lastEntry": "19:00",
-      "source": "한국관광공사 VISITKOREA 8월 09:00~20:00·폐관 1시간 전 입장 마감·연중무휴 안내 https://english.visitkorea.or.kr/svc/whereToGo/locIntrdn/rgnContentsView.do?vcontsId=108728",
-      "verifiedAt": "2026-08-08"
-    },
-    "stayMinutes": 60,
-    "verificationLevel": "교차확인",
-    "officialSourceCount": 2,
-    "reasonText": {
-      "ko": "더 킹: 영원의 군주에 등장하는 전주의 역사 촬영지예요.",
-      "en": "A historic Jeonju filming location featured in The King: Eternal Monarch."
-    },
-    "address": "전라북도 전주시 완산구 태조로 44",
-    "latitude": 35.815488,
-    "longitude": 127.149771
   }
 ]

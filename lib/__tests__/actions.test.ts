@@ -178,14 +178,6 @@ describe("#56 열차 스냅샷 권역 확장 — 실데이터 회귀", () => {
     });
   });
 
-  it("관문·후속 단계 전 상태: 전주 경기전은 단독 선택도 아직 열차 미연결 (#56 3단계)", async () => {
-    const res = await planOnly("place-gyeonggijeon-shrine");
-    expect(res.ok).toBe(true);
-    if (!res.ok) return;
-    expect(res.result.status).toBe("empty");
-    expect(res.result.rejectedPlaces).toContainEqual({
-      code: "TRAIN_UNAVAILABLE",
-      placeId: "place-gyeonggijeon-shrine",
-    });
-  });
+  // #56 (d): 전주 경기전은 정적 MVP 자격 미충족으로 시드에서 제외 — TRAIN_UNAVAILABLE
+  // 동적 표시 대상이 아니다(#61 정적/동적 분리). 부재 회귀는 schema.test.ts가 고정한다.
 });

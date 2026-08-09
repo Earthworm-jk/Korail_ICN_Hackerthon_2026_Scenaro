@@ -42,16 +42,6 @@
       "hasToilet": true,
       "hasNursingRoom": true,
       "hasInfoCenter": false
-    },
-    {
-      "stationId": "station-jeonju",
-      "stationCode": "3900248",
-      "sourceName": "전주",
-      "elevatorCount": 0,
-      "escalatorCount": 0,
-      "hasToilet": true,
-      "hasNursingRoom": true,
-      "hasInfoCenter": false
     }
   ]
 }

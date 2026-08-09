@@ -117,25 +117,24 @@ describe("실시드 배우 선택 화면 회귀 (김고은)", () => {
     const separatedIds = separated.map(({ candidate }) => candidate.id).sort();
     expect(separatedIds).toEqual([
       "place-deoksugung-stone-wall-road",
-      "place-gyeonggijeon-shrine",
       "place-samyang-ranch",
       "place-yeongjin-beach",
     ]);
     expect(separated.find(({ candidate }) => candidate.id === "place-yeongjin-beach")?.status)
       .toBe("unreviewed");
-    expect(separated.filter(({ status }) => status === "absent")).toHaveLength(3);
+    expect(separated.filter(({ status }) => status === "absent")).toHaveLength(2);
     expect(primary.map((c) => c.id)).not.toContain("place-samyang-ranch");
-    expect(primary).toHaveLength(8); // 등장 확정 8곳 (12곳 시드 — #61 죽림동성당 제외)
+    expect(primary).toHaveLength(8); // 등장 확정 8곳 (11곳 시드 — #61 죽림동·#56 (d) 경기전 제외)
   });
 
   it("작품을 함께 선택하면 그 작품 유래 후보는 장면 배우와 무관하게 기본 목록에 남는다", async () => {
     const { candidates } = await getCandidatePlaces({
       selectedActorIds: [KIM],
-      selectedWorkIds: ["work-the-king"],
+      selectedWorkIds: ["work-goblin"],
     });
     const { primary } = splitByActorPresence(candidates, kimSet);
-    // 경기전은 김고은 미등장 확정이지만 선택 작품(더 킹) 유래라 기본 목록 유지
-    expect(primary.map((c) => c.id)).toContain("place-gyeonggijeon-shrine");
+    // 삼양목장은 김고은 미등장 확정(공유 장면)이지만 선택 작품(도깨비) 유래라 기본 목록 유지
+    expect(primary.map((c) => c.id)).toContain("place-samyang-ranch");
   });
 
   // PR #65 리뷰 1 — relationDetails는 선택 작품 ∪ 선택 배우 출연작 관계만
@@ -158,8 +157,7 @@ describe("실시드 배우 선택 화면 회귀 (김고은)", () => {
     const initial = new Set(initialSelectedIds(candidates, kimSet));
     expect(initial.size).toBe(8);
     for (const id of [
-      "place-samyang-ranch", "place-deoksugung-stone-wall-road",
-      "place-gyeonggijeon-shrine", "place-yeongjin-beach",
+      "place-samyang-ranch", "place-deoksugung-stone-wall-road", "place-yeongjin-beach",
     ]) {
       expect(initial.has(id), `${id}는 초기 미선택이어야 한다`).toBe(false);
     }
@@ -170,9 +168,9 @@ describe("실시드 배우 선택 화면 회귀 (김고은)", () => {
   it("선택 작품 유래(selected_work) 후보는 배우 모드에서도 초기 선택을 유지한다", async () => {
     const { candidates } = await getCandidatePlaces({
       selectedActorIds: [KIM],
-      selectedWorkIds: ["work-the-king"],
+      selectedWorkIds: ["work-goblin"],
     });
-    expect(initialSelectedIds(candidates, kimSet)).toContain("place-gyeonggijeon-shrine");
+    expect(initialSelectedIds(candidates, kimSet)).toContain("place-samyang-ranch");
   });
 
   it("후보 카드 표시용 회차·장면이 관계 값 그대로 내려온다", async () => {

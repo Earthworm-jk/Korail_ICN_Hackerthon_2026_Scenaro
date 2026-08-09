@@ -31,24 +31,26 @@ describe("시드 스키마 검증 (REQ-DATA-004)", () => {
     }
   });
 
-  it("김고은 데모 fixture는 ITX 비범위 장소를 제외한 12곳이다 (#61)", () => {
+  it("김고은 데모 fixture는 KTX 컷라인 밖 장소를 제외한 11곳이다 (#61·#56 (d))", () => {
     const repos = loadRepositories();
-    const gyeonggijeon = repos.places.find(({ id }) => id === "place-gyeonggijeon-shrine");
 
-    expect(repos.places).toHaveLength(12);
+    expect(repos.places).toHaveLength(11);
     // #51 확정: 관계 미검증·김고은 미등장 — MVP 런타임 시드에서 장소·관계 완전 제외
     expect(repos.places.some(({ id }) => id === "place-gangchon-rail-park")).toBe(false);
     expect(repos.workPlaceRelations.some(({ placeId }) => placeId === "place-gangchon-rail-park")).toBe(false);
-    expect(gyeonggijeon?.workIds).toContain("work-the-king");
-    expect(gyeonggijeon?.nearestStationId).toBe("station-jeonju");
-    expect(repos.stations.some(({ id }) => id === "station-jeonju")).toBe(true);
     expect(repos.places.some(({ id }) => id === "place-naju-image-theme-park")).toBe(false);
     expect(repos.stations.some(({ id }) => id === "station-naju")).toBe(false);
     expect(repos.places.some(({ id }) => id === "place-jukrim-catholic-church")).toBe(false);
     expect(repos.stations.some(({ id }) => id === "station-chuncheon")).toBe(false);
+    // #56 (d): 전주 경기전은 정적 MVP 자격 미충족(공항→용산 KTX/AREX 경로 부재) — 후보에서 제외
+    expect(repos.places.some(({ id }) => id === "place-gyeonggijeon-shrine")).toBe(false);
+    expect(repos.stations.some(({ id }) => id === "station-jeonju")).toBe(false);
+    // 경기전이 유일 촬영지였던 더 킹은 무관계 작품이 되어 함께 정리 (미사용 참조 정리 원칙)
+    expect(repos.works.some(({ id }) => id === "work-the-king")).toBe(false);
+    expect(repos.actors.every(({ workIds }) => !workIds.includes("work-the-king"))).toBe(true);
   });
 
-  it("#61 데이터는 12개 작품–장소 관계를 제공하고 장소 직접 검색 별칭은 노출하지 않는다", () => {
+  it("#56 (d) 데이터는 11개 작품–장소 관계를 제공하고 장소 직접 검색 별칭은 노출하지 않는다", () => {
     const repos = loadRepositories();
     const relationKeys = new Set(
       repos.workPlaceRelations.map(({ workId, placeId }) => `${workId}|${placeId}`),
@@ -59,7 +61,7 @@ describe("시드 스키마 검증 (REQ-DATA-004)", () => {
     const yeongjin = repos.places.find(({ id }) => id === "place-yeongjin-beach");
 
     expect(relationKeys).toEqual(expectedKeys);
-    expect(repos.workPlaceRelations).toHaveLength(12);
+    expect(repos.workPlaceRelations).toHaveLength(11);
     expect(repos.workPlaceRelations.every(({ reviewed, sourceUrls }) => reviewed && sourceUrls.length > 0)).toBe(true);
     expect(yeongjin?.name).toEqual({ ko: "영진해변", en: "Yeongjin Beach" });
     expect(yeongjin?.searchAliases).toBeUndefined();

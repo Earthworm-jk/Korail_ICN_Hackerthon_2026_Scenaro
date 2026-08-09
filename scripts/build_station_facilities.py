@@ -37,12 +37,12 @@ PAGE_SIZE = 500
 
 # (우리 역 id → 원천 stn_nm 정확 일치값). 원천에 없는 시드 역은 여기 넣지 않는다:
 #   - station-incheon-airport-t1: 공항철도(주) 운영 — 동일하게 원천 밖
+#   - station-jeonju: #56 (d) 컷라인으로 시드 제외 — 재도입 시 #27 조건과 함께 복원
 STATION_NAME_MAP: dict[str, str] = {
     "station-seoul": "서울",
     "station-gangneung": "강릉",
     "station-jinbu": "진부(오대산)",
     "station-manjong": "만종",
-    "station-jeonju": "전주",
 }
 
 

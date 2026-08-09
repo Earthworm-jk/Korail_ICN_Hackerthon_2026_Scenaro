@@ -33,11 +33,5 @@
     "name": { "ko": "만종역", "en": "Manjong Station" },
     "lineType": "KTX",
     "regionId": "gangwon"
-  },
-  {
-    "id": "station-jeonju",
-    "name": { "ko": "전주역", "en": "Jeonju Station" },
-    "lineType": "KTX",
-    "regionId": "honam"
   }
 ]

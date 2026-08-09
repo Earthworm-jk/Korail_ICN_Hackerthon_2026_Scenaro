@@ -63,7 +63,7 @@ python scripts/build_place_rankings.py
 ```
 
 - 모델 기본값: `text-embedding-3-small`
-- 입력: `data/place-ranking-inputs.json`의 한국어 작품 4개 + 장소 12개
+- 입력: `data/place-ranking-inputs.json`의 한국어 작품 3개 + 장소 11개 (#56 (d) 이후)
 - 비용 방어: 한 번에 최대 100개·총 50,000자까지만 호출
 - 출력: 모든 작품×장소 조합을 `reviewed: false`로 생성
 - API 실패·키 누락·응답 이상 시 기존 `place-rankings.json`을 변경하지 않음

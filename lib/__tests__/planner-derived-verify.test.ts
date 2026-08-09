@@ -34,7 +34,8 @@ describe("파생 캐시 무결성 (#56 A+B 수용 기준 4)", () => {
         runs += 1;
       }
     }
-    expect(runs).toBe(60);
+    // 변형 수는 시드 장소 수에 따라 달라진다(장소별 제외 변형) — 축 3개 전건 실행만 고정
+    expect(runs).toBe(constraintVariants(repos).length * 3);
   }, 120000);
 
   it("30·50곳 확대 fixture에서도 파생 캐시가 원본과 일치한다", () => {

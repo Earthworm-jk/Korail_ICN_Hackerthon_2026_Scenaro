@@ -130,18 +130,17 @@ describe("실시드 장면 배우 상태 (#26 참고 섹션 대조)", () => {
     );
     const c = repos.workPlaceRelations.filter((r) => !r.actorPresenceReviewed);
     expect(a).toHaveLength(8);
-    expect(b).toHaveLength(3);
+    expect(b).toHaveLength(2);
     expect(c.map((r) => r.placeId)).toEqual(["place-yeongjin-beach"]);
   });
 
-  it("미등장 확정 3곳은 삼양목장·덕수궁 돌담길·경기전이다 (데모 멘트 회귀)", () => {
+  it("미등장 확정 2곳은 삼양목장·덕수궁 돌담길이다 (데모 멘트 회귀 — #56 (d) 경기전 제외)", () => {
     const confirmedAbsent = repos.workPlaceRelations
       .filter((r) => r.actorPresenceReviewed && r.featuredActorIds?.length === 0)
       .map((r) => r.placeId)
       .sort();
     expect(confirmedAbsent).toEqual([
       "place-deoksugung-stone-wall-road",
-      "place-gyeonggijeon-shrine",
       "place-samyang-ranch",
     ]);
   });
