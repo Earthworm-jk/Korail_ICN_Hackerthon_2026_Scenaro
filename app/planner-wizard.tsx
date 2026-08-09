@@ -277,6 +277,9 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
   // step 4 — 결과. 전이 규칙·파생은 lib/itinerary-view 순수 함수로 고정 (PR #35 리뷰 3)
   const [view, dispatchView] = useReducer(reduceItineraryView, initialItineraryView);
   const planSequence = useRef(0); // 늦게 도착한 이전 요청의 공항버스 대안이 새 결과를 덮지 않게 한다.
+  // 계산이 끝난(성공·무효·실패 모두) 마지막 선택. 지금 선택과 다르면 화면은 아직 옛 결론이다.
+  // 대기 플래그를 따로 두지 않고 여기서 파생한다 — effect에서 setState를 하지 않기 위해서다.
+  const [settledSelectionKey, setSettledSelectionKey] = useState<string | null>(null);
 
   // #80 테마체험 권역 — 일정이 확정된 시점(생성 성공·재열람)에만 조회한다.
   // 입력은 표시 중인 일정의 권역과 선택 작품뿐이며, 런타임 OpenAI 호출은 없다.
@@ -393,10 +396,14 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
     );
   }, [candidateData, selectedPlaceIds, arrival.at, departure.at, airportReady.at, airportDeadline.at, selectedActors, selectedWorks]);
 
+  /** 지금 고른 장소 집합의 지문 — 구분자는 `|`, 장소 ID는 kebab-case라 충돌하지 않는다 */
+  const selectionKey = useMemo(() => [...selectedPlaceIds].sort().join("|"), [selectedPlaceIds]);
+
   const plan = useCallback(async () => {
     const constraints = currentConstraints();
     if (!constraints) return;
     const sequence = ++planSequence.current;
+    const requestedSelectionKey = selectionKey;
     dispatchView({ type: "PLAN_START" });
     setThemeExperience(null);
     try {
@@ -404,6 +411,8 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
       // #85 기술항목 1 — 연속 토글에서 먼저 보낸 계산이 늦게 도착해 최신 결과를 덮지 않게 한다.
       // 계산 중에는 리듀서가 직전 결과를 유지하므로 버려도 화면이 비지 않는다.
       if (sequence !== planSequence.current) return;
+      // 성공이든 무효든 "이 선택으로는 끝났다" — 실패에도 기록해야 갱신 표시가 남지 않는다
+      setSettledSelectionKey(requestedSelectionKey);
       if (res.ok) {
         dispatchView({ type: "PLAN_SUCCESS", result: res.result });
         saveStub.markDirty();
@@ -423,9 +432,10 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
       } else dispatchView({ type: "PLAN_INVALID" }); // 1단계 검증을 우회한 요청 — 기존 결과 유지
     } catch {
       if (sequence !== planSequence.current) return;
+      setSettledSelectionKey(requestedSelectionKey);
       dispatchView({ type: "PLAN_FAILED" }); // 네트워크·서버 장애 — 기존 결과 유지
     }
-  }, [currentConstraints, saveStub, refreshThemeExperience]);
+  }, [currentConstraints, selectionKey, saveStub, refreshThemeExperience]);
 
   // #85 기술항목 2 — 장소를 켜고 끄면 자동 재계산한다. 연속 토글은 마지막 것만 계산하고,
   // 항공편 시각은 확정대로 자동 감지하지 않는다(사용자가 조회·변경 후 "다시 계산").
@@ -442,17 +452,19 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
       reopened: reopened !== null,
       selectedCount: selectedPlaceIds.size,
     });
-    if (decision === "skip") return;
+    if (decision !== "schedule") {
+      if (decision === "clear") {
+        planSequence.current += 1;
+        dispatchView({ type: "SELECTION_CLEARED" });
+      }
+      return;
+    }
 
     // PR #99 리뷰 3 — 선택이 바뀐 "즉시" 진행 중 요청을 무효화한다. planSequence를 plan()
     // 안에서만 올리면, 디바운스가 끝나기 전에 도착한 이전 응답이 이미 바뀐 선택 옆에
     // 실린다. 그 순간 화면은 사용자가 고른 것과 다른 일정을 근거처럼 보여주게 된다.
     planSequence.current += 1;
 
-    if (decision === "clear") {
-      dispatchView({ type: "SELECTION_CLEARED" });
-      return;
-    }
     const timer = window.setTimeout(() => { void planRef.current(); }, AUTO_PLAN_DEBOUNCE_MS);
     return () => window.clearTimeout(timer);
   }, [selectedPlaceIds, step, candidateData, reopened]);
@@ -465,6 +477,16 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
   const displayedDays = deriveDisplayedDays(view);
   // 고른 장소가 없는 상태 — 결과 열은 "선택 필요"만 보여주고 저장도 막는다 (PR #99 리뷰 2)
   const needsSelection = candidateData !== null && selectedPlaceIds.size === 0 && !view.reopened;
+  /**
+   * 갱신 표시 (PR #99 리뷰 비차단).
+   *
+   * view.planning만 보면 디바운스 400ms가 비어, 선택은 이미 바뀌었는데 직전 일정이
+   * 확정 결과처럼 앉아 있는 구간이 생긴다 — "안 눌렸나"로 읽힌다. 계산이 시작된 시점이
+   * 아니라 **선택이 바뀐 시점부터** 켠다. 재열람은 저장 당시 일정이라 대상이 아니다.
+   */
+  const updating =
+    view.planning ||
+    (candidateData !== null && !view.reopened && !needsSelection && selectionKey !== settledSelectionKey);
   const viewBanner = banner(view);
   const viewRejected = deriveRejectedPlaces(view);
   const viewWarnings = deriveWarnings(view);
@@ -932,11 +954,12 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
           </div>
 
           {/* 우측 열 — 계산 결과. 장소를 켜고 끄면 여기서 바로 갱신된다 */}
-          <div className="min-w-0" aria-busy={view.planning}>
+          <div className="min-w-0" aria-busy={updating}>
           <div className="flex flex-wrap items-center gap-2">
             <h3 className="text-base font-semibold">{tr("step4.title")}</h3>
-            {/* #85 리뷰 1 — 갱신 중에도 직전 일정을 지우지 않는다. 표시만 겹쳐 얹는다 */}
-            {view.planning && displayedDays && (
+            {/* #85 리뷰 1 — 갱신 중에도 직전 일정을 지우지 않는다. 표시만 겹쳐 얹는다.
+                리뷰 비차단 — 계산 시작이 아니라 선택이 바뀐 시점부터 켠다 */}
+            {updating && displayedDays && (
               <span role="status" className="rounded-full bg-sc-blue-soft px-2 py-0.5 text-xs text-sc-blue">
                 {tr("step4.updating")}
               </span>
@@ -945,7 +968,7 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
           <p className="text-sm text-sc-muted">{tr("step4.subtitle")}</p>
 
           {/* 아직 보여줄 일정 자체가 없을 때만 자리를 차지하는 안내로 바꾼다 */}
-          {view.planning && !displayedDays && (
+          {updating && !displayedDays && !needsSelection && (
             <p className="mt-6 text-center text-sm text-sc-muted">{tr("step4.generating")}</p>
           )}
 
@@ -994,7 +1017,7 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
 
           {displayedDays && (
             // 갱신 중에는 살짝 흐리게 — 지금 보이는 게 직전 결과라는 걸 알 수 있어야 한다
-            <div className={`mt-4 space-y-4 ${view.planning ? "opacity-60 transition-opacity" : ""}`}>
+            <div className={`mt-4 space-y-4 ${updating ? "opacity-60 transition-opacity" : ""}`}>
               {!view.reopened && view.result?.status === "planned" && (
                 <GatewayAlternatives
                   alternatives={view.result.gatewayAlternatives ?? []}
