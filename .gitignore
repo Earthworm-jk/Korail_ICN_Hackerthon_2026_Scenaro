@@ -48,3 +48,6 @@ next-env.d.ts
 
 # 스냅샷 파이프라인 백업 산출물
 data/*.json.bak
+
+# 지도 해안선 생성용 원천 (scripts/build_korea_outline.py가 필요 시 내려받는다)
+data/raw/ne_*.geojson
