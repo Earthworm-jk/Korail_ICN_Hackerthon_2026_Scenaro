@@ -31,12 +31,15 @@ export const MIN_SCALE = 1;
 /**
  * 확대 상한.
  *
- * 해안선(lib/korea-outline.ts)은 Natural Earth 1:50m을 구운 꼭짓점 260개짜리 폴리곤이고,
- * 변 길이 중앙값이 2.94 표시단위다. 지도 폭이 화면에서 대략 390px(=194단위)이므로 배율 1에서
- * 한 변은 약 6px, 배율 5에서 약 29px이다. 이보다 더 키우면 곡선이 아니라 꺾은선으로 읽힌다 —
- * 원천 해상도가 감당하는 만큼까지만 확대한다.
+ * PR #114 2차 디자인에서는 지도가 중앙 핵심 화면이므로 도시 안에서 촬영지 간 상대 위치를
+ * 확인할 수 있어야 한다. 기존 5배는 권역 수준에서는 충분했지만 서울·강릉처럼 지점이 가까운
+ * 경우 구분이 어려웠다. 직접 조작 상한을 12배로 늘리되, 자동 포커스는 아래 FOCUS_SCALE=3을
+ * 유지해 주변 역과 권역 맥락이 사라지지 않게 한다.
+ *
+ * 해안선은 Natural Earth 1:50m 저해상도라 고배율에서 꺾여 보일 수 있다. 12배는 정밀 지형도를
+ * 제공하려는 값이 아니라 촬영지·역 표식의 상대 위치를 판독하기 위한 MVP 상한이다.
  */
-export const MAX_SCALE = 5;
+export const MAX_SCALE = 12;
 /** 버튼 한 번 / 휠 한 칸의 배율 변화 */
 export const ZOOM_STEP = 1.5;
 
@@ -51,7 +54,7 @@ const WHEEL_PAGE_PX = 800;
  * 휠 한 이벤트의 배율 변화 — 이벤트 "횟수"가 아니라 이동량 `deltaY`에 비례한다.
  *
  * 이벤트마다 고정 배수를 곱하면 트랙패드에서 지도를 제어할 수 없다. 트랙패드는 한 번 쓸어도
- * 작은 deltaY 이벤트를 여러 건 보내므로, 고정 1.5배라면 네 건(1.5^4 = 5.06)만에 상한에 닿는다.
+ * 작은 deltaY 이벤트를 여러 건 보내므로 고정 배율은 과도하게 빠르게 확대된다.
  * 지수를 쓰면 곱이 지수의 합이 되어, 같은 총 이동량이면 잘게 나뉘어 오든 한 번에 오든 결과가
  * 같다 — `map-viewport.test.ts`가 이 등식을 고정한다 (PR #111 리뷰).
  *
@@ -60,13 +63,13 @@ const WHEEL_PAGE_PX = 800;
  */
 export function wheelZoomFactor(deltaY: number, deltaMode = 0): number {
   const pixels = deltaY * (deltaMode === 1 ? WHEEL_LINE_PX : deltaMode === 2 ? WHEEL_PAGE_PX : 1);
-  // 위로 굴리면(deltaY < 0) 확대
   const steps = clamp(-pixels / WHEEL_NOTCH_PX, -1, 1);
   return Math.exp(steps * Math.log(ZOOM_STEP));
 }
+
 /**
  * "대표 지점 보기"가 잡는 배율.
- * 상한(5)까지 당기면 주변 역이 화면에서 사라져 그 지점이 어디쯤인지 알 수 없다. 3이면 창이
+ * 수동 상한까지 당기면 주변 역이 화면에서 사라져 그 지점이 어디쯤인지 알 수 없다. 3이면 창이
  * 약 65×85 표시단위 — 권역 하나와 가까운 역이 함께 들어오는 크기다.
  */
 export const FOCUS_SCALE = 3;
@@ -119,7 +122,6 @@ export function zoomAt(view: Viewport, factor: number, focus: { x: number; y: nu
   const scale = clamp(scaleOf(view) * factor, MIN_SCALE, MAX_SCALE);
   const width = BASE_VIEWPORT.width / scale;
   const height = BASE_VIEWPORT.height / scale;
-  // 기준점이 창 안에서 차지하던 상대 위치를 유지한다
   const ratioX = (focus.x - view.x) / view.width;
   const ratioY = (focus.y - view.y) / view.height;
   return clampViewport({ x: focus.x - ratioX * width, y: focus.y - ratioY * height, width, height });
@@ -149,19 +151,10 @@ export function focusOn(point: { x: number; y: number }, scale: number): Viewpor
   return clampViewport({ x: point.x - width / 2, y: point.y - height / 2, width, height });
 }
 
-/**
- * 창을 맞출 때 점 둘레에 남기는 여백 (창 한 변에 대한 비율).
- * 점이 가장자리에 붙으면 이름 라벨이 놓일 자리가 없다 — 라벨은 점 옆에 붙는다.
- */
+/** 창을 맞출 때 점 둘레에 남기는 여백 (창 한 변에 대한 비율). */
 const FIT_MARGIN = 0.18;
 
-/**
- * 여러 지점을 한 화면에 담는 창 — 테마체험 필터가 켜질 때 쓴다.
- *
- * 지점이 하나면 `focusOn(point, maxScale)`과 같은 결과다. 지금 검수된 권역 추천은 1건뿐이라
- * 실제로는 그 경우만 돌지만, 여기서 여러 개를 받아 두면 추천이 늘어날 때 이 부분은 다시
- * 손대지 않는다 — 필터가 켠 것을 다 보여준다는 규칙은 개수와 무관하다.
- */
+/** 여러 지점을 한 화면에 담는 창 — 테마체험 필터가 켜질 때 쓴다. */
 export function fitTo(points: readonly { x: number; y: number }[], maxScale = FOCUS_SCALE): Viewport {
   if (points.length === 0) return BASE_VIEWPORT;
 
@@ -172,7 +165,6 @@ export function fitTo(points: readonly { x: number; y: number }[], maxScale = FO
   const minY = Math.min(...ys);
   const maxY = Math.max(...ys);
 
-  // 점들이 차지하는 폭에 여백을 더한 값이 창 안에 들어가야 한다
   const room = 1 - 2 * FIT_MARGIN;
   const byWidth = maxX - minX > 0 ? (BASE_VIEWPORT.width * room) / (maxX - minX) : Infinity;
   const byHeight = maxY - minY > 0 ? (BASE_VIEWPORT.height * room) / (maxY - minY) : Infinity;
@@ -214,12 +206,7 @@ export function boundsOf(view: Viewport) {
   };
 }
 
-/**
- * 화면 좌표 → 표시 좌표.
- *
- * viewBox 비율을 항상 기본 창과 같게 유지하므로 preserveAspectRatio의 여백(letterbox)이
- * 생기지 않는다. 그래서 단순 비례로 충분하다 — 비율을 바꾸는 변경을 하면 이 가정이 깨진다.
- */
+/** 화면 좌표 → 표시 좌표. */
 export function pointFromClient(
   view: Viewport,
   rect: { left: number; top: number; width: number; height: number },
