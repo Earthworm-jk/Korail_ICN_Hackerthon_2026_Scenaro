@@ -109,6 +109,9 @@ const Place = z.object({
       sourceMinutes: z.number(),
       sourceScope: LocalizedText,
       source: HttpUrl,
+      sourceFormat: z.literal("html"),
+      sourceQuote: z.string(),       // 원문 변경 감지용 짧은 인용
+      sourceLocator: z.string(),     // 사람이 재검토할 페이지 내 위치
       verifiedAt: IsoDate,
     }),
   ]).optional(),
@@ -247,9 +250,13 @@ Place 타입에서는 하위 호환을 위해 optional이지만 배포 JSON 시�
 
 - `basis: category_default`: 아래 유형 기본값과 `stayMinutes`가 반드시 일치한다.
 - `basis: official_source`: 장소 전체에 직접 적용 가능한 공식 코스 소요시간만 허용한다.
-  `stayMinutes === sourceMinutes`를 강제하고, 코스 범위·http/https 출처·검증일을 함께 기록한다.
+  `stayMinutes === sourceMinutes`를 강제하고, 코스 범위·http/https 출처·검증일과 함께
+  HTML 원문의 짧은 인용(`sourceQuote`) 및 사람이 찾을 위치(`sourceLocator`)를 기록한다.
 - 운영시간, 편도 탑승시간 또는 더 넓은 주변 관광 코스만 있는 자료는 장소 체류시간의
   `official_source`로 확대 해석하지 않는다.
+- 주기 검증은 공식 HTML에서 인용이 사라졌거나 페이지에 접근할 수 없을 때 실패 신호만 낸다.
+  외부 원문의 변경만으로 `stayMinutes`를 자동 수정하지 않으며, 근거·범위·일정 영향을 사람이
+  재검토한 뒤 별도 변경으로 반영한다.
 
 | category | 적용 범위 | 기본 체류시간 |
 |---|---|---:|
@@ -261,8 +268,9 @@ Place 타입에서는 하위 호환을 위해 optional이지만 배포 JSON 시�
 | `large_experience` | 목장·케이블카 등 이동을 포함한 대형 체험 | 120분 |
 
 #84 P1 조사로 공식 코스가 확인된 월정사 전나무숲길(60분), 삼양라운드힐 힐코스(120분),
-경기전 해설 코스(50분)는 `official_source`로 승격했다. 경기전은 기존 유형 기본값 60분에서
-50분으로 재산정했고, 나머지는 적용 범위가 일치하는 공식 분 단위 자료가 없어 유형 기본값을 유지한다.
+경기전 역사투어(60분)는 `official_source`로 승격했다. 세 값 모두 기존 유형 기본값과 같아
+엔진 입력과 일정 결과는 바뀌지 않으며, 나머지는 적용 범위가 일치하는 공식 분 단위 자료가 없어
+유형 기본값을 유지한다.
 
 - `always_open`(출처 확인)은 판정을 통과 처리하되 복귀시간 모델은 동일 적용. (#5)
 - 운영시간 판정 결과는 배치 선호와 경고에 사용한다. 장소가 철거 또는 접근 불가가 아니라면

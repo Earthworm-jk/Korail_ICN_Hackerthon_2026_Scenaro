@@ -181,6 +181,9 @@
         "en": "1.9 km Woljeongsa Fir Forest walking course"
       },
       "source": "https://tour.pc.go.kr/Home/H20000/H20100/H20106/html",
+      "sourceFormat": "html",
+      "sourceQuote": "총 1.9km로 1시간 정도가 소요되며",
+      "sourceLocator": "대표관광지 > 월정사 & 오대산 전나무숲길",
       "verifiedAt": "2026-08-10"
     },
     "verificationLevel": "교차확인",
@@ -226,6 +229,9 @@
         "en": "Samyang Roundhill green-season Hill Course"
       },
       "source": "https://www.samyangroundhill.com/enjoy/course",
+      "sourceFormat": "html",
+      "sourceQuote": "소요시간 : 약 120분",
+      "sourceLocator": "추천코스 > 힐코스",
       "verifiedAt": "2026-08-10"
     },
     "verificationLevel": "교차확인",
@@ -387,16 +393,19 @@
       "source": "한국관광공사 VISITKOREA 8월 09:00~20:00·폐관 1시간 전 입장 마감·연중무휴 안내 https://english.visitkorea.or.kr/svc/whereToGo/locIntrdn/rgnContentsView.do?vcontsId=108728",
       "verifiedAt": "2026-08-08"
     },
-    "stayMinutes": 50,
+    "stayMinutes": 60,
     "stayMetadata": {
       "category": "culture_venue",
       "basis": "official_source",
-      "sourceMinutes": 50,
+      "sourceMinutes": 60,
       "sourceScope": {
-        "ko": "경기전 해설(나무이야기)투어",
-        "en": "Gyeonggijeon guided tree-story tour"
+        "ko": "경기전 역사투어",
+        "en": "Gyeonggijeon history tour"
       },
-      "source": "https://hanok.jeonju.go.kr/assets/file/jeonju_hanokMap.pdf",
+      "source": "https://tour.jeonju.go.kr/index.jeonju?menuCd=DOM_000000106005001000",
+      "sourceFormat": "html",
+      "sourceQuote": "경기전 역사투어 소요시간 1시간",
+      "sourceLocator": "도보해설 정기투어 코스 > 코스 1",
       "verifiedAt": "2026-08-10"
     },
     "verificationLevel": "교차확인",

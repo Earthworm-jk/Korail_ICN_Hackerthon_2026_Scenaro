@@ -130,6 +130,9 @@ export const OfficialSourceStayMetadata = z.object({
   sourceMinutes: z.number().int().positive(),
   sourceScope: LocalizedText,
   source: HttpUrl,
+  sourceFormat: z.literal("html"),
+  sourceQuote: z.string().min(1),
+  sourceLocator: z.string().min(1),
   verifiedAt: IsoDate,
 });
 

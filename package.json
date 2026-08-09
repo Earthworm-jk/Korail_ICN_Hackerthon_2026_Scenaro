@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "eslint",
     "test": "vitest run",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "verify:stay-sources": "python3 scripts/verify_stay_sources.py"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.4",

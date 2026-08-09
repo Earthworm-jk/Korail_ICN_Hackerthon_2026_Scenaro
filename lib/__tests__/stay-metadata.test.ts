@@ -31,8 +31,8 @@ const EXPECTED_OFFICIAL_SOURCES = {
     source: "https://www.samyangroundhill.com/enjoy/course",
   },
   "place-gyeonggijeon-shrine": {
-    minutes: 50,
-    source: "https://hanok.jeonju.go.kr/assets/file/jeonju_hanokMap.pdf",
+    minutes: 60,
+    source: "https://tour.jeonju.go.kr/index.jeonju?menuCd=DOM_000000106005001000",
   },
 } as const;
 
@@ -63,6 +63,9 @@ describe("보수 체류 추정 기준 (#84 P0-4)", () => {
         if (place.stayMetadata?.basis !== "official_source") continue;
         expect(place.stayMetadata.sourceMinutes, place.id).toBe(official.minutes);
         expect(place.stayMetadata.source, place.id).toBe(official.source);
+        expect(place.stayMetadata.sourceFormat, place.id).toBe("html");
+        expect(place.stayMetadata.sourceQuote.length, place.id).toBeGreaterThan(0);
+        expect(place.stayMetadata.sourceLocator.length, place.id).toBeGreaterThan(0);
         expect(place.stayMetadata.verifiedAt, place.id).toBe("2026-08-10");
         expect(place.stayMinutes, place.id).toBe(official.minutes);
       } else {
@@ -74,23 +77,16 @@ describe("보수 체류 추정 기준 (#84 P0-4)", () => {
     }
   });
 
-  it("공식 경기전 해설 코스를 반영해 체류시간을 60분에서 50분으로 재산정한다", () => {
-    const place = loadRepositories().places.find(({ id }) => id === "place-gyeonggijeon-shrine");
-    expect(place?.stayMinutes).toBe(50);
-    expect(place?.stayMetadata?.basis).toBe("official_source");
-
-    const result = generateItinerary({
-      ...BASE_CONSTRAINTS,
-      selectedActorIds: [],
-      selectedWorkIds: ["work-the-king"],
-    }, loadRepositories());
-    expect(result.status).toBe("planned");
-    if (result.status !== "planned") return;
-    const item = result.days
-      .flatMap(({ items }) => items)
-      .find(({ placeId }) => placeId === "place-gyeonggijeon-shrine");
-    expect(item).toBeDefined();
-    expect((Date.parse(item!.departAt) - Date.parse(item!.arriveAt)) / 60_000).toBe(50);
+  it("공식 근거 승격은 기존 유형 기본값과 같아 일정 엔진 입력을 바꾸지 않는다", () => {
+    const places = loadRepositories().places.filter(
+      ({ stayMetadata }) => stayMetadata?.basis === "official_source",
+    );
+    expect(places).toHaveLength(3);
+    for (const place of places) {
+      expect(place.stayMinutes, place.id).toBe(
+        STAY_CATEGORY_DEFAULT_MINUTES[place.stayMetadata!.category],
+      );
+    }
   });
 
   it("근거 메타는 설명용 additive이며 기존 일정 산출을 바꾸지 않는다", () => {

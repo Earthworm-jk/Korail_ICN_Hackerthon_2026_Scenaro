@@ -29,6 +29,9 @@ type Seed = {
       sourceMinutes?: number;
       sourceScope?: LocalName;
       source?: string;
+      sourceFormat?: string;
+      sourceQuote?: string;
+      sourceLocator?: string;
       verifiedAt?: string;
     };
     verificationLevel: string;
@@ -258,6 +261,9 @@ describe("시드 의미 검증 (#20)", () => {
       sourceMinutes: 50,
       sourceScope: { ko: "공식 해설 코스", en: "Official guided course" },
       source: "https://example.com/official-course",
+      sourceFormat: "html",
+      sourceQuote: "소요시간 50분",
+      sourceLocator: "코스 안내 > 소요시간",
       verifiedAt: "2026-08-10",
     };
     expect(() => parseRepositories(raw as RawSeedFiles)).not.toThrow();
@@ -272,6 +278,14 @@ describe("시드 의미 검증 (#20)", () => {
     const provenance = issuesOf(raw);
     expect(provenance.some((m) => m.includes("stayMetadata.source") && m.includes("http/https"))).toBe(true);
     expect(provenance.some((m) => m.includes("stayMetadata.verifiedAt") && m.includes("실존"))).toBe(true);
+
+    raw.places[0].stayMetadata.source = "https://example.com/official-course";
+    raw.places[0].stayMetadata.verifiedAt = "2026-08-10";
+    raw.places[0].stayMetadata.sourceQuote = "";
+    raw.places[0].stayMetadata.sourceLocator = "";
+    const citation = issuesOf(raw);
+    expect(citation.some((m) => m.includes("stayMetadata.sourceQuote"))).toBe(true);
+    expect(citation.some((m) => m.includes("stayMetadata.sourceLocator"))).toBe(true);
   });
 
   it("TrainLeg는 유효한 ISO 일시와 departAt < arriveAt을 지켜야 한다", () => {
