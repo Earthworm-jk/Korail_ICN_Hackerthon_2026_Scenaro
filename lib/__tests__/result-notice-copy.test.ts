@@ -28,6 +28,16 @@ describe("검증 문구가 보장하지 않는 것을 주장하지 않는다 (#4
     expect(messages.en["step4.validation"]).toContain("warning");
   });
 
+  /**
+   * PR #106 리뷰 비차단. `ActivityWindowDetail`은 셋이다 — UNVERIFIED_HOURS(미확인),
+   * OUTSIDE_VERIFIED_HOURS(확인된 시간 밖), CONSERVATIVE_BUFFER_MISMATCH(보수 버퍼).
+   * 문구가 "확인되지 않은 장소"로만 좁아지면 뒤의 둘을 반대로 설명하게 된다.
+   */
+  it("경고 범위를 미확인 하나로 좁히지 않는다", () => {
+    expect(messages.ko["step4.validation"]).toContain("맞지 않을 수 있는");
+    expect(messages.en["step4.validation"]).toContain("may not line up");
+  });
+
   it("넣지 못한 장소가 있을 수 있음을 밝힌다", () => {
     expect(messages.ko["step4.validation"]).toContain("넣지 못한");
     expect(messages.en["step4.validation"]).toContain("could not fit");
