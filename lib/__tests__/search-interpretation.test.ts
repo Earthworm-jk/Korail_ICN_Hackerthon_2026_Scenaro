@@ -21,6 +21,7 @@ describe("P1 검색 입력 해석", () => {
     }));
     const result = await searchEntitiesCore(query, { apiKey: "test-key", interpret });
     expect(kind === "actor" ? result.actors.map((item) => item.id) : result.works.map((item) => item.id)).toEqual([id]);
+    expect(result.interpretedByAi).toBe(true);
     expect(interpret).toHaveBeenCalledOnce();
   });
 
@@ -28,6 +29,7 @@ describe("P1 검색 입력 해석", () => {
     const interpret = vi.fn();
     const result = await searchEntitiesCore("kim go", { apiKey: "test-key", interpret });
     expect(result.actors.map((item) => item.id)).toContain("actor-kim-go-eun");
+    expect(result.interpretedByAi).toBeUndefined();
     expect(interpret).not.toHaveBeenCalled();
   });
 
@@ -54,6 +56,7 @@ describe("P1 검색 입력 해석", () => {
     });
     expect(result.actors).toEqual([]);
     expect(result.works).toEqual([]);
+    expect(result.interpretedByAi).toBeUndefined();
   });
 
   it("장소·장면 검색 제외 계약은 LLM 프롬프트에도 유지한다", async () => {
