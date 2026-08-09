@@ -120,6 +120,11 @@ export type GatewayAlternative = {
   warnings: CandidateWarning[];
   metrics: ItineraryMetrics & { totalGatewayMinutes: number };
   effects: { localUseDeltaMinutes: number; excludedPlaceIds: string[] };
+  schedule: {
+    kind: "observed_snapshot";
+    verifiedAt: string;
+    recheckRequired: true;
+  };
 };
 
 // #14 ver.0.4 확정: 필수 방문·방문일 고정 입력이 없어 사용자 제약 실패(ok:false) 분기가

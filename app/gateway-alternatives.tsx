@@ -62,6 +62,10 @@ export function GatewayAlternatives({ alternatives, selectedId, locale, onSelect
               <span className="mt-1 block text-xs text-sc-muted">
                 {tr("gateway.localUse")} {alternative.effects.localUseDeltaMinutes >= 0 ? "+" : ""}{alternative.effects.localUseDeltaMinutes}{tr("step1.minutes")}
               </span>
+              <span className="mt-2 block rounded bg-sc-orange-soft/70 px-2 py-1.5 text-xs text-sc-orange-text">
+                {tr("gateway.verifiedAt")} {alternative.schedule.verifiedAt} · {tr("gateway.changeNotice")}<br />
+                {tr("gateway.recheck")}
+              </span>
             </button>
           );
         })}

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { getCandidatePlaces } from "../actions/places";
-import { planItinerary, type PlanRequest } from "../actions/itinerary";
+import { planGatewayAlternatives, planItinerary, type PlanRequest } from "../actions/itinerary";
 import { excludedPlaceIdsFrom, initialCandidateIds } from "../candidates";
 
 // PR #30 리뷰 재리뷰 조건: 후보 합집합·미확인 제외·잘못된 시각 요청의 액션 단위 테스트
@@ -68,6 +68,21 @@ describe("잘못된 시각 요청 (PR #30 리뷰 ③ — throw 없이 INVALID_RE
   it("유효한 요청은 ok:true로 엔진 결과를 반환한다", async () => {
     const res = await planItinerary(validRequest());
     expect(res.ok).toBe(true);
+    if (res.ok && res.result.status === "planned") {
+      expect(res.result.gatewayAlternatives).toBeUndefined();
+    }
+  });
+
+  it("공항버스 전체 대안은 핵심 추천 뒤 별도 Action으로 보강된다 (#58)", async () => {
+    const res = await planGatewayAlternatives(validRequest());
+    expect(res.ok).toBe(true);
+    if (!res.ok) return;
+    expect(res.alternatives.some(({ routeId }) =>
+      routeId === "airport-bus-icn-t1-gangneung")).toBe(true);
+    expect(res.alternatives[0]?.schedule).toMatchObject({
+      kind: "observed_snapshot",
+      recheckRequired: true,
+    });
   });
 
   // #56 차단 리뷰: 실시드 전체 요청은 사용자가 실제 거치는 경로이므로 제품 데이터 기준으로

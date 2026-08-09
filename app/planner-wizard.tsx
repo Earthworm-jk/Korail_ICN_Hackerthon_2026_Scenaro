@@ -5,7 +5,7 @@
  * - 편집 = 촬영지 재선택·항공 시각 변경 후 전체 재계산 (무상태)
  * - 대안 시간표는 mock(#14 ⑨ 선행), 저장·내 일정은 in-memory 스텁(#25 선행) — 엔진·Supabase 연결 시 교체
  */
-import { useCallback, useEffect, useMemo, useReducer, useState } from "react";
+import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from "react";
 import {
   searchEntities,
   type ActorSummary,
@@ -17,7 +17,7 @@ import {
   type CandidateResponse,
   type PlaceCandidate,
 } from "@/lib/actions/places";
-import { planItinerary } from "@/lib/actions/itinerary";
+import { planGatewayAlternatives, planItinerary } from "@/lib/actions/itinerary";
 import { excludedPlaceIdsFrom, initialCandidateIds, initialSelectedIds, splitByActorPresence } from "@/lib/candidates";
 import { sortCandidatePlaces } from "@/lib/place-ranking";
 import { getFlightInfo } from "@/lib/actions/flights";
@@ -224,6 +224,7 @@ export default function PlannerWizard({ stationFacilities }: {
 
   // step 4 — 결과. 전이 규칙·파생은 lib/itinerary-view 순수 함수로 고정 (PR #35 리뷰 3)
   const [view, dispatchView] = useReducer(reduceItineraryView, initialItineraryView);
+  const planSequence = useRef(0); // 늦게 도착한 이전 요청의 공항버스 대안이 새 결과를 덮지 않게 한다.
 
   // 재열람 = 화면 교체가 아니라 저장 당시 조건의 복원 (PR #35 리뷰 3)
   // 입력·선택·후보 컨텍스트를 constraints에서 되살려, 이후 재계산이 저장 당시 조건으로 돈다
@@ -321,6 +322,7 @@ export default function PlannerWizard({ stationFacilities }: {
   const plan = useCallback(async () => {
     const constraints = currentConstraints();
     if (!constraints) return;
+    const sequence = ++planSequence.current;
     dispatchView({ type: "PLAN_START" });
     setStep(4);
     try {
@@ -328,6 +330,15 @@ export default function PlannerWizard({ stationFacilities }: {
       if (res.ok) {
         dispatchView({ type: "PLAN_SUCCESS", result: res.result });
         saveStub.markDirty();
+        if (res.result.status === "planned") {
+          // 핵심 철도 추천을 먼저 보여주고, 더 비싼 전체 공항버스 재계산은 비차단으로 붙인다.
+          void planGatewayAlternatives(constraints).then((gateway) => {
+            if (sequence !== planSequence.current || !gateway.ok) return;
+            dispatchView({ type: "GATEWAY_ALTERNATIVES_SUCCESS", alternatives: gateway.alternatives });
+          }).catch(() => {
+            // 선택 대안 보강 실패는 이미 생성된 핵심 추천을 실패 상태로 되돌리지 않는다.
+          });
+        }
       } else dispatchView({ type: "PLAN_INVALID" }); // 1단계 검증을 우회한 요청 — 기존 결과 유지
     } catch {
       dispatchView({ type: "PLAN_FAILED" }); // 네트워크·서버 장애 — 기존 결과 유지

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { generateItinerary } from "../engine";
+import { generateItinerary, generateItineraryWithGatewayAlternatives } from "../engine";
 import type { TripConstraints } from "../engine/types";
 import { loadRepositories, type Repositories } from "../repositories/json";
 
@@ -102,6 +102,8 @@ function gatewayLeg(
     operator: localized("검증 운수사"),
     sourceUrls: ["https://example.com/official-bus"],
     verifiedAt: "2026-08-09",
+    scheduleKind: "observed_snapshot",
+    recheckRequired: true,
   };
 }
 
@@ -153,7 +155,7 @@ describe("generateItinerary", () => {
       gatewayLeg("bus-in", "route-gangwon", "inbound", "station-gangneung", "station-airport", "2026-08-14T12:00:00+09:00", "2026-08-14T15:50:00+09:00"),
     ];
 
-    const result = generateItinerary(constraints({
+    const result = generateItineraryWithGatewayAlternatives(constraints({
       arrivalAt: "2026-08-12T10:00:00+09:00",
       airportReadyAt: "2026-08-12T12:00:00+09:00",
       departureAt: "2026-08-14T18:00:00+09:00",
@@ -173,6 +175,11 @@ describe("generateItinerary", () => {
       .toBe(false);
     expect(alternative?.days.flatMap((day) => day.regionWindows)
       .some(({ startBoundary }) => startBoundary === "GATEWAY_ARRIVAL")).toBe(true);
+    expect(alternative?.schedule).toEqual({
+      kind: "observed_snapshot",
+      verifiedAt: "2026-08-09",
+      recheckRequired: true,
+    });
   });
 
   it("귀국 마감 뒤 도착하는 공항버스 대안은 생성하지 않는다 (#58)", () => {
@@ -185,7 +192,9 @@ describe("generateItinerary", () => {
       gatewayLeg("bus-out", "route-gangwon", "outbound", "station-airport", "station-gangneung", "2026-08-12T07:00:00+09:00", "2026-08-12T10:00:00+09:00"),
       gatewayLeg("bus-in", "route-gangwon", "inbound", "station-gangneung", "station-airport", "2026-08-12T17:00:00+09:00", "2026-08-12T21:00:00+09:00"),
     ];
-    const result = generateItinerary(constraints({ airportStationId: "station-seoul" }), repos);
+    const result = generateItineraryWithGatewayAlternatives(
+      constraints({ airportStationId: "station-seoul" }), repos,
+    );
     expect(result.status).toBe("planned");
     if (result.status !== "planned") return;
     expect(result.gatewayAlternatives).toBeUndefined();
@@ -209,7 +218,7 @@ describe("generateItinerary", () => {
       gatewayLeg("synthetic-in", "route-synthetic", "inbound", "station-synthetic", "station-airport", "2026-08-12T17:30:00+09:00", "2026-08-12T19:30:00+09:00"),
     ];
 
-    const result = generateItinerary(constraints({
+    const result = generateItineraryWithGatewayAlternatives(constraints({
       airportStationId: "station-seoul",
       selectedActorIds: [],
       departureAt: "2026-08-12T22:00:00+09:00",
@@ -351,7 +360,7 @@ describe("generateItinerary", () => {
 
   it("실스냅샷 김고은 데모에서 철도 추천과 강릉 직행버스 전체 대안이 함께 생성된다 (#58 E2E)", () => {
     const real = loadRepositories();
-    const result = generateItinerary(constraints({
+    const result = generateItineraryWithGatewayAlternatives(constraints({
       arrivalAt: "2026-08-12T10:00:00+09:00",
       airportReadyAt: "2026-08-12T12:00:00+09:00",
       departureAt: "2026-08-14T18:00:00+09:00",

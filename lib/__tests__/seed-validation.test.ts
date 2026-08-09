@@ -137,6 +137,8 @@ function addValidGatewayPair(raw: Seed): void {
     operator: { ko: "운수사", en: "Operator" },
     sourceUrls: ["https://example.com/official"],
     verifiedAt: "2026-08-09",
+    scheduleKind: "observed_snapshot",
+    recheckRequired: true,
   };
   raw.gatewayLegs.push(
     {

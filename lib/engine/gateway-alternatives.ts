@@ -156,6 +156,12 @@ export function buildGatewayAlternatives(
         localUseDeltaMinutes: localUseMinutes(days) - localUseMinutes(primaryDays),
         excludedPlaceIds: [...primaryVisited].filter((id) => !alternativeVisited.has(id)).sort(),
       },
+      schedule: {
+        kind: "observed_snapshot",
+        // 한 쌍의 근거 중 더 오래된 확인일을 표시해야 최신처럼 과장하지 않는다.
+        verifiedAt: [outbound.verifiedAt, inbound.verifiedAt].sort()[0],
+        recheckRequired: true,
+      },
     });
   }
 

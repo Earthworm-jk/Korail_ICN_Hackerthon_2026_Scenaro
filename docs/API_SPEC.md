@@ -128,6 +128,15 @@ type PlanRequest = {
 //   { status: "empty",   days: [], rejectedPlaces, warnings }
 // empty는 정상 응답이며 comparisonKeys·metrics를 포함하지 않는다(허위 값 금지)
 
+// #58 공항버스 대안은 핵심 추천의 2초 응답을 막지 않는 후속 보강 Action이다.
+// planItinerary(request)는 철도 추천을 먼저 반환하고, 성공한 planned 결과 뒤에 호출한다.
+planGatewayAlternatives(request): Promise<
+  | { ok: true; alternatives: GatewayAlternative[] }
+  | { ok: false; code: "INVALID_REQUEST"; fieldErrors: Record<string, string> }
+>;
+// UI는 이전 요청의 늦은 응답을 폐기한다. 보강 실패는 이미 표시한 추천을 실패로 되돌리지 않는다.
+// GatewayAlternative.schedule은 observed_snapshot·verifiedAt·recheckRequired:true를 포함한다.
+
 // lib/actions/account.ts — #25 lazy login (Supabase Auth, 서버 세션 재검증 #36)
 getAccountStatus(): Promise<{ configured: boolean; authenticated: boolean }>;
 signIn(email, password) / signUp(email, password): Promise<{ ok: true } | { ok: false; reason: "NOT_CONFIGURED" | "AUTH_FAILED" }>;

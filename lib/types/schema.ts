@@ -221,6 +221,10 @@ export const GatewayLeg = z
     operator: LocalizedText,
     sourceUrls: z.array(HttpUrl).min(1),
     verifiedAt: IsoDate,
+    // 당일 API와 공식 예매처를 교차 확인해 고정한 관측 스냅샷이다.
+    // 미래 운행 보장으로 오해하지 않도록 UI 재확인 안내를 데이터 계약으로 강제한다.
+    scheduleKind: z.literal("observed_snapshot"),
+    recheckRequired: z.literal(true),
   })
   .superRefine((leg, ctx) => {
     if (Date.parse(leg.departAt) >= Date.parse(leg.arriveAt)) {

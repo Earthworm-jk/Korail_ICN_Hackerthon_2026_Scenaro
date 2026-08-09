@@ -111,6 +111,11 @@ def main() -> None:
     inbound = next((leg for leg in snapshot if leg.get("direction") == "inbound"), None)
     if not outbound or not inbound or outbound["routeId"] != inbound["routeId"]:
         raise VerifyError("같은 routeId의 outbound/inbound 한 쌍이 필요합니다")
+    if any(
+        leg.get("scheduleKind") != "observed_snapshot" or leg.get("recheckRequired") is not True
+        for leg in (outbound, inbound)
+    ):
+        raise VerifyError("왕복편은 observed_snapshot·recheckRequired:true여야 합니다")
     if not PORTAL_SOURCES.issubset(set(outbound["sourceUrls"])):
         raise VerifyError("outbound에 공항공사·TAGO 공식 출처가 모두 필요합니다")
     if TMONEY_SOURCE not in outbound["sourceUrls"] or TMONEY_SOURCE not in inbound["sourceUrls"]:

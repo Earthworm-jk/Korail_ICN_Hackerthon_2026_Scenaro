@@ -78,6 +78,16 @@ describe("경고 보존 (#43 경고 누락 0건 — PR #44 리뷰 2)", () => {
 });
 
 describe("결과 화면 상태 전이", () => {
+  it("공항버스 대안 후속 응답은 기존 추천을 유지한 채 additive로 붙는다", () => {
+    const afterPlan = run([{ type: "PLAN_SUCCESS", result: plannedA }]);
+    const enriched = reduceItineraryView(afterPlan, {
+      type: "GATEWAY_ALTERNATIVES_SUCCESS",
+      alternatives: [],
+    });
+    expect(enriched.result).toEqual(plannedA);
+    expect(displayedDays(enriched)).toEqual([dayA]);
+  });
+
   it("저장 A → 편집 B 계산 → A 재열람: 화면은 A, 재계산 성공 시 재열람 해제 후 새 결과", () => {
     const afterB = run([{ type: "PLAN_START" }, { type: "PLAN_SUCCESS", result: plannedB }]);
     const reopenedA = reduceItineraryView(afterB, { type: "REOPEN", record: recordA });

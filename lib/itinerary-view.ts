@@ -35,6 +35,7 @@ export const initialItineraryView: ItineraryView = {
 export type ItineraryViewEvent =
   | { type: "PLAN_START" }
   | { type: "PLAN_SUCCESS"; result: ItineraryResult }
+  | { type: "GATEWAY_ALTERNATIVES_SUCCESS"; alternatives: GatewayAlternative[] }
   | { type: "PLAN_INVALID" }
   | { type: "PLAN_FAILED" }
   | { type: "SELECT_ALT"; alt: SelectableAlternative | null }
@@ -46,6 +47,15 @@ export function reduceItineraryView(view: ItineraryView, event: ItineraryViewEve
       return { ...view, planning: true, planError: null };
     case "PLAN_SUCCESS":
       return { planning: false, planError: null, result: event.result, reopened: null, selectedAlt: null };
+    case "GATEWAY_ALTERNATIVES_SUCCESS":
+      if (view.result?.status !== "planned") return view;
+      return {
+        ...view,
+        result: {
+          ...view.result,
+          gatewayAlternatives: event.alternatives.length > 0 ? event.alternatives : undefined,
+        },
+      };
     case "PLAN_INVALID":
       return { ...view, planning: false, planError: "invalid" };
     case "PLAN_FAILED":

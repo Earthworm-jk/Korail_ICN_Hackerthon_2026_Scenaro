@@ -76,6 +76,18 @@ export function generateItinerary(
   repos: Repositories,
 ): ItineraryResult {
   const parsed = TripConstraintsSchema.parse(constraints);
+  return planItinerary(parsed, repos);
+}
+
+/**
+ * #58 공항버스는 핵심 추천의 2초 응답을 막지 않는 후속 보강 결과다.
+ * 순수 엔진 E2E와 후속 Server Action에서만 명시적으로 호출한다.
+ */
+export function generateItineraryWithGatewayAlternatives(
+  constraints: TripConstraints,
+  repos: Repositories,
+): ItineraryResult {
+  const parsed = TripConstraintsSchema.parse(constraints);
   const result = planItinerary(parsed, repos);
   const gatewayAlternatives = buildGatewayAlternatives(parsed, repos, result);
   return result.status === "planned" && gatewayAlternatives.length > 0
