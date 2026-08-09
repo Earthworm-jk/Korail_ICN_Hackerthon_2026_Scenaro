@@ -56,6 +56,14 @@
       "address": "부산광역시 동구 중앙대로 206"
     },
     {
+      "stationId": "station-yongsan",
+      "sourceName": "용산역",
+      "latitude": 37.529567,
+      "longitude": 126.963918,
+      "source": "primary",
+      "address": "서울특별시 용산구 한강대로 23길 55"
+    },
+    {
       "stationId": "station-jeonju",
       "sourceName": "전주역",
       "latitude": 35.849552,

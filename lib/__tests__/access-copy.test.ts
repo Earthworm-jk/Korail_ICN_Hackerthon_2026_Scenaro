@@ -55,17 +55,42 @@ describe("시간표 커버리지 노출", () => {
     }
   });
 
-  it("커버리지 밖 앵커역이 실제로 존재한다 — 분기가 죽은 코드가 아니다", async () => {
-    // 지금은 전주역이 해당한다. 스냅샷이 확장돼 사라지면 이 테스트가 알려 준다.
+  it("커버리지 밖 판정이 합성 스냅샷에서 재현된다 — 분기가 죽은 코드가 아니다", async () => {
+    // 전라선 팩(#72) 수록으로 실시드에는 커버리지 밖 앵커역이 더 이상 없다. 그래서
+    // 실데이터 대신 합성 스냅샷으로 고정한다: 앵커역이 실재해도 그 역 왕복 구간이
+    // 스냅샷에 없으면 hasTimetable이 거짓이 되고, 화면은 "시간표 범위 밖"으로 갈린다.
+    const response = await getCandidatePlaces({
+      selectedActorIds: [],
+      selectedWorkIds: ["work-the-king"],
+    });
+    const anchorIds = [...new Set(response.candidates.map((c) => c.nearestStationId))];
+    expect(anchorIds.length).toBeGreaterThan(1);
+
+    // 첫 앵커역만 왕복이 없는 스냅샷 — 나머지는 왕복을 갖춘다
+    const [uncovered, ...rest] = anchorIds;
+    const synthetic = [
+      { fromStationId: uncovered, toStationId: rest[0] }, // 편도만 — 돌아오는 편 없음
+      ...rest.flatMap((id) => [
+        { fromStationId: id, toStationId: "station-seoul" },
+        { fromStationId: "station-seoul", toStationId: id },
+      ]),
+    ];
+    const covered = roundTripStationIds(synthetic);
+    expect(covered.has(uncovered)).toBe(false);
+    for (const id of rest) expect(covered.has(id), id).toBe(true);
+  });
+
+  it("《더 킹》 후보의 앵커역이 모두 왕복 커버다 — 전라선 팩 회귀 (#72)", async () => {
+    // 경기전이 "연결 가능한 열차가 없습니다"로 빠지던 원인은 전주 구간 0건이었다.
     const response = await getCandidatePlaces({
       selectedActorIds: [],
       selectedWorkIds: ["work-the-king"],
     });
     const anchorIds = new Set(response.candidates.map((c) => c.nearestStationId));
-    const uncovered = response.stations.filter(
-      (s) => anchorIds.has(s.id) && !s.hasTimetable,
-    );
-    expect(uncovered.length).toBeGreaterThan(0);
+    expect(anchorIds.has("station-jeonju")).toBe(true);
+    for (const station of response.stations.filter((s) => anchorIds.has(s.id))) {
+      expect(station.hasTimetable, station.id).toBe(true);
+    }
   });
 });
 

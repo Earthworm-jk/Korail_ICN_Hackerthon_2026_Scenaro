@@ -844,6 +844,11 @@ function assertReferences(
 
 function compareRoutePaths(a: TrainLegT[], b: TrainLegT[]): number {
   return transferCount(a) - transferCount(b)
+    // 구간 수가 적은 쪽 먼저 (#72 용산 경유). 스냅샷에 중간역 구간이 생기면 같은 열차의
+    // 한 번 탑승이 두 leg로도 표현된다(전주→용산→서울 00508). 이때 routeMinutes는 leg
+    // 소요시간의 합이라 중간역 정차 대기가 빠져 쪼갠 쪽이 더 짧아 보이고, 화면에는
+    // 내렸다 다시 타는 것처럼 나온다. 도착 시각이 같으면 한 번에 가는 쪽이 맞다.
+    || a.length - b.length
     || routeMinutes(a) - routeMinutes(b)
     || a.map(({ trainNo }) => trainNo).join("/")
       .localeCompare(b.map(({ trainNo }) => trainNo).join("/"), "en");

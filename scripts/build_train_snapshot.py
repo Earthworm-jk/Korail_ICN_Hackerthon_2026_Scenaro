@@ -21,6 +21,8 @@
   - STOPOVER_OD_PAIRS는 정차역 실적(runInfo2)의 D-7일(같은 요일) 원값을 날짜만 매핑해 생성.
     수록 대상은 데모일 운행계획의 열차번호로 한정 — 공식 계획 시각이 아니라
     "공식 운행 실적 기반 같은 요일 매핑" 스냅샷이다 (#56 A안 합의, SOURCES.md)
+  - OD_PAIRS·STOPOVER_OD_PAIRS의 KTX 전용 구간은 TAGO 공식 등급으로 KTX 계열만 수록하고
+    제외 내역을 로그로 남긴다 (무음 절단 금지)
   - 공항철도(AREX) 구간은 API에 없으므로 기존 스냅샷에서 보존한다 (PRESERVE_STATION 관련 구간)
   - 복합 키(trainNo|from|to|departAt) 중복 제거, 시각 오름차순 정렬
   - 쓰기 전 기존 파일을 .bak로 백업. --dry-run이면 요약만 출력
@@ -58,12 +60,23 @@ OD_PAIRS: list[tuple[tuple[str, str], tuple[str, str], bool]] = [
 # 중간 정차(경유역) OD — 운행계획(runPlan2)에는 중간 정차 행이 없어(#56 실측 2026-08-09)
 # 정차역 단위 실적(runInfo2)에서 추출한다. 데모일 D의 시각은 D-7일(같은 요일) 실적 원값을
 # 날짜만 매핑해 사용하고, 수록 대상은 데모일 운행계획에 존재하는 열차번호로 한정한다(#56 A안 합의).
-STOPOVER_OD_PAIRS: list[tuple[tuple[str, str], tuple[str, str]]] = [
-    (("station-seoul", "서울"), ("station-jinbu", "진부")),
-    (("station-jinbu", "진부"), ("station-gangneung", "강릉")),
-    (("station-seoul", "서울"), ("station-manjong", "만종")),  # #56 2단계 — 설정만 추가(재사용성 증명)
-    (("station-manjong", "만종"), ("station-gangneung", "강릉")),
-    # 전주는 용산 관문 계약 합의 전 보류, 춘천은 KTX 컷라인으로 MVP 비범위(#56)
+# 세 번째 값은 KTX 전용 필터 여부 — 시종착 OD와 같은 규칙(TAGO 공식 등급)을 적용한다.
+STOPOVER_OD_PAIRS: list[tuple[tuple[str, str], tuple[str, str], bool]] = [
+    (("station-seoul", "서울"), ("station-jinbu", "진부"), False),
+    (("station-jinbu", "진부"), ("station-gangneung", "강릉"), False),
+    (("station-seoul", "서울"), ("station-manjong", "만종"), False),  # #56 2단계 — 설정만 추가(재사용성 증명)
+    (("station-manjong", "만종"), ("station-gangneung", "강릉"), False),
+    # 전라선 팩 (#72) — 서울역 직결. 전라선 KTX의 종단은 행신·여수엑스포라 계획 응답의
+    # 종단 행에는 보이지 않는 중간 정차이며(진부와 동일 구조), 서울역 정차편은 전량 KTX
+    # 계열이지만 원천이 KTX 전용선이 아니므로 등급 필터를 켠다.
+    (("station-seoul", "서울"), ("station-jeonju", "전주"), True),
+    # 용산 경유 (#72) — 전라선 KTX의 절반 이상이 용산 착발이라 직결만 쓰면 오후가 비는데,
+    # 서울역↔용산은 호남선·전라선 KTX가 실제로 잇는 한 정거장(4-7분)이다. 지하철 개별
+    # 이동 예외(#61)를 쓰지 않고 KTX 전용 계약 안에서 해결된다. 환승은 엔진의
+    # MIN_TRANSFER_MINUTES(15분)가 처리한다.
+    (("station-seoul", "서울"), ("station-yongsan", "용산"), True),
+    (("station-yongsan", "용산"), ("station-jeonju", "전주"), True),
+    # 춘천은 KTX 컷라인으로 MVP 비범위(#56·#61)
 ]
 STOPOVER_SOURCE_OFFSET_DAYS = 7  # 같은 요일 매핑 — SOURCES.md에 기준일과 함께 명시
 
@@ -337,9 +350,11 @@ def stopover_leg(seq: list[dict], a_name: str, b_name: str) -> tuple[str, str] |
     return str(depart), str(arrive)
 
 
-def fetch_korail_stopover_legs(key: str, allowed_by_date: dict[str, set[str]]) -> list[Leg]:
+def fetch_korail_stopover_legs(key: str, allowed_by_date: dict[str, set[str]],
+                               grades: dict[str, str]) -> list[Leg]:
     """중간 정차 OD legs — 데모일 D의 시각으로 D-7일(같은 요일) runInfo2 실적 원값을 날짜만
-    매핑해 사용한다. 수록 대상은 데모일 운행계획(allowed_by_date)에 존재하는 열차번호로 한정 (#56 A안)."""
+    매핑해 사용한다. 수록 대상은 데모일 운행계획(allowed_by_date)에 존재하는 열차번호로 한정 (#56 A안).
+    KTX 전용 구간은 시종착 OD와 같은 규칙으로 TAGO 공식 등급을 확인한 편만 수록한다(#61 수록 기준 2)."""
     if not STOPOVER_OD_PAIRS:
         return []
     legs: list[Leg] = []
@@ -348,20 +363,41 @@ def fetch_korail_stopover_legs(key: str, allowed_by_date: dict[str, set[str]]) -
         rows = fetch_korail_day(key, source_date, op=KORAIL_RUNINFO_OP, max_pages=KORAIL_RUNINFO_MAX_PAGES)
         sequences = stopover_sequences(rows, source_date)
         validated: set[str] = set()
-        for (from_id, from_name), (to_id, to_name) in STOPOVER_OD_PAIRS:
+        for (from_id, from_name), (to_id, to_name), ktx_only in STOPOVER_OD_PAIRS:
             for (a_id, a_name), (b_id, b_name) in [((from_id, from_name), (to_id, to_name)),
                                                    ((to_id, to_name), (from_id, from_name))]:
-                found = 0
+                matched: list[tuple[str, tuple[str, str]]] = []
                 for trn, seq in sorted(sequences.items()):
                     if trn not in allowed_by_date[date]:
                         continue  # 데모일 계획에 없는 열차는 수록하지 않는다
                     span = stopover_leg(seq, a_name, b_name)
-                    if span is None:
-                        continue
+                    if span is not None:
+                        matched.append((trn, span))
+                if not matched:
+                    raise ApiError(
+                        f"[방어] 정차 실적 0건: {a_name}→{b_name} {source_date}(데모 {date}) — 기존 스냅샷을 변경하지 않습니다")
+                if ktx_only:
+                    kept, dropped_non_ktx, dropped_unknown = [], [], []
+                    for trn, span in matched:
+                        grade = grades.get(trn)
+                        if grade is None:
+                            dropped_unknown.append(trn)
+                        elif grade.startswith("KTX"):
+                            kept.append((trn, span))
+                        else:
+                            dropped_non_ktx.append(f"{trn}({grade})")
+                    # 무음 절단 금지 — 제외 내역을 반드시 출력한다 (시종착 OD와 동일 규칙)
+                    print(f"[KTX 필터·정차] {a_name}→{b_name} {date}: 수록 {len(kept)} / "
+                          f"비KTX 제외 {len(dropped_non_ktx)} {dropped_non_ktx[:6]} / "
+                          f"등급 미확인 제외 {len(dropped_unknown)} {dropped_unknown[:6]}")
+                    if not kept:
+                        raise ApiError(
+                            f"[방어] KTX 확인 편 0건: {a_name}→{b_name} {date} — 기존 스냅샷을 변경하지 않습니다")
+                    matched = kept
+                for trn, (depart, arrive) in matched:
                     if trn not in validated:
-                        validate_stopover_sequence(trn, seq, source_date)
+                        validate_stopover_sequence(trn, sequences[trn], source_date)
                         validated.add(trn)
-                    depart, arrive = span
                     legs.append(Leg(
                         trainNo=trn,
                         fromStationId=a_id,
@@ -369,10 +405,6 @@ def fetch_korail_stopover_legs(key: str, allowed_by_date: dict[str, set[str]]) -
                         departAt=shift_korail_dt_to_iso(depart, STOPOVER_SOURCE_OFFSET_DAYS),
                         arriveAt=shift_korail_dt_to_iso(arrive, STOPOVER_SOURCE_OFFSET_DAYS),
                     ))
-                    found += 1
-                if not found:
-                    raise ApiError(
-                        f"[방어] 정차 실적 0건: {a_name}→{b_name} {source_date}(데모 {date}) — 기존 스냅샷을 변경하지 않습니다")
     return legs
 
 
@@ -408,8 +440,8 @@ def fetch_tago_train_grades(key: str, station_names: set[str]) -> dict[str, str]
 def fetch_korail_legs(key: str) -> list[Leg]:
     legs: list[Leg] = []
     day_rows = {date: fetch_korail_day(key, date) for date in DATES}
-    filtered_names = {name for from_pair, to_pair, ktx_only in OD_PAIRS if ktx_only
-                      for (_id, name) in (from_pair, to_pair)}
+    filtered_names = {name for from_pair, to_pair, ktx_only in (*OD_PAIRS, *STOPOVER_OD_PAIRS)
+                      if ktx_only for (_id, name) in (from_pair, to_pair)}
     grades = fetch_tago_train_grades(key, filtered_names) if filtered_names else {}
     for (from_id, from_name), (to_id, to_name), ktx_only in OD_PAIRS:
         for date in DATES:
@@ -449,7 +481,7 @@ def fetch_korail_legs(key: str) -> list[Leg]:
                     ))
     allowed_by_date = {date: {str(row["trn_no"]).zfill(5) for row in rows}
                        for date, rows in day_rows.items()}
-    legs.extend(fetch_korail_stopover_legs(key, allowed_by_date))
+    legs.extend(fetch_korail_stopover_legs(key, allowed_by_date, grades))
     return legs
 
 
