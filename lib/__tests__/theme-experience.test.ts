@@ -4,6 +4,8 @@ import stationsSeed from "../../data/stations.json";
 import themeZonesSeed from "../../data/theme-zones.json";
 import themeZoneRankingsSeed from "../../data/theme-zone-rankings.json";
 import worksSeed from "../../data/works.json";
+import { planItinerary } from "../actions/itinerary";
+import { getThemeExperience } from "../actions/theme-experience";
 import {
   ThemeZone,
   createThemeZoneRankingSnapshotSchema,
@@ -56,6 +58,8 @@ const omit = <T extends object, K extends keyof T>(value: T, key: K) => {
   delete copy[key];
   return copy as never;
 };
+
+const parsedZones = z.array(ThemeZone).parse(themeZonesSeed);
 
 const snapshotOf = (rankings: ThemeZoneRankingSnapshot["rankings"]): ThemeZoneRankingSnapshot => ({
   meta: {
@@ -177,9 +181,61 @@ describe("테마체험 스냅샷 계약 (#80 — 근거 2종 강제)", () => {
   });
 });
 
-describe("운영 시드 (#20 참조 무결성)", () => {
-  const parsedZones = z.array(ThemeZone).parse(themeZonesSeed);
+// #80 완료 조건 1 — 운영 시드와 실제 일정으로 성공 경로를 고정한다.
+// fixture가 아니라 커밋된 시드를 읽으므로, 검토 항목이 빠지면 이 테스트가 실패한다.
+describe("운영 성공 경로 (#80 — 실제 일정에서 카드가 나온다)", () => {
+  const request = {
+    arrivalAt: "2026-08-12T10:00:00+09:00",
+    departureAt: "2026-08-14T18:00:00+09:00",
+    airportReadyAt: "2026-08-12T12:00:00+09:00",
+    airportArrivalDeadline: "2026-08-14T16:00:00+09:00",
+    selectedActorIds: [],
+    selectedWorkIds: ["work-the-king"],
+    excludedPlaceIds: [],
+  };
 
+  it("《더 킹》 일정의 서울 권역에서 status ok와 ko/en 이유가 나온다", async () => {
+    const planned = await planItinerary(request);
+    expect(planned.ok).toBe(true);
+    if (!planned.ok || planned.result.status !== "planned") return;
+
+    const regionIds = [
+      ...new Set(planned.result.days.flatMap((day) => day.regionWindows.map((w) => w.regionId))),
+    ];
+    expect(regionIds).toContain("seoul_metro");
+
+    const result = await getThemeExperience({
+      selectedWorkIds: request.selectedWorkIds,
+      itineraryRegionIds: regionIds,
+    });
+    expect(result.status).toBe("ok");
+    if (result.status !== "ok") return;
+    expect(result.regionId).toBe("seoul_metro");
+    expect(result.zoneName.ko).toBeTruthy();
+    expect(result.zoneName.en).toBeTruthy();
+    expect(result.reason.ko).toBeTruthy();
+    expect(result.reason.en).toBeTruthy();
+    // 원시 점수·검토 메타는 응답에 실리지 않는다 (PR #70 리뷰 규율)
+    expect(Object.keys(result).sort()).toEqual(["reason", "regionId", "status", "theme", "zoneName"]);
+  });
+
+  it("서사 근거가 없는 《도깨비》 단독 선택은 같은 일정에서도 추천 없음이다", async () => {
+    const planned = await planItinerary({ ...request, selectedWorkIds: ["work-goblin"] });
+    expect(planned.ok).toBe(true);
+    if (!planned.ok || planned.result.status !== "planned") return;
+
+    const regionIds = [
+      ...new Set(planned.result.days.flatMap((day) => day.regionWindows.map((w) => w.regionId))),
+    ];
+    const result = await getThemeExperience({
+      selectedWorkIds: ["work-goblin"],
+      itineraryRegionIds: regionIds,
+    });
+    expect(result.status).toBe("none");
+  });
+});
+
+describe("운영 시드 (#20 참조 무결성)", () => {
   it("권역 시드는 계약을 통과하고 공식 출처·검증일을 갖는다", () => {
     expect(parsedZones.length).toBeGreaterThan(0);
     for (const zone of parsedZones) {
@@ -211,6 +267,26 @@ describe("운영 시드 (#20 참조 무결성)", () => {
       scoreOf("work-little-women", "zone-seoul-bukchon-hanok"),
     ];
     for (const negative of negatives) expect(positive).toBeGreaterThan(negative);
+  });
+
+  // #80 승인 계약 — 표시 게이트는 사람 검토와 근거 완비다. badgeThreshold는 v1 호환 필드로
+  // 음수 유사도만 배제하며, 표시 여부를 결정하지 않는다.
+  it("검토 항목은 근거 2종(권역 공식 출처·작품 서사 근거)을 모두 갖는다", () => {
+    const reviewedRows = themeZoneRankingsSeed.rankings.filter((r) => r.reviewed);
+    expect(reviewedRows.length).toBeGreaterThan(0);
+    const zoneById = new Map(parsedZones.map((zone) => [zone.id, zone]));
+    for (const row of reviewedRows) {
+      expect(row.sourceUrls?.length, `${row.workId} × ${row.zoneId}: 서사 근거`).toBeGreaterThan(0);
+      expect(row.reason?.ko, `${row.workId} × ${row.zoneId}: reason.ko`).toBeTruthy();
+      expect(row.reason?.en, `${row.workId} × ${row.zoneId}: reason.en`).toBeTruthy();
+      expect(zoneById.get(row.zoneId)?.sourceUrls.length, `${row.zoneId}: 권역 출처`).toBeGreaterThan(0);
+    }
+  });
+
+  it("공식 서사 근거가 없는 도깨비 항목은 미검토로 남아 화면에 나가지 않는다", () => {
+    const goblinRows = themeZoneRankingsSeed.rankings.filter((r) => r.workId === "work-goblin");
+    expect(goblinRows.length).toBeGreaterThan(0);
+    for (const row of goblinRows) expect(row.reviewed, `${row.zoneId}`).toBe(false);
   });
 
   it("랭킹 스냅샷은 시드 참조 무결성을 만족한다", () => {
