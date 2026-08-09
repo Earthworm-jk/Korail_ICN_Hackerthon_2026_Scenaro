@@ -43,6 +43,25 @@ export function project(latitude: number, longitude: number): MapPosition {
   };
 }
 
+/** 지구 평균 반지름 (km) — WGS84 평균. 거리 눈금 표시에만 쓴다 */
+const EARTH_RADIUS_KM = 6371.0088;
+
+/** SVG y → 위도(도). `project`의 y 역함수다 */
+export function latitudeAt(y: number): number {
+  return (2 * Math.atan(Math.exp((TRANSLATE_Y - y) / SCALE)) - Math.PI / 2) / DEG;
+}
+
+/**
+ * 표시단위 1이 그 자리에서 갖는 실제 지상 거리(km).
+ *
+ * 상수가 아니다 — 메르카토르는 고위도로 갈수록 늘어나므로 같은 1단위가 제주도에서와 서울에서
+ * 다른 거리다(남한 범위에서 약 5% 차이). 거리 눈금은 사용자가 "이 화면이 몇 km인가"를 읽는
+ * 근거라, 평균값으로 뭉개지 않고 보고 있는 위도에서 계산한다.
+ */
+export function groundKmPerUnit(y: number): number {
+  return (EARTH_RADIUS_KM / SCALE) * Math.cos(latitudeAt(y) * DEG);
+}
+
 /**
  * 표시 영역 — 남한 권역 확대 crop. 좌표계는 360×430 그대로이고 보이는 창만 좁아진다.
  *

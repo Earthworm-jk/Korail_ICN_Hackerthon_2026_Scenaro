@@ -32,10 +32,12 @@ import {
 import { catmullRomPath, polylinePath, project } from "@/lib/korea-map-projection";
 import {
   BASE_VIEWPORT,
+  COASTLINE_DETAIL_SCALE,
   MAX_SCALE,
   MIN_SCALE,
   ZOOM_STEP,
   boundsOf,
+  scaleBarOf,
   fitTo,
   isZoomed,
   panBy,
@@ -148,6 +150,52 @@ function MapLabels({ labels, unit }: { labels: readonly PlacedLabel[]; unit: num
 
 function LegendSwatch({ className }: { className: string }) {
   return <i aria-hidden className={`inline-block h-2.5 w-2.5 rounded-full ${className}`} />;
+}
+
+/**
+ * 거리 눈금 — 확대할수록 배경이 물러나므로 축척을 읽을 근거를 화면에 남긴다.
+ *
+ * 창 왼쪽 아래에 붙고, 다른 표시 요소처럼 `unit`을 곱해 화면에서 항상 같은 크기다. 값 자체는
+ * `scaleBarOf`가 실제 위도로 계산한다 — 여기서는 그리기만 한다.
+ *
+ * `km`·`m`은 두 언어에서 같은 표기라 문구 키를 만들지 않았다. 화면에 나오는 문자열이 ko/en에서
+ * 동일하다.
+ */
+function ScaleBar({
+  view,
+  unit,
+  bar,
+}: {
+  view: Viewport;
+  unit: number;
+  bar: { units: number; label: string };
+}) {
+  const pad = 10 * unit;
+  const x = view.x + pad;
+  const y = view.y + view.height - pad;
+  const tick = 3 * unit;
+
+  return (
+    <g aria-hidden pointerEvents="none">
+      <path
+        d={`M${x},${y - tick}L${x},${y}L${x + bar.units},${y}L${x + bar.units},${y - tick}`}
+        fill="none"
+        className="stroke-sc-text"
+        strokeWidth={1 * unit}
+        strokeLinecap="square"
+        opacity={0.65}
+      />
+      <text
+        x={x}
+        y={y - 5 * unit}
+        className="fill-sc-muted"
+        fontSize={8 * unit}
+        style={{ fontVariantNumeric: "tabular-nums" }}
+      >
+        {bar.label}
+      </text>
+    </g>
+  );
 }
 
 /**
@@ -321,6 +369,7 @@ export function KoreaMapPanel({
     viewRef.current = view;
   }, [view]);
   const unit = screenUnit(view);
+  const scale = scaleOf(view);
 
   /**
    * 오버레이(테마체험 필터) 항목 등록부.
@@ -516,11 +565,27 @@ export function KoreaMapPanel({
       (seed) =>
         seed.x >= bounds.left && seed.x <= bounds.right && seed.y >= bounds.top && seed.y <= bounds.bottom,
     ),
-    { bounds, scale: scaleOf(view) },
+    { bounds, scale },
   );
   const hasPoints = placePoints.length > 0 || routeStations.length > 0;
   const zoomed = isZoomed(view);
   const hintId = `map-zoom-hint-${kind}`;
+
+  /**
+   * 해안선 진하기 — 원천 해상도(1:50m)를 넘어선 배율에서 물러난다.
+   *
+   * 끄지 않고 흐리게 두는 이유: 완전히 사라지면 바다인지 육지인지가 화면에서 없어져 점들이
+   * 허공에 뜬다. 남기되 "이 선을 이 배율로 읽지 말라"가 보이는 정도까지만 낮춘다.
+   * 상한(200배)에서 0.12, 해안선이 버티는 배율(5배)까지는 1 그대로다.
+   */
+  const outlineOpacity =
+    scale <= COASTLINE_DETAIL_SCALE
+      ? 1
+      : Math.max(
+          0.12,
+          1 - (0.88 * Math.log(scale / COASTLINE_DETAIL_SCALE)) / Math.log(MAX_SCALE / COASTLINE_DETAIL_SCALE),
+        );
+  const scaleBar = scaleBarOf(view);
 
   return (
     <aside
@@ -564,6 +629,7 @@ export function KoreaMapPanel({
             className="fill-sc-blue-soft stroke-sc-line"
             strokeWidth={0.8 * unit}
             strokeLinejoin="round"
+            opacity={outlineOpacity}
           />
 
           {isRoute &&
@@ -622,6 +688,8 @@ export function KoreaMapPanel({
             필터를 켠 의미가 없다. 채움은 15% 투명이라 밑의 점·글자를 지우지 않는다.
           */}
           {experienceOverlay}
+
+          <ScaleBar view={view} unit={unit} bar={scaleBar} />
         </svg>
         </MapViewContext>
         </div>

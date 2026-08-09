@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { catmullRomPath, project, VIEW_BOX } from "../korea-map-projection";
+import {
+  catmullRomPath,
+  groundKmPerUnit,
+  latitudeAt,
+  project,
+  VIEW_BOX,
+} from "../korea-map-projection";
 import { loadRepositories } from "../repositories/json";
 
 /**
@@ -24,6 +30,53 @@ describe("한반도 지도 투영", () => {
       expect(Math.abs(x - point.cx), `${point.name} x 잔차`).toBeLessThan(0.01);
       expect(Math.abs(y - point.cy), `${point.name} y 잔차`).toBeLessThan(0.01);
     }
+  });
+
+  /**
+   * 거리 환산 (#27 지도 확대 범위).
+   *
+   * 화면에 "500 m"라고 적는 순간 그 숫자는 사용자가 위치를 판단하는 근거가 된다. 눈금이
+   * 실제 거리와 맞는지를 투영 자체로 확인한다.
+   */
+  describe("표시단위 → 실거리", () => {
+    it("y에서 위도를 되돌린다 — project의 역함수", () => {
+      for (const point of WIREFRAME_REFERENCE) {
+        const { y } = project(point.latitude, point.longitude);
+        expect(latitudeAt(y)).toBeCloseTo(point.latitude, 9);
+      }
+    });
+
+    it("서울역 위도에서 1단위는 약 2.55km다", () => {
+      const seoul = project(37.5528527, 126.9725721);
+      expect(groundKmPerUnit(seoul.y)).toBeCloseTo(2.548, 2);
+    });
+
+    it("실제 두 지점 사이 거리를 하버사인과 1% 안에서 맞춘다", () => {
+      // 서울역 - 강릉역. 메르카토르는 동서 방향에서 국소적으로 등각이므로 짧은 구간에서 맞아야 한다
+      const a = { latitude: 37.5528527, longitude: 126.9725721 };
+      const b = { latitude: 37.76452, longitude: 128.8993979 };
+      const pa = project(a.latitude, a.longitude);
+      const pb = project(b.latitude, b.longitude);
+
+      const R = 6371.0088;
+      const rad = (d: number) => (d * Math.PI) / 180;
+      const dLat = rad(b.latitude - a.latitude);
+      const dLon = rad(b.longitude - a.longitude);
+      const h =
+        Math.sin(dLat / 2) ** 2 +
+        Math.cos(rad(a.latitude)) * Math.cos(rad(b.latitude)) * Math.sin(dLon / 2) ** 2;
+      const haversineKm = 2 * R * Math.asin(Math.sqrt(h));
+
+      const units = Math.hypot(pb.x - pa.x, pb.y - pa.y);
+      const estimated = units * groundKmPerUnit((pa.y + pb.y) / 2);
+      expect(Math.abs(estimated - haversineKm) / haversineKm).toBeLessThan(0.01);
+    });
+
+    it("고위도로 갈수록 같은 1단위가 짧은 거리다 — 메르카토르 늘어남", () => {
+      const jeju = project(33.5, 126.5);
+      const goseong = project(38.3, 128.4);
+      expect(groundKmPerUnit(goseong.y)).toBeLessThan(groundKmPerUnit(jeju.y));
+    });
   });
 
   it("동선 곡선이 시안 정적 SVG의 path 문자열과 일치한다", () => {

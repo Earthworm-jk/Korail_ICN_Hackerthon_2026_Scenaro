@@ -1,11 +1,13 @@
 import { describe, expect, it } from "vitest";
 import {
   BASE_VIEWPORT,
+  COASTLINE_DETAIL_SCALE,
   FOCUS_SCALE,
   MAX_SCALE,
   MIN_SCALE,
   ZOOM_STEP,
   boundsOf,
+  scaleBarOf,
   clampViewport,
   contains,
   fitTo,
@@ -22,6 +24,7 @@ import {
 } from "../map-viewport";
 import { project, VIEW_BOX } from "../korea-map-projection";
 import { loadStationCoordinates } from "../station-coordinates";
+import { loadRepositories } from "../repositories/json";
 
 /**
  * 지도 확대·축소·팬 (#27 후속)
@@ -178,10 +181,11 @@ describe("지도 표시 창", () => {
       expect(scaleOf(view)).toBeLessThan(MAX_SCALE);
       expect(scaleOf(view)).toBeCloseTo(Math.pow(ZOOM_STEP, 0.8), 6);
 
-      // 고정 1.5배였다면 네 건 만에 상한이었다 — 회귀하면 여기서 걸린다
+      // 고정 1.5배였다면 같은 제스처가 20단계를 뛴다 — 회귀하면 여기서 걸린다.
+      // (상한을 200으로 올린 뒤로는 "네 건 만에 상한"이 아니라 이 배수 차이가 증상이다)
       let fixed = BASE_VIEWPORT;
-      for (let i = 0; i < 4; i += 1) fixed = zoomByStep(fixed, ZOOM_STEP);
-      expect(scaleOf(fixed)).toBeCloseTo(MAX_SCALE, 6);
+      for (let i = 0; i < 20; i += 1) fixed = zoomByStep(fixed, ZOOM_STEP);
+      expect(scaleOf(fixed)).toBeGreaterThan(scaleOf(view) * 100);
     });
 
     it("이벤트 하나가 한 단계를 넘지 못한다", () => {
@@ -202,6 +206,64 @@ describe("지도 표시 창", () => {
     expect(screenUnit(BASE_VIEWPORT)).toBe(1);
     expect(screenUnit(focusOn(seoul, 2))).toBeCloseTo(0.5, 9);
     expect(screenUnit(focusOn(seoul, 4))).toBeCloseTo(0.25, 9);
+  });
+
+  /**
+   * 시내 수준 확대 (#27 지도 확대·축소 범위, PR #114 리뷰 6번).
+   *
+   * 상한을 올린 목적은 "같은 도시 안의 촬영지가 한 점으로 겹치지 않는 것"이다. 배율 숫자만
+   * 고정하면 그 목적이 지켜지는지 알 수 없으므로, 실제 시드 좌표 두 곳의 화면 간격으로 고정한다.
+   */
+  describe("시내 수준 확대", () => {
+    /**
+     * 좌표를 적지 않고 시드에서 읽는다 — 이 회귀가 지키려는 것은 특정 숫자가 아니라
+     * "시드에 실제로 들어 있는 가장 가까운 두 곳이 겹치지 않는 것"이다.
+     */
+    const closestPair = (() => {
+      const points = loadRepositories().places.flatMap((place) =>
+        place.latitude != null && place.longitude != null
+          ? [project(place.latitude, place.longitude)]
+          : [],
+      );
+      let best = Infinity;
+      for (let i = 0; i < points.length; i += 1) {
+        for (let j = i + 1; j < points.length; j += 1) {
+          best = Math.min(best, Math.hypot(points[i].x - points[j].x, points[i].y - points[j].y));
+        }
+      }
+      return best;
+    })();
+
+    /** 지도 폭 390px 기준 화면 간격 */
+    const onScreen = (scale: number) => (closestPair * scale * 390) / BASE_VIEWPORT.width;
+
+    it("옛 상한에서는 가장 가까운 두 곳이 한 점으로 겹쳤다", () => {
+      expect(onScreen(COASTLINE_DETAIL_SCALE)).toBeLessThan(1);
+    });
+
+    it("새 상한에서는 사람이 두 점으로 읽을 만큼 떨어진다", () => {
+      expect(onScreen(MAX_SCALE)).toBeGreaterThan(15);
+    });
+
+    it("상한에서 화면 폭이 도심 한 구역 수준이다", () => {
+      const view = focusOn(seoul, MAX_SCALE);
+      const bar = scaleBarOf(view);
+      // 창 폭을 실거리로 환산 — 눈금이 창 폭의 4분의 1 이하라는 규칙에서 역산한다
+      expect(bar.units).toBeLessThanOrEqual(view.width * 0.25 + 1e-9);
+      expect(bar.km).toBeLessThanOrEqual(1);
+    });
+
+    it("거리 눈금은 배율이 바뀌면 같이 바뀌고 읽히는 숫자만 고른다", () => {
+      const wide = scaleBarOf(BASE_VIEWPORT);
+      const tight = scaleBarOf(focusOn(seoul, MAX_SCALE));
+      expect(wide.km).toBeGreaterThan(tight.km);
+      expect(wide.label).toMatch(/^\d+ km$/);
+      expect(tight.label).toMatch(/^\d+ (km|m)$/);
+    });
+
+    it("해안선을 물리는 배율은 상한보다 낮다 — 상한까지 진하게 그리지 않는다", () => {
+      expect(COASTLINE_DETAIL_SCALE).toBeLessThan(MAX_SCALE);
+    });
   });
 
   it("망가진 창도 한계 안으로 되돌린다", () => {
