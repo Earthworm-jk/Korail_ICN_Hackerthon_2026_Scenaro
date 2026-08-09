@@ -12,14 +12,29 @@
 import { z } from "zod";
 import { HttpUrl, IsoDate, IsoDateTime, LocalizedText, NonEmptyId } from "./types/schema";
 
-export const ThemeZone = z.object({
-  id: NonEmptyId,
-  name: LocalizedText, // 권역명 — 특정 업체가 아니라 권역 단위 (#38)
-  theme: LocalizedText, // 체험 테마 — 카드 제목
-  regionId: NonEmptyId, // Station.regionId와 같은 값 공간 (#6 권역 필드 계약)
-  sourceUrls: z.array(HttpUrl).min(1), // 권역 자체의 공식 관광정보 출처
-  verifiedAt: IsoDate,
-});
+export const ThemeZone = z
+  .object({
+    id: NonEmptyId,
+    name: LocalizedText, // 권역명 — 특정 업체가 아니라 권역 단위 (#38)
+    theme: LocalizedText, // 체험 테마 — 카드 제목
+    regionId: NonEmptyId, // Station.regionId와 같은 값 공간 (#6 권역 필드 계약)
+    sourceUrls: z.array(HttpUrl).min(1), // 권역 자체의 공식 관광정보 출처
+    verifiedAt: IsoDate,
+    // 지도 표시용 **대표 지점**. 권역의 중심이나 경계가 아니라 sourceUrls의 공식 관광정보가
+    // 그 권역 대표 관광지의 목적지로 제공하는 좌표다. 지도의 원은 시각적 표현일 뿐
+    // 검증된 경계가 아니다. 근거를 확보하지 못한 권역은 비워 두고 지도에 그리지 않는다 (A3).
+    latitude: z.number().min(-90).max(90).optional(),
+    longitude: z.number().min(-180).max(180).optional(),
+  })
+  .superRefine((zone, ctx) => {
+    if ((zone.latitude === undefined) !== (zone.longitude === undefined)) {
+      ctx.addIssue({
+        code: "custom",
+        path: [zone.latitude === undefined ? "latitude" : "longitude"],
+        message: "latitude·longitude는 함께 있어야 합니다 (좌표 쌍)",
+      });
+    }
+  });
 
 export type ThemeZoneT = z.infer<typeof ThemeZone>;
 
@@ -108,7 +123,7 @@ export function createThemeZoneRankingSnapshotSchema(
 
 /** 카드에 실제로 나가는 값 — 원시 점수·검토 메타는 포함하지 않는다 (PR #70 리뷰와 같은 규율) */
 export type ThemeExperiencePick = {
-  zone: Pick<ThemeZoneT, "id" | "name" | "theme" | "regionId">;
+  zone: Pick<ThemeZoneT, "id" | "name" | "theme" | "regionId" | "latitude" | "longitude">;
   workId: string;
   reason: { ko: string; en: string };
 };
@@ -147,7 +162,14 @@ export function pickThemeExperience(params: {
   if (!best || !best.reviewed || !best.reason) return null;
   const zone = zoneById.get(best.zoneId)!;
   return {
-    zone: { id: zone.id, name: zone.name, theme: zone.theme, regionId: zone.regionId },
+    zone: {
+      id: zone.id,
+      name: zone.name,
+      theme: zone.theme,
+      regionId: zone.regionId,
+      latitude: zone.latitude,
+      longitude: zone.longitude,
+    },
     workId: best.workId,
     reason: best.reason,
   };

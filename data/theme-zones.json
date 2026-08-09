@@ -13,7 +13,9 @@
     "sourceUrls": [
       "https://korean.visitkorea.or.kr/detail/ms_detail.do?cotid=e413abf3-f8a7-486d-95fd-4fb12598aefc"
     ],
-    "verifiedAt": "2026-08-09"
+    "verifiedAt": "2026-08-09",
+    "latitude": 37.565055,
+    "longitude": 126.976575
   },
   {
     "id": "zone-seoul-bukchon-hanok",
@@ -29,6 +31,8 @@
     "sourceUrls": [
       "https://korean.visitkorea.or.kr/detail/ms_detail.do?cotid=395d0087-0bd2-42a1-a051-49c4c46d8821"
     ],
-    "verifiedAt": "2026-08-09"
+    "verifiedAt": "2026-08-09",
+    "latitude": 37.578999,
+    "longitude": 126.98669
   }
 ]

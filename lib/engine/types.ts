@@ -25,8 +25,12 @@ export type ActivityWindowDetail =
   | "UNVERIFIED_HOURS";
 
 // 후보 하나의 자동 제외 사유 (rejectedPlaces 전용) — #43 확정으로 열차·출국 마감만 남는다
+// #84 P0-1: 실제 원인이 다른 실패를 한 코드로 뭉치지 않는다. 하루 장소 수 상한 때문에
+// 밀린 경우와 여행 마감 안에 못 넣는 경우는 사용자가 할 수 있는 일이 다르다 —
+// 전자는 선택을 줄이거나 날짜를 늘리면 되고, 후자는 항공·기간 조건을 바꿔야 한다.
 export type CandidateRejection =
   | { code: "TRAIN_UNAVAILABLE"; placeId: string }
+  | { code: "DAILY_CAPACITY_EXCEEDED"; placeId: string }
   | { code: "DEPARTURE_DEADLINE_EXCEEDED"; placeId: string };
 
 // 배치된 방문의 운영시간 경고 (#43 결정 1 — 경고 누락 0건이 수용 기준)

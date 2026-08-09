@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { getCandidatePlaces } from "../actions/places";
 import { planGatewayAlternatives, planItinerary, type PlanRequest } from "../actions/itinerary";
+import { gatewayPlanningBaselineOf, type GatewayPlanningBaseline } from "../engine/gateway-baseline";
 import { excludedPlaceIdsFrom, initialCandidateIds } from "../candidates";
 
 // PR #30 리뷰 재리뷰 조건: 후보 합집합·미확인 제외·잘못된 시각 요청의 액션 단위 테스트
@@ -74,7 +75,14 @@ describe("잘못된 시각 요청 (PR #30 리뷰 ③ — throw 없이 INVALID_RE
   });
 
   it("공항버스 전체 대안은 핵심 추천 뒤 별도 Action으로 보강된다 (#58)", async () => {
-    const res = await planGatewayAlternatives(validRequest());
+    const primary = await planItinerary(validRequest());
+    expect(primary.ok).toBe(true);
+    if (!primary.ok) return;
+    const baseline = gatewayPlanningBaselineOf(primary.result);
+    expect(baseline).not.toBeNull();
+    if (!baseline) return;
+
+    const res = await planGatewayAlternatives(validRequest(), baseline);
     expect(res.ok).toBe(true);
     if (!res.ok) return;
     expect(res.alternatives.some(({ routeId }) =>
@@ -83,6 +91,17 @@ describe("잘못된 시각 요청 (PR #30 리뷰 ③ — throw 없이 INVALID_RE
       kind: "observed_snapshot",
       recheckRequired: true,
     });
+  });
+
+  it.each([
+    ["중복 장소", { visitedPlaceIds: ["place-seoullo-7017", "place-seoullo-7017"], localUseMinutes: 60 }],
+    ["미존재 장소", { visitedPlaceIds: ["place-does-not-exist"], localUseMinutes: 60 }],
+    ["음수 활용시간", { visitedPlaceIds: [], localUseMinutes: -1 }],
+    ["여행 시간창 초과", { visitedPlaceIds: [], localUseMinutes: 10_000 }],
+  ] satisfies Array<[string, GatewayPlanningBaseline]>)
+  ("공항버스 baseline 거절: %s", async (_name, baseline) => {
+    const res = await planGatewayAlternatives(validRequest(), baseline);
+    expect(res).toMatchObject({ ok: false, code: "INVALID_BASELINE" });
   });
 
   // #56 차단 리뷰: 실시드 전체 요청은 사용자가 실제 거치는 경로이므로 제품 데이터 기준으로

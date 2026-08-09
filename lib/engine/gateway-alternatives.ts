@@ -8,7 +8,8 @@ import type { Repositories } from "../repositories/json";
 import type { GatewayLegT } from "../types/schema";
 import { buildRegionWindows } from "./region-windows";
 import { planItinerary } from "./planner";
-import type { DayPlan, GatewayAlternative, ItineraryResult, RegionWindow, TripConstraints } from "./types";
+import type { GatewayPlanningBaseline } from "./gateway-baseline";
+import type { DayPlan, GatewayAlternative, RegionWindow, TripConstraints } from "./types";
 
 const MINUTE_MS = 60_000;
 const KOREA_OFFSET_MS = 9 * 60 * 60 * 1_000;
@@ -106,15 +107,14 @@ function visitedIds(days: DayPlan[]): Set<string> {
 export function buildGatewayAlternatives(
   constraints: TripConstraints,
   repos: Repositories,
-  primary: ItineraryResult,
+  baseline: GatewayPlanningBaseline,
 ): GatewayAlternative[] {
   if (repos.gatewayLegs.length === 0) return [];
   const regions = candidateRegions(constraints, repos);
   const stationById = new Map(repos.stations.map((station) => [station.id, station]));
   const readyAt = Date.parse(constraints.airportReadyAt);
   const deadline = Date.parse(constraints.airportArrivalDeadline);
-  const primaryDays = primary.status === "planned" ? primary.days : [];
-  const primaryVisited = visitedIds(primaryDays);
+  const primaryVisited = new Set(baseline.visitedPlaceIds);
   const alternatives: GatewayAlternative[] = [];
 
   for (const { outbound, inbound } of gatewayPairs(repos.gatewayLegs)) {
@@ -153,7 +153,7 @@ export function buildGatewayAlternatives(
         totalGatewayMinutes: gatewayMinutes,
       },
       effects: {
-        localUseDeltaMinutes: localUseMinutes(days) - localUseMinutes(primaryDays),
+        localUseDeltaMinutes: localUseMinutes(days) - baseline.localUseMinutes,
         excludedPlaceIds: [...primaryVisited].filter((id) => !alternativeVisited.has(id)).sort(),
       },
       schedule: {
