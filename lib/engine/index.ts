@@ -9,6 +9,7 @@ import type { Repositories } from "../repositories/json";
 import type { ItineraryResult, TripConstraints } from "./types";
 import { planItinerary } from "./planner";
 import { buildGatewayAlternatives } from "./gateway-alternatives";
+import { gatewayPlanningBaselineOf, type GatewayPlanningBaseline } from "./gateway-baseline";
 import { z } from "zod";
 
 // PR #30 리뷰 ③: Server Action 경계가 같은 계약을 safeParse해 잘못된 요청을
@@ -89,8 +90,21 @@ export function generateItineraryWithGatewayAlternatives(
 ): ItineraryResult {
   const parsed = TripConstraintsSchema.parse(constraints);
   const result = planItinerary(parsed, repos);
-  const gatewayAlternatives = buildGatewayAlternatives(parsed, repos, result);
-  return result.status === "planned" && gatewayAlternatives.length > 0
+  if (result.status !== "planned") return result;
+  const baseline = gatewayPlanningBaselineOf(result);
+  if (!baseline) return result; // planned 분기에서는 도달하지 않는 방어 절
+  const gatewayAlternatives = buildGatewayAlternatives(parsed, repos, baseline);
+  return gatewayAlternatives.length > 0
     ? { ...result, gatewayAlternatives }
     : result;
+}
+
+/** #87 후속 Action용 — 핵심 추천을 재계산하지 않고 대안 플래너만 실행한다. */
+export function generateGatewayAlternatives(
+  constraints: TripConstraints,
+  repos: Repositories,
+  baseline: GatewayPlanningBaseline,
+) {
+  const parsed = TripConstraintsSchema.parse(constraints);
+  return buildGatewayAlternatives(parsed, repos, baseline);
 }

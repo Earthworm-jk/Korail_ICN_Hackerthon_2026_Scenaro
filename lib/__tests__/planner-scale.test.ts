@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { generateItinerary } from "../engine";
+import { generateItinerary, generateItineraryWithGatewayAlternatives } from "../engine";
 import { loadRepositories } from "../repositories/json";
 import { BASE_CONSTRAINTS, expandedRepositories } from "../../test/planner-fixtures";
 
@@ -29,6 +29,22 @@ describe("확대 후보 결정성·성능 (#56 A+B)", () => {
       expect(result.status).toBe("planned");
     }
     expect(best).toBeLessThan(2000);
+  }, 120000);
+
+  it("NFR-PERF-002: 후보 50곳 공항버스 전체 대안도 5초 안에 완료된다 (#87)", () => {
+    const expanded = expandedRepositories(50);
+    // GitHub 워커 스케줄러 노이즈를 흡수하되, 지속적인 5초 초과는 숨기지 않는다.
+    let best = Number.POSITIVE_INFINITY;
+    for (let run = 0; run < 2; run += 1) {
+      const startedAt = performance.now();
+      const result = generateItineraryWithGatewayAlternatives(BASE_CONSTRAINTS, expanded);
+      best = Math.min(best, performance.now() - startedAt);
+      expect(result.status).toBe("planned");
+      if (result.status === "planned") {
+        expect(result.gatewayAlternatives?.length).toBeGreaterThan(0);
+      }
+    }
+    expect(best).toBeLessThan(5000);
   }, 120000);
 
   it("실시드 전체 요청 결과가 최적화 전과 동일한 회귀 기준을 유지한다", () => {

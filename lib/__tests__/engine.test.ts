@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { generateItinerary, generateItineraryWithGatewayAlternatives } from "../engine";
+import {
+  generateGatewayAlternatives,
+  generateItinerary,
+  generateItineraryWithGatewayAlternatives,
+} from "../engine";
+import { gatewayPlanningBaselineOf } from "../engine/gateway-baseline";
 import type { TripConstraints } from "../engine/types";
 import { loadRepositories, type Repositories } from "../repositories/json";
 
@@ -360,7 +365,7 @@ describe("generateItinerary", () => {
 
   it("실스냅샷 김고은 데모에서 철도 추천과 강릉 직행버스 전체 대안이 함께 생성된다 (#58 E2E)", () => {
     const real = loadRepositories();
-    const result = generateItineraryWithGatewayAlternatives(constraints({
+    const input = constraints({
       arrivalAt: "2026-08-12T10:00:00+09:00",
       airportReadyAt: "2026-08-12T12:00:00+09:00",
       departureAt: "2026-08-14T18:00:00+09:00",
@@ -370,7 +375,8 @@ describe("generateItinerary", () => {
       excludedPlaceIds: [],
       maxPlacesPerDay: 3,
       dailySlackMinutes: 120,
-    }), real);
+    });
+    const result = generateItineraryWithGatewayAlternatives(input, real);
 
     expect(result.status).toBe("planned");
     if (result.status !== "planned") return;
@@ -384,6 +390,12 @@ describe("generateItinerary", () => {
         "airport-bus-gangneung-icn-t1-20260814-1200",
       ]);
     expect(direct?.metrics.departureSlackMinutes).toBe(130);
+    const baseline = gatewayPlanningBaselineOf(result);
+    expect(baseline).not.toBeNull();
+    if (baseline) {
+      expect(generateGatewayAlternatives(input, real, baseline))
+        .toEqual(result.gatewayAlternatives);
+    }
   });
 
   it("같은 열차 번호의 연속 구간은 환승으로 세지 않는다", () => {

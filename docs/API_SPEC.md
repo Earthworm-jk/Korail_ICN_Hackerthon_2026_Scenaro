@@ -130,10 +130,17 @@ type PlanRequest = {
 
 // #58 공항버스 대안은 핵심 추천의 2초 응답을 막지 않는 후속 보강 Action이다.
 // planItinerary(request)는 철도 추천을 먼저 반환하고, 성공한 planned 결과 뒤에 호출한다.
-planGatewayAlternatives(request): Promise<
+type GatewayPlanningBaseline = {
+  visitedPlaceIds: string[]; // 핵심 추천 결과의 중복 없는 방문 장소 ID
+  localUseMinutes: number;   // 핵심 추천 regionWindows.availableMinutes 합
+};
+planGatewayAlternatives(request, baseline: GatewayPlanningBaseline): Promise<
   | { ok: true; alternatives: GatewayAlternative[] }
-  | { ok: false; code: "INVALID_REQUEST"; fieldErrors: Record<string, string> }
+  | { ok: false; code: "INVALID_REQUEST" | "INVALID_BASELINE"; fieldErrors: Record<string, string> }
 >;
+// baseline은 핵심 추천을 재계산하지 않고 effects 비교값만 만들기 위한 표시용 입력이다.
+// 권한·저장 판단에는 사용하지 않으며, Action은 중복·미등록·제외 장소 ID, 음수·여행창 초과
+// 시간을 거부한다. UI는 서버가 반환한 핵심 추천에서 gatewayPlanningBaselineOf()로 생성한다.
 // UI는 이전 요청의 늦은 응답을 폐기한다. 보강 실패는 이미 표시한 추천을 실패로 되돌리지 않는다.
 // GatewayAlternative.schedule은 observed_snapshot·verifiedAt·recheckRequired:true를 포함한다.
 
