@@ -5,8 +5,13 @@
  * - 편집 = 촬영지 재선택·항공 시각 변경 후 전체 재계산 (무상태)
  * - 대안 시간표는 mock(#14 ⑨ 선행), 저장·내 일정은 in-memory 스텁(#25 선행) — 엔진·Supabase 연결 시 교체
  */
-import { useCallback, useMemo, useReducer, useState } from "react";
-import { searchEntities, type ActorSummary, type WorkSummary } from "@/lib/actions/search";
+import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from "react";
+import {
+  searchEntities,
+  type ActorSummary,
+  type EntitySearchResult,
+  type WorkSummary,
+} from "@/lib/actions/search";
 import {
   getCandidatePlaces,
   type CandidateResponse,
@@ -43,8 +48,11 @@ import { AlternativeTimetables } from "./alternative-timetables";
 import { AuthModal, TripsModal, useSaveStub, type SaveStatus } from "./save-stub";
 import { ExecutionSupport } from "./execution-support";
 import { ItineraryRouteMap, KoreaMapPanel, type MapPlace, type MapStation } from "./korea-map";
+import { ThemeExperienceCard } from "./theme-experience";
+import { getThemeExperience, type ThemeExperienceResult } from "@/lib/actions/theme-experience";
 import type { StationFacilitiesSnapshotT } from "@/lib/station-facilities";
 import type { StationCoordinatesSnapshotT } from "@/lib/station-coordinates";
+import type { DayPlan } from "@/lib/engine/types";
 
 const KST = "Asia/Seoul";
 
@@ -69,6 +77,17 @@ const STEPS: MessageKey[] = ["nav.step1", "nav.step2", "nav.step3", "nav.step4"]
 
 /** 3단계 후보 목록을 한 번에 보여주는 개수 — 나머지는 "더보기" */
 const PLACES_PAGE_SIZE = 5;
+
+/** #80 카드의 "OO 권역 일정과 연결" 문구 — 추천 권역과 같은 권역의 첫 일정 역 */
+function themeStationLabel(
+  days: DayPlan[],
+  result: ThemeExperienceResult | null,
+  stationName: (id: string) => string,
+): string | null {
+  if (result?.status !== "ok") return null;
+  const window = days.flatMap((day) => day.regionWindows).find((w) => w.regionId === result.regionId);
+  return window ? stationName(window.stationId) : null;
+}
 
 // #14 합의(2026-08-08): datetime-local은 시각 표기가 앱 locale이 아니라 브라우저 UI 언어를
 // 따라 영어 모드에 '오전/오후'가 남는다 — 날짜 input + 24시간제 시/분 select로 교체 (A6).
@@ -227,7 +246,7 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates }:
 
   // step 2 — 검색·복수 선택
   const [query, setQuery] = useState("");
-  const [results, setResults] = useState<{ actors: ActorSummary[]; works: WorkSummary[] }>({ actors: [], works: [] });
+  const [results, setResults] = useState<EntitySearchResult>({ actors: [], works: [] });
   const [searched, setSearched] = useState(false);
   const [selectedActors, setSelectedActors] = useState<ActorSummary[]>([]);
   const [selectedWorks, setSelectedWorks] = useState<WorkSummary[]>([]);
@@ -241,6 +260,27 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates }:
 
   // step 4 — 결과. 전이 규칙·파생은 lib/itinerary-view 순수 함수로 고정 (PR #35 리뷰 3)
   const [view, dispatchView] = useReducer(reduceItineraryView, initialItineraryView);
+
+  // #80 테마체험 권역 — 일정이 확정된 시점(생성 성공·재열람)에만 조회한다.
+  // 입력은 표시 중인 일정의 권역과 선택 작품뿐이며, 런타임 OpenAI 호출은 없다.
+  const [themeExperience, setThemeExperience] = useState<ThemeExperienceResult | null>(null);
+  // PR #82 리뷰 비차단 — 연속 재계산에서 먼저 보낸 요청의 늦은 응답이 최신 화면을 덮지 않게
+  // 요청 순번을 붙이고, 자기 순번이 아니면 응답을 버린다.
+  const themeRequestRef = useRef(0);
+  const refreshThemeExperience = useCallback(async (days: DayPlan[] | null, workIds: string[]) => {
+    const seq = ++themeRequestRef.current;
+    const regionIds = [
+      ...new Set((days ?? []).flatMap((day) => day.regionWindows.map((w) => w.regionId))),
+    ];
+    if (regionIds.length === 0 || workIds.length === 0) { setThemeExperience(null); return; }
+    try {
+      const result = await getThemeExperience({ selectedWorkIds: workIds, itineraryRegionIds: regionIds });
+      if (seq === themeRequestRef.current) setThemeExperience(result);
+    } catch {
+      // 조회 실패도 계약 상태로 표현한다 — 검증 결과를 제시할 수 없다는 뜻은 '추천 불가'와 같다
+      if (seq === themeRequestRef.current) setThemeExperience({ status: "unavailable" });
+    }
+  }, []);
 
   // 재열람 = 화면 교체가 아니라 저장 당시 조건의 복원 (PR #35 리뷰 3)
   // 입력·선택·후보 컨텍스트를 constraints에서 되살려, 이후 재계산이 저장 당시 조건으로 돈다
@@ -264,8 +304,9 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates }:
     // (excluded의 여집합)이 단일 기준이라, 사용자가 직접 담았던 별도 구분 후보를 잃지 않는다
     setSelectedPlaceIds(new Set(initialCandidateIds(data.candidates).filter((id) => !excluded.has(id))));
     dispatchView({ type: "REOPEN", record });
+    void refreshThemeExperience(record.days, c.selectedWorkIds);
     setStep(4);
-  }, []);
+  }, [refreshThemeExperience]);
 
   const saveStub = useSaveStub((record) => {
     void reopenRecord(record);
@@ -287,12 +328,28 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates }:
     }
   }, [arrival, departure, setArrivalAtInput, setDepartureAtInput]);
 
-  const runSearch = useCallback(async (value: string) => {
-    setQuery(value);
-    if (!value.trim()) { setResults({ actors: [], works: [] }); setSearched(false); return; }
-    setResults(await searchEntities(value));
-    setSearched(true);
-  }, []);
+  // #78 P1 — LLM 보조는 결정적 검색 0건일 때 서버에서만 실행된다.
+  // 타이핑 중 중간 문자열마다 외부 호출하지 않도록 300ms 디바운스하고, 취소된 요청의 응답은 버린다.
+  useEffect(() => {
+    const value = query.trim();
+    if (!value) return;
+    let active = true;
+    const timer = window.setTimeout(() => {
+      void searchEntities(value).then((next) => {
+        if (!active) return;
+        setResults(next);
+        setSearched(true);
+      }).catch(() => {
+        if (!active) return;
+        setResults({ actors: [], works: [] });
+        setSearched(true);
+      });
+    }, 300);
+    return () => {
+      active = false;
+      window.clearTimeout(timer);
+    };
+  }, [query]);
 
   const loadCandidates = useCallback(async () => {
     const data = await getCandidatePlaces({
@@ -324,17 +381,21 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates }:
     const constraints = currentConstraints();
     if (!constraints) return;
     dispatchView({ type: "PLAN_START" });
+    setThemeExperience(null);
     setStep(4);
     try {
       const res = await planItinerary(constraints);
       if (res.ok) {
         dispatchView({ type: "PLAN_SUCCESS", result: res.result });
         saveStub.markDirty();
+        if (res.result.status === "planned") {
+          void refreshThemeExperience(res.result.days, constraints.selectedWorkIds);
+        }
       } else dispatchView({ type: "PLAN_INVALID" }); // 1단계 검증을 우회한 요청 — 기존 결과 유지
     } catch {
       dispatchView({ type: "PLAN_FAILED" }); // 네트워크·서버 장애 — 기존 결과 유지
     }
-  }, [currentConstraints, saveStub]);
+  }, [currentConstraints, saveStub, refreshThemeExperience]);
 
   const baseDays = recommendedDays(view);
   const mockAlternatives = useMemo(
@@ -633,8 +694,21 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates }:
             className="mt-4 w-full rounded border px-3 py-2"
             placeholder={tr("step2.placeholder")}
             value={query}
-            onChange={(e) => runSearch(e.target.value)}
+            onChange={(e) => {
+              const nextQuery = e.target.value;
+              setQuery(nextQuery);
+              setSearched(false);
+              if (!nextQuery.trim()) setResults({ actors: [], works: [] });
+            }}
           />
+          {searched && results.interpretedByAi && (
+            <p
+              aria-live="polite"
+              className="mt-3 rounded border border-sc-airport/30 bg-sc-airport-soft p-3 text-sm text-sc-airport-text"
+            >
+              ✨ {tr("step2.aiInterpreted")}
+            </p>
+          )}
           {searched && results.actors.length === 0 && results.works.length === 0 && (
             <p className="mt-3 rounded border border-sc-orange/30 bg-sc-orange-soft p-3 text-sm text-sc-orange-text">
               {tr("step2.noResult")}
@@ -913,6 +987,13 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates }:
                   </ul>
                 </div>
               )}
+              {/* #80 — 권역 단위 테마체험 제안. 일정에는 자동으로 포함되지 않는다 (#14 v0.6) */}
+              <ThemeExperienceCard
+                result={themeExperience}
+                stationName={themeStationLabel(displayedDays, themeExperience, stationName)}
+                locale={locale}
+                tr={tr}
+              />
               {/* #24 A5 — 실행 지원: 일정에 등장하는 역만, 스냅샷 수록분만 안내 */}
               <ExecutionSupport
                 snapshot={stationFacilities}
