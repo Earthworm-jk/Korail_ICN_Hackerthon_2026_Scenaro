@@ -11,6 +11,9 @@ from scripts import build_place_rankings as pipeline
 
 
 class PlaceRankingPipelineTest(unittest.TestCase):
+    def test_실스냅의_검토_하한은_0_25다(self) -> None:
+        self.assertEqual(pipeline.DEFAULT_BADGE_THRESHOLD, 0.25)
+
     def test_입력은_현재_작품과_장소를_빠짐없이_포함한다(self) -> None:
         version, works, places = pipeline.load_inputs()
         self.assertEqual(version, "v1")
