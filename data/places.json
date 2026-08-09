@@ -172,7 +172,17 @@
       "verifiedAt": "2026-08-08"
     },
     "stayMinutes": 60,
-    "stayMetadata": { "category": "nature_walk", "basis": "category_default" },
+    "stayMetadata": {
+      "category": "nature_walk",
+      "basis": "official_source",
+      "sourceMinutes": 60,
+      "sourceScope": {
+        "ko": "월정사 전나무숲길 1.9km 산책 코스",
+        "en": "1.9 km Woljeongsa Fir Forest walking course"
+      },
+      "source": "https://tour.pc.go.kr/Home/H20000/H20100/H20106/html",
+      "verifiedAt": "2026-08-10"
+    },
     "verificationLevel": "교차확인",
     "officialSourceCount": 2,
     "reasonText": {
@@ -207,7 +217,17 @@
       "verifiedAt": "2026-08-08"
     },
     "stayMinutes": 120,
-    "stayMetadata": { "category": "large_experience", "basis": "category_default" },
+    "stayMetadata": {
+      "category": "large_experience",
+      "basis": "official_source",
+      "sourceMinutes": 120,
+      "sourceScope": {
+        "ko": "삼양라운드힐 그린시즌 힐코스",
+        "en": "Samyang Roundhill green-season Hill Course"
+      },
+      "source": "https://www.samyangroundhill.com/enjoy/course",
+      "verifiedAt": "2026-08-10"
+    },
     "verificationLevel": "교차확인",
     "officialSourceCount": 2,
     "reasonText": {
@@ -367,8 +387,18 @@
       "source": "한국관광공사 VISITKOREA 8월 09:00~20:00·폐관 1시간 전 입장 마감·연중무휴 안내 https://english.visitkorea.or.kr/svc/whereToGo/locIntrdn/rgnContentsView.do?vcontsId=108728",
       "verifiedAt": "2026-08-08"
     },
-    "stayMinutes": 60,
-    "stayMetadata": { "category": "culture_venue", "basis": "category_default" },
+    "stayMinutes": 50,
+    "stayMetadata": {
+      "category": "culture_venue",
+      "basis": "official_source",
+      "sourceMinutes": 50,
+      "sourceScope": {
+        "ko": "경기전 해설(나무이야기)투어",
+        "en": "Gyeonggijeon guided tree-story tour"
+      },
+      "source": "https://hanok.jeonju.go.kr/assets/file/jeonju_hanokMap.pdf",
+      "verifiedAt": "2026-08-10"
+    },
     "verificationLevel": "교차확인",
     "officialSourceCount": 2,
     "reasonText": {

@@ -119,10 +119,24 @@ export const StayCategory = z.enum([
   "large_experience",
 ]);
 
-export const StayMetadata = z.object({
+export const CategoryDefaultStayMetadata = z.object({
   category: StayCategory,
   basis: z.literal("category_default"),
 });
+
+export const OfficialSourceStayMetadata = z.object({
+  category: StayCategory,
+  basis: z.literal("official_source"),
+  sourceMinutes: z.number().int().positive(),
+  sourceScope: LocalizedText,
+  source: HttpUrl,
+  verifiedAt: IsoDate,
+});
+
+export const StayMetadata = z.discriminatedUnion("basis", [
+  CategoryDefaultStayMetadata,
+  OfficialSourceStayMetadata,
+]);
 
 export const Place = z.object({
   id: NonEmptyId,
@@ -132,7 +146,7 @@ export const Place = z.object({
   accessEstimate: AccessEstimate, // #5: 역→장소 접근시간 추정(왕복 동일 적용 — 역 허브 모델)
   openingHours: OpeningHours,
   stayMinutes: z.number().int().positive(), // 양의 정수 (#20)
-  // #84 P0-4 additive: 엔진 입력은 stayMinutes 그대로이며, 공식 출처가 아닌 산정 근거만 기록한다.
+  // #84 additive: 엔진 입력은 stayMinutes 그대로다. 시드 로더는 P1부터 메타 존재를 필수 검증한다.
   stayMetadata: StayMetadata.optional(),
   verificationLevel: z.enum(["원본확인", "교차확인", "TourAPI대조"]),
   officialSourceCount: z.number().int().nonnegative(), // UI 정렬 전용 — 엔진 점수와 분리 (#3)
@@ -160,6 +174,16 @@ export const Place = z.object({
       code: "custom",
       path: ["stayMinutes"],
       message: `stayMetadata.category 기본값(${STAY_CATEGORY_DEFAULT_MINUTES[place.stayMetadata.category]}분)과 일치해야 합니다`,
+    });
+  }
+  if (
+    place.stayMetadata?.basis === "official_source"
+    && place.stayMinutes !== place.stayMetadata.sourceMinutes
+  ) {
+    ctx.addIssue({
+      code: "custom",
+      path: ["stayMinutes"],
+      message: `공식 출처 소요시간(${place.stayMetadata.sourceMinutes}분)과 일치해야 합니다`,
     });
   }
 });

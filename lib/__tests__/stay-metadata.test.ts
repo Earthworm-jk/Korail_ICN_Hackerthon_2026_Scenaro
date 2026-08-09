@@ -21,6 +21,21 @@ const EXPECTED_CATEGORIES = {
   "place-busan-cinema-center": "culture_venue",
 } as const;
 
+const EXPECTED_OFFICIAL_SOURCES = {
+  "place-woljeongsa-fir-forest": {
+    minutes: 60,
+    source: "https://tour.pc.go.kr/Home/H20000/H20100/H20106/html",
+  },
+  "place-samyang-ranch": {
+    minutes: 120,
+    source: "https://www.samyangroundhill.com/enjoy/course",
+  },
+  "place-gyeonggijeon-shrine": {
+    minutes: 50,
+    source: "https://hanok.jeonju.go.kr/assets/file/jeonju_hanokMap.pdf",
+  },
+} as const;
+
 describe("보수 체류 추정 기준 (#84 P0-4)", () => {
   it("유형표는 기존 45·60·90·120분 엔진 값을 보존한다", () => {
     expect(STAY_CATEGORY_DEFAULT_MINUTES).toEqual({
@@ -33,18 +48,49 @@ describe("보수 체류 추정 기준 (#84 P0-4)", () => {
     });
   });
 
-  it("현재 데모 14곳은 검토한 유형과 category_default 근거를 모두 가진다", () => {
+  it("현재 데모 14곳은 검토한 유형과 category_default 또는 공식 근거를 모두 가진다", () => {
     const places = loadRepositories().places;
     expect(places).toHaveLength(Object.keys(EXPECTED_CATEGORIES).length);
     for (const place of places) {
-      expect(place.stayMetadata, place.id).toEqual({
-        category: EXPECTED_CATEGORIES[place.id as keyof typeof EXPECTED_CATEGORIES],
-        basis: "category_default",
-      });
-      expect(place.stayMinutes, place.id).toBe(
-        STAY_CATEGORY_DEFAULT_MINUTES[place.stayMetadata!.category],
+      expect(place.stayMetadata?.category, place.id).toBe(
+        EXPECTED_CATEGORIES[place.id as keyof typeof EXPECTED_CATEGORIES],
       );
+      const official = EXPECTED_OFFICIAL_SOURCES[
+        place.id as keyof typeof EXPECTED_OFFICIAL_SOURCES
+      ];
+      if (official !== undefined) {
+        expect(place.stayMetadata?.basis, place.id).toBe("official_source");
+        if (place.stayMetadata?.basis !== "official_source") continue;
+        expect(place.stayMetadata.sourceMinutes, place.id).toBe(official.minutes);
+        expect(place.stayMetadata.source, place.id).toBe(official.source);
+        expect(place.stayMetadata.verifiedAt, place.id).toBe("2026-08-10");
+        expect(place.stayMinutes, place.id).toBe(official.minutes);
+      } else {
+        expect(place.stayMetadata?.basis, place.id).toBe("category_default");
+        expect(place.stayMinutes, place.id).toBe(
+          STAY_CATEGORY_DEFAULT_MINUTES[place.stayMetadata!.category],
+        );
+      }
     }
+  });
+
+  it("공식 경기전 해설 코스를 반영해 체류시간을 60분에서 50분으로 재산정한다", () => {
+    const place = loadRepositories().places.find(({ id }) => id === "place-gyeonggijeon-shrine");
+    expect(place?.stayMinutes).toBe(50);
+    expect(place?.stayMetadata?.basis).toBe("official_source");
+
+    const result = generateItinerary({
+      ...BASE_CONSTRAINTS,
+      selectedActorIds: [],
+      selectedWorkIds: ["work-the-king"],
+    }, loadRepositories());
+    expect(result.status).toBe("planned");
+    if (result.status !== "planned") return;
+    const item = result.days
+      .flatMap(({ items }) => items)
+      .find(({ placeId }) => placeId === "place-gyeonggijeon-shrine");
+    expect(item).toBeDefined();
+    expect((Date.parse(item!.departAt) - Date.parse(item!.arriveAt)) / 60_000).toBe(50);
   });
 
   it("근거 메타는 설명용 additive이며 기존 일정 산출을 바꾸지 않는다", () => {

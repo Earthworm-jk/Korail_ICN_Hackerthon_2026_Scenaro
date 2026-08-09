@@ -273,17 +273,57 @@
   잠금식 보관함이 아닌 공용 보관 공간이며 화면에 현장 확인 문구를 고지한다.
   - https://info.korail.com/info/contents.do?key=1503
 
-## 장소 체류시간 기본값 (#84 P0-4)
+## 장소 체류시간 근거 (#84 MVP P1)
 
 - `places.json`의 `stayMinutes`는 공식 권장 관람시간이 아니라 일정 가능성을 보수적으로
   계산하기 위한 서비스 기본 추정값이다. 공식 출처가 없는 값에 출처를 만들어 붙이지 않는다.
-- `stayMetadata.basis: category_default`는 유형표로 산정했음을 뜻하며, 엔진은 기존과 동일하게
-  `stayMinutes`만 소비한다. 현재 데모 14곳의 45·60·90·120분 값은 변경하지 않았다.
+- 엔진은 기존과 동일하게 `stayMinutes`만 소비한다. `stayMetadata.basis`는 유형표로 산정한
+  `category_default`와 공식 분 단위 코스를 확인한 `official_source`를 구분한다.
+- Place 타입은 additive 하위 호환을 위해 optional이지만 배포 JSON 시드는 근거 메타가 없으면
+  로드 단계에서 거부한다.
 - 확정 유형표: 짧은 외관 방문 45분, 자연·산책 60분, 식음 60분, 역사·문화 60분,
   리조트 방문 90분, 대형 체험 120분. 장소별 분류와 정확한 ID는 `places.json`에 기록한다.
 - 총 시간예산은 `(accessEstimate.minutes + max(20, ceil(accessEstimate.minutes × 0.5))) × 2
   + stayMinutes`로 계산한다. 도로 정체·식사·짐·실제 체류시간을 보장하지 않는다.
-- 공식 권장 관람시간·코스 소요시간의 `source`·`verifiedAt` 보강과 기본값 재산정은 #84 P1이다.
+- 2026-08-10에 14곳을 운영기관·지자체·공식 관광 원천으로 재검토했다. 장소 전체에 직접
+  적용 가능한 분 단위 코스가 확인된 3곳만 `official_source`로 승격했다.
+
+| 장소 | 최종 분 | basis | 공식 조사 결과 |
+|---|---:|---|---|
+| 영진해변 | 60 | `category_default` | 24시간 개방 정보만 확인, 권장 체류시간 없음 |
+| 라라무리 | 60 | `category_default` | 공개된 현행 공식 체류시간 원천을 확인하지 못함 |
+| 엄마손막국수 | 60 | `category_default` | 공개된 현행 공식 체류시간 원천을 확인하지 못함 |
+| 스카이베이호텔 경포 | 45 | `category_default` | 호텔 운영·교통 안내는 촬영지 방문시간과 범위가 다름 |
+| 월정사 | 60 | `category_default` | 전나무숲길 포함 2시간 코스는 사찰 단독 범위와 다름 |
+| 월정사 전나무숲길 | 60 | `official_source` | 평창문화관광 1.9km 코스 약 1시간 |
+| 대관령 삼양목장 | 120 | `official_source` | 운영사 그린시즌 힐코스 약 120분 |
+| 발왕산 관광케이블카 | 120 | `category_default` | 공식 편도 18분·정상 추천코스 40분은 전체 방문시간이 아님 |
+| 오크밸리 리조트 | 90 | `category_default` | 시설별 코스는 촬영구역·비투숙 방문 범위와 다름 |
+| 서울로7017 | 45 | `category_default` | 공식 2~2.5시간 해설 코스는 주변 명소까지 포함 |
+| 덕수궁 돌담길 | 45 | `category_default` | 공식 1시간 정동 해설 코스는 주변 명소까지 포함 |
+| 경기전 | **50** | `official_source` | 전주시 경기전 해설(나무이야기)투어 50분; 기존 60분 재산정 |
+| 벡스코 | 60 | `category_default` | 행사별 관람시간이 달라 장소 공통값 없음 |
+| 영화의전당 | 60 | `category_default` | 상영·행사별 시간이 달라 장소 공통값 없음 |
+
+공식 분 단위 근거:
+
+- 월정사 전나무숲길 1.9km·약 1시간 — 평창문화관광 (2026-08-10 확인)
+  - https://tour.pc.go.kr/Home/H20000/H20100/H20106/html
+- 삼양라운드힐 그린시즌 힐코스 약 120분 — 삼양라운드힐 공식 추천코스 (2026-08-10 확인)
+  - https://www.samyangroundhill.com/enjoy/course
+- 경기전 해설(나무이야기)투어 50분 — 전주한옥마을 공식 관광지도 (2026-08-10 확인)
+  - https://hanok.jeonju.go.kr/assets/file/jeonju_hanokMap.pdf
+
+범위 불일치 판단에 확인한 대표 공식 자료:
+
+- 발왕산 케이블카 편도 약 18분 — 모나용평 공식 안내
+  - https://www.yongpyong.co.kr/mobile/kor/convenience/leisure/gondola.do
+- 발왕산 정상 추천 탐방코스 약 40분 — 한국관광공사 대한민국 구석구석
+  - https://korean.visitkorea.or.kr/detail/rem_detail.do?cotid=ec89f128-7c22-40c2-9a60-614cb5d6ccbd
+- 서울로7017 주변 해설코스 2~2.5시간 — 서울특별시
+  - https://english.seoul.go.kr/seoullo-7017-walking-tour-course/
+- 덕수궁 돌담길을 포함한 정동 밤의 산책 1시간 — 서울문화포털
+  - https://culture.seoul.go.kr/culture/culture/cultureEvent/view.do?cultcode=148536&menuNo=200110
 
 ## 항공
 
