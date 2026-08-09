@@ -106,6 +106,75 @@ function DateTimeField({ value, onChange, className }: {
   );
 }
 
+// #14 v0.6 sc-summary — 선택 요약 사이드바 (2단계 디자인 패스, 표시 전용·상태 재해석 없음)
+function fmtMonthDay(at: string): string {
+  const [date] = at.split("T");
+  const [, month, day] = date.split("-");
+  return `${Number(month)}.${Number(day)}`;
+}
+
+function SummarySidebar({ arrivalAt, departureAt, readyAt, deadlineAt, actors, works, placeCount, locale, tr }: {
+  arrivalAt: string;
+  departureAt: string;
+  readyAt: string;
+  deadlineAt: string;
+  actors: ActorSummary[];
+  works: WorkSummary[];
+  placeCount: number;
+  locale: Locale;
+  tr: (key: MessageKey) => string;
+}) {
+  const nights = Math.max(0, Math.round(
+    (Date.parse(departureAt.split("T")[0]) - Date.parse(arrivalAt.split("T")[0])) / 86_400_000,
+  ));
+  const nightsLabel = tr("summary.nights")
+    .replace("{n}", String(nights))
+    .replace("{d}", String(nights + 1));
+  const hasContent = actors.length > 0 || works.length > 0;
+  return (
+    <aside aria-label={tr("summary.title")} className="border-b bg-sc-subtle px-5 py-4 md:border-b-0 md:border-r md:px-4 md:py-5">
+      <h3 className="text-sm font-medium">{tr("summary.title")}</h3>
+      <div className="mt-3 grid grid-cols-2 gap-3 md:grid-cols-1 md:gap-4">
+        <div>
+          <span className="block text-xs text-sc-muted">{tr("summary.period")}</span>
+          <strong className="mt-0.5 block text-sm font-medium">
+            {fmtMonthDay(arrivalAt)}–{fmtMonthDay(departureAt)} · {nightsLabel}
+          </strong>
+        </div>
+        <div>
+          <span className="block text-xs text-sc-muted">{tr("summary.window")}</span>
+          <strong className="mt-0.5 block text-sm font-medium">
+            {fmtMonthDay(readyAt)} {readyAt.split("T")[1]}–{fmtMonthDay(deadlineAt)} {deadlineAt.split("T")[1]}
+          </strong>
+        </div>
+        <div>
+          <span className="block text-xs text-sc-muted">{tr("summary.content")}</span>
+          {hasContent ? (
+            <div className="mt-1 flex flex-wrap gap-1.5">
+              {actors.map((a) => (
+                <span key={a.id} className="rounded-full bg-sc-blue-soft px-2 py-0.5 text-xs text-sc-blue">{a.name[locale]}</span>
+              ))}
+              {works.map((w) => (
+                <span key={w.id} className="rounded-full bg-sc-airport-soft px-2 py-0.5 text-xs text-sc-airport">{w.title[locale]}</span>
+              ))}
+            </div>
+          ) : (
+            <strong className="mt-0.5 block text-sm font-medium text-sc-muted/70">—</strong>
+          )}
+        </div>
+        <div>
+          <span className="block text-xs text-sc-muted">{tr("summary.places")}</span>
+          <strong className="mt-0.5 block text-sm font-medium">
+            {placeCount > 0
+              ? tr("summary.placesCount").replace("{n}", String(placeCount))
+              : <span className="text-sc-muted/70">—</span>}
+          </strong>
+        </div>
+      </div>
+    </aside>
+  );
+}
+
 export default function PlannerWizard({ stationFacilities }: {
   stationFacilities: StationFacilitiesSnapshotT;
 }) {
@@ -380,7 +449,20 @@ export default function PlannerWizard({ stationFacilities }: {
         ))}
       </nav>
 
-      <div className="p-5 sm:p-6">
+      {/* #14 v0.6 sc-layout — 좌측 선택 요약 + 본문 (md 미만은 상단 밴드) */}
+      <div className="grid md:grid-cols-[220px_minmax(0,1fr)]">
+      <SummarySidebar
+        arrivalAt={arrival.at}
+        departureAt={departure.at}
+        readyAt={airportReady.at}
+        deadlineAt={airportDeadline.at}
+        actors={selectedActors}
+        works={selectedWorks}
+        placeCount={selectedPlaceIds.size}
+        locale={locale}
+        tr={tr}
+      />
+      <div className="min-w-0 p-5 sm:p-6">
 
       {step === 1 && (
         <section>
@@ -768,6 +850,7 @@ export default function PlannerWizard({ stationFacilities }: {
         </section>
       )}
 
+      </div>
       </div>
       </div>
 
