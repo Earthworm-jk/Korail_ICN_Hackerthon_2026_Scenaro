@@ -1,24 +1,26 @@
 {
   "metadata": {
     "version": 1,
-    "verifiedAt": "2026-08-09",
-    "relationCount": 203,
-    "placeCount": 184,
+    "verifiedAt": "2026-08-10",
+    "relationCount": 230,
+    "placeCount": 210,
     "placeStatusCounts": {
-      "conditional": 9,
-      "confirmed": 175
+      "conditional": 11,
+      "confirmed": 199
     },
     "relationStatusCounts": {
-      "conditional": 9,
-      "confirmed": 194
+      "conditional": 12,
+      "confirmed": 218
     },
     "workRelationCounts": {
       "work-encounter": 48,
       "work-goblin": 43,
       "work-little-women": 3,
       "work-love-in-the-moonlight": 13,
+      "work-mr-sunshine": 11,
       "work-record-of-youth": 31,
       "work-the-king": 35,
+      "work-twenty-five-twenty-one": 16,
       "work-yumi-cells": 18,
       "work-yumi-cells-2": 12
     },
@@ -55,6 +57,37 @@
         "work-encounter",
         "work-record-of-youth",
         "work-love-in-the-moonlight"
+      ]
+    },
+    {
+      "id": "actor-gong-yoo",
+      "name": {
+        "ko": "공유",
+        "en": "Gong Yoo"
+      },
+      "workIds": [
+        "work-goblin"
+      ]
+    },
+    {
+      "id": "actor-lee-min-ho",
+      "name": {
+        "ko": "이민호",
+        "en": "Lee Min-ho"
+      },
+      "workIds": [
+        "work-the-king"
+      ]
+    },
+    {
+      "id": "actor-kim-tae-ri",
+      "name": {
+        "ko": "김태리",
+        "en": "Kim Tae-ri"
+      },
+      "workIds": [
+        "work-mr-sunshine",
+        "work-twenty-five-twenty-one"
       ]
     }
   ],
@@ -122,6 +155,22 @@
         "en": "Love in the Moonlight"
       },
       "year": 2016
+    },
+    {
+      "id": "work-mr-sunshine",
+      "title": {
+        "ko": "미스터 션샤인",
+        "en": "Mr. Sunshine"
+      },
+      "year": 2018
+    },
+    {
+      "id": "work-twenty-five-twenty-one",
+      "title": {
+        "ko": "스물다섯 스물하나",
+        "en": "Twenty-Five Twenty-One"
+      },
+      "year": 2022
     }
   ],
   "places": [
@@ -142,7 +191,7 @@
       "workIds": [
         "work-the-king"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do",
         "https://project-osrm.org/docs/"
@@ -165,7 +214,7 @@
       "workIds": [
         "work-record-of-youth"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do",
         "https://project-osrm.org/docs/"
@@ -188,7 +237,7 @@
       "workIds": [
         "work-yumi-cells"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do",
         "https://project-osrm.org/docs/"
@@ -212,7 +261,7 @@
         "work-encounter",
         "work-yumi-cells-2"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do",
         "https://project-osrm.org/docs/"
@@ -235,7 +284,7 @@
       "workIds": [
         "work-goblin"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do",
         "https://project-osrm.org/docs/"
@@ -258,7 +307,7 @@
       "workIds": [
         "work-the-king"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do",
         "https://project-osrm.org/docs/"
@@ -285,7 +334,7 @@
       "workIds": [
         "work-record-of-youth"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do",
         "https://project-osrm.org/docs/"
@@ -309,7 +358,7 @@
         "work-love-in-the-moonlight",
         "work-the-king"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do",
         "https://project-osrm.org/docs/"
@@ -332,7 +381,7 @@
       "workIds": [
         "work-goblin"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do",
         "https://project-osrm.org/docs/"
@@ -355,7 +404,7 @@
       "workIds": [
         "work-goblin"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do",
         "https://project-osrm.org/docs/"
@@ -378,10 +427,34 @@
       "workIds": [
         "work-yumi-cells"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do",
         "https://project-osrm.org/docs/"
+      ]
+    },
+    {
+      "id": "catalog-place-35bb3a97f8ea",
+      "name": {
+        "ko": "경주역",
+        "en": "경주역"
+      },
+      "translationStatus": "ko_fallback",
+      "placeType": "station",
+      "address": "경상북도 경주시 원화로 266",
+      "latitude": 35.844454,
+      "longitude": 129.21787,
+      "nearestStationName": "경주",
+      "driveMinutes": 12.9,
+      "status": "confirmed",
+      "workIds": [
+        "work-twenty-five-twenty-one"
+      ],
+      "verifiedAt": "2026-08-10",
+      "sourceUrls": [
+        "https://www.data.go.kr/data/15111405/fileData.do",
+        "https://project-osrm.org/docs/",
+        "https://gyeongju.go.kr/tour/page.do?mnu_uid=4122"
       ]
     },
     {
@@ -401,7 +474,7 @@
       "workIds": [
         "work-the-king"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do",
         "https://project-osrm.org/docs/"
@@ -424,7 +497,30 @@
       "workIds": [
         "work-encounter"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
+      "sourceUrls": [
+        "https://www.data.go.kr/data/15111405/fileData.do",
+        "https://project-osrm.org/docs/"
+      ]
+    },
+    {
+      "id": "catalog-place-57c1e37a08e5",
+      "name": {
+        "ko": "고산정",
+        "en": "고산정"
+      },
+      "translationStatus": "ko_fallback",
+      "placeType": "playground",
+      "address": "경상북도 안동시 도산면 가송길 177-42",
+      "latitude": 36.767715,
+      "longitude": 128.892121,
+      "nearestStationName": "안동",
+      "driveMinutes": 42.5,
+      "status": "confirmed",
+      "workIds": [
+        "work-mr-sunshine"
+      ],
+      "verifiedAt": "2026-08-10",
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do",
         "https://project-osrm.org/docs/"
@@ -447,7 +543,7 @@
       "workIds": [
         "work-love-in-the-moonlight"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do",
         "https://project-osrm.org/docs/"
@@ -470,7 +566,7 @@
       "workIds": [
         "work-the-king"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do",
         "https://project-osrm.org/docs/"
@@ -493,7 +589,7 @@
       "workIds": [
         "work-the-king"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do",
         "https://project-osrm.org/docs/"
@@ -517,7 +613,7 @@
         "work-love-in-the-moonlight",
         "work-record-of-youth"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do",
         "https://project-osrm.org/docs/"
@@ -540,7 +636,7 @@
       "workIds": [
         "work-goblin"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do",
         "https://project-osrm.org/docs/"
@@ -564,7 +660,7 @@
         "work-love-in-the-moonlight",
         "work-the-king"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do",
         "https://project-osrm.org/docs/"
@@ -587,10 +683,34 @@
       "workIds": [
         "work-the-king"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do",
         "https://project-osrm.org/docs/"
+      ]
+    },
+    {
+      "id": "catalog-place-0c85161a4e47",
+      "name": {
+        "ko": "구서도역 영상촬영장",
+        "en": "구서도역 영상촬영장"
+      },
+      "translationStatus": "ko_fallback",
+      "placeType": "playground",
+      "address": "전라북도 남원시 사매면 서도길 32",
+      "latitude": 35.490738,
+      "longitude": 127.329307,
+      "nearestStationName": "남원",
+      "driveMinutes": 17.7,
+      "status": "confirmed",
+      "workIds": [
+        "work-mr-sunshine"
+      ],
+      "verifiedAt": "2026-08-10",
+      "sourceUrls": [
+        "https://www.data.go.kr/data/15111405/fileData.do",
+        "https://project-osrm.org/docs/",
+        "https://korean.visitkorea.or.kr/detail/ms_detail.do?cotid=17bb9874-343b-4213-b25e-f2086073c74c"
       ]
     },
     {
@@ -610,7 +730,7 @@
       "workIds": [
         "work-yumi-cells-2"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do",
         "https://project-osrm.org/docs/"
@@ -633,7 +753,7 @@
       "workIds": [
         "work-goblin"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do",
         "https://project-osrm.org/docs/"
@@ -656,7 +776,7 @@
       "workIds": [
         "work-record-of-youth"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do",
         "https://project-osrm.org/docs/"
@@ -679,7 +799,7 @@
       "workIds": [
         "work-encounter"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do",
         "https://project-osrm.org/docs/"
@@ -702,7 +822,7 @@
       "workIds": [
         "work-record-of-youth"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do",
         "https://project-osrm.org/docs/"
@@ -725,7 +845,7 @@
       "workIds": [
         "work-encounter"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do",
         "https://project-osrm.org/docs/"
@@ -748,7 +868,7 @@
       "workIds": [
         "work-record-of-youth"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do",
         "https://project-osrm.org/docs/"
@@ -771,7 +891,7 @@
       "workIds": [
         "work-the-king"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do",
         "https://project-osrm.org/docs/"
@@ -794,7 +914,7 @@
       "workIds": [
         "work-the-king"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do",
         "https://project-osrm.org/docs/"
@@ -817,7 +937,7 @@
       "workIds": [
         "work-record-of-youth"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do",
         "https://project-osrm.org/docs/"
@@ -840,7 +960,7 @@
       "workIds": [
         "work-goblin"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do",
         "https://project-osrm.org/docs/"
@@ -863,7 +983,7 @@
       "workIds": [
         "work-encounter"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do",
         "https://project-osrm.org/docs/"
@@ -886,7 +1006,7 @@
       "workIds": [
         "work-goblin"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do",
         "https://project-osrm.org/docs/"
@@ -909,7 +1029,7 @@
       "workIds": [
         "work-goblin"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do",
         "https://project-osrm.org/docs/"
@@ -932,7 +1052,7 @@
       "workIds": [
         "work-goblin"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do",
         "https://project-osrm.org/docs/"
@@ -955,10 +1075,34 @@
       "workIds": [
         "work-record-of-youth"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do",
         "https://project-osrm.org/docs/"
+      ]
+    },
+    {
+      "id": "catalog-place-a5832e14697a",
+      "name": {
+        "ko": "동두천 문화극장",
+        "en": "동두천 문화극장"
+      },
+      "translationStatus": "ko_fallback",
+      "placeType": "playground",
+      "address": "경기도 동두천시 동광로 66",
+      "latitude": 37.908291,
+      "longitude": 127.055827,
+      "nearestStationName": "상봉",
+      "driveMinutes": 42.6,
+      "status": "confirmed",
+      "workIds": [
+        "work-twenty-five-twenty-one"
+      ],
+      "verifiedAt": "2026-08-10",
+      "sourceUrls": [
+        "https://www.data.go.kr/data/15111405/fileData.do",
+        "https://project-osrm.org/docs/",
+        "https://munhwa.petitecine.com/"
       ]
     },
     {
@@ -978,7 +1122,7 @@
       "workIds": [
         "work-the-king"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do",
         "https://project-osrm.org/docs/"
@@ -1001,7 +1145,7 @@
       "workIds": [
         "work-yumi-cells"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do",
         "https://project-osrm.org/docs/"
@@ -1024,7 +1168,30 @@
       "workIds": [
         "work-encounter"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
+      "sourceUrls": [
+        "https://www.data.go.kr/data/15111405/fileData.do",
+        "https://project-osrm.org/docs/"
+      ]
+    },
+    {
+      "id": "catalog-place-2b895702dcae",
+      "name": {
+        "ko": "동해 논골담길",
+        "en": "동해 논골담길"
+      },
+      "translationStatus": "ko_fallback",
+      "placeType": "playground",
+      "address": "강원도 동해시 논골1길 2",
+      "latitude": 37.5528045,
+      "longitude": 129.116572,
+      "nearestStationName": "강릉",
+      "driveMinutes": 39.8,
+      "status": "confirmed",
+      "workIds": [
+        "work-twenty-five-twenty-one"
+      ],
+      "verifiedAt": "2026-08-10",
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do",
         "https://project-osrm.org/docs/"
@@ -1047,7 +1214,7 @@
       "workIds": [
         "work-encounter"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do",
         "https://project-osrm.org/docs/"
@@ -1070,7 +1237,7 @@
       "workIds": [
         "work-goblin"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do",
         "https://project-osrm.org/docs/"
@@ -1093,7 +1260,7 @@
       "workIds": [
         "work-encounter"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do",
         "https://project-osrm.org/docs/"
@@ -1117,7 +1284,7 @@
         "work-encounter",
         "work-goblin"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do",
         "https://project-osrm.org/docs/"
@@ -1140,7 +1307,7 @@
       "workIds": [
         "work-encounter"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do",
         "https://project-osrm.org/docs/"
@@ -1164,7 +1331,7 @@
         "work-encounter",
         "work-goblin"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do",
         "https://project-osrm.org/docs/"
@@ -1187,7 +1354,99 @@
       "workIds": [
         "work-yumi-cells-2"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
+      "sourceUrls": [
+        "https://www.data.go.kr/data/15111405/fileData.do",
+        "https://project-osrm.org/docs/"
+      ]
+    },
+    {
+      "id": "catalog-place-a73e9a16c556",
+      "name": {
+        "ko": "마로니에 공원",
+        "en": "마로니에 공원"
+      },
+      "translationStatus": "ko_fallback",
+      "placeType": "playground",
+      "address": "서울특별시 종로구 대학로 104",
+      "latitude": 37.580499,
+      "longitude": 127.00244,
+      "nearestStationName": "서울",
+      "driveMinutes": 5.6,
+      "status": "confirmed",
+      "workIds": [
+        "work-twenty-five-twenty-one"
+      ],
+      "verifiedAt": "2026-08-10",
+      "sourceUrls": [
+        "https://www.data.go.kr/data/15111405/fileData.do",
+        "https://project-osrm.org/docs/"
+      ]
+    },
+    {
+      "id": "catalog-place-5b790afdf33d",
+      "name": {
+        "ko": "마포진짜원조최대포본점",
+        "en": "마포진짜원조최대포본점"
+      },
+      "translationStatus": "ko_fallback",
+      "placeType": "restaurant",
+      "address": "서울특별시 마포구 마포대로 112-4",
+      "latitude": 37.544649,
+      "longitude": 126.951868,
+      "nearestStationName": "서울",
+      "driveMinutes": 3.8,
+      "status": "confirmed",
+      "workIds": [
+        "work-twenty-five-twenty-one"
+      ],
+      "verifiedAt": "2026-08-10",
+      "sourceUrls": [
+        "https://www.data.go.kr/data/15111405/fileData.do",
+        "https://project-osrm.org/docs/"
+      ]
+    },
+    {
+      "id": "catalog-place-e84b706a410c",
+      "name": {
+        "ko": "만휴정",
+        "en": "만휴정"
+      },
+      "translationStatus": "ko_fallback",
+      "placeType": "playground",
+      "address": "경상북도 안동시 길안면 묵계하리길 42",
+      "latitude": 36.41043,
+      "longitude": 128.9099,
+      "nearestStationName": "안동",
+      "driveMinutes": 37.5,
+      "status": "confirmed",
+      "workIds": [
+        "work-mr-sunshine"
+      ],
+      "verifiedAt": "2026-08-10",
+      "sourceUrls": [
+        "https://www.data.go.kr/data/15111405/fileData.do",
+        "https://project-osrm.org/docs/"
+      ]
+    },
+    {
+      "id": "catalog-place-0caa4ae0904e",
+      "name": {
+        "ko": "맹꽁이 오락실",
+        "en": "맹꽁이 오락실"
+      },
+      "translationStatus": "ko_fallback",
+      "placeType": "playground",
+      "address": "전라북도 전주시 완산구 동문길 6",
+      "latitude": 35.8195707,
+      "longitude": 127.153426,
+      "nearestStationName": "전주",
+      "driveMinutes": 8.8,
+      "status": "confirmed",
+      "workIds": [
+        "work-twenty-five-twenty-one"
+      ],
+      "verifiedAt": "2026-08-10",
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do",
         "https://project-osrm.org/docs/"
@@ -1210,7 +1469,7 @@
       "workIds": [
         "work-yumi-cells-2"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do",
         "https://project-osrm.org/docs/"
@@ -1234,7 +1493,7 @@
         "work-encounter",
         "work-record-of-youth"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do",
         "https://project-osrm.org/docs/"
@@ -1257,7 +1516,7 @@
       "workIds": [
         "work-goblin"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do",
         "https://project-osrm.org/docs/"
@@ -1280,7 +1539,30 @@
       "workIds": [
         "work-yumi-cells"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
+      "sourceUrls": [
+        "https://www.data.go.kr/data/15111405/fileData.do",
+        "https://project-osrm.org/docs/"
+      ]
+    },
+    {
+      "id": "catalog-place-6c4eaad03852",
+      "name": {
+        "ko": "몽펠리에 카페 레스토랑",
+        "en": "몽펠리에 카페 레스토랑"
+      },
+      "translationStatus": "ko_fallback",
+      "placeType": "restaurant",
+      "address": "전라북도 완주군 소양면 원대흥길 127-21",
+      "latitude": 35.88191,
+      "longitude": 127.2455,
+      "nearestStationName": "전주",
+      "driveMinutes": 15.4,
+      "status": "confirmed",
+      "workIds": [
+        "work-twenty-five-twenty-one"
+      ],
+      "verifiedAt": "2026-08-10",
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do",
         "https://project-osrm.org/docs/"
@@ -1303,7 +1585,7 @@
       "workIds": [
         "work-record-of-youth"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do",
         "https://project-osrm.org/docs/"
@@ -1326,7 +1608,30 @@
       "workIds": [
         "work-love-in-the-moonlight"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
+      "sourceUrls": [
+        "https://www.data.go.kr/data/15111405/fileData.do",
+        "https://project-osrm.org/docs/"
+      ]
+    },
+    {
+      "id": "catalog-place-68bc26e81f91",
+      "name": {
+        "ko": "문화공감수정",
+        "en": "문화공감수정"
+      },
+      "translationStatus": "ko_fallback",
+      "placeType": "playground",
+      "address": "부산광역시 동구 홍곡로 75",
+      "latitude": 35.125713,
+      "longitude": 129.042622,
+      "nearestStationName": "부산",
+      "driveMinutes": 3.4,
+      "status": "confirmed",
+      "workIds": [
+        "work-mr-sunshine"
+      ],
+      "verifiedAt": "2026-08-10",
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do",
         "https://project-osrm.org/docs/"
@@ -1349,7 +1654,7 @@
       "workIds": [
         "work-the-king"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do",
         "https://project-osrm.org/docs/"
@@ -1372,7 +1677,7 @@
       "workIds": [
         "work-the-king"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do",
         "https://project-osrm.org/docs/"
@@ -1395,7 +1700,7 @@
       "workIds": [
         "work-the-king"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do",
         "https://project-osrm.org/docs/"
@@ -1418,7 +1723,7 @@
       "workIds": [
         "work-love-in-the-moonlight"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do",
         "https://project-osrm.org/docs/"
@@ -1441,7 +1746,7 @@
       "workIds": [
         "work-record-of-youth"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do",
         "https://project-osrm.org/docs/"
@@ -1464,7 +1769,7 @@
       "workIds": [
         "work-yumi-cells"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do",
         "https://project-osrm.org/docs/"
@@ -1487,7 +1792,7 @@
       "workIds": [
         "work-the-king"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do",
         "https://project-osrm.org/docs/"
@@ -1510,7 +1815,30 @@
       "workIds": [
         "work-goblin"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
+      "sourceUrls": [
+        "https://www.data.go.kr/data/15111405/fileData.do",
+        "https://project-osrm.org/docs/"
+      ]
+    },
+    {
+      "id": "catalog-place-11a0339a6398",
+      "name": {
+        "ko": "보신각터",
+        "en": "보신각터"
+      },
+      "translationStatus": "ko_fallback",
+      "placeType": "playground",
+      "address": "서울특별시 종로구 종로 54",
+      "latitude": 37.569751,
+      "longitude": 126.98369,
+      "nearestStationName": "서울",
+      "driveMinutes": 3.1,
+      "status": "confirmed",
+      "workIds": [
+        "work-twenty-five-twenty-one"
+      ],
+      "verifiedAt": "2026-08-10",
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do",
         "https://project-osrm.org/docs/"
@@ -1533,7 +1861,7 @@
       "workIds": [
         "work-the-king"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do",
         "https://project-osrm.org/docs/"
@@ -1554,9 +1882,10 @@
       "driveMinutes": 47.2,
       "status": "conditional",
       "workIds": [
-        "work-love-in-the-moonlight"
+        "work-love-in-the-moonlight",
+        "work-mr-sunshine"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do",
         "https://project-osrm.org/docs/"
@@ -1583,7 +1912,7 @@
       "workIds": [
         "work-encounter"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do",
         "https://project-osrm.org/docs/"
@@ -1606,7 +1935,7 @@
       "workIds": [
         "work-record-of-youth"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do",
         "https://project-osrm.org/docs/"
@@ -1629,7 +1958,7 @@
       "workIds": [
         "work-goblin"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do",
         "https://project-osrm.org/docs/"
@@ -1652,7 +1981,7 @@
       "workIds": [
         "work-the-king"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do",
         "https://project-osrm.org/docs/"
@@ -1675,7 +2004,30 @@
       "workIds": [
         "work-encounter"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
+      "sourceUrls": [
+        "https://www.data.go.kr/data/15111405/fileData.do",
+        "https://project-osrm.org/docs/"
+      ]
+    },
+    {
+      "id": "catalog-place-e0e506c99baa",
+      "name": {
+        "ko": "삼릉숲",
+        "en": "삼릉숲"
+      },
+      "translationStatus": "ko_fallback",
+      "placeType": "playground",
+      "address": "경상북도 경주시 배동",
+      "latitude": 35.798733,
+      "longitude": 129.208281,
+      "nearestStationName": "경주",
+      "driveMinutes": 16.2,
+      "status": "confirmed",
+      "workIds": [
+        "work-mr-sunshine"
+      ],
+      "verifiedAt": "2026-08-10",
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do",
         "https://project-osrm.org/docs/"
@@ -1698,7 +2050,30 @@
       "workIds": [
         "work-yumi-cells"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
+      "sourceUrls": [
+        "https://www.data.go.kr/data/15111405/fileData.do",
+        "https://project-osrm.org/docs/"
+      ]
+    },
+    {
+      "id": "catalog-place-c39e52ef1126",
+      "name": {
+        "ko": "새창로49길",
+        "en": "새창로49길"
+      },
+      "translationStatus": "ko_fallback",
+      "placeType": "playground",
+      "address": "서울특별시 용산구 새창로49길 17",
+      "latitude": 37.534304,
+      "longitude": 126.96373,
+      "nearestStationName": "서울",
+      "driveMinutes": 3.2,
+      "status": "confirmed",
+      "workIds": [
+        "work-twenty-five-twenty-one"
+      ],
+      "verifiedAt": "2026-08-10",
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do",
         "https://project-osrm.org/docs/"
@@ -1721,7 +2096,7 @@
       "workIds": [
         "work-record-of-youth"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do",
         "https://project-osrm.org/docs/"
@@ -1746,7 +2121,7 @@
         "work-record-of-youth",
         "work-the-king"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do",
         "https://project-osrm.org/docs/"
@@ -1769,7 +2144,7 @@
       "workIds": [
         "work-encounter"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do",
         "https://project-osrm.org/docs/"
@@ -1792,7 +2167,7 @@
       "workIds": [
         "work-record-of-youth"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do",
         "https://project-osrm.org/docs/"
@@ -1815,7 +2190,7 @@
       "workIds": [
         "work-little-women"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do",
         "https://project-osrm.org/docs/"
@@ -1838,7 +2213,30 @@
       "workIds": [
         "work-encounter"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
+      "sourceUrls": [
+        "https://www.data.go.kr/data/15111405/fileData.do",
+        "https://project-osrm.org/docs/"
+      ]
+    },
+    {
+      "id": "catalog-place-4b7770446eb5",
+      "name": {
+        "ko": "선샤인스튜디오",
+        "en": "선샤인스튜디오"
+      },
+      "translationStatus": "ko_fallback",
+      "placeType": "playground",
+      "address": "충청남도 논산시 연무읍 봉황로 90",
+      "latitude": 36.102539,
+      "longitude": 127.10657,
+      "nearestStationName": "공주",
+      "driveMinutes": 33.7,
+      "status": "confirmed",
+      "workIds": [
+        "work-mr-sunshine"
+      ],
+      "verifiedAt": "2026-08-10",
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do",
         "https://project-osrm.org/docs/"
@@ -1861,7 +2259,7 @@
       "workIds": [
         "work-record-of-youth"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do",
         "https://project-osrm.org/docs/"
@@ -1884,7 +2282,7 @@
       "workIds": [
         "work-record-of-youth"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do",
         "https://project-osrm.org/docs/"
@@ -1907,7 +2305,7 @@
       "workIds": [
         "work-goblin"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do",
         "https://project-osrm.org/docs/"
@@ -1930,7 +2328,7 @@
       "workIds": [
         "work-goblin"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do",
         "https://project-osrm.org/docs/"
@@ -1953,7 +2351,53 @@
       "workIds": [
         "work-encounter"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
+      "sourceUrls": [
+        "https://www.data.go.kr/data/15111405/fileData.do",
+        "https://project-osrm.org/docs/"
+      ]
+    },
+    {
+      "id": "catalog-place-5a9f94fcfba8",
+      "name": {
+        "ko": "세종대로",
+        "en": "세종대로"
+      },
+      "translationStatus": "ko_fallback",
+      "placeType": "playground",
+      "address": "서울특별시 중구 세종대로 86-1",
+      "latitude": 37.563835,
+      "longitude": 126.97677,
+      "nearestStationName": "서울",
+      "driveMinutes": 2.1,
+      "status": "confirmed",
+      "workIds": [
+        "work-twenty-five-twenty-one"
+      ],
+      "verifiedAt": "2026-08-10",
+      "sourceUrls": [
+        "https://www.data.go.kr/data/15111405/fileData.do",
+        "https://project-osrm.org/docs/"
+      ]
+    },
+    {
+      "id": "catalog-place-a5cb668ecaf6",
+      "name": {
+        "ko": "션샤인랜드",
+        "en": "션샤인랜드"
+      },
+      "translationStatus": "ko_fallback",
+      "placeType": "playground",
+      "address": "충청남도 논산시 연무읍 봉황로 102",
+      "latitude": 36.102621,
+      "longitude": 127.106021,
+      "nearestStationName": "공주",
+      "driveMinutes": 33.6,
+      "status": "confirmed",
+      "workIds": [
+        "work-mr-sunshine"
+      ],
+      "verifiedAt": "2026-08-10",
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do",
         "https://project-osrm.org/docs/"
@@ -1976,7 +2420,7 @@
       "workIds": [
         "work-the-king"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do",
         "https://project-osrm.org/docs/"
@@ -2003,7 +2447,7 @@
       "workIds": [
         "work-yumi-cells"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do",
         "https://project-osrm.org/docs/"
@@ -2028,7 +2472,7 @@
         "work-record-of-youth",
         "work-the-king"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do",
         "https://project-osrm.org/docs/"
@@ -2051,7 +2495,7 @@
       "workIds": [
         "work-encounter"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do",
         "https://project-osrm.org/docs/"
@@ -2074,7 +2518,7 @@
       "workIds": [
         "work-record-of-youth"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do",
         "https://project-osrm.org/docs/"
@@ -2097,7 +2541,7 @@
       "workIds": [
         "work-goblin"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do",
         "https://project-osrm.org/docs/"
@@ -2120,7 +2564,7 @@
       "workIds": [
         "work-encounter"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do",
         "https://project-osrm.org/docs/"
@@ -2143,7 +2587,7 @@
       "workIds": [
         "work-the-king"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do",
         "https://project-osrm.org/docs/"
@@ -2167,7 +2611,7 @@
         "work-record-of-youth",
         "work-yumi-cells-2"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do",
         "https://project-osrm.org/docs/"
@@ -2190,7 +2634,7 @@
       "workIds": [
         "work-yumi-cells"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do",
         "https://project-osrm.org/docs/"
@@ -2213,7 +2657,7 @@
       "workIds": [
         "work-record-of-youth"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do",
         "https://project-osrm.org/docs/"
@@ -2236,7 +2680,7 @@
       "workIds": [
         "work-goblin"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do",
         "https://project-osrm.org/docs/"
@@ -2259,7 +2703,7 @@
       "workIds": [
         "work-encounter"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do",
         "https://project-osrm.org/docs/"
@@ -2283,7 +2727,7 @@
         "work-goblin",
         "work-record-of-youth"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do",
         "https://project-osrm.org/docs/"
@@ -2306,7 +2750,7 @@
       "workIds": [
         "work-encounter"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do",
         "https://project-osrm.org/docs/"
@@ -2329,7 +2773,7 @@
       "workIds": [
         "work-encounter"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do",
         "https://project-osrm.org/docs/"
@@ -2352,7 +2796,7 @@
       "workIds": [
         "work-goblin"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do",
         "https://project-osrm.org/docs/"
@@ -2375,7 +2819,7 @@
       "workIds": [
         "work-encounter"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do",
         "https://project-osrm.org/docs/"
@@ -2398,7 +2842,7 @@
       "workIds": [
         "work-record-of-youth"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do",
         "https://project-osrm.org/docs/"
@@ -2421,7 +2865,7 @@
       "workIds": [
         "work-record-of-youth"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do",
         "https://project-osrm.org/docs/"
@@ -2448,7 +2892,7 @@
       "workIds": [
         "work-encounter"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do",
         "https://project-osrm.org/docs/"
@@ -2471,7 +2915,7 @@
       "workIds": [
         "work-encounter"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do",
         "https://project-osrm.org/docs/"
@@ -2494,7 +2938,7 @@
       "workIds": [
         "work-encounter"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do",
         "https://project-osrm.org/docs/"
@@ -2518,7 +2962,7 @@
         "work-encounter",
         "work-goblin"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do",
         "https://project-osrm.org/docs/"
@@ -2541,7 +2985,7 @@
       "workIds": [
         "work-love-in-the-moonlight"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do",
         "https://project-osrm.org/docs/"
@@ -2568,7 +3012,7 @@
       "workIds": [
         "work-the-king"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do",
         "https://project-osrm.org/docs/"
@@ -2591,7 +3035,7 @@
       "workIds": [
         "work-goblin"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do",
         "https://project-osrm.org/docs/"
@@ -2618,11 +3062,40 @@
       "workIds": [
         "work-goblin"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do",
         "https://project-osrm.org/docs/"
       ]
+    },
+    {
+      "id": "catalog-place-720e082843dc",
+      "name": {
+        "ko": "압구정나들목",
+        "en": "압구정나들목"
+      },
+      "translationStatus": "ko_fallback",
+      "placeType": "playground",
+      "address": "서울특별시 강남구 압구정동 507",
+      "latitude": 37.5307503,
+      "longitude": 127.0416031,
+      "nearestStationName": "서울",
+      "driveMinutes": 11.6,
+      "status": "conditional",
+      "workIds": [
+        "work-twenty-five-twenty-one"
+      ],
+      "verifiedAt": "2026-08-10",
+      "sourceUrls": [
+        "https://www.data.go.kr/data/15111405/fileData.do",
+        "https://project-osrm.org/docs/",
+        "https://www.openstreetmap.org/node/12372983960",
+        "https://www.g2b.go.kr/pn/pnp/pnpe/UntyAtchFile/downloadFile.do?bidPbancNo=R25BK00910376&bidPbancOrd=000&fileSeq=2&fileType="
+      ],
+      "visitNote": {
+        "ko": "2025년 리모델링 공사 이력이 있어 통행 가능 상태와 최신 지도 접근 경로를 방문 전에 확인해야 합니다.",
+        "en": "2025년 리모델링 공사 이력이 있어 통행 가능 상태와 최신 지도 접근 경로를 방문 전에 확인해야 합니다."
+      }
     },
     {
       "id": "catalog-place-288d0783d3bb",
@@ -2641,7 +3114,7 @@
       "workIds": [
         "work-little-women"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do",
         "https://project-osrm.org/docs/"
@@ -2664,7 +3137,7 @@
       "workIds": [
         "work-encounter"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do",
         "https://project-osrm.org/docs/"
@@ -2687,7 +3160,7 @@
       "workIds": [
         "work-record-of-youth"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do",
         "https://project-osrm.org/docs/"
@@ -2710,7 +3183,7 @@
       "workIds": [
         "work-yumi-cells"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do",
         "https://project-osrm.org/docs/"
@@ -2733,7 +3206,7 @@
       "workIds": [
         "work-record-of-youth"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do",
         "https://project-osrm.org/docs/"
@@ -2756,7 +3229,7 @@
       "workIds": [
         "work-encounter"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do",
         "https://project-osrm.org/docs/"
@@ -2779,7 +3252,7 @@
       "workIds": [
         "work-record-of-youth"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do",
         "https://project-osrm.org/docs/"
@@ -2802,7 +3275,7 @@
       "workIds": [
         "work-yumi-cells-2"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do",
         "https://project-osrm.org/docs/"
@@ -2825,7 +3298,7 @@
       "workIds": [
         "work-yumi-cells"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do",
         "https://project-osrm.org/docs/"
@@ -2848,7 +3321,7 @@
       "workIds": [
         "work-love-in-the-moonlight"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do",
         "https://project-osrm.org/docs/"
@@ -2871,7 +3344,7 @@
       "workIds": [
         "work-goblin"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do",
         "https://project-osrm.org/docs/"
@@ -2894,7 +3367,7 @@
       "workIds": [
         "work-encounter"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do",
         "https://project-osrm.org/docs/"
@@ -2917,7 +3390,7 @@
       "workIds": [
         "work-the-king"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do",
         "https://project-osrm.org/docs/"
@@ -2940,7 +3413,30 @@
       "workIds": [
         "work-the-king"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
+      "sourceUrls": [
+        "https://www.data.go.kr/data/15111405/fileData.do",
+        "https://project-osrm.org/docs/"
+      ]
+    },
+    {
+      "id": "catalog-place-c3358c9e8188",
+      "name": {
+        "ko": "오동근린공원",
+        "en": "오동근린공원"
+      },
+      "translationStatus": "ko_fallback",
+      "placeType": "playground",
+      "address": "서울특별시 성북구 화랑로13가길 100",
+      "latitude": 37.61005,
+      "longitude": 127.0435,
+      "nearestStationName": "청량리",
+      "driveMinutes": 7.9,
+      "status": "confirmed",
+      "workIds": [
+        "work-twenty-five-twenty-one"
+      ],
+      "verifiedAt": "2026-08-10",
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do",
         "https://project-osrm.org/docs/"
@@ -2963,7 +3459,30 @@
       "workIds": [
         "work-yumi-cells"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
+      "sourceUrls": [
+        "https://www.data.go.kr/data/15111405/fileData.do",
+        "https://project-osrm.org/docs/"
+      ]
+    },
+    {
+      "id": "catalog-place-004c46eb014a",
+      "name": {
+        "ko": "오목대길",
+        "en": "오목대길"
+      },
+      "translationStatus": "ko_fallback",
+      "placeType": "playground",
+      "address": "전라북도 전주시 완산구 오목대길 27-26",
+      "latitude": 35.81267,
+      "longitude": 127.155,
+      "nearestStationName": "전주",
+      "driveMinutes": 10.2,
+      "status": "confirmed",
+      "workIds": [
+        "work-twenty-five-twenty-one"
+      ],
+      "verifiedAt": "2026-08-10",
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do",
         "https://project-osrm.org/docs/"
@@ -2986,7 +3505,30 @@
       "workIds": [
         "work-little-women"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
+      "sourceUrls": [
+        "https://www.data.go.kr/data/15111405/fileData.do",
+        "https://project-osrm.org/docs/"
+      ]
+    },
+    {
+      "id": "catalog-place-04454035a27e",
+      "name": {
+        "ko": "와룡공원",
+        "en": "와룡공원"
+      },
+      "translationStatus": "ko_fallback",
+      "placeType": "playground",
+      "address": "서울특별시 종로구 와룡공원길 192",
+      "latitude": 37.5890547,
+      "longitude": 126.989313,
+      "nearestStationName": "서울",
+      "driveMinutes": 6.8,
+      "status": "confirmed",
+      "workIds": [
+        "work-twenty-five-twenty-one"
+      ],
+      "verifiedAt": "2026-08-10",
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do",
         "https://project-osrm.org/docs/"
@@ -3009,7 +3551,7 @@
       "workIds": [
         "work-the-king"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do",
         "https://project-osrm.org/docs/"
@@ -3036,7 +3578,7 @@
       "workIds": [
         "work-goblin"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do",
         "https://project-osrm.org/docs/"
@@ -3059,7 +3601,7 @@
       "workIds": [
         "work-the-king"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do",
         "https://project-osrm.org/docs/"
@@ -3086,10 +3628,34 @@
       "workIds": [
         "work-yumi-cells-2"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do",
         "https://project-osrm.org/docs/"
+      ]
+    },
+    {
+      "id": "catalog-place-3c20c6e9bdc2",
+      "name": {
+        "ko": "운보의 집",
+        "en": "운보의 집"
+      },
+      "translationStatus": "ko_fallback",
+      "placeType": "playground",
+      "address": "충청북도 청주시 청원구 내수읍 형동2길 92-41",
+      "latitude": 36.692197,
+      "longitude": 127.5651,
+      "nearestStationName": "오송",
+      "driveMinutes": 36.1,
+      "status": "confirmed",
+      "workIds": [
+        "work-mr-sunshine"
+      ],
+      "verifiedAt": "2026-08-10",
+      "sourceUrls": [
+        "https://www.data.go.kr/data/15111405/fileData.do",
+        "https://project-osrm.org/docs/",
+        "https://english.visitkorea.or.kr/svc/contents/contentsView.do?menuSn=351&vcontsId=1563733"
       ]
     },
     {
@@ -3109,7 +3675,7 @@
       "workIds": [
         "work-encounter"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do",
         "https://project-osrm.org/docs/"
@@ -3132,7 +3698,30 @@
       "workIds": [
         "work-goblin"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
+      "sourceUrls": [
+        "https://www.data.go.kr/data/15111405/fileData.do",
+        "https://project-osrm.org/docs/"
+      ]
+    },
+    {
+      "id": "catalog-place-08551f8d30d9",
+      "name": {
+        "ko": "월미문화의거리",
+        "en": "월미문화의거리"
+      },
+      "translationStatus": "ko_fallback",
+      "placeType": "playground",
+      "address": "인천광역시 중구 북성동1가 98-57",
+      "latitude": 37.475057,
+      "longitude": 126.59747,
+      "nearestStationName": "광명",
+      "driveMinutes": 32.8,
+      "status": "confirmed",
+      "workIds": [
+        "work-twenty-five-twenty-one"
+      ],
+      "verifiedAt": "2026-08-10",
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do",
         "https://project-osrm.org/docs/"
@@ -3155,7 +3744,7 @@
       "workIds": [
         "work-the-king"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do",
         "https://project-osrm.org/docs/"
@@ -3178,7 +3767,7 @@
       "workIds": [
         "work-goblin"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do",
         "https://project-osrm.org/docs/"
@@ -3201,7 +3790,7 @@
       "workIds": [
         "work-goblin"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do",
         "https://project-osrm.org/docs/"
@@ -3224,7 +3813,7 @@
       "workIds": [
         "work-goblin"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do",
         "https://project-osrm.org/docs/"
@@ -3247,7 +3836,7 @@
       "workIds": [
         "work-encounter"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do",
         "https://project-osrm.org/docs/"
@@ -3270,7 +3859,7 @@
       "workIds": [
         "work-goblin"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do",
         "https://project-osrm.org/docs/"
@@ -3293,7 +3882,7 @@
       "workIds": [
         "work-encounter"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do",
         "https://project-osrm.org/docs/"
@@ -3316,7 +3905,7 @@
       "workIds": [
         "work-goblin"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do",
         "https://project-osrm.org/docs/"
@@ -3339,7 +3928,7 @@
       "workIds": [
         "work-encounter"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do",
         "https://project-osrm.org/docs/"
@@ -3362,7 +3951,7 @@
       "workIds": [
         "work-goblin"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do",
         "https://project-osrm.org/docs/"
@@ -3386,7 +3975,7 @@
         "work-encounter",
         "work-record-of-youth"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do",
         "https://project-osrm.org/docs/"
@@ -3409,7 +3998,7 @@
       "workIds": [
         "work-goblin"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do",
         "https://project-osrm.org/docs/"
@@ -3432,7 +4021,7 @@
       "workIds": [
         "work-goblin"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do",
         "https://project-osrm.org/docs/"
@@ -3457,7 +4046,7 @@
         "work-yumi-cells",
         "work-yumi-cells-2"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do",
         "https://project-osrm.org/docs/"
@@ -3480,7 +4069,7 @@
       "workIds": [
         "work-yumi-cells"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do",
         "https://project-osrm.org/docs/"
@@ -3503,7 +4092,7 @@
       "workIds": [
         "work-goblin"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do",
         "https://project-osrm.org/docs/"
@@ -3526,7 +4115,7 @@
       "workIds": [
         "work-goblin"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do",
         "https://project-osrm.org/docs/"
@@ -3549,7 +4138,7 @@
       "workIds": [
         "work-love-in-the-moonlight"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do",
         "https://project-osrm.org/docs/"
@@ -3572,7 +4161,7 @@
       "workIds": [
         "work-goblin"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do",
         "https://project-osrm.org/docs/"
@@ -3595,7 +4184,7 @@
       "workIds": [
         "work-yumi-cells"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do",
         "https://project-osrm.org/docs/"
@@ -3618,7 +4207,7 @@
       "workIds": [
         "work-encounter"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do",
         "https://project-osrm.org/docs/"
@@ -3641,7 +4230,7 @@
       "workIds": [
         "work-yumi-cells"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do",
         "https://project-osrm.org/docs/"
@@ -3668,7 +4257,7 @@
       "workIds": [
         "work-the-king"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do",
         "https://project-osrm.org/docs/"
@@ -3691,7 +4280,7 @@
       "workIds": [
         "work-goblin"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do",
         "https://project-osrm.org/docs/"
@@ -3715,7 +4304,7 @@
         "work-the-king",
         "work-yumi-cells-2"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do",
         "https://project-osrm.org/docs/"
@@ -3738,7 +4327,7 @@
       "workIds": [
         "work-encounter"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do",
         "https://project-osrm.org/docs/"
@@ -3761,7 +4350,7 @@
       "workIds": [
         "work-love-in-the-moonlight"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do",
         "https://project-osrm.org/docs/"
@@ -3785,7 +4374,7 @@
         "work-goblin",
         "work-the-king"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do",
         "https://project-osrm.org/docs/"
@@ -3808,7 +4397,7 @@
       "workIds": [
         "work-goblin"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do",
         "https://project-osrm.org/docs/"
@@ -3831,7 +4420,7 @@
       "workIds": [
         "work-the-king"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do",
         "https://project-osrm.org/docs/"
@@ -3854,7 +4443,7 @@
       "workIds": [
         "work-love-in-the-moonlight"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do",
         "https://project-osrm.org/docs/"
@@ -3877,7 +4466,7 @@
       "workIds": [
         "work-yumi-cells"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do",
         "https://project-osrm.org/docs/"
@@ -3900,7 +4489,7 @@
       "workIds": [
         "work-record-of-youth"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do",
         "https://project-osrm.org/docs/"
@@ -3923,7 +4512,7 @@
       "workIds": [
         "work-record-of-youth"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do",
         "https://project-osrm.org/docs/"
@@ -3946,7 +4535,7 @@
       "workIds": [
         "work-encounter"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do",
         "https://project-osrm.org/docs/"
@@ -3969,7 +4558,7 @@
       "workIds": [
         "work-the-king"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do",
         "https://project-osrm.org/docs/"
@@ -3992,7 +4581,7 @@
       "workIds": [
         "work-encounter"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do",
         "https://project-osrm.org/docs/"
@@ -4015,7 +4604,7 @@
       "workIds": [
         "work-the-king"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do",
         "https://project-osrm.org/docs/"
@@ -4038,7 +4627,7 @@
       "workIds": [
         "work-the-king"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do",
         "https://project-osrm.org/docs/"
@@ -4061,7 +4650,7 @@
       "workIds": [
         "work-yumi-cells"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do",
         "https://project-osrm.org/docs/"
@@ -4084,7 +4673,7 @@
       "workIds": [
         "work-goblin"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do",
         "https://project-osrm.org/docs/"
@@ -4107,7 +4696,7 @@
       "workIds": [
         "work-encounter"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do",
         "https://project-osrm.org/docs/"
@@ -4130,7 +4719,7 @@
       "workIds": [
         "work-yumi-cells-2"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do",
         "https://project-osrm.org/docs/"
@@ -4153,7 +4742,7 @@
       "workIds": [
         "work-encounter"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do",
         "https://project-osrm.org/docs/"
@@ -4176,7 +4765,7 @@
       "workIds": [
         "work-yumi-cells-2"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do",
         "https://project-osrm.org/docs/"
@@ -4199,11 +4788,84 @@
       "workIds": [
         "work-goblin"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do",
         "https://project-osrm.org/docs/"
       ]
+    },
+    {
+      "id": "catalog-place-35963aec0bdc",
+      "name": {
+        "ko": "한벽굴",
+        "en": "한벽굴"
+      },
+      "translationStatus": "ko_fallback",
+      "placeType": "playground",
+      "address": "전라북도 전주시 완산구 교동",
+      "latitude": 35.8118781,
+      "longitude": 127.1608628,
+      "nearestStationName": "전주",
+      "driveMinutes": 12.5,
+      "status": "confirmed",
+      "workIds": [
+        "work-twenty-five-twenty-one"
+      ],
+      "verifiedAt": "2026-08-10",
+      "sourceUrls": [
+        "https://www.data.go.kr/data/15111405/fileData.do",
+        "https://project-osrm.org/docs/"
+      ]
+    },
+    {
+      "id": "catalog-place-c0dcf8a41a01",
+      "name": {
+        "ko": "한옥카페 선운각",
+        "en": "한옥카페 선운각"
+      },
+      "translationStatus": "ko_fallback",
+      "placeType": "playground",
+      "address": "서울특별시 강북구 우이동 265-16",
+      "latitude": 37.6549982,
+      "longitude": 126.999365,
+      "nearestStationName": "청량리",
+      "driveMinutes": 18.6,
+      "status": "confirmed",
+      "workIds": [
+        "work-mr-sunshine"
+      ],
+      "verifiedAt": "2026-08-10",
+      "sourceUrls": [
+        "https://www.data.go.kr/data/15111405/fileData.do",
+        "https://project-osrm.org/docs/"
+      ]
+    },
+    {
+      "id": "catalog-place-f36791e13df0",
+      "name": {
+        "ko": "합천 영상 테마파크",
+        "en": "합천 영상 테마파크"
+      },
+      "translationStatus": "ko_fallback",
+      "placeType": "playground",
+      "address": "경상남도 합천군 용주면 합천호수로 757",
+      "latitude": 35.5489346,
+      "longitude": 128.072475,
+      "nearestStationName": "진주",
+      "driveMinutes": 58.3,
+      "status": "conditional",
+      "workIds": [
+        "work-mr-sunshine"
+      ],
+      "verifiedAt": "2026-08-10",
+      "sourceUrls": [
+        "https://www.data.go.kr/data/15111405/fileData.do",
+        "https://project-osrm.org/docs/"
+      ],
+      "visitNote": {
+        "ko": "역에서 차량 약 58분 경계 장소로, 운영일과 최신 지도 이동시간을 다시 확인해야 합니다.",
+        "en": "역에서 차량 약 58분 경계 장소로, 운영일과 최신 지도 이동시간을 다시 확인해야 합니다."
+      }
     },
     {
       "id": "catalog-place-eaec0075ff0a",
@@ -4222,7 +4884,7 @@
       "workIds": [
         "work-encounter"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do",
         "https://project-osrm.org/docs/"
@@ -4245,7 +4907,7 @@
       "workIds": [
         "work-yumi-cells"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do",
         "https://project-osrm.org/docs/"
@@ -4268,7 +4930,7 @@
       "workIds": [
         "work-encounter"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do",
         "https://project-osrm.org/docs/"
@@ -4291,7 +4953,7 @@
       "workIds": [
         "work-encounter"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do",
         "https://project-osrm.org/docs/"
@@ -4314,7 +4976,7 @@
       "workIds": [
         "work-the-king"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do",
         "https://project-osrm.org/docs/"
@@ -4337,7 +4999,7 @@
       "workIds": [
         "work-encounter"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do",
         "https://project-osrm.org/docs/"
@@ -4360,7 +5022,7 @@
       "workIds": [
         "work-love-in-the-moonlight"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do",
         "https://project-osrm.org/docs/"
@@ -4383,7 +5045,7 @@
       "workIds": [
         "work-yumi-cells-2"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do",
         "https://project-osrm.org/docs/"
@@ -4406,7 +5068,7 @@
       "workIds": [
         "work-record-of-youth"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do",
         "https://project-osrm.org/docs/"
@@ -4426,7 +5088,7 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "reviewed": true
     },
     {
@@ -4441,7 +5103,7 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "reviewed": true,
       "featuredActorIds": [
         "actor-park-bo-gum"
@@ -4468,7 +5130,7 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "reviewed": true,
       "featuredActorIds": [
         "actor-park-bo-gum"
@@ -4495,7 +5157,7 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "reviewed": true,
       "featuredActorIds": [
         "actor-park-bo-gum"
@@ -4522,7 +5184,7 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "reviewed": true,
       "featuredActorIds": [
         "actor-park-bo-gum"
@@ -4549,7 +5211,7 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "reviewed": true
     },
     {
@@ -4564,7 +5226,7 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "reviewed": true,
       "featuredActorIds": [
         "actor-park-bo-gum"
@@ -4591,7 +5253,7 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "reviewed": true
     },
     {
@@ -4606,7 +5268,7 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "reviewed": true,
       "featuredActorIds": [
         "actor-park-bo-gum"
@@ -4633,7 +5295,7 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "reviewed": true
     },
     {
@@ -4648,7 +5310,7 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "reviewed": true,
       "featuredActorIds": [
         "actor-park-bo-gum"
@@ -4675,7 +5337,7 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "reviewed": true,
       "featuredActorIds": [
         "actor-park-bo-gum"
@@ -4702,7 +5364,7 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "reviewed": true,
       "featuredActorIds": [
         "actor-park-bo-gum"
@@ -4729,7 +5391,7 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "reviewed": true
     },
     {
@@ -4744,7 +5406,7 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "reviewed": true,
       "featuredActorIds": [
         "actor-park-bo-gum"
@@ -4771,7 +5433,7 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "reviewed": true,
       "featuredActorIds": [
         "actor-park-bo-gum"
@@ -4798,7 +5460,7 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "reviewed": true,
       "featuredActorIds": [
         "actor-park-bo-gum"
@@ -4825,7 +5487,7 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "reviewed": true,
       "featuredActorIds": [
         "actor-park-bo-gum"
@@ -4852,7 +5514,7 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "reviewed": true,
       "featuredActorIds": [
         "actor-park-bo-gum"
@@ -4879,7 +5541,7 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "reviewed": true,
       "featuredActorIds": [
         "actor-park-bo-gum"
@@ -4906,7 +5568,7 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "reviewed": true
     },
     {
@@ -4921,7 +5583,7 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "reviewed": true,
       "featuredActorIds": [
         "actor-park-bo-gum"
@@ -4948,7 +5610,7 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "reviewed": true
     },
     {
@@ -4963,7 +5625,7 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "reviewed": true,
       "featuredActorIds": [
         "actor-park-bo-gum"
@@ -4990,7 +5652,7 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "reviewed": true
     },
     {
@@ -5005,7 +5667,7 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "reviewed": true,
       "featuredActorIds": [
         "actor-park-bo-gum"
@@ -5032,7 +5694,7 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "reviewed": true,
       "featuredActorIds": [
         "actor-park-bo-gum"
@@ -5059,7 +5721,7 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "reviewed": true,
       "featuredActorIds": [
         "actor-park-bo-gum"
@@ -5086,7 +5748,7 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "reviewed": true,
       "featuredActorIds": [
         "actor-park-bo-gum"
@@ -5113,7 +5775,7 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "reviewed": true,
       "featuredActorIds": [
         "actor-park-bo-gum"
@@ -5140,7 +5802,7 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "reviewed": true,
       "featuredActorIds": [
         "actor-park-bo-gum"
@@ -5167,7 +5829,7 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "reviewed": true,
       "featuredActorIds": [
         "actor-park-bo-gum"
@@ -5194,7 +5856,7 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "reviewed": true,
       "featuredActorIds": [
         "actor-park-bo-gum"
@@ -5221,7 +5883,7 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "reviewed": true,
       "featuredActorIds": [
         "actor-park-bo-gum"
@@ -5248,7 +5910,7 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "reviewed": true,
       "featuredActorIds": [
         "actor-park-bo-gum"
@@ -5275,7 +5937,7 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "reviewed": true
     },
     {
@@ -5290,7 +5952,7 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "reviewed": true,
       "featuredActorIds": [
         "actor-park-bo-gum"
@@ -5317,7 +5979,7 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "reviewed": true,
       "featuredActorIds": [
         "actor-park-bo-gum"
@@ -5344,7 +6006,7 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "reviewed": true,
       "featuredActorIds": [
         "actor-park-bo-gum"
@@ -5371,7 +6033,7 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "reviewed": true,
       "featuredActorIds": [
         "actor-park-bo-gum"
@@ -5398,7 +6060,7 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "reviewed": true
     },
     {
@@ -5413,7 +6075,7 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "reviewed": true,
       "featuredActorIds": [
         "actor-park-bo-gum"
@@ -5440,7 +6102,7 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "reviewed": true,
       "featuredActorIds": [
         "actor-park-bo-gum"
@@ -5467,7 +6129,7 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "reviewed": true,
       "featuredActorIds": [
         "actor-park-bo-gum"
@@ -5494,7 +6156,7 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "reviewed": true,
       "featuredActorIds": [
         "actor-park-bo-gum"
@@ -5521,7 +6183,7 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "reviewed": true,
       "featuredActorIds": [
         "actor-park-bo-gum"
@@ -5548,7 +6210,7 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "reviewed": true
     },
     {
@@ -5563,7 +6225,7 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "reviewed": true
     },
     {
@@ -5578,10 +6240,11 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "reviewed": true,
       "featuredActorIds": [
-        "actor-kim-go-eun"
+        "actor-kim-go-eun",
+        "actor-gong-yoo"
       ],
       "actorPresenceReviewed": true,
       "actorPresenceVerification": {
@@ -5605,10 +6268,11 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "reviewed": true,
       "featuredActorIds": [
-        "actor-kim-go-eun"
+        "actor-kim-go-eun",
+        "actor-gong-yoo"
       ],
       "actorPresenceReviewed": true,
       "actorPresenceVerification": {
@@ -5632,8 +6296,20 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
-      "reviewed": true
+      "verifiedAt": "2026-08-10",
+      "reviewed": true,
+      "featuredActorIds": [
+        "actor-gong-yoo"
+      ],
+      "actorPresenceReviewed": true,
+      "actorPresenceVerification": {
+        "method": "automatic",
+        "grade": "B",
+        "decision": "confirmed",
+        "evidenceSourceUrls": [
+          "https://www.data.go.kr/data/15111405/fileData.do"
+        ]
+      }
     },
     {
       "workId": "work-goblin",
@@ -5647,10 +6323,11 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "reviewed": true,
       "featuredActorIds": [
-        "actor-kim-go-eun"
+        "actor-kim-go-eun",
+        "actor-gong-yoo"
       ],
       "actorPresenceReviewed": true,
       "actorPresenceVerification": {
@@ -5674,7 +6351,7 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "reviewed": true,
       "featuredActorIds": [
         "actor-kim-go-eun"
@@ -5701,10 +6378,11 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "reviewed": true,
       "featuredActorIds": [
-        "actor-kim-go-eun"
+        "actor-kim-go-eun",
+        "actor-gong-yoo"
       ],
       "actorPresenceReviewed": true,
       "actorPresenceVerification": {
@@ -5728,10 +6406,11 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "reviewed": true,
       "featuredActorIds": [
-        "actor-kim-go-eun"
+        "actor-kim-go-eun",
+        "actor-gong-yoo"
       ],
       "actorPresenceReviewed": true,
       "actorPresenceVerification": {
@@ -5755,8 +6434,20 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
-      "reviewed": true
+      "verifiedAt": "2026-08-10",
+      "reviewed": true,
+      "featuredActorIds": [
+        "actor-gong-yoo"
+      ],
+      "actorPresenceReviewed": true,
+      "actorPresenceVerification": {
+        "method": "automatic",
+        "grade": "B",
+        "decision": "confirmed",
+        "evidenceSourceUrls": [
+          "https://www.data.go.kr/data/15111405/fileData.do"
+        ]
+      }
     },
     {
       "workId": "work-goblin",
@@ -5770,10 +6461,11 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "reviewed": true,
       "featuredActorIds": [
-        "actor-kim-go-eun"
+        "actor-kim-go-eun",
+        "actor-gong-yoo"
       ],
       "actorPresenceReviewed": true,
       "actorPresenceVerification": {
@@ -5797,7 +6489,7 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "reviewed": true
     },
     {
@@ -5812,7 +6504,7 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "reviewed": true
     },
     {
@@ -5827,7 +6519,7 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "reviewed": true,
       "featuredActorIds": [
         "actor-kim-go-eun"
@@ -5854,10 +6546,11 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "reviewed": true,
       "featuredActorIds": [
-        "actor-kim-go-eun"
+        "actor-kim-go-eun",
+        "actor-gong-yoo"
       ],
       "actorPresenceReviewed": true,
       "actorPresenceVerification": {
@@ -5881,7 +6574,7 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "reviewed": true
     },
     {
@@ -5896,7 +6589,7 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "reviewed": true,
       "featuredActorIds": [
         "actor-kim-go-eun"
@@ -5923,7 +6616,7 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "reviewed": true,
       "featuredActorIds": [
         "actor-kim-go-eun"
@@ -5950,8 +6643,20 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
-      "reviewed": true
+      "verifiedAt": "2026-08-10",
+      "reviewed": true,
+      "featuredActorIds": [
+        "actor-gong-yoo"
+      ],
+      "actorPresenceReviewed": true,
+      "actorPresenceVerification": {
+        "method": "automatic",
+        "grade": "B",
+        "decision": "confirmed",
+        "evidenceSourceUrls": [
+          "https://www.data.go.kr/data/15111405/fileData.do"
+        ]
+      }
     },
     {
       "workId": "work-goblin",
@@ -5965,10 +6670,11 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "reviewed": true,
       "featuredActorIds": [
-        "actor-kim-go-eun"
+        "actor-kim-go-eun",
+        "actor-gong-yoo"
       ],
       "actorPresenceReviewed": true,
       "actorPresenceVerification": {
@@ -5992,7 +6698,7 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "reviewed": true,
       "featuredActorIds": [
         "actor-kim-go-eun"
@@ -6019,7 +6725,7 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "reviewed": true,
       "featuredActorIds": [
         "actor-kim-go-eun"
@@ -6046,10 +6752,11 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "reviewed": true,
       "featuredActorIds": [
-        "actor-kim-go-eun"
+        "actor-kim-go-eun",
+        "actor-gong-yoo"
       ],
       "actorPresenceReviewed": true,
       "actorPresenceVerification": {
@@ -6073,7 +6780,7 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "reviewed": true
     },
     {
@@ -6088,10 +6795,11 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "reviewed": true,
       "featuredActorIds": [
-        "actor-kim-go-eun"
+        "actor-kim-go-eun",
+        "actor-gong-yoo"
       ],
       "actorPresenceReviewed": true,
       "actorPresenceVerification": {
@@ -6115,7 +6823,7 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "reviewed": true
     },
     {
@@ -6130,8 +6838,20 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
-      "reviewed": true
+      "verifiedAt": "2026-08-10",
+      "reviewed": true,
+      "featuredActorIds": [
+        "actor-gong-yoo"
+      ],
+      "actorPresenceReviewed": true,
+      "actorPresenceVerification": {
+        "method": "automatic",
+        "grade": "B",
+        "decision": "confirmed",
+        "evidenceSourceUrls": [
+          "https://www.data.go.kr/data/15111405/fileData.do"
+        ]
+      }
     },
     {
       "workId": "work-goblin",
@@ -6145,7 +6865,7 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "reviewed": true,
       "featuredActorIds": [
         "actor-kim-go-eun"
@@ -6172,7 +6892,7 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "reviewed": true,
       "featuredActorIds": [
         "actor-kim-go-eun"
@@ -6199,7 +6919,7 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "reviewed": true
     },
     {
@@ -6214,10 +6934,11 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "reviewed": true,
       "featuredActorIds": [
-        "actor-kim-go-eun"
+        "actor-kim-go-eun",
+        "actor-gong-yoo"
       ],
       "actorPresenceReviewed": true,
       "actorPresenceVerification": {
@@ -6241,10 +6962,11 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "reviewed": true,
       "featuredActorIds": [
-        "actor-kim-go-eun"
+        "actor-kim-go-eun",
+        "actor-gong-yoo"
       ],
       "actorPresenceReviewed": true,
       "actorPresenceVerification": {
@@ -6268,10 +6990,11 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "reviewed": true,
       "featuredActorIds": [
-        "actor-kim-go-eun"
+        "actor-kim-go-eun",
+        "actor-gong-yoo"
       ],
       "actorPresenceReviewed": true,
       "actorPresenceVerification": {
@@ -6295,10 +7018,11 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "reviewed": true,
       "featuredActorIds": [
-        "actor-kim-go-eun"
+        "actor-kim-go-eun",
+        "actor-gong-yoo"
       ],
       "actorPresenceReviewed": true,
       "actorPresenceVerification": {
@@ -6322,8 +7046,20 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
-      "reviewed": true
+      "verifiedAt": "2026-08-10",
+      "reviewed": true,
+      "featuredActorIds": [
+        "actor-gong-yoo"
+      ],
+      "actorPresenceReviewed": true,
+      "actorPresenceVerification": {
+        "method": "automatic",
+        "grade": "B",
+        "decision": "confirmed",
+        "evidenceSourceUrls": [
+          "https://www.data.go.kr/data/15111405/fileData.do"
+        ]
+      }
     },
     {
       "workId": "work-goblin",
@@ -6337,8 +7073,20 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
-      "reviewed": true
+      "verifiedAt": "2026-08-10",
+      "reviewed": true,
+      "featuredActorIds": [
+        "actor-gong-yoo"
+      ],
+      "actorPresenceReviewed": true,
+      "actorPresenceVerification": {
+        "method": "automatic",
+        "grade": "B",
+        "decision": "confirmed",
+        "evidenceSourceUrls": [
+          "https://www.data.go.kr/data/15111405/fileData.do"
+        ]
+      }
     },
     {
       "workId": "work-goblin",
@@ -6352,7 +7100,7 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "reviewed": true,
       "featuredActorIds": [
         "actor-kim-go-eun"
@@ -6379,10 +7127,11 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "reviewed": true,
       "featuredActorIds": [
-        "actor-kim-go-eun"
+        "actor-kim-go-eun",
+        "actor-gong-yoo"
       ],
       "actorPresenceReviewed": true,
       "actorPresenceVerification": {
@@ -6406,10 +7155,11 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "reviewed": true,
       "featuredActorIds": [
-        "actor-kim-go-eun"
+        "actor-kim-go-eun",
+        "actor-gong-yoo"
       ],
       "actorPresenceReviewed": true,
       "actorPresenceVerification": {
@@ -6433,7 +7183,7 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "reviewed": true,
       "featuredActorIds": [
         "actor-kim-go-eun"
@@ -6460,10 +7210,11 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "reviewed": true,
       "featuredActorIds": [
-        "actor-kim-go-eun"
+        "actor-kim-go-eun",
+        "actor-gong-yoo"
       ],
       "actorPresenceReviewed": true,
       "actorPresenceVerification": {
@@ -6487,10 +7238,11 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "reviewed": true,
       "featuredActorIds": [
-        "actor-kim-go-eun"
+        "actor-kim-go-eun",
+        "actor-gong-yoo"
       ],
       "actorPresenceReviewed": true,
       "actorPresenceVerification": {
@@ -6514,10 +7266,11 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "reviewed": true,
       "featuredActorIds": [
-        "actor-kim-go-eun"
+        "actor-kim-go-eun",
+        "actor-gong-yoo"
       ],
       "actorPresenceReviewed": true,
       "actorPresenceVerification": {
@@ -6541,7 +7294,7 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "reviewed": true,
       "featuredActorIds": [
         "actor-kim-go-eun"
@@ -6568,10 +7321,11 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "reviewed": true,
       "featuredActorIds": [
-        "actor-kim-go-eun"
+        "actor-kim-go-eun",
+        "actor-gong-yoo"
       ],
       "actorPresenceReviewed": true,
       "actorPresenceVerification": {
@@ -6595,7 +7349,7 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "reviewed": true,
       "featuredActorIds": [
         "actor-kim-go-eun"
@@ -6622,7 +7376,7 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "reviewed": true
     },
     {
@@ -6637,7 +7391,7 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "reviewed": true,
       "featuredActorIds": [
         "actor-kim-go-eun"
@@ -6664,7 +7418,7 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "reviewed": true,
       "featuredActorIds": [
         "actor-park-bo-gum"
@@ -6691,7 +7445,7 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "reviewed": true,
       "featuredActorIds": [
         "actor-park-bo-gum"
@@ -6718,7 +7472,7 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "reviewed": true,
       "featuredActorIds": [
         "actor-park-bo-gum"
@@ -6745,7 +7499,7 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "reviewed": true,
       "featuredActorIds": [
         "actor-park-bo-gum"
@@ -6772,7 +7526,7 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "reviewed": true
     },
     {
@@ -6787,7 +7541,7 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "reviewed": true,
       "featuredActorIds": [
         "actor-park-bo-gum"
@@ -6814,7 +7568,7 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "reviewed": true
     },
     {
@@ -6829,7 +7583,7 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "reviewed": true
     },
     {
@@ -6844,7 +7598,7 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "reviewed": true
     },
     {
@@ -6859,7 +7613,7 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "reviewed": true
     },
     {
@@ -6874,7 +7628,7 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "reviewed": true
     },
     {
@@ -6889,7 +7643,7 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "reviewed": true,
       "featuredActorIds": [
         "actor-park-bo-gum"
@@ -6916,10 +7670,235 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "reviewed": true,
       "featuredActorIds": [
         "actor-park-bo-gum"
+      ],
+      "actorPresenceReviewed": true,
+      "actorPresenceVerification": {
+        "method": "automatic",
+        "grade": "B",
+        "decision": "confirmed",
+        "evidenceSourceUrls": [
+          "https://www.data.go.kr/data/15111405/fileData.do"
+        ]
+      }
+    },
+    {
+      "workId": "work-mr-sunshine",
+      "placeId": "catalog-place-0c85161a4e47",
+      "sourceRowId": "5041",
+      "sourcePlaceName": "구서도역 영상촬영장",
+      "sceneNote": {
+        "ko": "총 분실로 고애신이 미군에게 모욕을 당한 곳",
+        "en": "총 분실로 고애신이 미군에게 모욕을 당한 곳"
+      },
+      "sourceUrls": [
+        "https://www.data.go.kr/data/15111405/fileData.do"
+      ],
+      "verifiedAt": "2026-08-10",
+      "reviewed": true,
+      "featuredActorIds": [
+        "actor-kim-tae-ri"
+      ],
+      "actorPresenceReviewed": true,
+      "actorPresenceVerification": {
+        "method": "automatic",
+        "grade": "B",
+        "decision": "confirmed",
+        "evidenceSourceUrls": [
+          "https://www.data.go.kr/data/15111405/fileData.do"
+        ]
+      }
+    },
+    {
+      "workId": "work-mr-sunshine",
+      "placeId": "catalog-place-3c20c6e9bdc2",
+      "sourceRowId": "5045",
+      "sourcePlaceName": "운보의 집",
+      "sceneNote": {
+        "ko": "2화에서 유진초이(이병헌)의 임시 사무실인 미국 대사관으로 등장하는 곳으로 고애신(김태리)을 불러 심문한다.",
+        "en": "2화에서 유진초이(이병헌)의 임시 사무실인 미국 대사관으로 등장하는 곳으로 고애신(김태리)을 불러 심문한다."
+      },
+      "sourceUrls": [
+        "https://www.data.go.kr/data/15111405/fileData.do"
+      ],
+      "verifiedAt": "2026-08-10",
+      "reviewed": true,
+      "featuredActorIds": [
+        "actor-kim-tae-ri"
+      ],
+      "actorPresenceReviewed": true,
+      "actorPresenceVerification": {
+        "method": "automatic",
+        "grade": "B",
+        "decision": "confirmed",
+        "evidenceSourceUrls": [
+          "https://www.data.go.kr/data/15111405/fileData.do"
+        ]
+      }
+    },
+    {
+      "workId": "work-mr-sunshine",
+      "placeId": "catalog-place-4b7770446eb5",
+      "sourceRowId": "5044",
+      "sourcePlaceName": "선샤인스튜디오",
+      "sceneNote": {
+        "ko": "유진 최(이병헌)와 김희성(변요한)의 공식 행선지이자 거주지이자 사나운 쿠도 히나(김민정)가 소유한 장엄한 글로리 호텔이 있다. 두 번째는 구동매(유연석)가 어렸을 때부터 고애신(김태리)을 처음 본 블랑제리가 있는 장터다. 또한 미국 장관이 암살된 밤에 유진 최와 고애신이 처음 만나는 다리도 등장한다. 세 남자가 만나 술을 마시는 일본식 술집인 활룰루, 두 명의 노예 사냥꾼이 운영하는 전당포, 고애신의 집, 한성 최초의 철도 차량(서울 옛 이름) 등이 등장하는 장면들 등이 있다.",
+        "en": "유진 최(이병헌)와 김희성(변요한)의 공식 행선지이자 거주지이자 사나운 쿠도 히나(김민정)가 소유한 장엄한 글로리 호텔이 있다. 두 번째는 구동매(유연석)가 어렸을 때부터 고애신(김태리)을 처음 본 블랑제리가 있는 장터다. 또한 미국 장관이 암살된 밤에 유진 최와 고애신이 처음 만나는 다리도 등장한다. 세 남자가 만나 술을 마시는 일본식 술집인 활룰루, 두 명의 노예 사냥꾼이 운영하는 전당포, 고애신의 집, 한성 최초의 철도 차량(서울 옛 이름) 등이 등장하는 장면들 등이 있다."
+      },
+      "sourceUrls": [
+        "https://www.data.go.kr/data/15111405/fileData.do"
+      ],
+      "verifiedAt": "2026-08-10",
+      "reviewed": true,
+      "featuredActorIds": [
+        "actor-kim-tae-ri"
+      ],
+      "actorPresenceReviewed": true,
+      "actorPresenceVerification": {
+        "method": "automatic",
+        "grade": "B",
+        "decision": "confirmed",
+        "evidenceSourceUrls": [
+          "https://www.data.go.kr/data/15111405/fileData.do"
+        ]
+      }
+    },
+    {
+      "workId": "work-mr-sunshine",
+      "placeId": "catalog-place-57c1e37a08e5",
+      "sourceRowId": "5035",
+      "sourcePlaceName": "고산정",
+      "sceneNote": {
+        "ko": "2화에서 최유진(이병헌)은 이 정자 맞은편 강둑에 찾아와 어린 시절 인도교에서 배를 타고 숨었던 모습을 회상한다. 그리고는 가까운 식당에 앉아 백숙을 대접받는다. 10화에서는 고애신(김태리)과 유진 최(이병헌)가 이곳 앞의 얼어붙은 강을 산책하며 조선시대의 기원과 그가 북아메리카로 도피한 이유를 이야기한다.",
+        "en": "2화에서 최유진(이병헌)은 이 정자 맞은편 강둑에 찾아와 어린 시절 인도교에서 배를 타고 숨었던 모습을 회상한다. 그리고는 가까운 식당에 앉아 백숙을 대접받는다. 10화에서는 고애신(김태리)과 유진 최(이병헌)가 이곳 앞의 얼어붙은 강을 산책하며 조선시대의 기원과 그가 북아메리카로 도피한 이유를 이야기한다."
+      },
+      "sourceUrls": [
+        "https://www.data.go.kr/data/15111405/fileData.do"
+      ],
+      "verifiedAt": "2026-08-10",
+      "reviewed": true,
+      "featuredActorIds": [
+        "actor-kim-tae-ri"
+      ],
+      "actorPresenceReviewed": true,
+      "actorPresenceVerification": {
+        "method": "automatic",
+        "grade": "B",
+        "decision": "confirmed",
+        "evidenceSourceUrls": [
+          "https://www.data.go.kr/data/15111405/fileData.do"
+        ]
+      }
+    },
+    {
+      "workId": "work-mr-sunshine",
+      "placeId": "catalog-place-68bc26e81f91",
+      "sourceRowId": "5039",
+      "sourcePlaceName": "문화공감수정",
+      "sceneNote": {
+        "ko": "미국인 '로건 테일러'가 암살당한 기생집 화월루",
+        "en": "미국인 '로건 테일러'가 암살당한 기생집 화월루"
+      },
+      "sourceUrls": [
+        "https://www.data.go.kr/data/15111405/fileData.do"
+      ],
+      "verifiedAt": "2026-08-10",
+      "reviewed": true
+    },
+    {
+      "workId": "work-mr-sunshine",
+      "placeId": "catalog-place-a5cb668ecaf6",
+      "sourceRowId": "5043",
+      "sourcePlaceName": "션샤인랜드",
+      "sceneNote": {
+        "ko": "SBS에서 제작한 미스터 션샤인의 세트장",
+        "en": "SBS에서 제작한 미스터 션샤인의 세트장"
+      },
+      "sourceUrls": [
+        "https://www.data.go.kr/data/15111405/fileData.do"
+      ],
+      "verifiedAt": "2026-08-10",
+      "reviewed": true
+    },
+    {
+      "workId": "work-mr-sunshine",
+      "placeId": "catalog-place-c0dcf8a41a01",
+      "sourceRowId": "5040",
+      "sourcePlaceName": "한옥카페 선운각",
+      "sceneNote": {
+        "ko": "5화에서 일본군이 일본군에게 피해를 준 미군병을 붙잡기 위해 행사장 밖으로 보이는 미 의회로 행진하는 일본군. 양 당사자의 통역이 일련의 언어 번역을 한 후, 츠다(이정현)는 교전을 선언하고 두 세트의 군인은 서로 무기를 겨누고 있습니다. 유진 최(이병헌)는 일본에게 미국에 선전포고를 했는지 묻는다.",
+        "en": "5화에서 일본군이 일본군에게 피해를 준 미군병을 붙잡기 위해 행사장 밖으로 보이는 미 의회로 행진하는 일본군. 양 당사자의 통역이 일련의 언어 번역을 한 후, 츠다(이정현)는 교전을 선언하고 두 세트의 군인은 서로 무기를 겨누고 있습니다. 유진 최(이병헌)는 일본에게 미국에 선전포고를 했는지 묻는다."
+      },
+      "sourceUrls": [
+        "https://www.data.go.kr/data/15111405/fileData.do"
+      ],
+      "verifiedAt": "2026-08-10",
+      "reviewed": true
+    },
+    {
+      "workId": "work-mr-sunshine",
+      "placeId": "catalog-place-df864b6436e8",
+      "sourceRowId": "5042",
+      "sourcePlaceName": "부안영상테마파크",
+      "sceneNote": {
+        "ko": "가면의 주인을 확인할 때의 장소이다.",
+        "en": "가면의 주인을 확인할 때의 장소이다."
+      },
+      "sourceUrls": [
+        "https://www.data.go.kr/data/15111405/fileData.do"
+      ],
+      "verifiedAt": "2026-08-10",
+      "reviewed": true
+    },
+    {
+      "workId": "work-mr-sunshine",
+      "placeId": "catalog-place-e0e506c99baa",
+      "sourceRowId": "5033",
+      "sourcePlaceName": "삼릉숲",
+      "sceneNote": {
+        "ko": "어린 유진이 추노꾼들을 피해 달아나는 장면의 숲",
+        "en": "어린 유진이 추노꾼들을 피해 달아나는 장면의 숲"
+      },
+      "sourceUrls": [
+        "https://www.data.go.kr/data/15111405/fileData.do"
+      ],
+      "verifiedAt": "2026-08-10",
+      "reviewed": true
+    },
+    {
+      "workId": "work-mr-sunshine",
+      "placeId": "catalog-place-e84b706a410c",
+      "sourceRowId": "5034",
+      "sourcePlaceName": "만휴정",
+      "sceneNote": {
+        "ko": "6회에서 유진은 도예가 은산의 집에서 기다리며 새로운 적 희성을 생각한다.",
+        "en": "6회에서 유진은 도예가 은산의 집에서 기다리며 새로운 적 희성을 생각한다."
+      },
+      "sourceUrls": [
+        "https://www.data.go.kr/data/15111405/fileData.do"
+      ],
+      "verifiedAt": "2026-08-10",
+      "reviewed": true
+    },
+    {
+      "workId": "work-mr-sunshine",
+      "placeId": "catalog-place-f36791e13df0",
+      "sourceRowId": "5032",
+      "sourcePlaceName": "합천 영상 테마파크",
+      "sceneNote": {
+        "ko": "고애신이 열차 안에서 일본군에게 총을 겨눴던 곳",
+        "en": "고애신이 열차 안에서 일본군에게 총을 겨눴던 곳"
+      },
+      "sourceUrls": [
+        "https://www.data.go.kr/data/15111405/fileData.do"
+      ],
+      "verifiedAt": "2026-08-10",
+      "reviewed": true,
+      "featuredActorIds": [
+        "actor-kim-tae-ri"
       ],
       "actorPresenceReviewed": true,
       "actorPresenceVerification": {
@@ -6943,7 +7922,7 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "reviewed": true,
       "featuredActorIds": [
         "actor-park-bo-gum"
@@ -6970,7 +7949,7 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "reviewed": true,
       "featuredActorIds": [
         "actor-park-bo-gum"
@@ -6997,7 +7976,7 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "reviewed": true,
       "featuredActorIds": [
         "actor-park-bo-gum"
@@ -7024,7 +8003,7 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "reviewed": true
     },
     {
@@ -7039,7 +8018,7 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "reviewed": true,
       "featuredActorIds": [
         "actor-park-bo-gum"
@@ -7066,7 +8045,7 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "reviewed": true,
       "featuredActorIds": [
         "actor-park-bo-gum"
@@ -7093,7 +8072,7 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "reviewed": true,
       "featuredActorIds": [
         "actor-park-bo-gum"
@@ -7120,7 +8099,7 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "reviewed": true,
       "featuredActorIds": [
         "actor-park-bo-gum"
@@ -7147,7 +8126,7 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "reviewed": true,
       "featuredActorIds": [
         "actor-park-bo-gum"
@@ -7174,7 +8153,7 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "reviewed": true
     },
     {
@@ -7189,7 +8168,7 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "reviewed": true
     },
     {
@@ -7204,7 +8183,7 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "reviewed": true,
       "featuredActorIds": [
         "actor-park-bo-gum"
@@ -7231,7 +8210,7 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "reviewed": true
     },
     {
@@ -7246,7 +8225,7 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "reviewed": true,
       "featuredActorIds": [
         "actor-park-bo-gum"
@@ -7273,7 +8252,7 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "reviewed": true,
       "featuredActorIds": [
         "actor-park-bo-gum"
@@ -7300,7 +8279,7 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "reviewed": true,
       "featuredActorIds": [
         "actor-park-bo-gum"
@@ -7327,7 +8306,7 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "reviewed": true,
       "featuredActorIds": [
         "actor-park-bo-gum"
@@ -7354,7 +8333,7 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "reviewed": true,
       "featuredActorIds": [
         "actor-park-bo-gum"
@@ -7381,7 +8360,7 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "reviewed": true,
       "featuredActorIds": [
         "actor-park-bo-gum"
@@ -7408,7 +8387,7 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "reviewed": true
     },
     {
@@ -7423,7 +8402,7 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "reviewed": true,
       "featuredActorIds": [
         "actor-park-bo-gum"
@@ -7450,7 +8429,7 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "reviewed": true,
       "featuredActorIds": [
         "actor-park-bo-gum"
@@ -7477,7 +8456,7 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "reviewed": true,
       "featuredActorIds": [
         "actor-park-bo-gum"
@@ -7504,7 +8483,7 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "reviewed": true,
       "featuredActorIds": [
         "actor-park-bo-gum"
@@ -7531,7 +8510,7 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "reviewed": true,
       "featuredActorIds": [
         "actor-park-bo-gum"
@@ -7558,7 +8537,7 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "reviewed": true,
       "featuredActorIds": [
         "actor-park-bo-gum"
@@ -7585,7 +8564,7 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "reviewed": true,
       "featuredActorIds": [
         "actor-park-bo-gum"
@@ -7612,7 +8591,7 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "reviewed": true
     },
     {
@@ -7627,7 +8606,7 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "reviewed": true,
       "featuredActorIds": [
         "actor-park-bo-gum"
@@ -7654,7 +8633,7 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "reviewed": true,
       "featuredActorIds": [
         "actor-park-bo-gum"
@@ -7681,7 +8660,7 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "reviewed": true,
       "featuredActorIds": [
         "actor-park-bo-gum"
@@ -7708,8 +8687,20 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
-      "reviewed": true
+      "verifiedAt": "2026-08-10",
+      "reviewed": true,
+      "featuredActorIds": [
+        "actor-lee-min-ho"
+      ],
+      "actorPresenceReviewed": true,
+      "actorPresenceVerification": {
+        "method": "automatic",
+        "grade": "B",
+        "decision": "confirmed",
+        "evidenceSourceUrls": [
+          "https://www.data.go.kr/data/15111405/fileData.do"
+        ]
+      }
     },
     {
       "workId": "work-the-king",
@@ -7723,10 +8714,11 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "reviewed": true,
       "featuredActorIds": [
-        "actor-kim-go-eun"
+        "actor-kim-go-eun",
+        "actor-lee-min-ho"
       ],
       "actorPresenceReviewed": true,
       "actorPresenceVerification": {
@@ -7750,8 +8742,20 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
-      "reviewed": true
+      "verifiedAt": "2026-08-10",
+      "reviewed": true,
+      "featuredActorIds": [
+        "actor-lee-min-ho"
+      ],
+      "actorPresenceReviewed": true,
+      "actorPresenceVerification": {
+        "method": "automatic",
+        "grade": "B",
+        "decision": "confirmed",
+        "evidenceSourceUrls": [
+          "https://www.data.go.kr/data/15111405/fileData.do"
+        ]
+      }
     },
     {
       "workId": "work-the-king",
@@ -7765,10 +8769,11 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "reviewed": true,
       "featuredActorIds": [
-        "actor-kim-go-eun"
+        "actor-kim-go-eun",
+        "actor-lee-min-ho"
       ],
       "actorPresenceReviewed": true,
       "actorPresenceVerification": {
@@ -7792,7 +8797,7 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "reviewed": true
     },
     {
@@ -7807,10 +8812,11 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "reviewed": true,
       "featuredActorIds": [
-        "actor-kim-go-eun"
+        "actor-kim-go-eun",
+        "actor-lee-min-ho"
       ],
       "actorPresenceReviewed": true,
       "actorPresenceVerification": {
@@ -7834,7 +8840,7 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "reviewed": true,
       "featuredActorIds": [
         "actor-kim-go-eun"
@@ -7861,7 +8867,7 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "reviewed": true
     },
     {
@@ -7876,8 +8882,20 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
-      "reviewed": true
+      "verifiedAt": "2026-08-10",
+      "reviewed": true,
+      "featuredActorIds": [
+        "actor-lee-min-ho"
+      ],
+      "actorPresenceReviewed": true,
+      "actorPresenceVerification": {
+        "method": "automatic",
+        "grade": "B",
+        "decision": "confirmed",
+        "evidenceSourceUrls": [
+          "https://www.data.go.kr/data/15111405/fileData.do"
+        ]
+      }
     },
     {
       "workId": "work-the-king",
@@ -7891,8 +8909,20 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
-      "reviewed": true
+      "verifiedAt": "2026-08-10",
+      "reviewed": true,
+      "featuredActorIds": [
+        "actor-lee-min-ho"
+      ],
+      "actorPresenceReviewed": true,
+      "actorPresenceVerification": {
+        "method": "automatic",
+        "grade": "B",
+        "decision": "confirmed",
+        "evidenceSourceUrls": [
+          "https://www.data.go.kr/data/15111405/fileData.do"
+        ]
+      }
     },
     {
       "workId": "work-the-king",
@@ -7906,7 +8936,7 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "reviewed": true
     },
     {
@@ -7921,7 +8951,7 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "reviewed": true
     },
     {
@@ -7936,8 +8966,20 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
-      "reviewed": true
+      "verifiedAt": "2026-08-10",
+      "reviewed": true,
+      "featuredActorIds": [
+        "actor-lee-min-ho"
+      ],
+      "actorPresenceReviewed": true,
+      "actorPresenceVerification": {
+        "method": "automatic",
+        "grade": "B",
+        "decision": "confirmed",
+        "evidenceSourceUrls": [
+          "https://www.data.go.kr/data/15111405/fileData.do"
+        ]
+      }
     },
     {
       "workId": "work-the-king",
@@ -7951,10 +8993,11 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "reviewed": true,
       "featuredActorIds": [
-        "actor-kim-go-eun"
+        "actor-kim-go-eun",
+        "actor-lee-min-ho"
       ],
       "actorPresenceReviewed": true,
       "actorPresenceVerification": {
@@ -7978,7 +9021,7 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "reviewed": true
     },
     {
@@ -7993,7 +9036,7 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "reviewed": true
     },
     {
@@ -8008,8 +9051,20 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
-      "reviewed": true
+      "verifiedAt": "2026-08-10",
+      "reviewed": true,
+      "featuredActorIds": [
+        "actor-lee-min-ho"
+      ],
+      "actorPresenceReviewed": true,
+      "actorPresenceVerification": {
+        "method": "automatic",
+        "grade": "B",
+        "decision": "confirmed",
+        "evidenceSourceUrls": [
+          "https://www.data.go.kr/data/15111405/fileData.do"
+        ]
+      }
     },
     {
       "workId": "work-the-king",
@@ -8023,7 +9078,7 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "reviewed": true
     },
     {
@@ -8038,8 +9093,20 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
-      "reviewed": true
+      "verifiedAt": "2026-08-10",
+      "reviewed": true,
+      "featuredActorIds": [
+        "actor-lee-min-ho"
+      ],
+      "actorPresenceReviewed": true,
+      "actorPresenceVerification": {
+        "method": "automatic",
+        "grade": "B",
+        "decision": "confirmed",
+        "evidenceSourceUrls": [
+          "https://www.data.go.kr/data/15111405/fileData.do"
+        ]
+      }
     },
     {
       "workId": "work-the-king",
@@ -8053,7 +9120,7 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "reviewed": true
     },
     {
@@ -8068,10 +9135,11 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "reviewed": true,
       "featuredActorIds": [
-        "actor-kim-go-eun"
+        "actor-kim-go-eun",
+        "actor-lee-min-ho"
       ],
       "actorPresenceReviewed": true,
       "actorPresenceVerification": {
@@ -8095,8 +9163,20 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
-      "reviewed": true
+      "verifiedAt": "2026-08-10",
+      "reviewed": true,
+      "featuredActorIds": [
+        "actor-lee-min-ho"
+      ],
+      "actorPresenceReviewed": true,
+      "actorPresenceVerification": {
+        "method": "automatic",
+        "grade": "B",
+        "decision": "confirmed",
+        "evidenceSourceUrls": [
+          "https://www.data.go.kr/data/15111405/fileData.do"
+        ]
+      }
     },
     {
       "workId": "work-the-king",
@@ -8110,10 +9190,11 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "reviewed": true,
       "featuredActorIds": [
-        "actor-kim-go-eun"
+        "actor-kim-go-eun",
+        "actor-lee-min-ho"
       ],
       "actorPresenceReviewed": true,
       "actorPresenceVerification": {
@@ -8137,10 +9218,11 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "reviewed": true,
       "featuredActorIds": [
-        "actor-kim-go-eun"
+        "actor-kim-go-eun",
+        "actor-lee-min-ho"
       ],
       "actorPresenceReviewed": true,
       "actorPresenceVerification": {
@@ -8164,7 +9246,7 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "reviewed": true
     },
     {
@@ -8179,7 +9261,7 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "reviewed": true
     },
     {
@@ -8194,7 +9276,7 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "reviewed": true
     },
     {
@@ -8209,7 +9291,7 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "reviewed": true
     },
     {
@@ -8224,10 +9306,11 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "reviewed": true,
       "featuredActorIds": [
-        "actor-kim-go-eun"
+        "actor-kim-go-eun",
+        "actor-lee-min-ho"
       ],
       "actorPresenceReviewed": true,
       "actorPresenceVerification": {
@@ -8251,7 +9334,7 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "reviewed": true,
       "featuredActorIds": [
         "actor-kim-go-eun"
@@ -8278,7 +9361,7 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "reviewed": true
     },
     {
@@ -8293,7 +9376,7 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "reviewed": true
     },
     {
@@ -8308,8 +9391,20 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
-      "reviewed": true
+      "verifiedAt": "2026-08-10",
+      "reviewed": true,
+      "featuredActorIds": [
+        "actor-lee-min-ho"
+      ],
+      "actorPresenceReviewed": true,
+      "actorPresenceVerification": {
+        "method": "automatic",
+        "grade": "B",
+        "decision": "confirmed",
+        "evidenceSourceUrls": [
+          "https://www.data.go.kr/data/15111405/fileData.do"
+        ]
+      }
     },
     {
       "workId": "work-the-king",
@@ -8323,8 +9418,20 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
-      "reviewed": true
+      "verifiedAt": "2026-08-10",
+      "reviewed": true,
+      "featuredActorIds": [
+        "actor-lee-min-ho"
+      ],
+      "actorPresenceReviewed": true,
+      "actorPresenceVerification": {
+        "method": "automatic",
+        "grade": "B",
+        "decision": "confirmed",
+        "evidenceSourceUrls": [
+          "https://www.data.go.kr/data/15111405/fileData.do"
+        ]
+      }
     },
     {
       "workId": "work-the-king",
@@ -8338,10 +9445,11 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "reviewed": true,
       "featuredActorIds": [
-        "actor-kim-go-eun"
+        "actor-kim-go-eun",
+        "actor-lee-min-ho"
       ],
       "actorPresenceReviewed": true,
       "actorPresenceVerification": {
@@ -8352,6 +9460,366 @@
           "https://www.data.go.kr/data/15111405/fileData.do"
         ]
       }
+    },
+    {
+      "workId": "work-twenty-five-twenty-one",
+      "placeId": "catalog-place-004c46eb014a",
+      "sourceRowId": "8629",
+      "sourcePlaceName": "오목대길",
+      "sceneNote": {
+        "ko": "1회에서 백이진(남주혁)은 집에서 나오는 유쾌한 나희도(김태리)를 마주치고 입가에 미소를 지으며 이 거리에서 자전거를 타고 내려온다.",
+        "en": "1회에서 백이진(남주혁)은 집에서 나오는 유쾌한 나희도(김태리)를 마주치고 입가에 미소를 지으며 이 거리에서 자전거를 타고 내려온다."
+      },
+      "sourceUrls": [
+        "https://www.data.go.kr/data/15111405/fileData.do"
+      ],
+      "verifiedAt": "2026-08-10",
+      "reviewed": true,
+      "featuredActorIds": [
+        "actor-kim-tae-ri"
+      ],
+      "actorPresenceReviewed": true,
+      "actorPresenceVerification": {
+        "method": "automatic",
+        "grade": "B",
+        "decision": "confirmed",
+        "evidenceSourceUrls": [
+          "https://www.data.go.kr/data/15111405/fileData.do"
+        ]
+      }
+    },
+    {
+      "workId": "work-twenty-five-twenty-one",
+      "placeId": "catalog-place-04454035a27e",
+      "sourceRowId": "8621",
+      "sourcePlaceName": "와룡공원",
+      "sceneNote": {
+        "ko": "3회에서 나희도(김태리)가 이 공원에서 훈련을 하고 있다.",
+        "en": "3회에서 나희도(김태리)가 이 공원에서 훈련을 하고 있다."
+      },
+      "sourceUrls": [
+        "https://www.data.go.kr/data/15111405/fileData.do"
+      ],
+      "verifiedAt": "2026-08-10",
+      "reviewed": true,
+      "featuredActorIds": [
+        "actor-kim-tae-ri"
+      ],
+      "actorPresenceReviewed": true,
+      "actorPresenceVerification": {
+        "method": "automatic",
+        "grade": "B",
+        "decision": "confirmed",
+        "evidenceSourceUrls": [
+          "https://www.data.go.kr/data/15111405/fileData.do"
+        ]
+      }
+    },
+    {
+      "workId": "work-twenty-five-twenty-one",
+      "placeId": "catalog-place-08551f8d30d9",
+      "sourceRowId": "8625",
+      "sourcePlaceName": "월미문화의거리",
+      "sceneNote": {
+        "ko": "10화에서 문지웅(최현욱)이 브레이크 댄서들과 함께 (힙합은 미래이기 때문에) 여기에서 어울리고 있다.",
+        "en": "10화에서 문지웅(최현욱)이 브레이크 댄서들과 함께 (힙합은 미래이기 때문에) 여기에서 어울리고 있다."
+      },
+      "sourceUrls": [
+        "https://www.data.go.kr/data/15111405/fileData.do"
+      ],
+      "verifiedAt": "2026-08-10",
+      "reviewed": true
+    },
+    {
+      "workId": "work-twenty-five-twenty-one",
+      "placeId": "catalog-place-0caa4ae0904e",
+      "sourceRowId": "8628",
+      "sourcePlaceName": "맹꽁이 오락실",
+      "sceneNote": {
+        "ko": "13회에서 고유림(김지연)과 문지웅(최현욱)이 데이트를 하기 위해 이곳에 온다",
+        "en": "13회에서 고유림(김지연)과 문지웅(최현욱)이 데이트를 하기 위해 이곳에 온다"
+      },
+      "sourceUrls": [
+        "https://www.data.go.kr/data/15111405/fileData.do"
+      ],
+      "verifiedAt": "2026-08-10",
+      "reviewed": true
+    },
+    {
+      "workId": "work-twenty-five-twenty-one",
+      "placeId": "catalog-place-11a0339a6398",
+      "sourceRowId": "8622",
+      "sourcePlaceName": "보신각터",
+      "sceneNote": {
+        "ko": "백이진(남주혁)은 이 파빌리온에서 2001년 새해 전야제에 대해 보고하고 나희도(김태리)는 15회에서 여기에 합류한다.",
+        "en": "백이진(남주혁)은 이 파빌리온에서 2001년 새해 전야제에 대해 보고하고 나희도(김태리)는 15회에서 여기에 합류한다."
+      },
+      "sourceUrls": [
+        "https://www.data.go.kr/data/15111405/fileData.do"
+      ],
+      "verifiedAt": "2026-08-10",
+      "reviewed": true,
+      "featuredActorIds": [
+        "actor-kim-tae-ri"
+      ],
+      "actorPresenceReviewed": true,
+      "actorPresenceVerification": {
+        "method": "automatic",
+        "grade": "B",
+        "decision": "confirmed",
+        "evidenceSourceUrls": [
+          "https://www.data.go.kr/data/15111405/fileData.do"
+        ]
+      }
+    },
+    {
+      "workId": "work-twenty-five-twenty-one",
+      "placeId": "catalog-place-2b895702dcae",
+      "sourceRowId": "8611",
+      "sourcePlaceName": "동해 논골담길",
+      "sceneNote": {
+        "ko": "5회에서 부모님의 사업이 망해 백이진(남주혁)과 그의 동생은 이 마을로 이사 온다. 생계를 위해 이곳 시장에서 일을 시작한다",
+        "en": "5회에서 부모님의 사업이 망해 백이진(남주혁)과 그의 동생은 이 마을로 이사 온다. 생계를 위해 이곳 시장에서 일을 시작한다"
+      },
+      "sourceUrls": [
+        "https://www.data.go.kr/data/15111405/fileData.do"
+      ],
+      "verifiedAt": "2026-08-10",
+      "reviewed": true
+    },
+    {
+      "workId": "work-twenty-five-twenty-one",
+      "placeId": "catalog-place-35963aec0bdc",
+      "sourceRowId": "8627",
+      "sourcePlaceName": "한벽굴",
+      "sceneNote": {
+        "ko": "2회 엔딩 장면 촬영지",
+        "en": "2회 엔딩 장면 촬영지"
+      },
+      "sourceUrls": [
+        "https://www.data.go.kr/data/15111405/fileData.do"
+      ],
+      "verifiedAt": "2026-08-10",
+      "reviewed": true
+    },
+    {
+      "workId": "work-twenty-five-twenty-one",
+      "placeId": "catalog-place-35bb3a97f8ea",
+      "sourceRowId": "8615",
+      "sourcePlaceName": "경주역",
+      "sceneNote": {
+        "ko": "6회에서 1999년 경주에서 열린 제13회 경주 아시안게임(가상일자)에 출전하던 중 나희도(김태리)는 자신의 울타리를 찾아 이곳에서 기차를 탄다.  희도가 대회장을 떠났다는 소식을 들은 백이진(남주혁)은 희도가 다음 대회 시간에 맞춰 도착할 수 있도록 그녀를 이 역으로 데려온다.",
+        "en": "6회에서 1999년 경주에서 열린 제13회 경주 아시안게임(가상일자)에 출전하던 중 나희도(김태리)는 자신의 울타리를 찾아 이곳에서 기차를 탄다.  희도가 대회장을 떠났다는 소식을 들은 백이진(남주혁)은 희도가 다음 대회 시간에 맞춰 도착할 수 있도록 그녀를 이 역으로 데려온다."
+      },
+      "sourceUrls": [
+        "https://www.data.go.kr/data/15111405/fileData.do"
+      ],
+      "verifiedAt": "2026-08-10",
+      "reviewed": true,
+      "featuredActorIds": [
+        "actor-kim-tae-ri"
+      ],
+      "actorPresenceReviewed": true,
+      "actorPresenceVerification": {
+        "method": "automatic",
+        "grade": "B",
+        "decision": "confirmed",
+        "evidenceSourceUrls": [
+          "https://www.data.go.kr/data/15111405/fileData.do"
+        ]
+      }
+    },
+    {
+      "workId": "work-twenty-five-twenty-one",
+      "placeId": "catalog-place-5a9f94fcfba8",
+      "sourceRowId": "8624",
+      "sourcePlaceName": "세종대로",
+      "sceneNote": {
+        "ko": "6회에서는 노동자들이 더 나은 고용 조건을 요구하는 가운데 나희도(김태리)와 백이진(남주혁)이 잠시 헤어진 후 재회하는 장면이 나온다",
+        "en": "6회에서는 노동자들이 더 나은 고용 조건을 요구하는 가운데 나희도(김태리)와 백이진(남주혁)이 잠시 헤어진 후 재회하는 장면이 나온다"
+      },
+      "sourceUrls": [
+        "https://www.data.go.kr/data/15111405/fileData.do"
+      ],
+      "verifiedAt": "2026-08-10",
+      "reviewed": true,
+      "featuredActorIds": [
+        "actor-kim-tae-ri"
+      ],
+      "actorPresenceReviewed": true,
+      "actorPresenceVerification": {
+        "method": "automatic",
+        "grade": "B",
+        "decision": "confirmed",
+        "evidenceSourceUrls": [
+          "https://www.data.go.kr/data/15111405/fileData.do"
+        ]
+      }
+    },
+    {
+      "workId": "work-twenty-five-twenty-one",
+      "placeId": "catalog-place-5b790afdf33d",
+      "sourceRowId": "8617",
+      "sourcePlaceName": "마포진짜원조최대포본점",
+      "sceneNote": {
+        "ko": "5회에서 도(김태리)가 양찬미(김혜은) 코치와 함께 이 식당에서 술을 마시며 펜싱 국가대표 입단을 축하하고 있다",
+        "en": "5회에서 도(김태리)가 양찬미(김혜은) 코치와 함께 이 식당에서 술을 마시며 펜싱 국가대표 입단을 축하하고 있다"
+      },
+      "sourceUrls": [
+        "https://www.data.go.kr/data/15111405/fileData.do"
+      ],
+      "verifiedAt": "2026-08-10",
+      "reviewed": true,
+      "featuredActorIds": [
+        "actor-kim-tae-ri"
+      ],
+      "actorPresenceReviewed": true,
+      "actorPresenceVerification": {
+        "method": "automatic",
+        "grade": "B",
+        "decision": "confirmed",
+        "evidenceSourceUrls": [
+          "https://www.data.go.kr/data/15111405/fileData.do"
+        ]
+      }
+    },
+    {
+      "workId": "work-twenty-five-twenty-one",
+      "placeId": "catalog-place-6c4eaad03852",
+      "sourceRowId": "8626",
+      "sourcePlaceName": "몽펠리에 카페 레스토랑",
+      "sceneNote": {
+        "ko": "6회에서 나희도(김태리)는 짧은 이별 후 재회한 후 백이진(남주혁)에게 이 식당에서 누군가를 만나자고 제안한다",
+        "en": "6회에서 나희도(김태리)는 짧은 이별 후 재회한 후 백이진(남주혁)에게 이 식당에서 누군가를 만나자고 제안한다"
+      },
+      "sourceUrls": [
+        "https://www.data.go.kr/data/15111405/fileData.do"
+      ],
+      "verifiedAt": "2026-08-10",
+      "reviewed": true,
+      "featuredActorIds": [
+        "actor-kim-tae-ri"
+      ],
+      "actorPresenceReviewed": true,
+      "actorPresenceVerification": {
+        "method": "automatic",
+        "grade": "B",
+        "decision": "confirmed",
+        "evidenceSourceUrls": [
+          "https://www.data.go.kr/data/15111405/fileData.do"
+        ]
+      }
+    },
+    {
+      "workId": "work-twenty-five-twenty-one",
+      "placeId": "catalog-place-720e082843dc",
+      "sourceRowId": "8616",
+      "sourcePlaceName": "압구정나들목",
+      "sceneNote": {
+        "ko": "10화에서 문지웅(최현욱)이 브레이크 댄서들과 함께 (힙합은 미래이기 때문에) 여기에서 어울리고 있다.",
+        "en": "10화에서 문지웅(최현욱)이 브레이크 댄서들과 함께 (힙합은 미래이기 때문에) 여기에서 어울리고 있다."
+      },
+      "sourceUrls": [
+        "https://www.data.go.kr/data/15111405/fileData.do"
+      ],
+      "verifiedAt": "2026-08-10",
+      "reviewed": true
+    },
+    {
+      "workId": "work-twenty-five-twenty-one",
+      "placeId": "catalog-place-a5832e14697a",
+      "sourceRowId": "8614",
+      "sourcePlaceName": "동두천 문화극장",
+      "sceneNote": {
+        "ko": "15회에서 나희도(김태리 분)와 백이진(남주혁 분)은 이 극장에서 영화 데이트를 하는데, 요즘도 여느 때처럼 40분이나 늦는다.",
+        "en": "15회에서 나희도(김태리 분)와 백이진(남주혁 분)은 이 극장에서 영화 데이트를 하는데, 요즘도 여느 때처럼 40분이나 늦는다."
+      },
+      "sourceUrls": [
+        "https://www.data.go.kr/data/15111405/fileData.do"
+      ],
+      "verifiedAt": "2026-08-10",
+      "reviewed": true,
+      "featuredActorIds": [
+        "actor-kim-tae-ri"
+      ],
+      "actorPresenceReviewed": true,
+      "actorPresenceVerification": {
+        "method": "automatic",
+        "grade": "B",
+        "decision": "confirmed",
+        "evidenceSourceUrls": [
+          "https://www.data.go.kr/data/15111405/fileData.do"
+        ]
+      }
+    },
+    {
+      "workId": "work-twenty-five-twenty-one",
+      "placeId": "catalog-place-a73e9a16c556",
+      "sourceRowId": "8620",
+      "sourcePlaceName": "마로니에 공원",
+      "sceneNote": {
+        "ko": "나희도(김태리)의 오랜 채팅 친구는 8화에서 노란 장미를 사인으로 이 공원에서 만나자고 제안한다",
+        "en": "나희도(김태리)의 오랜 채팅 친구는 8화에서 노란 장미를 사인으로 이 공원에서 만나자고 제안한다"
+      },
+      "sourceUrls": [
+        "https://www.data.go.kr/data/15111405/fileData.do"
+      ],
+      "verifiedAt": "2026-08-10",
+      "reviewed": true,
+      "featuredActorIds": [
+        "actor-kim-tae-ri"
+      ],
+      "actorPresenceReviewed": true,
+      "actorPresenceVerification": {
+        "method": "automatic",
+        "grade": "B",
+        "decision": "confirmed",
+        "evidenceSourceUrls": [
+          "https://www.data.go.kr/data/15111405/fileData.do"
+        ]
+      }
+    },
+    {
+      "workId": "work-twenty-five-twenty-one",
+      "placeId": "catalog-place-c3358c9e8188",
+      "sourceRowId": "8618",
+      "sourcePlaceName": "오동근린공원",
+      "sceneNote": {
+        "ko": "15화에서 백이진(남주혁)은 나희도(김태리)를 이 공원에 데려가 2001년 새해 전야제를 축하합니다.",
+        "en": "15화에서 백이진(남주혁)은 나희도(김태리)를 이 공원에 데려가 2001년 새해 전야제를 축하합니다."
+      },
+      "sourceUrls": [
+        "https://www.data.go.kr/data/15111405/fileData.do"
+      ],
+      "verifiedAt": "2026-08-10",
+      "reviewed": true,
+      "featuredActorIds": [
+        "actor-kim-tae-ri"
+      ],
+      "actorPresenceReviewed": true,
+      "actorPresenceVerification": {
+        "method": "automatic",
+        "grade": "B",
+        "decision": "confirmed",
+        "evidenceSourceUrls": [
+          "https://www.data.go.kr/data/15111405/fileData.do"
+        ]
+      }
+    },
+    {
+      "workId": "work-twenty-five-twenty-one",
+      "placeId": "catalog-place-c39e52ef1126",
+      "sourceRowId": "8619",
+      "sourcePlaceName": "새창로49길",
+      "sceneNote": {
+        "ko": "6회에서 연습생 기자 백이진(남주혁)이 공중전화 박스를 위해 이 골목을 달린다.",
+        "en": "6회에서 연습생 기자 백이진(남주혁)이 공중전화 박스를 위해 이 골목을 달린다."
+      },
+      "sourceUrls": [
+        "https://www.data.go.kr/data/15111405/fileData.do"
+      ],
+      "verifiedAt": "2026-08-10",
+      "reviewed": true
     },
     {
       "workId": "work-yumi-cells",
@@ -8365,7 +9833,7 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "reviewed": true
     },
     {
@@ -8380,7 +9848,7 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "reviewed": true,
       "featuredActorIds": [
         "actor-kim-go-eun"
@@ -8407,7 +9875,7 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "reviewed": true,
       "featuredActorIds": [
         "actor-kim-go-eun"
@@ -8434,7 +9902,7 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "reviewed": true,
       "featuredActorIds": [
         "actor-kim-go-eun"
@@ -8461,7 +9929,7 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "reviewed": true,
       "featuredActorIds": [
         "actor-kim-go-eun"
@@ -8488,7 +9956,7 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "reviewed": true,
       "featuredActorIds": [
         "actor-kim-go-eun"
@@ -8515,7 +9983,7 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "reviewed": true
     },
     {
@@ -8530,7 +9998,7 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "reviewed": true,
       "featuredActorIds": [
         "actor-kim-go-eun"
@@ -8557,7 +10025,7 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "reviewed": true,
       "featuredActorIds": [
         "actor-kim-go-eun"
@@ -8584,7 +10052,7 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "reviewed": true,
       "featuredActorIds": [
         "actor-kim-go-eun"
@@ -8611,7 +10079,7 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "reviewed": true,
       "featuredActorIds": [
         "actor-kim-go-eun"
@@ -8638,7 +10106,7 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "reviewed": true,
       "featuredActorIds": [
         "actor-kim-go-eun"
@@ -8665,7 +10133,7 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "reviewed": true,
       "featuredActorIds": [
         "actor-kim-go-eun"
@@ -8692,7 +10160,7 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "reviewed": true,
       "featuredActorIds": [
         "actor-kim-go-eun"
@@ -8719,7 +10187,7 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "reviewed": true,
       "featuredActorIds": [
         "actor-kim-go-eun"
@@ -8746,7 +10214,7 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "reviewed": true,
       "featuredActorIds": [
         "actor-kim-go-eun"
@@ -8773,7 +10241,7 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "reviewed": true,
       "featuredActorIds": [
         "actor-kim-go-eun"
@@ -8800,7 +10268,7 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "reviewed": true,
       "featuredActorIds": [
         "actor-kim-go-eun"
@@ -8827,7 +10295,7 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "reviewed": true
     },
     {
@@ -8842,7 +10310,7 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "reviewed": true,
       "featuredActorIds": [
         "actor-kim-go-eun"
@@ -8869,7 +10337,7 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "reviewed": true,
       "featuredActorIds": [
         "actor-kim-go-eun"
@@ -8896,7 +10364,7 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "reviewed": true,
       "featuredActorIds": [
         "actor-kim-go-eun"
@@ -8923,7 +10391,7 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "reviewed": true,
       "featuredActorIds": [
         "actor-kim-go-eun"
@@ -8950,7 +10418,7 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "reviewed": true,
       "featuredActorIds": [
         "actor-kim-go-eun"
@@ -8977,7 +10445,7 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "reviewed": true,
       "featuredActorIds": [
         "actor-kim-go-eun"
@@ -9004,7 +10472,7 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "reviewed": true,
       "featuredActorIds": [
         "actor-kim-go-eun"
@@ -9031,7 +10499,7 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "reviewed": true
     },
     {
@@ -9046,7 +10514,7 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "reviewed": true,
       "featuredActorIds": [
         "actor-kim-go-eun"
@@ -9073,7 +10541,7 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "reviewed": true,
       "featuredActorIds": [
         "actor-kim-go-eun"
@@ -9100,7 +10568,7 @@
       "sourceUrls": [
         "https://www.data.go.kr/data/15111405/fileData.do"
       ],
-      "verifiedAt": "2026-08-09",
+      "verifiedAt": "2026-08-10",
       "reviewed": true,
       "featuredActorIds": [
         "actor-kim-go-eun"

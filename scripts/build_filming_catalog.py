@@ -93,7 +93,13 @@ def main() -> None:
     season_overrides = policy["seasonOverrides"]
     conditional = policy["conditionalPlaces"]
     address_overrides = policy.get("addressOverrides", {})
+    coordinate_overrides = policy.get("coordinateOverrides", {})
     place_type_overrides = policy.get("placeTypeOverrides", {})
+    place_source_urls = policy.get("placeSourceUrls", {})
+    actor_presence_exclusions = {
+        actor_id: set(place_names)
+        for actor_id, place_names in policy.get("actorPresenceExclusions", {}).items()
+    }
 
     selected: list[dict[str, object]] = []
     seen_relation: set[tuple[str, str]] = set()
@@ -119,6 +125,11 @@ def main() -> None:
 
         raw_matches = raw_by_key.get(reviewed_key(reviewed), [])
         raw = raw_matches[0] if raw_matches else {}
+        reviewed = dict(reviewed)
+        if canonical_name in coordinate_overrides:
+            override = coordinate_overrides[canonical_name]
+            reviewed["lat"] = override["latitude"]
+            reviewed["lon"] = override["longitude"]
         selected.append({
             "reviewed": reviewed,
             "raw": raw,
@@ -169,7 +180,10 @@ def main() -> None:
             "status": place_status,
             "workIds": work_ids,
             "verifiedAt": policy["verifiedAt"],
-            "sourceUrls": policy["sourceUrls"],
+            "sourceUrls": list(dict.fromkeys([
+                *policy["sourceUrls"],
+                *place_source_urls.get(canonical_name, []),
+            ])),
         }
         if place_status == "conditional":
             place["visitNote"] = {
@@ -186,7 +200,11 @@ def main() -> None:
             featured_actor_ids = []
             for actor_id in work["actorIds"]:
                 actor = actors_by_id[actor_id]
-                if any(token in description for token in actor["roleTokens"]):
+                excluded_places = actor_presence_exclusions.get(actor_id, set())
+                if (
+                    str(item["canonicalName"]) not in excluded_places
+                    and any(token in description for token in actor["roleTokens"])
+                ):
                     featured_actor_ids.append(actor_id)
             relation = {
                 "workId": work_id,
