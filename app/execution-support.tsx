@@ -2,8 +2,8 @@
 /**
  * 실행 지원 — 결과 화면 하단 안내 (#24 A5 최소선 · #6 "코레일 실행 지원 정보 표시")
  * - 검증된 공항 진입·귀국 이동 안내 각 1개 (공항철도 직통, SOURCES.md 철도 절 근거)
- * - 정적 짐 보관 안내 (KTX 차내 휴대물품보관소 — 실시간·좌석 보장 없음)
  * - 일정에 등장하는 역의 편의시설 (station-facilities.json 스냅샷, 수록 역만 표시)
+ * - 역을 누르면 그 역의 시설과 짐 보관 안내를 팝업 탭으로 본다 (짐 보관은 전 일정 공통)
  */
 import { useState } from "react";
 import type { StationFacilitiesSnapshotT } from "@/lib/station-facilities";
@@ -64,14 +64,18 @@ export function ExecutionSupport({ snapshot, stationIds, rides, stationName, tr 
         </div>
       )}
 
-      <div className="mt-3 rounded border bg-sc-subtle/60 p-3">
-        <h4 className="text-sm font-medium">🧳 {tr("support.luggageTitle")}</h4>
-        <ul className="mt-1 list-disc space-y-0.5 pl-5 text-sm text-sc-text/80">
-          <li>{tr("support.luggageInTrain")}</li>
-          <li>{tr("support.luggageLocker")}</li>
-        </ul>
-        <p className="mt-1.5 text-xs text-sc-muted/70">{tr("support.luggageSource")}</p>
-      </div>
+      {/* 짐 보관은 역 팝업의 탭으로 옮겼다. 수록 역이 하나도 없어 팝업 경로가 없을 때만
+          여기에 그대로 남겨 안내가 사라지지 않게 한다. */}
+      {covered.length === 0 && (
+        <div className="mt-3 rounded border bg-sc-subtle/60 p-3">
+          <h4 className="text-sm font-medium">🧳 {tr("support.luggageTitle")}</h4>
+          <ul className="mt-1 list-disc space-y-0.5 pl-5 text-sm text-sc-text/80">
+            <li>{tr("support.luggageInTrain")}</li>
+            <li>{tr("support.luggageLocker")}</li>
+          </ul>
+          <p className="mt-1.5 text-xs text-sc-muted/70">{tr("support.luggageSource")}</p>
+        </div>
+      )}
 
       {/* PR #59 리뷰 비차단 — 전부 미수록이어도 블록을 유지해 '미확보' 상태를 명시한다 */}
       {stationIds.length > 0 && (

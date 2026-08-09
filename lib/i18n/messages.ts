@@ -213,9 +213,11 @@ export const messages = {
     "map.source": "대한민국 경계: Natural Earth · 위치: 검증 시드와 국가철도공단 철도역 정보",
 
     // 역 편의시설 팝업 (#24 A5 실행 지원 개편)
-    "support.facilitiesHint": "역을 누르면 그 역의 시설만 볼 수 있습니다.",
+    "support.facilitiesHint": "역을 누르면 그 역의 시설과 짐 보관 안내를 볼 수 있습니다.",
+    "support.facilitiesTab": "편의시설",
     "support.facilitiesAvailable": "있음",
     "support.facilitiesUnavailable": "없음",
+    "support.luggageCommonNotice": "짐 보관은 이 역의 보관함 현황이 아니라 여행 전체에 공통으로 적용되는 안내입니다.",
     "support.close": "닫기",
   },
   en: {
@@ -427,9 +429,12 @@ export const messages = {
     "map.source": "Boundary: Natural Earth · Positions: verified seed data and Korea National Railway station data",
 
     // Station facility modal (#24 A5 execution support)
-    "support.facilitiesHint": "Select a station to see only that station's facilities.",
+    "support.facilitiesHint": "Select a station to see its facilities and luggage guidance.",
+    "support.facilitiesTab": "Facilities",
     "support.facilitiesAvailable": "Available",
-    "support.facilitiesUnavailable": "Not available",
+    // PR #93 리뷰 비차단 2 — "정보 미확보"와 섞이지 않도록 부재를 단정하는 표현을 쓴다
+    "support.facilitiesUnavailable": "None",
+    "support.luggageCommonNotice": "Luggage guidance applies to your whole trip. It is not this station's locker availability.",
     "support.close": "Close",
   },
 } as const;
