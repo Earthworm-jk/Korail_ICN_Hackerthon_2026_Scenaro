@@ -16,34 +16,22 @@ const KST = "Asia/Seoul";
 /** SOURCES.md 철도 절 — `AREX-` 접두는 공식 편명이 아니라 스냅샷 내 공항철도 식별자다 */
 const AREX_TRAIN_PREFIX = "AREX-";
 
-/** execution-support.tsx와 같은 값 — 공항철도 안내의 방향을 가른다 */
-const AIRPORT_STATION_ID = "station-incheon-airport-t1";
-
 export function isAirportRailLeg(trainNo: string): boolean {
   return trainNo.startsWith(AREX_TRAIN_PREFIX);
 }
 
 export type TrainLegDetail = {
   trainNo: string;
-  fromStationId: string;
-  toStationId: string;
   fromName: string;
   toName: string;
   departAt: string;
   arriveAt: string;
 };
 
-/**
- * 공항에서 출발하는 공항철도 구간인가 — 탑승 위치 안내의 조건 (PR #112 리뷰).
- *
- * 옛 `support.arrivalStep1`이 "제1터미널 교통센터에서 탑승합니다"로 알려주던 **탑승 위치**는
- * 서울역 환승 동선(#101로 이관)과 별개다. 도착 방향에서는 이미 내린 뒤라 필요 없고,
- * 공항을 떠나는 방향에서만 필요하다.
- */
-export function isAirportDeparture(
-  leg: Pick<TrainLegDetail, "trainNo" | "fromStationId">,
-): boolean {
-  return isAirportRailLeg(leg.trainNo) && leg.fromStationId === AIRPORT_STATION_ID;
+function fmtTime(iso: string): string {
+  return new Intl.DateTimeFormat("ko-KR", {
+    timeZone: KST, hour: "2-digit", minute: "2-digit", hour12: false,
+  }).format(new Date(iso));
 }
 
 /** 소요시간(분) — 엔진 값이 아니라 표시된 출발·도착 시각의 차다. 새 데이터를 만들지 않는다 */
@@ -56,12 +44,6 @@ export function legDurationMinutes(
 /** 출처는 구간 종류로만 나눈다 — 구간별 계획/실적 등급 구분은 여기서 만들지 않는다 */
 export function legSourceKey(leg: Pick<TrainLegDetail, "trainNo">): MessageKey {
   return isAirportRailLeg(leg.trainNo) ? "support.arexSource" : "leg.railSource";
-}
-
-function fmtTime(iso: string): string {
-  return new Intl.DateTimeFormat("ko-KR", {
-    timeZone: KST, hour: "2-digit", minute: "2-digit", hour12: false,
-  }).format(new Date(iso));
 }
 
 function durationLabel(leg: TrainLegDetail, tr: (key: MessageKey) => string): string {
@@ -123,11 +105,9 @@ export function TrainLegModal({ leg, onClose, tr }: {
         </div>
 
         {isAirportRail && (
-          <div className="mt-3 space-y-1.5 rounded border border-sc-line bg-sc-subtle/60 p-2.5 text-sm text-sc-text/80">
-            {/* 탑승 위치는 공항을 떠나는 방향에서만 — 도착 방향에서는 이미 내린 뒤다 (PR #112 리뷰) */}
-            {isAirportDeparture(leg) && <p>{tr("leg.arexBoarding")}</p>}
-            <p>{tr("leg.arexNote")}</p>
-          </div>
+          <p className="mt-3 rounded border border-sc-line bg-sc-subtle/60 p-2.5 text-sm text-sc-text/80">
+            {tr("leg.arexNote")}
+          </p>
         )}
 
         <p className="mt-3 text-xs text-sc-muted/70">{tr(legSourceKey(leg))}</p>

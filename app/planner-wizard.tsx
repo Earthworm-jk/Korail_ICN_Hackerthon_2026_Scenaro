@@ -1062,8 +1062,6 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
                             className="-mx-1 w-full rounded border border-transparent px-1 py-0.5 text-left text-sc-text/80 hover:border-sc-blue"
                             onClick={() => setOpenTrainLeg({
                               trainNo: ride.trainNo,
-                              fromStationId: ride.fromStationId,
-                              toStationId: ride.toStationId,
                               fromName: stationName(ride.fromStationId),
                               toName: stationName(ride.toStationId),
                               departAt: ride.departAt,

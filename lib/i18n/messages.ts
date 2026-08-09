@@ -243,8 +243,6 @@ export const messages = {
     // 열차 구간 팝업 (인수인계 G) — 공항 진입·귀국 안내를 카드에서 이 구간으로 옮겼다
     "leg.time": "시각",
     "leg.duration": "소요",
-    // 옛 support.arrivalStep1의 탑승 위치 — 공항을 떠나는 방향에서만 (PR #112 리뷰)
-    "leg.arexBoarding": "제1터미널 교통센터에서 탑승합니다.",
     "leg.arexNote": "인천공항 T1과 서울역을 잇는 공항철도 직통열차입니다. 중간에 서지 않습니다.",
     "leg.railSource": "출처: 한국철도공사 열차운행정보 · 2026-08-09 확인",
   },
@@ -482,8 +480,6 @@ export const messages = {
     // Train leg modal (handover G) — airport entry/return guidance moved here from the card
     "leg.time": "Time",
     "leg.duration": "Duration",
-    // Boarding location from the old support.arrivalStep1 — only when leaving the airport
-    "leg.arexBoarding": "Board at the Terminal 1 Transportation Center.",
     "leg.arexNote": "AREX Express between Incheon T1 and Seoul Station, with no intermediate stops.",
     "leg.railSource": "Source: Korail train operation data · verified 2026-08-09",
   },
