@@ -20,7 +20,10 @@
       "verifiedAt": "2026-08-08"
     },
     "stayMinutes": 60,
-    "stayMetadata": { "category": "nature_walk", "basis": "category_default" },
+    "stayMetadata": {
+      "category": "nature_walk",
+      "basis": "category_default"
+    },
     "verificationLevel": "교차확인",
     "officialSourceCount": 2,
     "reasonText": {
@@ -50,7 +53,10 @@
       "type": "unverified"
     },
     "stayMinutes": 60,
-    "stayMetadata": { "category": "food_cafe", "basis": "category_default" },
+    "stayMetadata": {
+      "category": "food_cafe",
+      "basis": "category_default"
+    },
     "verificationLevel": "원본확인",
     "officialSourceCount": 1,
     "reasonText": {
@@ -78,7 +84,10 @@
       "type": "unverified"
     },
     "stayMinutes": 60,
-    "stayMetadata": { "category": "food_cafe", "basis": "category_default" },
+    "stayMetadata": {
+      "category": "food_cafe",
+      "basis": "category_default"
+    },
     "verificationLevel": "원본확인",
     "officialSourceCount": 1,
     "reasonText": {
@@ -108,7 +117,10 @@
       "type": "unverified"
     },
     "stayMinutes": 45,
-    "stayMetadata": { "category": "brief_exterior", "basis": "category_default" },
+    "stayMetadata": {
+      "category": "brief_exterior",
+      "basis": "category_default"
+    },
     "verificationLevel": "교차확인",
     "officialSourceCount": 2,
     "reasonText": {
@@ -138,7 +150,10 @@
       "type": "unverified"
     },
     "stayMinutes": 60,
-    "stayMetadata": { "category": "culture_venue", "basis": "category_default" },
+    "stayMetadata": {
+      "category": "culture_venue",
+      "basis": "category_default"
+    },
     "verificationLevel": "교차확인",
     "officialSourceCount": 2,
     "reasonText": {
@@ -267,7 +282,10 @@
       "verifiedAt": "2026-08-08"
     },
     "stayMinutes": 120,
-    "stayMetadata": { "category": "large_experience", "basis": "category_default" },
+    "stayMetadata": {
+      "category": "large_experience",
+      "basis": "category_default"
+    },
     "verificationLevel": "교차확인",
     "officialSourceCount": 2,
     "reasonText": {
@@ -297,7 +315,10 @@
       "type": "unverified"
     },
     "stayMinutes": 90,
-    "stayMetadata": { "category": "resort_visit", "basis": "category_default" },
+    "stayMetadata": {
+      "category": "resort_visit",
+      "basis": "category_default"
+    },
     "verificationLevel": "교차확인",
     "officialSourceCount": 2,
     "reasonText": {
@@ -327,7 +348,10 @@
       "verifiedAt": "2026-08-08"
     },
     "stayMinutes": 45,
-    "stayMetadata": { "category": "brief_exterior", "basis": "category_default" },
+    "stayMetadata": {
+      "category": "brief_exterior",
+      "basis": "category_default"
+    },
     "verificationLevel": "교차확인",
     "officialSourceCount": 2,
     "reasonText": {
@@ -359,7 +383,10 @@
       "verifiedAt": "2026-08-08"
     },
     "stayMinutes": 45,
-    "stayMetadata": { "category": "brief_exterior", "basis": "category_default" },
+    "stayMetadata": {
+      "category": "brief_exterior",
+      "basis": "category_default"
+    },
     "verificationLevel": "교차확인",
     "officialSourceCount": 2,
     "reasonText": {
@@ -437,7 +464,10 @@
       "type": "unverified"
     },
     "stayMinutes": 60,
-    "stayMetadata": { "category": "culture_venue", "basis": "category_default" },
+    "stayMetadata": {
+      "category": "culture_venue",
+      "basis": "category_default"
+    },
     "verificationLevel": "교차확인",
     "officialSourceCount": 2,
     "reasonText": {
@@ -467,7 +497,10 @@
       "type": "unverified"
     },
     "stayMinutes": 60,
-    "stayMetadata": { "category": "culture_venue", "basis": "category_default" },
+    "stayMetadata": {
+      "category": "culture_venue",
+      "basis": "category_default"
+    },
     "verificationLevel": "교차확인",
     "officialSourceCount": 2,
     "reasonText": {
@@ -480,8 +513,13 @@
   },
   {
     "id": "place-simgok-port",
-    "name": { "ko": "심곡항", "en": "Simgok Port" },
-    "workIds": ["work-encounter"],
+    "name": {
+      "ko": "심곡항",
+      "en": "Simgok Port"
+    },
+    "workIds": [
+      "work-encounter"
+    ],
     "nearestStationId": "station-gangneung",
     "accessEstimate": {
       "minutes": 37,
@@ -494,7 +532,10 @@
       "verifiedAt": "2026-08-09"
     },
     "stayMinutes": 60,
-    "stayMetadata": { "category": "nature_walk", "basis": "category_default" },
+    "stayMetadata": {
+      "category": "nature_walk",
+      "basis": "category_default"
+    },
     "verificationLevel": "교차확인",
     "officialSourceCount": 1,
     "reasonText": {
@@ -507,8 +548,13 @@
   },
   {
     "id": "place-sacheonjin-beach",
-    "name": { "ko": "사천진해수욕장·사천진항", "en": "Sacheonjin Beach and Port" },
-    "workIds": ["work-encounter"],
+    "name": {
+      "ko": "사천진해수욕장·사천진항",
+      "en": "Sacheonjin Beach and Port"
+    },
+    "workIds": [
+      "work-encounter"
+    ],
     "nearestStationId": "station-gangneung",
     "accessEstimate": {
       "minutes": 20,
@@ -521,7 +567,10 @@
       "verifiedAt": "2026-08-09"
     },
     "stayMinutes": 60,
-    "stayMetadata": { "category": "nature_walk", "basis": "category_default" },
+    "stayMetadata": {
+      "category": "nature_walk",
+      "basis": "category_default"
+    },
     "verificationLevel": "교차확인",
     "officialSourceCount": 2,
     "reasonText": {
@@ -534,8 +583,13 @@
   },
   {
     "id": "place-sonnollim-workshop",
-    "name": { "ko": "손놀림 공방", "en": "Sonnollim Workshop" },
-    "workIds": ["work-encounter"],
+    "name": {
+      "ko": "손놀림 공방",
+      "en": "Sonnollim Workshop"
+    },
+    "workIds": [
+      "work-encounter"
+    ],
     "nearestStationId": "station-seoul",
     "accessEstimate": {
       "minutes": 27,
@@ -548,7 +602,10 @@
       "verifiedAt": "2026-08-09"
     },
     "stayMinutes": 45,
-    "stayMetadata": { "category": "brief_exterior", "basis": "category_default" },
+    "stayMetadata": {
+      "category": "brief_exterior",
+      "basis": "category_default"
+    },
     "verificationLevel": "원본확인",
     "officialSourceCount": 1,
     "reasonText": {
@@ -561,8 +618,14 @@
   },
   {
     "id": "place-gwanghalluwon-garden",
-    "name": { "ko": "광한루원", "en": "Gwanghalluwon Garden" },
-    "workIds": ["work-love-in-the-moonlight", "work-record-of-youth"],
+    "name": {
+      "ko": "광한루원",
+      "en": "Gwanghalluwon Garden"
+    },
+    "workIds": [
+      "work-love-in-the-moonlight",
+      "work-record-of-youth"
+    ],
     "nearestStationId": "station-namwon",
     "accessEstimate": {
       "minutes": 7,
@@ -577,7 +640,10 @@
       "verifiedAt": "2026-08-09"
     },
     "stayMinutes": 60,
-    "stayMetadata": { "category": "culture_venue", "basis": "category_default" },
+    "stayMetadata": {
+      "category": "culture_venue",
+      "basis": "category_default"
+    },
     "verificationLevel": "원본확인",
     "officialSourceCount": 1,
     "reasonText": {
@@ -587,5 +653,604 @@
     "address": "전라북도 남원시 요천로 1447",
     "latitude": 35.403918,
     "longitude": 127.379758
+  },
+  {
+    "id": "place-gwanghwamun-square",
+    "name": {
+      "ko": "광화문 광장",
+      "en": "Gwanghwamun Square"
+    },
+    "workIds": [
+      "work-love-in-the-moonlight",
+      "work-the-king"
+    ],
+    "nearestStationId": "station-seoul",
+    "accessEstimate": {
+      "minutes": 5,
+      "source": "OSRM 대량 선별 서울역→광화문 광장 4.0분의 5분 올림값 (2026-08-10; 실시간 교통·교통수단 보장 아님)",
+      "verifiedAt": "2026-08-10"
+    },
+    "openingHours": {
+      "type": "unverified"
+    },
+    "stayMinutes": 60,
+    "stayMetadata": {
+      "category": "nature_walk",
+      "basis": "category_default"
+    },
+    "verificationLevel": "원본확인",
+    "officialSourceCount": 1,
+    "reasonText": {
+      "ko": "구르미 그린 달빛·더 킹: 영원의 군주의 검증된 촬영지예요. 현재 운영·내부 출입 여부는 방문 전 확인이 필요해요.",
+      "en": "A verified filming location from Love in the Moonlight / The King: Eternal Monarch. Check current operations and indoor access before visiting."
+    },
+    "address": "서울특별시 종로구 세종대로 175",
+    "latitude": 37.5706546,
+    "longitude": 126.976661
+  },
+  {
+    "id": "place-sowol-ro",
+    "name": {
+      "ko": "소월로",
+      "en": "Sowol-ro"
+    },
+    "workIds": [
+      "work-encounter",
+      "work-record-of-youth",
+      "work-the-king"
+    ],
+    "nearestStationId": "station-seoul",
+    "accessEstimate": {
+      "minutes": 5,
+      "source": "OSRM 대량 선별 서울역→소월로 4.8분의 5분 올림값 (2026-08-10; 실시간 교통·교통수단 보장 아님)",
+      "verifiedAt": "2026-08-10"
+    },
+    "openingHours": {
+      "type": "unverified"
+    },
+    "stayMinutes": 45,
+    "stayMetadata": {
+      "category": "brief_exterior",
+      "basis": "category_default"
+    },
+    "verificationLevel": "원본확인",
+    "officialSourceCount": 1,
+    "reasonText": {
+      "ko": "남자친구·청춘기록·더 킹: 영원의 군주의 검증된 촬영지예요. 현재 운영·내부 출입 여부는 방문 전 확인이 필요해요.",
+      "en": "A verified filming location from Encounter / Record of Youth / The King: Eternal Monarch. Check current operations and indoor access before visiting."
+    },
+    "address": "서울특별시 용산구 후암동 소월로",
+    "latitude": 37.544714,
+    "longitude": 126.99091
+  },
+  {
+    "id": "place-sinchon-mural-tunnel",
+    "name": {
+      "ko": "신촌벽화터널",
+      "en": "Sinchon Mural Tunnel"
+    },
+    "workIds": [
+      "work-goblin",
+      "work-record-of-youth"
+    ],
+    "nearestStationId": "station-seoul",
+    "accessEstimate": {
+      "minutes": 10,
+      "source": "OSRM 대량 선별 서울역→신촌벽화터널 5.3분의 5분 올림값 (2026-08-10; 실시간 교통·교통수단 보장 아님)",
+      "verifiedAt": "2026-08-10"
+    },
+    "openingHours": {
+      "type": "unverified"
+    },
+    "stayMinutes": 45,
+    "stayMetadata": {
+      "category": "brief_exterior",
+      "basis": "category_default"
+    },
+    "verificationLevel": "원본확인",
+    "officialSourceCount": 1,
+    "reasonText": {
+      "ko": "도깨비·청춘기록의 검증된 촬영지예요. 현재 운영·내부 출입 여부는 방문 전 확인이 필요해요.",
+      "en": "A verified filming location from Guardian: The Lonely and Great God / Record of Youth. Check current operations and indoor access before visiting."
+    },
+    "address": "서울특별시 서대문구 대신동 143-28",
+    "latitude": 37.560188,
+    "longitude": 126.94127
+  },
+  {
+    "id": "place-subway-dongnimmun",
+    "name": {
+      "ko": "써브웨이 독립문점",
+      "en": "Subway Dongnimmun"
+    },
+    "workIds": [
+      "work-record-of-youth"
+    ],
+    "nearestStationId": "station-seoul",
+    "accessEstimate": {
+      "minutes": 5,
+      "source": "OSRM 대량 선별 서울역→써브웨이 독립문점 3.1분의 5분 올림값 (2026-08-10; 실시간 교통·교통수단 보장 아님)",
+      "verifiedAt": "2026-08-10"
+    },
+    "openingHours": {
+      "type": "unverified"
+    },
+    "stayMinutes": 60,
+    "stayMetadata": {
+      "category": "food_cafe",
+      "basis": "category_default"
+    },
+    "verificationLevel": "원본확인",
+    "officialSourceCount": 1,
+    "reasonText": {
+      "ko": "청춘기록의 검증된 촬영지예요. 현재 운영·내부 출입 여부는 방문 전 확인이 필요해요.",
+      "en": "A verified filming location from Record of Youth. Check current operations and indoor access before visiting."
+    },
+    "address": "서울특별시 종로구 송월길 155",
+    "latitude": 37.571692,
+    "longitude": 126.96114
+  },
+  {
+    "id": "place-namsan-library",
+    "name": {
+      "ko": "남산도서관",
+      "en": "Namsan Library"
+    },
+    "workIds": [
+      "work-encounter"
+    ],
+    "nearestStationId": "station-seoul",
+    "accessEstimate": {
+      "minutes": 5,
+      "source": "OSRM 대량 선별 서울역→남산도서관 3.9분의 5분 올림값 (2026-08-10; 실시간 교통·교통수단 보장 아님)",
+      "verifiedAt": "2026-08-10"
+    },
+    "openingHours": {
+      "type": "unverified"
+    },
+    "stayMinutes": 60,
+    "stayMetadata": {
+      "category": "culture_venue",
+      "basis": "category_default"
+    },
+    "verificationLevel": "원본확인",
+    "officialSourceCount": 1,
+    "reasonText": {
+      "ko": "남자친구의 검증된 촬영지예요. 현재 운영·내부 출입 여부는 방문 전 확인이 필요해요.",
+      "en": "A verified filming location from Encounter. Check current operations and indoor access before visiting."
+    },
+    "address": "서울특별시 용산구 소월로 109",
+    "latitude": 37.5526898,
+    "longitude": 126.982065
+  },
+  {
+    "id": "place-youngpoong-jongno",
+    "name": {
+      "ko": "영풍문고 종로본점",
+      "en": "Youngpoong Bookstore Jongno"
+    },
+    "workIds": [
+      "work-encounter"
+    ],
+    "nearestStationId": "station-seoul",
+    "accessEstimate": {
+      "minutes": 5,
+      "source": "OSRM 대량 선별 서울역→영풍문고 종로본점 3.4분의 5분 올림값 (2026-08-10; 실시간 교통·교통수단 보장 아님)",
+      "verifiedAt": "2026-08-10"
+    },
+    "openingHours": {
+      "type": "unverified"
+    },
+    "stayMinutes": 60,
+    "stayMetadata": {
+      "category": "culture_venue",
+      "basis": "category_default"
+    },
+    "verificationLevel": "원본확인",
+    "officialSourceCount": 1,
+    "reasonText": {
+      "ko": "남자친구의 검증된 촬영지예요. 현재 운영·내부 출입 여부는 방문 전 확인이 필요해요.",
+      "en": "A verified filming location from Encounter. Check current operations and indoor access before visiting."
+    },
+    "address": "서울특별시 종로구 청계천로 41",
+    "latitude": 37.569735,
+    "longitude": 126.98225
+  },
+  {
+    "id": "place-gwanghwamun-gate",
+    "name": {
+      "ko": "광화문",
+      "en": "Gwanghwamun Gate"
+    },
+    "workIds": [
+      "work-goblin"
+    ],
+    "nearestStationId": "station-seoul",
+    "accessEstimate": {
+      "minutes": 5,
+      "source": "OSRM 대량 선별 서울역→광화문 3.6분의 5분 올림값 (2026-08-10; 실시간 교통·교통수단 보장 아님)",
+      "verifiedAt": "2026-08-10"
+    },
+    "openingHours": {
+      "type": "unverified"
+    },
+    "stayMinutes": 60,
+    "stayMetadata": {
+      "category": "culture_venue",
+      "basis": "category_default"
+    },
+    "verificationLevel": "원본확인",
+    "officialSourceCount": 1,
+    "reasonText": {
+      "ko": "도깨비의 검증된 촬영지예요. 현재 운영·내부 출입 여부는 방문 전 확인이 필요해요.",
+      "en": "A verified filming location from Guardian: The Lonely and Great God. Check current operations and indoor access before visiting."
+    },
+    "address": "서울특별시 종로구 효자로 12 국립고궁박물관",
+    "latitude": 37.575923,
+    "longitude": 126.976897
+  },
+  {
+    "id": "place-unhyeongung-western-house",
+    "name": {
+      "ko": "운현궁 양관",
+      "en": "Unhyeongung Western House"
+    },
+    "workIds": [
+      "work-goblin"
+    ],
+    "nearestStationId": "station-seoul",
+    "accessEstimate": {
+      "minutes": 10,
+      "source": "OSRM 대량 선별 서울역→운현궁 양관 5.1분의 5분 올림값 (2026-08-10; 실시간 교통·교통수단 보장 아님)",
+      "verifiedAt": "2026-08-10"
+    },
+    "openingHours": {
+      "type": "unverified"
+    },
+    "stayMinutes": 45,
+    "stayMetadata": {
+      "category": "brief_exterior",
+      "basis": "category_default"
+    },
+    "verificationLevel": "원본확인",
+    "officialSourceCount": 1,
+    "reasonText": {
+      "ko": "도깨비의 검증된 촬영지예요. 현재 운영·내부 출입 여부는 방문 전 확인이 필요해요.",
+      "en": "A verified filming location from Guardian: The Lonely and Great God. Check current operations and indoor access before visiting."
+    },
+    "address": "서울특별시 종로구 삼일대로 460",
+    "latitude": 37.576111,
+    "longitude": 126.987749
+  },
+  {
+    "id": "place-forest-of-wisdom",
+    "name": {
+      "ko": "지혜의 숲",
+      "en": "Forest of Wisdom"
+    },
+    "workIds": [
+      "work-the-king",
+      "work-yumi-cells-2"
+    ],
+    "nearestStationId": "station-seoul",
+    "accessEstimate": {
+      "minutes": 35,
+      "source": "OSRM 대량 선별 서울역→지혜의 숲 34.7분의 5분 올림값 (2026-08-10; 실시간 교통·교통수단 보장 아님)",
+      "verifiedAt": "2026-08-10"
+    },
+    "openingHours": {
+      "type": "unverified"
+    },
+    "stayMinutes": 60,
+    "stayMetadata": {
+      "category": "culture_venue",
+      "basis": "category_default"
+    },
+    "verificationLevel": "원본확인",
+    "officialSourceCount": 1,
+    "reasonText": {
+      "ko": "더 킹: 영원의 군주·유미의 세포들 2의 검증된 촬영지예요. 현재 운영·내부 출입 여부는 방문 전 확인이 필요해요.",
+      "en": "A verified filming location from The King: Eternal Monarch / Yumi's Cells 2. Check current operations and indoor access before visiting."
+    },
+    "address": "경기도 파주시 회동길 145",
+    "latitude": 37.7082492,
+    "longitude": 126.686674
+  },
+  {
+    "id": "place-national-museum-bus-stop",
+    "name": {
+      "ko": "국립중앙박물관.용산가족공원 정류장",
+      "en": "National Museum of Korea Bus Stop"
+    },
+    "workIds": [
+      "work-yumi-cells-2"
+    ],
+    "nearestStationId": "station-yongsan",
+    "accessEstimate": {
+      "minutes": 5,
+      "source": "OSRM 대량 선별 용산역→국립중앙박물관.용산가족공원 정류장 3.6분의 5분 올림값 (2026-08-10; 실시간 교통·교통수단 보장 아님)",
+      "verifiedAt": "2026-08-10"
+    },
+    "openingHours": {
+      "type": "unverified"
+    },
+    "stayMinutes": 45,
+    "stayMetadata": {
+      "category": "brief_exterior",
+      "basis": "category_default"
+    },
+    "verificationLevel": "원본확인",
+    "officialSourceCount": 1,
+    "reasonText": {
+      "ko": "유미의 세포들 2의 검증된 촬영지예요. 현재 운영·내부 출입 여부는 방문 전 확인이 필요해요.",
+      "en": "A verified filming location from Yumi's Cells 2. Check current operations and indoor access before visiting."
+    },
+    "address": "서울특별시 용산구 서빙고동",
+    "latitude": 37.520828,
+    "longitude": 126.97995
+  },
+  {
+    "id": "place-history-bookshop",
+    "name": {
+      "ko": "역사책방",
+      "en": "History Bookshop"
+    },
+    "workIds": [
+      "work-yumi-cells-2"
+    ],
+    "nearestStationId": "station-seoul",
+    "accessEstimate": {
+      "minutes": 10,
+      "source": "OSRM 대량 선별 서울역→역사책방 5.1분의 5분 올림값 (2026-08-10; 실시간 교통·교통수단 보장 아님)",
+      "verifiedAt": "2026-08-10"
+    },
+    "openingHours": {
+      "type": "unverified"
+    },
+    "stayMinutes": 60,
+    "stayMetadata": {
+      "category": "culture_venue",
+      "basis": "category_default"
+    },
+    "verificationLevel": "원본확인",
+    "officialSourceCount": 1,
+    "reasonText": {
+      "ko": "유미의 세포들 2의 검증된 촬영지예요. 현재 운영·내부 출입 여부는 방문 전 확인이 필요해요.",
+      "en": "A verified filming location from Yumi's Cells 2. Check current operations and indoor access before visiting."
+    },
+    "address": "서울특별시 종로구 자하문로10길 24",
+    "latitude": 37.579291,
+    "longitude": 126.97281
+  },
+  {
+    "id": "place-ieum-center",
+    "name": {
+      "ko": "한국장애인문화예술원",
+      "en": "I-Eum Center"
+    },
+    "workIds": [
+      "work-yumi-cells-2"
+    ],
+    "nearestStationId": "station-seoul",
+    "accessEstimate": {
+      "minutes": 10,
+      "source": "OSRM 대량 선별 서울역→한국장애인문화예술원 6.1분의 5분 올림값 (2026-08-10; 실시간 교통·교통수단 보장 아님)",
+      "verifiedAt": "2026-08-10"
+    },
+    "openingHours": {
+      "type": "unverified"
+    },
+    "stayMinutes": 45,
+    "stayMetadata": {
+      "category": "brief_exterior",
+      "basis": "category_default"
+    },
+    "verificationLevel": "원본확인",
+    "officialSourceCount": 1,
+    "reasonText": {
+      "ko": "유미의 세포들 2의 검증된 촬영지예요. 현재 운영·내부 출입 여부는 방문 전 확인이 필요해요.",
+      "en": "A verified filming location from Yumi's Cells 2. Check current operations and indoor access before visiting."
+    },
+    "address": "서울특별시 종로구 대학로 112",
+    "latitude": 37.580631,
+    "longitude": 127.00237
+  },
+  {
+    "id": "place-sejong-daero",
+    "name": {
+      "ko": "세종대로",
+      "en": "Sejong-daero"
+    },
+    "workIds": [
+      "work-twenty-five-twenty-one"
+    ],
+    "nearestStationId": "station-seoul",
+    "accessEstimate": {
+      "minutes": 5,
+      "source": "OSRM 대량 선별 서울역→세종대로 2.1분의 5분 올림값 (2026-08-10; 실시간 교통·교통수단 보장 아님)",
+      "verifiedAt": "2026-08-10"
+    },
+    "openingHours": {
+      "type": "unverified"
+    },
+    "stayMinutes": 45,
+    "stayMetadata": {
+      "category": "brief_exterior",
+      "basis": "category_default"
+    },
+    "verificationLevel": "원본확인",
+    "officialSourceCount": 1,
+    "reasonText": {
+      "ko": "스물다섯 스물하나의 검증된 촬영지예요. 현재 운영·내부 출입 여부는 방문 전 확인이 필요해요.",
+      "en": "A verified filming location from Twenty-Five Twenty-One. Check current operations and indoor access before visiting."
+    },
+    "address": "서울특별시 중구 세종대로 86-1",
+    "latitude": 37.563835,
+    "longitude": 126.97677
+  },
+  {
+    "id": "place-bosingak-site",
+    "name": {
+      "ko": "보신각터",
+      "en": "Bosingak Belfry"
+    },
+    "workIds": [
+      "work-twenty-five-twenty-one"
+    ],
+    "nearestStationId": "station-seoul",
+    "accessEstimate": {
+      "minutes": 5,
+      "source": "OSRM 대량 선별 서울역→보신각터 3.1분의 5분 올림값 (2026-08-10; 실시간 교통·교통수단 보장 아님)",
+      "verifiedAt": "2026-08-10"
+    },
+    "openingHours": {
+      "type": "unverified"
+    },
+    "stayMinutes": 60,
+    "stayMetadata": {
+      "category": "culture_venue",
+      "basis": "category_default"
+    },
+    "verificationLevel": "원본확인",
+    "officialSourceCount": 1,
+    "reasonText": {
+      "ko": "스물다섯 스물하나의 검증된 촬영지예요. 현재 운영·내부 출입 여부는 방문 전 확인이 필요해요.",
+      "en": "A verified filming location from Twenty-Five Twenty-One. Check current operations and indoor access before visiting."
+    },
+    "address": "서울특별시 종로구 종로 54",
+    "latitude": 37.569751,
+    "longitude": 126.98369
+  },
+  {
+    "id": "place-waryong-park",
+    "name": {
+      "ko": "와룡공원",
+      "en": "Waryong Park"
+    },
+    "workIds": [
+      "work-twenty-five-twenty-one"
+    ],
+    "nearestStationId": "station-seoul",
+    "accessEstimate": {
+      "minutes": 10,
+      "source": "OSRM 대량 선별 서울역→와룡공원 6.8분의 5분 올림값 (2026-08-10; 실시간 교통·교통수단 보장 아님)",
+      "verifiedAt": "2026-08-10"
+    },
+    "openingHours": {
+      "type": "unverified"
+    },
+    "stayMinutes": 60,
+    "stayMetadata": {
+      "category": "nature_walk",
+      "basis": "category_default"
+    },
+    "verificationLevel": "원본확인",
+    "officialSourceCount": 1,
+    "reasonText": {
+      "ko": "스물다섯 스물하나의 검증된 촬영지예요. 현재 운영·내부 출입 여부는 방문 전 확인이 필요해요.",
+      "en": "A verified filming location from Twenty-Five Twenty-One. Check current operations and indoor access before visiting."
+    },
+    "address": "서울특별시 종로구 와룡공원길 192",
+    "latitude": 37.5890547,
+    "longitude": 126.989313
+  },
+  {
+    "id": "place-omokdae-gil",
+    "name": {
+      "ko": "오목대길",
+      "en": "Omokdae-gil"
+    },
+    "workIds": [
+      "work-twenty-five-twenty-one"
+    ],
+    "nearestStationId": "station-jeonju",
+    "accessEstimate": {
+      "minutes": 15,
+      "source": "OSRM 대량 선별 전주역→오목대길 10.2분의 5분 올림값 (2026-08-10; 실시간 교통·교통수단 보장 아님)",
+      "verifiedAt": "2026-08-10"
+    },
+    "openingHours": {
+      "type": "unverified"
+    },
+    "stayMinutes": 60,
+    "stayMetadata": {
+      "category": "nature_walk",
+      "basis": "category_default"
+    },
+    "verificationLevel": "원본확인",
+    "officialSourceCount": 1,
+    "reasonText": {
+      "ko": "스물다섯 스물하나의 검증된 촬영지예요. 현재 운영·내부 출입 여부는 방문 전 확인이 필요해요.",
+      "en": "A verified filming location from Twenty-Five Twenty-One. Check current operations and indoor access before visiting."
+    },
+    "address": "전라북도 전주시 완산구 오목대길 27-26",
+    "latitude": 35.81267,
+    "longitude": 127.155
+  },
+  {
+    "id": "place-old-seodo-station-set",
+    "name": {
+      "ko": "구서도역 영상촬영장",
+      "en": "Old Seodo Station Filming Set"
+    },
+    "workIds": [
+      "work-mr-sunshine"
+    ],
+    "nearestStationId": "station-namwon",
+    "accessEstimate": {
+      "minutes": 20,
+      "source": "OSRM 대량 선별 남원역→구서도역 영상촬영장 17.7분의 5분 올림값 (2026-08-10; 실시간 교통·교통수단 보장 아님)",
+      "verifiedAt": "2026-08-10"
+    },
+    "openingHours": {
+      "type": "unverified"
+    },
+    "stayMinutes": 60,
+    "stayMetadata": {
+      "category": "culture_venue",
+      "basis": "category_default"
+    },
+    "verificationLevel": "원본확인",
+    "officialSourceCount": 1,
+    "reasonText": {
+      "ko": "미스터 션샤인의 검증된 촬영지예요. 현재 운영·내부 출입 여부는 방문 전 확인이 필요해요.",
+      "en": "A verified filming location from Mr. Sunshine. Check current operations and indoor access before visiting."
+    },
+    "address": "전라북도 남원시 사매면 서도길 32",
+    "latitude": 35.490738,
+    "longitude": 127.329307
+  },
+  {
+    "id": "place-munhwa-gonggam-sujeong",
+    "name": {
+      "ko": "문화공감수정",
+      "en": "Munhwa Gonggam Sujeong"
+    },
+    "workIds": [
+      "work-mr-sunshine"
+    ],
+    "nearestStationId": "station-busan",
+    "accessEstimate": {
+      "minutes": 5,
+      "source": "OSRM 대량 선별 부산역→문화공감수정 3.4분의 5분 올림값 (2026-08-10; 실시간 교통·교통수단 보장 아님)",
+      "verifiedAt": "2026-08-10"
+    },
+    "openingHours": {
+      "type": "unverified"
+    },
+    "stayMinutes": 60,
+    "stayMetadata": {
+      "category": "culture_venue",
+      "basis": "category_default"
+    },
+    "verificationLevel": "원본확인",
+    "officialSourceCount": 1,
+    "reasonText": {
+      "ko": "미스터 션샤인의 검증된 촬영지예요. 현재 운영·내부 출입 여부는 방문 전 확인이 필요해요.",
+      "en": "A verified filming location from Mr. Sunshine. Check current operations and indoor access before visiting."
+    },
+    "address": "부산광역시 동구 홍곡로 75",
+    "latitude": 35.125713,
+    "longitude": 129.042622
   }
 ]

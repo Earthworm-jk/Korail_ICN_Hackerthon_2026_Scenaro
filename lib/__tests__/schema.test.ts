@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { loadRepositories } from "../repositories/json";
 import { accessBufferMinutes } from "../types/schema";
+import promotionBatch from "../../data/runtime-promotion-batch.json";
 
 describe("시드 스키마 검증 (REQ-DATA-004)", () => {
   it("모든 시드 JSON이 Zod 스키마를 통과한다 — 불일치는 기동 단계에서 실패", () => {
@@ -31,11 +32,11 @@ describe("시드 스키마 검증 (REQ-DATA-004)", () => {
     }
   });
 
-  it("런타임 fixture는 박보검 4곳을 포함한 18곳이다 (#61·#72)", () => {
+  it("런타임 fixture는 기존 18곳과 5명·10편 승격 배치를 포함한 36곳이다", () => {
     const repos = loadRepositories();
     const gyeonggijeon = repos.places.find(({ id }) => id === "place-gyeonggijeon-shrine");
 
-    expect(repos.places).toHaveLength(18);
+    expect(repos.places).toHaveLength(18 + promotionBatch.places.length);
     expect(repos.actors).toHaveLength(5);
     expect(repos.works).toHaveLength(10);
     expect(repos.stations.some(({ id }) => id === "station-namwon")).toBe(true);
@@ -57,7 +58,7 @@ describe("시드 스키마 검증 (REQ-DATA-004)", () => {
     expect(repos.stations.some(({ id }) => id === "station-chuncheon")).toBe(false);
   });
 
-  it("#72 데이터는 19개 작품–장소 관계를 제공하고 장소 직접 검색 별칭은 노출하지 않는다", () => {
+  it("36곳의 전 작품–장소 관계가 완전하고 장소 직접 검색 별칭은 노출하지 않는다", () => {
     const repos = loadRepositories();
     const relationKeys = new Set(
       repos.workPlaceRelations.map(({ workId, placeId }) => `${workId}|${placeId}`),
@@ -68,7 +69,7 @@ describe("시드 스키마 검증 (REQ-DATA-004)", () => {
     const yeongjin = repos.places.find(({ id }) => id === "place-yeongjin-beach");
 
     expect(relationKeys).toEqual(expectedKeys);
-    expect(repos.workPlaceRelations).toHaveLength(19);
+    expect(repos.workPlaceRelations).toHaveLength(42);
     expect(repos.workPlaceRelations.every(({ reviewed, sourceUrls }) => reviewed && sourceUrls.length > 0)).toBe(true);
     expect(yeongjin?.name).toEqual({ ko: "영진해변", en: "Yeongjin Beach" });
     expect(yeongjin?.searchAliases).toBeUndefined();

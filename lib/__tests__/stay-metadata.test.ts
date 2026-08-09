@@ -3,6 +3,7 @@ import { generateItinerary } from "../engine";
 import { loadRepositories } from "../repositories/json";
 import { STAY_CATEGORY_DEFAULT_MINUTES } from "../types/schema";
 import { BASE_CONSTRAINTS } from "../../test/planner-fixtures";
+import promotionBatch from "../../data/runtime-promotion-batch.json";
 
 const EXPECTED_CATEGORIES = {
   "place-yeongjin-beach": "nature_walk",
@@ -52,12 +53,19 @@ describe("보수 체류 추정 기준 (#84 P0-4)", () => {
     });
   });
 
-  it("현재 런타임 18곳은 검토한 유형과 category_default 또는 공식 근거를 모두 가진다", () => {
+  it("현재 런타임 36곳은 검토한 유형과 category_default 또는 공식 근거를 모두 가진다", () => {
     const places = loadRepositories().places;
-    expect(places).toHaveLength(Object.keys(EXPECTED_CATEGORIES).length);
+    const promotedCategories = Object.fromEntries(
+      promotionBatch.places.map(({ runtimePlaceId, stayCategory }) => [runtimePlaceId, stayCategory]),
+    );
+    const expectedCategories: Record<string, string> = {
+      ...EXPECTED_CATEGORIES,
+      ...promotedCategories,
+    };
+    expect(places).toHaveLength(Object.keys(expectedCategories).length);
     for (const place of places) {
       expect(place.stayMetadata?.category, place.id).toBe(
-        EXPECTED_CATEGORIES[place.id as keyof typeof EXPECTED_CATEGORIES],
+        expectedCategories[place.id],
       );
       const official = EXPECTED_OFFICIAL_SOURCES[
         place.id as keyof typeof EXPECTED_OFFICIAL_SOURCES

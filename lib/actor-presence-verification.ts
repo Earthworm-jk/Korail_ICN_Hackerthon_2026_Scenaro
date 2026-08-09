@@ -9,7 +9,7 @@ import { z } from "zod";
 
 export type EvidenceSourceTier = "official" | "editorial" | "community";
 export type ActorPresenceClaim = "present" | "absent";
-export type EvidenceExtractionMethod = "model_assisted" | "manual";
+export type EvidenceExtractionMethod = "rule_based" | "model_assisted" | "manual";
 
 export const ActorPresenceEvidenceSchema = z.object({
   sourceUrl: z.url(),
@@ -34,7 +34,7 @@ export const ActorPresenceEvidenceRecordSchema = z.object({
   actorId: z.string().min(1),
   extractedAt: z.iso.date(),
   /** 근거 필드를 구조화한 방식. 관계의 최종 검증·승격 방식과는 별개다. */
-  extractionMethod: z.enum(["model_assisted", "manual"]),
+  extractionMethod: z.enum(["rule_based", "model_assisted", "manual"]),
   evidence: z.array(ActorPresenceEvidenceSchema).min(1),
   expectedDecision: z.discriminatedUnion("status", [
     z.object({

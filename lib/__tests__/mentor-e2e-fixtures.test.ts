@@ -29,6 +29,25 @@ vi.mock("../adapters/flights-live", async (importOriginal) => ({
 const KIM = "actor-kim-go-eun";
 const PARK = "actor-park-bo-gum";
 const GOBLIN = "work-goblin";
+const ACTOR_FIXTURES = [
+  ["김고은", "actor-kim-go-eun"],
+  ["박보검", "actor-park-bo-gum"],
+  ["공유", "actor-gong-yoo"],
+  ["이민호", "actor-lee-min-ho"],
+  ["김태리", "actor-kim-tae-ri"],
+] as const;
+const WORK_FIXTURES = [
+  ["도깨비", "work-goblin"],
+  ["유미의 세포들", "work-yumi-cells"],
+  ["유미의 세포들 2", "work-yumi-cells-2"],
+  ["작은 아씨들", "work-little-women"],
+  ["더 킹: 영원의 군주", "work-the-king"],
+  ["남자친구", "work-encounter"],
+  ["청춘기록", "work-record-of-youth"],
+  ["구르미 그린 달빛", "work-love-in-the-moonlight"],
+  ["미스터 션샤인", "work-mr-sunshine"],
+  ["스물다섯 스물하나", "work-twenty-five-twenty-one"],
+] as const;
 
 const baseRequest = (selection: Pick<PlanRequest, "selectedActorIds" | "selectedWorkIds">): PlanRequest => ({
   arrivalAt: "2026-08-12T10:00:00+09:00",
@@ -130,11 +149,33 @@ describe("멘토링 3회 E2E fixture — 엔진·Server Action", () => {
       selectedWorkIds: [GOBLIN],
     });
     expect(plannerCandidates.candidates.filter(({ selectionGroups }) =>
-      selectionGroups.includes("actor"))).toHaveLength(4);
+      selectionGroups.includes("actor"))).toHaveLength(10);
     await expectReadyScenario(
       { selectedActorIds: [PARK], selectedWorkIds: [GOBLIN] },
       ["actor", "work"],
     );
+  });
+
+  it("MVP 5명·10편은 검색 후 엄격 후보와 실제 일정을 모두 생성한다", async () => {
+    for (const [query, actorId] of ACTOR_FIXTURES) {
+      const search = await searchEntitiesCore(query, { apiKey: "unused", interpret: vi.fn() });
+      expect(search.actors.map(({ id }) => id)).toContain(actorId);
+      const { candidates } = await getCandidatePlaces({ selectedActorIds: [actorId], selectedWorkIds: [] });
+      expect(candidates.length, actorId).toBeGreaterThanOrEqual(5);
+      const result = await planItinerary(baseRequest({ selectedActorIds: [actorId], selectedWorkIds: [] }));
+      expect(result.ok, actorId).toBe(true);
+      if (result.ok) expect(result.result.status, actorId).toBe("planned");
+    }
+
+    for (const [query, workId] of WORK_FIXTURES) {
+      const search = await searchEntitiesCore(query, { apiKey: "unused", interpret: vi.fn() });
+      expect(search.works.map(({ id }) => id)).toContain(workId);
+      const { candidates } = await getCandidatePlaces({ selectedActorIds: [], selectedWorkIds: [workId] });
+      expect(candidates.length, workId).toBeGreaterThanOrEqual(2);
+      const result = await planItinerary(baseRequest({ selectedActorIds: [], selectedWorkIds: [workId] }));
+      expect(result.ok, workId).toBe(true);
+      if (result.ok) expect(result.result.status, workId).toBe("planned");
+    }
   });
 });
 

@@ -35,5 +35,923 @@
         "https://english.visitkorea.or.kr/svc/sp/HallyuNew/contentsView.do?dataSetId=70&vcontsId=216921"
       ]
     }
+  },
+  {
+    "id": "work-love-in-the-moonlight--place-gwanghwamun-square--actor-park-bo-gum",
+    "workId": "work-love-in-the-moonlight",
+    "placeId": "place-gwanghwamun-square",
+    "actorId": "actor-park-bo-gum",
+    "extractedAt": "2026-08-10",
+    "extractionMethod": "rule_based",
+    "evidence": [
+      {
+        "sourceUrl": "https://www.data.go.kr/data/15111405/fileData.do",
+        "sourceTier": "official",
+        "excerpt": "첫 티저에서 효명세자(박보검)가 붐바스틱 댄스를 추는 모습으로 이곳에서 촬영됐다.",
+        "placeMatched": true,
+        "workMatched": true,
+        "claim": "present",
+        "actorExplicit": true,
+        "characterActorLinked": false
+      }
+    ],
+    "expectedDecision": {
+      "status": "confirmed",
+      "grade": "A",
+      "sourceUrls": [
+        "https://www.data.go.kr/data/15111405/fileData.do"
+      ]
+    }
+  },
+  {
+    "id": "work-the-king--place-gwanghwamun-square--actor-kim-go-eun",
+    "workId": "work-the-king",
+    "placeId": "place-gwanghwamun-square",
+    "actorId": "actor-kim-go-eun",
+    "extractedAt": "2026-08-10",
+    "extractionMethod": "rule_based",
+    "evidence": [
+      {
+        "sourceUrl": "https://www.data.go.kr/data/15111405/fileData.do",
+        "sourceTier": "official",
+        "excerpt": "이곤 (이민호)과 정태을(김고은)는 이 광장에서 만나 갑자기 껴안는다. 이것은 시티헌터에 대한 콜백일지도 모른다.",
+        "placeMatched": true,
+        "workMatched": true,
+        "claim": "present",
+        "actorExplicit": true,
+        "characterActorLinked": false
+      }
+    ],
+    "expectedDecision": {
+      "status": "confirmed",
+      "grade": "A",
+      "sourceUrls": [
+        "https://www.data.go.kr/data/15111405/fileData.do"
+      ]
+    }
+  },
+  {
+    "id": "work-the-king--place-gwanghwamun-square--actor-lee-min-ho",
+    "workId": "work-the-king",
+    "placeId": "place-gwanghwamun-square",
+    "actorId": "actor-lee-min-ho",
+    "extractedAt": "2026-08-10",
+    "extractionMethod": "rule_based",
+    "evidence": [
+      {
+        "sourceUrl": "https://www.data.go.kr/data/15111405/fileData.do",
+        "sourceTier": "official",
+        "excerpt": "이곤 (이민호)과 정태을(김고은)는 이 광장에서 만나 갑자기 껴안는다. 이것은 시티헌터에 대한 콜백일지도 모른다.",
+        "placeMatched": true,
+        "workMatched": true,
+        "claim": "present",
+        "actorExplicit": true,
+        "characterActorLinked": false
+      }
+    ],
+    "expectedDecision": {
+      "status": "confirmed",
+      "grade": "A",
+      "sourceUrls": [
+        "https://www.data.go.kr/data/15111405/fileData.do"
+      ]
+    }
+  },
+  {
+    "id": "work-encounter--place-sowol-ro--actor-park-bo-gum",
+    "workId": "work-encounter",
+    "placeId": "place-sowol-ro",
+    "actorId": "actor-park-bo-gum",
+    "extractedAt": "2026-08-10",
+    "extractionMethod": "rule_based",
+    "evidence": [
+      {
+        "sourceUrl": "https://www.data.go.kr/data/15111405/fileData.do",
+        "sourceTier": "official",
+        "excerpt": "16회에서 차수현(송혜교)과 김진혁(박보검)이 이 거리를 걷는다.",
+        "placeMatched": true,
+        "workMatched": true,
+        "claim": "present",
+        "actorExplicit": true,
+        "characterActorLinked": false
+      }
+    ],
+    "expectedDecision": {
+      "status": "confirmed",
+      "grade": "A",
+      "sourceUrls": [
+        "https://www.data.go.kr/data/15111405/fileData.do"
+      ]
+    }
+  },
+  {
+    "id": "work-record-of-youth--place-sowol-ro--actor-park-bo-gum",
+    "workId": "work-record-of-youth",
+    "placeId": "place-sowol-ro",
+    "actorId": "actor-park-bo-gum",
+    "extractedAt": "2026-08-10",
+    "extractionMethod": "rule_based",
+    "evidence": [
+      {
+        "sourceUrl": "https://www.data.go.kr/data/15111405/fileData.do",
+        "sourceTier": "official",
+        "excerpt": "1회에서 사혜준(박보검)이 탄 버스는 소월로 20-20으로 바뀔 때까지 이 거리를 향한다.",
+        "placeMatched": true,
+        "workMatched": true,
+        "claim": "present",
+        "actorExplicit": true,
+        "characterActorLinked": false
+      }
+    ],
+    "expectedDecision": {
+      "status": "confirmed",
+      "grade": "A",
+      "sourceUrls": [
+        "https://www.data.go.kr/data/15111405/fileData.do"
+      ]
+    }
+  },
+  {
+    "id": "work-the-king--place-sowol-ro--actor-kim-go-eun",
+    "workId": "work-the-king",
+    "placeId": "place-sowol-ro",
+    "actorId": "actor-kim-go-eun",
+    "extractedAt": "2026-08-10",
+    "extractionMethod": "rule_based",
+    "evidence": [
+      {
+        "sourceUrl": "https://www.data.go.kr/data/15111405/fileData.do",
+        "sourceTier": "official",
+        "excerpt": "정태을(김고은 분)이 4화에서 이곤(이민호 분)의 공화국 내 행적에 대한 단서를 찾을 때 남산 공공도서관 앞인 이 길을 가다가 CCTV에 마지막으로 잡힌 것을 그녀는 본다.",
+        "placeMatched": true,
+        "workMatched": true,
+        "claim": "present",
+        "actorExplicit": true,
+        "characterActorLinked": false
+      }
+    ],
+    "expectedDecision": {
+      "status": "confirmed",
+      "grade": "A",
+      "sourceUrls": [
+        "https://www.data.go.kr/data/15111405/fileData.do"
+      ]
+    }
+  },
+  {
+    "id": "work-the-king--place-sowol-ro--actor-lee-min-ho",
+    "workId": "work-the-king",
+    "placeId": "place-sowol-ro",
+    "actorId": "actor-lee-min-ho",
+    "extractedAt": "2026-08-10",
+    "extractionMethod": "rule_based",
+    "evidence": [
+      {
+        "sourceUrl": "https://www.data.go.kr/data/15111405/fileData.do",
+        "sourceTier": "official",
+        "excerpt": "정태을(김고은 분)이 4화에서 이곤(이민호 분)의 공화국 내 행적에 대한 단서를 찾을 때 남산 공공도서관 앞인 이 길을 가다가 CCTV에 마지막으로 잡힌 것을 그녀는 본다.",
+        "placeMatched": true,
+        "workMatched": true,
+        "claim": "present",
+        "actorExplicit": true,
+        "characterActorLinked": false
+      }
+    ],
+    "expectedDecision": {
+      "status": "confirmed",
+      "grade": "A",
+      "sourceUrls": [
+        "https://www.data.go.kr/data/15111405/fileData.do"
+      ]
+    }
+  },
+  {
+    "id": "work-goblin--place-sinchon-mural-tunnel--actor-kim-go-eun",
+    "workId": "work-goblin",
+    "placeId": "place-sinchon-mural-tunnel",
+    "actorId": "actor-kim-go-eun",
+    "extractedAt": "2026-08-10",
+    "extractionMethod": "rule_based",
+    "evidence": [
+      {
+        "sourceUrl": "https://www.data.go.kr/data/15111405/fileData.do",
+        "sourceTier": "official",
+        "excerpt": "10화에서 김신(공유)과 저승사자(이동욱)는 지은탁(김고은)을 위해 파(대파)를 사준 뒤 이 터널을 활주로를 걸었고, 오토바이 운전자가 그들 사이를 지나갔습니다.",
+        "placeMatched": true,
+        "workMatched": true,
+        "claim": "present",
+        "actorExplicit": true,
+        "characterActorLinked": false
+      }
+    ],
+    "expectedDecision": {
+      "status": "confirmed",
+      "grade": "A",
+      "sourceUrls": [
+        "https://www.data.go.kr/data/15111405/fileData.do"
+      ]
+    }
+  },
+  {
+    "id": "work-goblin--place-sinchon-mural-tunnel--actor-gong-yoo",
+    "workId": "work-goblin",
+    "placeId": "place-sinchon-mural-tunnel",
+    "actorId": "actor-gong-yoo",
+    "extractedAt": "2026-08-10",
+    "extractionMethod": "rule_based",
+    "evidence": [
+      {
+        "sourceUrl": "https://www.data.go.kr/data/15111405/fileData.do",
+        "sourceTier": "official",
+        "excerpt": "10화에서 김신(공유)과 저승사자(이동욱)는 지은탁(김고은)을 위해 파(대파)를 사준 뒤 이 터널을 활주로를 걸었고, 오토바이 운전자가 그들 사이를 지나갔습니다.",
+        "placeMatched": true,
+        "workMatched": true,
+        "claim": "present",
+        "actorExplicit": true,
+        "characterActorLinked": false
+      }
+    ],
+    "expectedDecision": {
+      "status": "confirmed",
+      "grade": "A",
+      "sourceUrls": [
+        "https://www.data.go.kr/data/15111405/fileData.do"
+      ]
+    }
+  },
+  {
+    "id": "work-record-of-youth--place-sinchon-mural-tunnel--actor-park-bo-gum",
+    "workId": "work-record-of-youth",
+    "placeId": "place-sinchon-mural-tunnel",
+    "actorId": "actor-park-bo-gum",
+    "extractedAt": "2026-08-10",
+    "extractionMethod": "rule_based",
+    "evidence": [
+      {
+        "sourceUrl": "https://www.data.go.kr/data/15111405/fileData.do",
+        "sourceTier": "official",
+        "excerpt": "4회에서 사혜준(박보검)이 술에 취해 집으로 돌아갈 때 안정하(박소담)가 이 터널의 남쪽 입구에서 허탈해 운다.",
+        "placeMatched": true,
+        "workMatched": true,
+        "claim": "present",
+        "actorExplicit": true,
+        "characterActorLinked": false
+      }
+    ],
+    "expectedDecision": {
+      "status": "confirmed",
+      "grade": "A",
+      "sourceUrls": [
+        "https://www.data.go.kr/data/15111405/fileData.do"
+      ]
+    }
+  },
+  {
+    "id": "work-record-of-youth--place-subway-dongnimmun--actor-park-bo-gum",
+    "workId": "work-record-of-youth",
+    "placeId": "place-subway-dongnimmun",
+    "actorId": "actor-park-bo-gum",
+    "extractedAt": "2026-08-10",
+    "extractionMethod": "rule_based",
+    "evidence": [
+      {
+        "sourceUrl": "https://www.data.go.kr/data/15111405/fileData.do",
+        "sourceTier": "official",
+        "excerpt": "혜준(박보검)이 아르바이트를 하는 곳으로 1화, 6화에서 처음으로 등장했습니다. 혜준이가 워낙 유명해서 여자 손님이 잘생긴 알바생을 보러 많이 오게 됩니다.",
+        "placeMatched": true,
+        "workMatched": true,
+        "claim": "present",
+        "actorExplicit": true,
+        "characterActorLinked": false
+      }
+    ],
+    "expectedDecision": {
+      "status": "confirmed",
+      "grade": "A",
+      "sourceUrls": [
+        "https://www.data.go.kr/data/15111405/fileData.do"
+      ]
+    }
+  },
+  {
+    "id": "work-encounter--place-namsan-library--actor-park-bo-gum",
+    "workId": "work-encounter",
+    "placeId": "place-namsan-library",
+    "actorId": "actor-park-bo-gum",
+    "extractedAt": "2026-08-10",
+    "extractionMethod": "rule_based",
+    "evidence": [
+      {
+        "sourceUrl": "https://www.data.go.kr/data/15111405/fileData.do",
+        "sourceTier": "official",
+        "excerpt": "2화에서 김진혁(박보검)이 이 도서관을 찾는다.",
+        "placeMatched": true,
+        "workMatched": true,
+        "claim": "present",
+        "actorExplicit": true,
+        "characterActorLinked": false
+      }
+    ],
+    "expectedDecision": {
+      "status": "confirmed",
+      "grade": "A",
+      "sourceUrls": [
+        "https://www.data.go.kr/data/15111405/fileData.do"
+      ]
+    }
+  },
+  {
+    "id": "work-encounter--place-youngpoong-jongno--actor-park-bo-gum",
+    "workId": "work-encounter",
+    "placeId": "place-youngpoong-jongno",
+    "actorId": "actor-park-bo-gum",
+    "extractedAt": "2026-08-10",
+    "extractionMethod": "rule_based",
+    "evidence": [
+      {
+        "sourceUrl": "https://www.data.go.kr/data/15111405/fileData.do",
+        "sourceTier": "official",
+        "excerpt": "14회에서 차수현(송혜교)과 김진혁(박보검)이 서점을 둘러보며 데이트를 한다.",
+        "placeMatched": true,
+        "workMatched": true,
+        "claim": "present",
+        "actorExplicit": true,
+        "characterActorLinked": false
+      }
+    ],
+    "expectedDecision": {
+      "status": "confirmed",
+      "grade": "A",
+      "sourceUrls": [
+        "https://www.data.go.kr/data/15111405/fileData.do"
+      ]
+    }
+  },
+  {
+    "id": "work-goblin--place-gwanghwamun-gate--actor-kim-go-eun",
+    "workId": "work-goblin",
+    "placeId": "place-gwanghwamun-gate",
+    "actorId": "actor-kim-go-eun",
+    "extractedAt": "2026-08-10",
+    "extractionMethod": "rule_based",
+    "evidence": [
+      {
+        "sourceUrl": "https://www.data.go.kr/data/15111405/fileData.do",
+        "sourceTier": "official",
+        "excerpt": "공유와 김고은이 캐나다에서 돌아온 커다란 문",
+        "placeMatched": true,
+        "workMatched": true,
+        "claim": "present",
+        "actorExplicit": true,
+        "characterActorLinked": false
+      }
+    ],
+    "expectedDecision": {
+      "status": "confirmed",
+      "grade": "A",
+      "sourceUrls": [
+        "https://www.data.go.kr/data/15111405/fileData.do"
+      ]
+    }
+  },
+  {
+    "id": "work-goblin--place-gwanghwamun-gate--actor-gong-yoo",
+    "workId": "work-goblin",
+    "placeId": "place-gwanghwamun-gate",
+    "actorId": "actor-gong-yoo",
+    "extractedAt": "2026-08-10",
+    "extractionMethod": "rule_based",
+    "evidence": [
+      {
+        "sourceUrl": "https://www.data.go.kr/data/15111405/fileData.do",
+        "sourceTier": "official",
+        "excerpt": "공유와 김고은이 캐나다에서 돌아온 커다란 문",
+        "placeMatched": true,
+        "workMatched": true,
+        "claim": "present",
+        "actorExplicit": true,
+        "characterActorLinked": false
+      }
+    ],
+    "expectedDecision": {
+      "status": "confirmed",
+      "grade": "A",
+      "sourceUrls": [
+        "https://www.data.go.kr/data/15111405/fileData.do"
+      ]
+    }
+  },
+  {
+    "id": "work-goblin--place-unhyeongung-western-house--actor-kim-go-eun",
+    "workId": "work-goblin",
+    "placeId": "place-unhyeongung-western-house",
+    "actorId": "actor-kim-go-eun",
+    "extractedAt": "2026-08-10",
+    "extractionMethod": "rule_based",
+    "evidence": [
+      {
+        "sourceUrl": "https://www.data.go.kr/data/15111405/fileData.do",
+        "sourceTier": "official",
+        "excerpt": "김신(공유)가 사는 곳이다. 이후 저승사자(이동욱)와 지은탁(김고은)도 입주한다. 유덕화(육성재)가 이곳에 사는 것처럼 자주 드나든다.",
+        "placeMatched": true,
+        "workMatched": true,
+        "claim": "present",
+        "actorExplicit": true,
+        "characterActorLinked": false
+      }
+    ],
+    "expectedDecision": {
+      "status": "confirmed",
+      "grade": "A",
+      "sourceUrls": [
+        "https://www.data.go.kr/data/15111405/fileData.do"
+      ]
+    }
+  },
+  {
+    "id": "work-goblin--place-unhyeongung-western-house--actor-gong-yoo",
+    "workId": "work-goblin",
+    "placeId": "place-unhyeongung-western-house",
+    "actorId": "actor-gong-yoo",
+    "extractedAt": "2026-08-10",
+    "extractionMethod": "rule_based",
+    "evidence": [
+      {
+        "sourceUrl": "https://www.data.go.kr/data/15111405/fileData.do",
+        "sourceTier": "official",
+        "excerpt": "김신(공유)가 사는 곳이다. 이후 저승사자(이동욱)와 지은탁(김고은)도 입주한다. 유덕화(육성재)가 이곳에 사는 것처럼 자주 드나든다.",
+        "placeMatched": true,
+        "workMatched": true,
+        "claim": "present",
+        "actorExplicit": true,
+        "characterActorLinked": false
+      }
+    ],
+    "expectedDecision": {
+      "status": "confirmed",
+      "grade": "A",
+      "sourceUrls": [
+        "https://www.data.go.kr/data/15111405/fileData.do"
+      ]
+    }
+  },
+  {
+    "id": "work-the-king--place-forest-of-wisdom--actor-kim-go-eun",
+    "workId": "work-the-king",
+    "placeId": "place-forest-of-wisdom",
+    "actorId": "actor-kim-go-eun",
+    "extractedAt": "2026-08-10",
+    "extractionMethod": "rule_based",
+    "evidence": [
+      {
+        "sourceUrl": "https://www.data.go.kr/data/15111405/fileData.do",
+        "sourceTier": "official",
+        "excerpt": "이곤(이민호)과 정태을(김고은)은 15화에서 이 도서관에서 평행세계를 조사하고, 마침내 평행세계가 존재할 수 있다는 그의 이야기를 믿었던 때를 회상한다.",
+        "placeMatched": true,
+        "workMatched": true,
+        "claim": "present",
+        "actorExplicit": true,
+        "characterActorLinked": false
+      }
+    ],
+    "expectedDecision": {
+      "status": "confirmed",
+      "grade": "A",
+      "sourceUrls": [
+        "https://www.data.go.kr/data/15111405/fileData.do"
+      ]
+    }
+  },
+  {
+    "id": "work-the-king--place-forest-of-wisdom--actor-lee-min-ho",
+    "workId": "work-the-king",
+    "placeId": "place-forest-of-wisdom",
+    "actorId": "actor-lee-min-ho",
+    "extractedAt": "2026-08-10",
+    "extractionMethod": "rule_based",
+    "evidence": [
+      {
+        "sourceUrl": "https://www.data.go.kr/data/15111405/fileData.do",
+        "sourceTier": "official",
+        "excerpt": "이곤(이민호)과 정태을(김고은)은 15화에서 이 도서관에서 평행세계를 조사하고, 마침내 평행세계가 존재할 수 있다는 그의 이야기를 믿었던 때를 회상한다.",
+        "placeMatched": true,
+        "workMatched": true,
+        "claim": "present",
+        "actorExplicit": true,
+        "characterActorLinked": false
+      }
+    ],
+    "expectedDecision": {
+      "status": "confirmed",
+      "grade": "A",
+      "sourceUrls": [
+        "https://www.data.go.kr/data/15111405/fileData.do"
+      ]
+    }
+  },
+  {
+    "id": "work-yumi-cells-2--place-forest-of-wisdom--actor-kim-go-eun",
+    "workId": "work-yumi-cells-2",
+    "placeId": "place-forest-of-wisdom",
+    "actorId": "actor-kim-go-eun",
+    "extractedAt": "2026-08-10",
+    "extractionMethod": "rule_based",
+    "evidence": [
+      {
+        "sourceUrl": "https://www.data.go.kr/data/15111405/fileData.do",
+        "sourceTier": "official",
+        "excerpt": "4화에서 김유미(김고은)와 유바비(갓세븐 박진영/진영)가 이 북카페에서 데이트를 하는 모습이 그려졌다. 바비는 원래 운영하는 출판사에서 일하고 싶었지만 지원에 실패했다고 말한다.",
+        "placeMatched": true,
+        "workMatched": true,
+        "claim": "present",
+        "actorExplicit": true,
+        "characterActorLinked": false
+      }
+    ],
+    "expectedDecision": {
+      "status": "confirmed",
+      "grade": "A",
+      "sourceUrls": [
+        "https://www.data.go.kr/data/15111405/fileData.do"
+      ]
+    }
+  },
+  {
+    "id": "work-yumi-cells-2--place-national-museum-bus-stop--actor-kim-go-eun",
+    "workId": "work-yumi-cells-2",
+    "placeId": "place-national-museum-bus-stop",
+    "actorId": "actor-kim-go-eun",
+    "extractedAt": "2026-08-10",
+    "extractionMethod": "rule_based",
+    "evidence": [
+      {
+        "sourceUrl": "https://www.data.go.kr/data/15111405/fileData.do",
+        "sourceTier": "official",
+        "excerpt": "2회에서 김유미(김고은)가 유바비(진영)가 도착하기를 기다린다.",
+        "placeMatched": true,
+        "workMatched": true,
+        "claim": "present",
+        "actorExplicit": true,
+        "characterActorLinked": false
+      }
+    ],
+    "expectedDecision": {
+      "status": "confirmed",
+      "grade": "A",
+      "sourceUrls": [
+        "https://www.data.go.kr/data/15111405/fileData.do"
+      ]
+    }
+  },
+  {
+    "id": "work-yumi-cells-2--place-history-bookshop--actor-kim-go-eun",
+    "workId": "work-yumi-cells-2",
+    "placeId": "place-history-bookshop",
+    "actorId": "actor-kim-go-eun",
+    "extractedAt": "2026-08-10",
+    "extractionMethod": "rule_based",
+    "evidence": [
+      {
+        "sourceUrl": "https://www.data.go.kr/data/15111405/fileData.do",
+        "sourceTier": "official",
+        "excerpt": "김유미(김고은)는 유미의 세포들 2 7회에서 이 서점(본명 '순돌 서점')에서 아르바이트를 한다.",
+        "placeMatched": true,
+        "workMatched": true,
+        "claim": "present",
+        "actorExplicit": true,
+        "characterActorLinked": false
+      }
+    ],
+    "expectedDecision": {
+      "status": "confirmed",
+      "grade": "A",
+      "sourceUrls": [
+        "https://www.data.go.kr/data/15111405/fileData.do"
+      ]
+    }
+  },
+  {
+    "id": "work-yumi-cells-2--place-ieum-center--actor-kim-go-eun",
+    "workId": "work-yumi-cells-2",
+    "placeId": "place-ieum-center",
+    "actorId": "actor-kim-go-eun",
+    "extractedAt": "2026-08-10",
+    "extractionMethod": "rule_based",
+    "evidence": [
+      {
+        "sourceUrl": "https://www.data.go.kr/data/15111405/fileData.do",
+        "sourceTier": "official",
+        "excerpt": "6화에서 김유미(김고은)가 이 카페에서 알찬 오후 독서를 즐기지만 불확실한 미래에 대한 불안이 시작된다.",
+        "placeMatched": true,
+        "workMatched": true,
+        "claim": "present",
+        "actorExplicit": true,
+        "characterActorLinked": false
+      }
+    ],
+    "expectedDecision": {
+      "status": "confirmed",
+      "grade": "A",
+      "sourceUrls": [
+        "https://www.data.go.kr/data/15111405/fileData.do"
+      ]
+    }
+  },
+  {
+    "id": "work-twenty-five-twenty-one--place-sejong-daero--actor-kim-tae-ri",
+    "workId": "work-twenty-five-twenty-one",
+    "placeId": "place-sejong-daero",
+    "actorId": "actor-kim-tae-ri",
+    "extractedAt": "2026-08-10",
+    "extractionMethod": "rule_based",
+    "evidence": [
+      {
+        "sourceUrl": "https://www.data.go.kr/data/15111405/fileData.do",
+        "sourceTier": "official",
+        "excerpt": "6회에서는 노동자들이 더 나은 고용 조건을 요구하는 가운데 나희도(김태리)와 백이진(남주혁)이 잠시 헤어진 후 재회하는 장면이 나온다",
+        "placeMatched": true,
+        "workMatched": true,
+        "claim": "present",
+        "actorExplicit": true,
+        "characterActorLinked": false
+      }
+    ],
+    "expectedDecision": {
+      "status": "confirmed",
+      "grade": "A",
+      "sourceUrls": [
+        "https://www.data.go.kr/data/15111405/fileData.do"
+      ]
+    }
+  },
+  {
+    "id": "work-twenty-five-twenty-one--place-bosingak-site--actor-kim-tae-ri",
+    "workId": "work-twenty-five-twenty-one",
+    "placeId": "place-bosingak-site",
+    "actorId": "actor-kim-tae-ri",
+    "extractedAt": "2026-08-10",
+    "extractionMethod": "rule_based",
+    "evidence": [
+      {
+        "sourceUrl": "https://www.data.go.kr/data/15111405/fileData.do",
+        "sourceTier": "official",
+        "excerpt": "백이진(남주혁)은 이 파빌리온에서 2001년 새해 전야제에 대해 보고하고 나희도(김태리)는 15회에서 여기에 합류한다.",
+        "placeMatched": true,
+        "workMatched": true,
+        "claim": "present",
+        "actorExplicit": true,
+        "characterActorLinked": false
+      }
+    ],
+    "expectedDecision": {
+      "status": "confirmed",
+      "grade": "A",
+      "sourceUrls": [
+        "https://www.data.go.kr/data/15111405/fileData.do"
+      ]
+    }
+  },
+  {
+    "id": "work-twenty-five-twenty-one--place-waryong-park--actor-kim-tae-ri",
+    "workId": "work-twenty-five-twenty-one",
+    "placeId": "place-waryong-park",
+    "actorId": "actor-kim-tae-ri",
+    "extractedAt": "2026-08-10",
+    "extractionMethod": "rule_based",
+    "evidence": [
+      {
+        "sourceUrl": "https://www.data.go.kr/data/15111405/fileData.do",
+        "sourceTier": "official",
+        "excerpt": "3회에서 나희도(김태리)가 이 공원에서 훈련을 하고 있다.",
+        "placeMatched": true,
+        "workMatched": true,
+        "claim": "present",
+        "actorExplicit": true,
+        "characterActorLinked": false
+      }
+    ],
+    "expectedDecision": {
+      "status": "confirmed",
+      "grade": "A",
+      "sourceUrls": [
+        "https://www.data.go.kr/data/15111405/fileData.do"
+      ]
+    }
+  },
+  {
+    "id": "work-twenty-five-twenty-one--place-omokdae-gil--actor-kim-tae-ri",
+    "workId": "work-twenty-five-twenty-one",
+    "placeId": "place-omokdae-gil",
+    "actorId": "actor-kim-tae-ri",
+    "extractedAt": "2026-08-10",
+    "extractionMethod": "rule_based",
+    "evidence": [
+      {
+        "sourceUrl": "https://www.data.go.kr/data/15111405/fileData.do",
+        "sourceTier": "official",
+        "excerpt": "1회에서 백이진(남주혁)은 집에서 나오는 유쾌한 나희도(김태리)를 마주치고 입가에 미소를 지으며 이 거리에서 자전거를 타고 내려온다.",
+        "placeMatched": true,
+        "workMatched": true,
+        "claim": "present",
+        "actorExplicit": true,
+        "characterActorLinked": false
+      }
+    ],
+    "expectedDecision": {
+      "status": "confirmed",
+      "grade": "A",
+      "sourceUrls": [
+        "https://www.data.go.kr/data/15111405/fileData.do"
+      ]
+    }
+  },
+  {
+    "id": "work-mr-sunshine--place-old-seodo-station-set--actor-kim-tae-ri",
+    "workId": "work-mr-sunshine",
+    "placeId": "place-old-seodo-station-set",
+    "actorId": "actor-kim-tae-ri",
+    "extractedAt": "2026-08-10",
+    "extractionMethod": "model_assisted",
+    "evidence": [
+      {
+        "sourceUrl": "https://korean.visitkorea.or.kr/detail/rem_detail.do?cotid=01ea7149-6dcf-4c23-88e7-3030e5536e7a&temp=",
+        "sourceTier": "official",
+        "excerpt": "고애신(김태리)을 기다리고 있는 고동매(유연석)의 모습",
+        "placeMatched": true,
+        "workMatched": true,
+        "claim": "present",
+        "actorExplicit": true,
+        "characterActorLinked": true
+      }
+    ],
+    "expectedDecision": {
+      "status": "confirmed",
+      "grade": "A",
+      "sourceUrls": [
+        "https://korean.visitkorea.or.kr/detail/rem_detail.do?cotid=01ea7149-6dcf-4c23-88e7-3030e5536e7a&temp="
+      ]
+    }
+  },
+  {
+    "id": "work-goblin--place-woljeongsa-fir-forest--actor-kim-go-eun",
+    "workId": "work-goblin",
+    "placeId": "place-woljeongsa-fir-forest",
+    "actorId": "actor-kim-go-eun",
+    "extractedAt": "2026-08-10",
+    "extractionMethod": "rule_based",
+    "evidence": [
+      {
+        "sourceUrl": "https://www.data.go.kr/data/15111405/fileData.do",
+        "sourceTier": "official",
+        "excerpt": "공유가 집 나온 김고은을 따라가던 촬영지",
+        "placeMatched": true,
+        "workMatched": true,
+        "claim": "present",
+        "actorExplicit": true,
+        "characterActorLinked": false
+      }
+    ],
+    "expectedDecision": {
+      "status": "confirmed",
+      "grade": "A",
+      "sourceUrls": [
+        "https://www.data.go.kr/data/15111405/fileData.do"
+      ]
+    }
+  },
+  {
+    "id": "work-goblin--place-woljeongsa-fir-forest--actor-gong-yoo",
+    "workId": "work-goblin",
+    "placeId": "place-woljeongsa-fir-forest",
+    "actorId": "actor-gong-yoo",
+    "extractedAt": "2026-08-10",
+    "extractionMethod": "rule_based",
+    "evidence": [
+      {
+        "sourceUrl": "https://www.data.go.kr/data/15111405/fileData.do",
+        "sourceTier": "official",
+        "excerpt": "공유가 집 나온 김고은을 따라가던 촬영지",
+        "placeMatched": true,
+        "workMatched": true,
+        "claim": "present",
+        "actorExplicit": true,
+        "characterActorLinked": false
+      }
+    ],
+    "expectedDecision": {
+      "status": "confirmed",
+      "grade": "A",
+      "sourceUrls": [
+        "https://www.data.go.kr/data/15111405/fileData.do"
+      ]
+    }
+  },
+  {
+    "id": "work-goblin--place-samyang-ranch--actor-gong-yoo",
+    "workId": "work-goblin",
+    "placeId": "place-samyang-ranch",
+    "actorId": "actor-gong-yoo",
+    "extractedAt": "2026-08-10",
+    "extractionMethod": "rule_based",
+    "evidence": [
+      {
+        "sourceUrl": "https://www.data.go.kr/data/15111405/fileData.do",
+        "sourceTier": "official",
+        "excerpt": "공유가 중천의 허무를 걷는 장면 촬영지",
+        "placeMatched": true,
+        "workMatched": true,
+        "claim": "present",
+        "actorExplicit": true,
+        "characterActorLinked": false
+      }
+    ],
+    "expectedDecision": {
+      "status": "confirmed",
+      "grade": "A",
+      "sourceUrls": [
+        "https://www.data.go.kr/data/15111405/fileData.do"
+      ]
+    }
+  },
+  {
+    "id": "work-goblin--place-deoksugung-stone-wall-road--actor-gong-yoo",
+    "workId": "work-goblin",
+    "placeId": "place-deoksugung-stone-wall-road",
+    "actorId": "actor-gong-yoo",
+    "extractedAt": "2026-08-10",
+    "extractionMethod": "rule_based",
+    "evidence": [
+      {
+        "sourceUrl": "https://www.data.go.kr/data/15111405/fileData.do",
+        "sourceTier": "official",
+        "excerpt": "저승사자(이동욱) 사무실은 이 곳 궁전 벽 안에 있습니다. 김신(공유)이 1편과 14편에서 이곳을 지나며 잡담을 나눈다.",
+        "placeMatched": true,
+        "workMatched": true,
+        "claim": "present",
+        "actorExplicit": true,
+        "characterActorLinked": false
+      }
+    ],
+    "expectedDecision": {
+      "status": "confirmed",
+      "grade": "A",
+      "sourceUrls": [
+        "https://www.data.go.kr/data/15111405/fileData.do"
+      ]
+    }
+  },
+  {
+    "id": "work-the-king--place-gyeonggijeon-shrine--actor-lee-min-ho",
+    "workId": "work-the-king",
+    "placeId": "place-gyeonggijeon-shrine",
+    "actorId": "actor-lee-min-ho",
+    "extractedAt": "2026-08-10",
+    "extractionMethod": "rule_based",
+    "evidence": [
+      {
+        "sourceUrl": "https://www.data.go.kr/data/15111405/fileData.do",
+        "sourceTier": "official",
+        "excerpt": "이곤(이민호)이 이 박물관을 방문한다.",
+        "placeMatched": true,
+        "workMatched": true,
+        "claim": "present",
+        "actorExplicit": true,
+        "characterActorLinked": false
+      }
+    ],
+    "expectedDecision": {
+      "status": "confirmed",
+      "grade": "A",
+      "sourceUrls": [
+        "https://www.data.go.kr/data/15111405/fileData.do"
+      ]
+    }
+  },
+  {
+    "id": "work-the-king--place-busan-cinema-center--actor-lee-min-ho",
+    "workId": "work-the-king",
+    "placeId": "place-busan-cinema-center",
+    "actorId": "actor-lee-min-ho",
+    "extractedAt": "2026-08-10",
+    "extractionMethod": "rule_based",
+    "evidence": [
+      {
+        "sourceUrl": "https://www.data.go.kr/data/15111405/fileData.do",
+        "sourceTier": "official",
+        "excerpt": "대한제국의 왕 이곤(이민호)은 기마 경호원, SWAT 팀과 함께 영화의전당 밖 거리에서 배신자 이림의 부하들과 싸워 정태을(김고)을 구한다.",
+        "placeMatched": true,
+        "workMatched": true,
+        "claim": "present",
+        "actorExplicit": true,
+        "characterActorLinked": false
+      }
+    ],
+    "expectedDecision": {
+      "status": "confirmed",
+      "grade": "A",
+      "sourceUrls": [
+        "https://www.data.go.kr/data/15111405/fileData.do"
+      ]
+    }
   }
 ]
