@@ -21,6 +21,7 @@
     },
     "stayMinutes": 60,
     "stayMetadata": { "category": "nature_walk", "basis": "category_default" },
+    "placeType": "beach",
     "verificationLevel": "교차확인",
     "officialSourceCount": 2,
     "reasonText": {
@@ -51,6 +52,7 @@
     },
     "stayMinutes": 60,
     "stayMetadata": { "category": "food_cafe", "basis": "category_default" },
+    "placeType": "cafe",
     "verificationLevel": "원본확인",
     "officialSourceCount": 1,
     "reasonText": {
@@ -79,6 +81,7 @@
     },
     "stayMinutes": 60,
     "stayMetadata": { "category": "food_cafe", "basis": "category_default" },
+    "placeType": "restaurant",
     "verificationLevel": "원본확인",
     "officialSourceCount": 1,
     "reasonText": {
@@ -109,6 +112,7 @@
     },
     "stayMinutes": 45,
     "stayMetadata": { "category": "brief_exterior", "basis": "category_default" },
+    "placeType": "stay",
     "verificationLevel": "교차확인",
     "officialSourceCount": 2,
     "reasonText": {
@@ -139,6 +143,7 @@
     },
     "stayMinutes": 60,
     "stayMetadata": { "category": "culture_venue", "basis": "category_default" },
+    "placeType": "heritage",
     "verificationLevel": "교차확인",
     "officialSourceCount": 2,
     "reasonText": {
@@ -186,6 +191,7 @@
       "sourceLocator": "대표관광지 > 월정사 & 오대산 전나무숲길",
       "verifiedAt": "2026-08-10"
     },
+    "placeType": "trail",
     "verificationLevel": "교차확인",
     "officialSourceCount": 2,
     "reasonText": {
@@ -234,6 +240,7 @@
       "sourceLocator": "추천코스 > 힐코스",
       "verifiedAt": "2026-08-10"
     },
+    "placeType": "ranch",
     "verificationLevel": "교차확인",
     "officialSourceCount": 2,
     "reasonText": {
@@ -268,6 +275,7 @@
     },
     "stayMinutes": 120,
     "stayMetadata": { "category": "large_experience", "basis": "category_default" },
+    "placeType": "cable_car",
     "verificationLevel": "교차확인",
     "officialSourceCount": 2,
     "reasonText": {
@@ -298,6 +306,7 @@
     },
     "stayMinutes": 90,
     "stayMetadata": { "category": "resort_visit", "basis": "category_default" },
+    "placeType": "stay",
     "verificationLevel": "교차확인",
     "officialSourceCount": 2,
     "reasonText": {
@@ -328,6 +337,7 @@
     },
     "stayMinutes": 45,
     "stayMetadata": { "category": "brief_exterior", "basis": "category_default" },
+    "placeType": "walkway",
     "verificationLevel": "교차확인",
     "officialSourceCount": 2,
     "reasonText": {
@@ -360,6 +370,7 @@
     },
     "stayMinutes": 45,
     "stayMetadata": { "category": "brief_exterior", "basis": "category_default" },
+    "placeType": "walkway",
     "verificationLevel": "교차확인",
     "officialSourceCount": 2,
     "reasonText": {
@@ -408,6 +419,7 @@
       "sourceLocator": "도보해설 정기투어 코스 > 코스 1",
       "verifiedAt": "2026-08-10"
     },
+    "placeType": "heritage",
     "verificationLevel": "교차확인",
     "officialSourceCount": 2,
     "reasonText": {
@@ -438,6 +450,7 @@
     },
     "stayMinutes": 60,
     "stayMetadata": { "category": "culture_venue", "basis": "category_default" },
+    "placeType": "convention",
     "verificationLevel": "교차확인",
     "officialSourceCount": 2,
     "reasonText": {
@@ -468,6 +481,7 @@
     },
     "stayMinutes": 60,
     "stayMetadata": { "category": "culture_venue", "basis": "category_default" },
+    "placeType": "cinema",
     "verificationLevel": "교차확인",
     "officialSourceCount": 2,
     "reasonText": {

@@ -240,7 +240,18 @@ export const messages = {
     // 경고로 나온다. "확인되지 않은"만 쓰면 앞의 둘을 반대로 설명하게 되므로 셋을 포괄한다.
     "step4.validation": "표시된 일정은 검증 시간표(열차·공항 진입편)와 공항 도착 마감을 지켜 계산했습니다. 운영시간이 확인되지 않았거나 방문 가능 시간과 맞지 않을 수 있는 장소도 배치하되 경고로 표시하고, 넣지 못한 장소는 사유와 함께 따로 보여줍니다.",
 
-    // 열차 구간 팝업 (인수인계 G) — 공항 진입·귀국 안내를 카드에서 이 구간으로 옮겼다
+    // 지도 확대·축소·팬 — 버튼은 아이콘뿐이라 이름은 전부 aria-label로 간다
+    "map.zoomIn": "지도 확대",
+    "map.zoomOut": "지도 축소",
+    "map.resetView": "전체 지도로 되돌리기",
+    "map.zoomHint": "휠로 확대·축소하고 끌어서 옮길 수 있습니다.",
+
+    // 이 묶음이 어느 언어인지 — 지도 오버레이가 데이터(권역명 등)의 언어를 고를 때 읽는다.
+    // 화면에 그대로 나오지 않는 유일한 값이다.
+    "app.locale": "ko",
+
+    // 열차 구간 팝업 (인수인계 G) — 카드의 중복 정보(소요시간·출처)는 이 구간으로 옮기고
+    // 탑승 위치·3단계 상세 안내는 제거했다. 서울역 환승 동선만 #101이 담당한다
     "leg.time": "시각",
     "leg.duration": "소요",
     "leg.arexNote": "인천공항 T1과 서울역을 잇는 공항철도 직통열차입니다. 중간에 서지 않습니다.",
@@ -477,7 +488,18 @@ export const messages = {
     // not just unverified hours.
     "step4.validation": "This itinerary is calculated to respect verified timetables (rail and airport access) and your airport arrival deadline. Places whose opening hours are unverified or may not line up with the visit time are still scheduled and flagged as warnings, and any places that could not fit are listed separately with the reason.",
 
-    // Train leg modal (handover G) — airport entry/return guidance moved here from the card
+    // Zoom and pan — the buttons are icon-only, so the names live in aria-label
+    "map.zoomIn": "Zoom in",
+    "map.zoomOut": "Zoom out",
+    "map.resetView": "Reset to the whole map",
+    "map.zoomHint": "Scroll to zoom, drag to move the map.",
+
+    // Which locale this bundle is — read by map overlays to pick the language of data names.
+    "app.locale": "en",
+
+    // Train leg modal (handover G) — duplicated details (duration, source) moved here from the
+    // card; boarding location and the step-by-step guidance were removed. Seoul Station
+    // transfer guidance is handled in #101
     "leg.time": "Time",
     "leg.duration": "Duration",
     "leg.arexNote": "AREX Express between Incheon T1 and Seoul Station, with no intermediate stops.",
