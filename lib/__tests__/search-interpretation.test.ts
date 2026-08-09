@@ -1,8 +1,13 @@
-import { describe, expect, it, vi } from "vitest";
-import { interpretSearchQuery } from "../adapters/search-interpretation";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import {
+  clearSearchInterpretationCache,
+  interpretSearchQuery,
+} from "../adapters/search-interpretation";
 import { searchEntitiesCore } from "../search/entities";
 
 describe("P1 검색 입력 해석", () => {
+  beforeEach(() => clearSearchInterpretationCache());
+
   it.each([
     ["Kim Goeun", "actor-kim-go-eun", "actor"],
     ["goblin kdrama", "work-goblin", "work"],
@@ -83,5 +88,74 @@ describe("P1 검색 입력 해석", () => {
       apiKey: "test-key",
       fetchImpl: fetchImpl as never,
     })).resolves.toEqual({ confidence: "high", entityType: "actor", entityId: "actor-kim-go-eun" });
+  });
+
+  it("성공한 구조화 응답은 정규화 질의별 5분 캐시를 사용한다", async () => {
+    let now = 1_000;
+    const fetchImpl = vi.fn(async () => ({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        output: [{
+          type: "message",
+          content: [{ type: "output_text", text: JSON.stringify({
+            confidence: "high",
+            entityType: "work",
+            entityId: "work-goblin",
+          }) }],
+        }],
+      }),
+    }));
+    const dependencies = {
+      apiKey: "test-key",
+      fetchImpl: fetchImpl as never,
+      now: () => now,
+    };
+
+    await interpretSearchQuery("goblin kdrama", { actors: [], works: [] }, dependencies);
+    now += 299_999;
+    await interpretSearchQuery("goblin kdrama", { actors: [], works: [] }, dependencies);
+    expect(fetchImpl).toHaveBeenCalledOnce();
+
+    now += 1;
+    await interpretSearchQuery("goblin kdrama", { actors: [], works: [] }, dependencies);
+    expect(fetchImpl).toHaveBeenCalledTimes(2);
+  });
+
+  it("HTTP·타임아웃 등 실패 응답은 캐시하지 않는다", async () => {
+    const fetchImpl = vi.fn(async () => ({
+      ok: false,
+      status: 500,
+      json: async () => ({}),
+    }));
+    const dependencies = { apiKey: "test-key", fetchImpl: fetchImpl as never };
+
+    await expect(interpretSearchQuery("gobln", { actors: [], works: [] }, dependencies)).rejects.toThrow();
+    await expect(interpretSearchQuery("gobln", { actors: [], works: [] }, dependencies)).rejects.toThrow();
+    expect(fetchImpl).toHaveBeenCalledTimes(2);
+  });
+
+  it("캐시는 100개를 넘기지 않고 가장 오래된 질의를 제거한다", async () => {
+    const fetchImpl = vi.fn(async () => ({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        output: [{
+          type: "message",
+          content: [{ type: "output_text", text: JSON.stringify({
+            confidence: "low",
+            entityType: "none",
+            entityId: "",
+          }) }],
+        }],
+      }),
+    }));
+    const dependencies = { apiKey: "test-key", fetchImpl: fetchImpl as never };
+
+    for (let index = 0; index <= 100; index += 1) {
+      await interpretSearchQuery(`unknown-${index}`, { actors: [], works: [] }, dependencies);
+    }
+    await interpretSearchQuery("unknown-0", { actors: [], works: [] }, dependencies);
+    expect(fetchImpl).toHaveBeenCalledTimes(102);
   });
 });

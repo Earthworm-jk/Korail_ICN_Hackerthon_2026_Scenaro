@@ -5,6 +5,8 @@ import { z } from "zod";
 const RESPONSES_URL = "https://api.openai.com/v1/responses";
 const DEFAULT_MODEL = "gpt-4o-mini";
 const DEFAULT_TIMEOUT_MS = 5_000;
+const CACHE_TTL_MS = 5 * 60 * 1_000;
+const MAX_CACHE_ENTRIES = 100;
 
 export type SearchCatalog = {
   actors: { id: string; ko: string; en: string }[];
@@ -35,7 +37,29 @@ type Dependencies = {
   fetchImpl?: FetchLike;
   model?: string;
   timeoutMs?: number;
+  now?: () => number;
 };
+
+const cache = new Map<string, { at: number; value: SearchInterpretation }>();
+
+/** 테스트 전용 — 런타임 검색 해석 캐시 초기화. */
+export function clearSearchInterpretationCache(): void {
+  cache.clear();
+}
+
+function cacheSuccessfulInterpretation(
+  key: string,
+  value: SearchInterpretation,
+  at: number,
+): void {
+  if (cache.has(key)) cache.delete(key);
+  while (cache.size >= MAX_CACHE_ENTRIES) {
+    const oldestKey = cache.keys().next().value;
+    if (oldestKey === undefined) break;
+    cache.delete(oldestKey);
+  }
+  cache.set(key, { at, value });
+}
 
 export class SearchInterpretationError extends Error {
   constructor(message: string) {
@@ -68,11 +92,18 @@ export async function interpretSearchQuery(
   catalog: SearchCatalog,
   dependencies: Dependencies,
 ): Promise<SearchInterpretation> {
+  const model = dependencies.model ?? DEFAULT_MODEL;
+  const now = dependencies.now ?? Date.now;
+  const cacheKey = `${model}:${query.trim().toLowerCase()}`;
+  const cached = cache.get(cacheKey);
+  if (cached && now() - cached.at < CACHE_TTL_MS) return cached.value;
+  if (cached) cache.delete(cacheKey);
+
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), dependencies.timeoutMs ?? DEFAULT_TIMEOUT_MS);
   const fetchImpl = dependencies.fetchImpl ?? (fetch as unknown as FetchLike);
   const body = {
-    model: dependencies.model ?? DEFAULT_MODEL,
+    model,
     store: false,
     input: [
       {
@@ -128,7 +159,9 @@ export async function interpretSearchQuery(
     });
     if (!response.ok) throw new SearchInterpretationError(`OpenAI HTTP ${response.status}`);
     const parsedJson: unknown = JSON.parse(outputText(await response.json()));
-    return InterpretationSchema.parse(parsedJson);
+    const interpretation = InterpretationSchema.parse(parsedJson);
+    cacheSuccessfulInterpretation(cacheKey, interpretation, now());
+    return interpretation;
   } catch (error) {
     if (error instanceof SearchInterpretationError) throw error;
     throw new SearchInterpretationError(error instanceof Error ? error.message : "OpenAI interpretation failed");
