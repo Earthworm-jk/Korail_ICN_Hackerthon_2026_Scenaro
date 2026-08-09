@@ -30,7 +30,9 @@ export type PlaceCandidate = PlaceT & {
 export type CandidateResponse = {
   candidates: PlaceCandidate[];
   // isAirport는 v0.6 지도가 공항 점을 역과 다른 색으로 찍는 데 쓴다 (#14) — 표시 전용
-  stations: Pick<StationT, "id" | "name" | "isAirport">[];
+  // hasTimetable은 #61 문구 분기용: 시간표 범위 밖이라 못 가는 것과 일정 안에 열차가
+  // 없는 것을 구분해 표시한다. 공개 사유 코드는 늘리지 않는다.
+  stations: (Pick<StationT, "id" | "name" | "isAirport"> & { hasTimetable: boolean })[];
   works: Pick<WorkT, "id" | "title">[];
 };
 
@@ -39,6 +41,10 @@ export async function getCandidatePlaces(selection: {
   selectedWorkIds: string[];
 }): Promise<CandidateResponse> {
   const repos = loadRepositories();
+  // 스냅샷에 한 구간이라도 등장하는 역 — 없으면 "열차가 없다"가 아니라 "우리가 아직 안 받았다"
+  const timetableStationIds = new Set(
+    repos.trainLegs.flatMap((leg) => [leg.fromStationId, leg.toStationId]),
+  );
   const selectedWorkIds = new Set(selection.selectedWorkIds);
   const actorIds = new Set(selection.selectedActorIds);
   const actorWorkIds = new Set(
@@ -88,7 +94,12 @@ export async function getCandidatePlaces(selection: {
 
   return {
     candidates,
-    stations: repos.stations.map(({ id, name, isAirport }) => ({ id, name, isAirport })),
+    stations: repos.stations.map(({ id, name, isAirport }) => ({
+      id,
+      name,
+      isAirport,
+      hasTimetable: timetableStationIds.has(id),
+    })),
     works: repos.works.map(({ id, title }) => ({ id, title })),
   };
 }
