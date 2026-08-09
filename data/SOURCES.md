@@ -273,6 +273,18 @@
   잠금식 보관함이 아닌 공용 보관 공간이며 화면에 현장 확인 문구를 고지한다.
   - https://info.korail.com/info/contents.do?key=1503
 
+## 장소 체류시간 기본값 (#84 P0-4)
+
+- `places.json`의 `stayMinutes`는 공식 권장 관람시간이 아니라 일정 가능성을 보수적으로
+  계산하기 위한 서비스 기본 추정값이다. 공식 출처가 없는 값에 출처를 만들어 붙이지 않는다.
+- `stayMetadata.basis: category_default`는 유형표로 산정했음을 뜻하며, 엔진은 기존과 동일하게
+  `stayMinutes`만 소비한다. 현재 데모 14곳의 45·60·90·120분 값은 변경하지 않았다.
+- 확정 유형표: 짧은 외관 방문 45분, 자연·산책 60분, 식음 60분, 역사·문화 60분,
+  리조트 방문 90분, 대형 체험 120분. 장소별 분류와 정확한 ID는 `places.json`에 기록한다.
+- 총 시간예산은 `(accessEstimate.minutes + max(20, ceil(accessEstimate.minutes × 0.5))) × 2
+  + stayMinutes`로 계산한다. 도로 정체·식사·짐·실제 체류시간을 보장하지 않는다.
+- 공식 권장 관람시간·코스 소요시간의 `source`·`verifiedAt` 보강과 기본값 재산정은 #84 P1이다.
+
 ## 항공
 
 - `SAMPLE-ARRIVAL-001`과 `SAMPLE-DEPARTURE-001`은 회귀 테스트용 고정 입력이다.

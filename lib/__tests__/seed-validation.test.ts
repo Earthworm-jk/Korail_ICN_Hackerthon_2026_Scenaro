@@ -23,6 +23,7 @@ type Seed = {
     accessEstimate: { minutes: number; source: string; verifiedAt: string };
     openingHours: Record<string, unknown>;
     stayMinutes: number;
+    stayMetadata?: { category: string; basis: string };
     verificationLevel: string;
     officialSourceCount: number;
     reasonText: LocalName;
@@ -213,6 +214,24 @@ describe("시드 의미 검증 (#20)", () => {
     const issues = issuesOf(raw);
     expect(issues.some((m) => m.includes("accessEstimate.minutes"))).toBe(true);
     expect(issues.some((m) => m.includes("stayMinutes"))).toBe(true);
+  });
+
+  it("stayMetadata는 optional이지만 기록하면 유형 기본값과 stayMinutes가 일치해야 한다", () => {
+    const raw = baseSeed();
+    raw.places[0].stayMetadata = { category: "food_cafe", basis: "category_default" };
+    expect(() => parseRepositories(raw as RawSeedFiles)).not.toThrow();
+
+    raw.places[0].stayMetadata.category = "brief_exterior";
+    const mismatch = issuesOf(raw);
+    expect(mismatch.some((m) =>
+      m.includes("[places.json][Place:place-1][stayMinutes]") && m.includes("45분"),
+    )).toBe(true);
+
+    raw.places[0].stayMetadata.category = "unknown";
+    const unknown = issuesOf(raw);
+    expect(unknown.some((m) =>
+      m.includes("[places.json][Place:place-1][stayMetadata.category]"),
+    )).toBe(true);
   });
 
   it("TrainLeg는 유효한 ISO 일시와 departAt < arriveAt을 지켜야 한다", () => {
