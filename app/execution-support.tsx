@@ -2,11 +2,13 @@
 /**
  * 실행 지원 — 결과 화면 하단 안내 (#24 A5 최소선 · #6 "코레일 실행 지원 정보 표시")
  * - 검증된 공항 진입·귀국 이동 안내 각 1개 (공항철도 직통, SOURCES.md 철도 절 근거)
- * - 정적 짐 보관 안내 (KTX 차내 휴대물품보관소 — 실시간·좌석 보장 없음)
  * - 일정에 등장하는 역의 편의시설 (station-facilities.json 스냅샷, 수록 역만 표시)
+ * - 역을 누르면 그 역의 시설과 짐 보관 안내를 팝업 탭으로 본다 (짐 보관은 전 일정 공통)
  */
+import { useState } from "react";
 import type { StationFacilitiesSnapshotT } from "@/lib/station-facilities";
 import type { MessageKey } from "@/lib/i18n/messages";
+import { FacilitySummaryIcons, StationFacilityModal } from "./station-facility-modal";
 
 // PR #59 리뷰 2 — AREX 안내는 일정에 실제 공항역 구간이 있을 때만 방향별로 표시한다.
 // 공항버스 직행형(#14 GatewayLeg)이 합류하면 그 일정에는 이 카드가 나오면 안 된다.
@@ -25,8 +27,9 @@ export function ExecutionSupport({ snapshot, stationIds, rides, stationName, tr 
   const showArrivalGuide = rides.some((r) => r.fromStationId === AIRPORT_STATION_ID);
   const showReturnGuide = rides.some((r) => r.toStationId === AIRPORT_STATION_ID);
 
-  const boolLabel = (has: boolean, key: MessageKey) =>
-    `${tr(key)} ${has ? "○" : "—"}`;
+  // 역별 상세는 팝업으로만 — 목록에는 있는 시설 아이콘 요약만 둔다
+  const [openStationId, setOpenStationId] = useState<string | null>(null);
+  const openFacility = openStationId ? facilityOf.get(openStationId) : undefined;
 
   return (
     <div className="rounded-lg border p-4">
@@ -61,37 +64,44 @@ export function ExecutionSupport({ snapshot, stationIds, rides, stationName, tr 
         </div>
       )}
 
-      <div className="mt-3 rounded border bg-sc-subtle/60 p-3">
-        <h4 className="text-sm font-medium">🧳 {tr("support.luggageTitle")}</h4>
-        <ul className="mt-1 list-disc space-y-0.5 pl-5 text-sm text-sc-text/80">
-          <li>{tr("support.luggageInTrain")}</li>
-          <li>{tr("support.luggageLocker")}</li>
-        </ul>
-        <p className="mt-1.5 text-xs text-sc-muted/70">{tr("support.luggageSource")}</p>
-      </div>
+      {/* 짐 보관은 역 팝업의 탭으로 옮겼다. 수록 역이 하나도 없어 팝업 경로가 없을 때만
+          여기에 그대로 남겨 안내가 사라지지 않게 한다. */}
+      {covered.length === 0 && (
+        <div className="mt-3 rounded border bg-sc-subtle/60 p-3">
+          <h4 className="text-sm font-medium">🧳 {tr("support.luggageTitle")}</h4>
+          <ul className="mt-1 list-disc space-y-0.5 pl-5 text-sm text-sc-text/80">
+            <li>{tr("support.luggageInTrain")}</li>
+            <li>{tr("support.luggageLocker")}</li>
+          </ul>
+          <p className="mt-1.5 text-xs text-sc-muted/70">{tr("support.luggageSource")}</p>
+        </div>
+      )}
 
       {/* PR #59 리뷰 비차단 — 전부 미수록이어도 블록을 유지해 '미확보' 상태를 명시한다 */}
       {stationIds.length > 0 && (
         <div className="mt-3 rounded border bg-sc-subtle/60 p-3">
           <h4 className="text-sm font-medium">🛗 {tr("support.facilitiesTitle")}</h4>
           {covered.length > 0 && (
-            <ul className="mt-1 space-y-1 text-sm text-sc-text/80">
-              {covered.map((id) => {
-                const f = facilityOf.get(id)!;
-                return (
-                  <li key={id}>
-                    <span className="font-medium">{stationName(id)}</span>
-                    <span className="ml-2 text-sc-muted">
-                      {tr("support.facilitiesElevator")} {f.elevatorCount} ·{" "}
-                      {tr("support.facilitiesEscalator")} {f.escalatorCount} ·{" "}
-                      {boolLabel(f.hasToilet, "support.facilitiesToilet")} ·{" "}
-                      {boolLabel(f.hasNursingRoom, "support.facilitiesNursing")} ·{" "}
-                      {boolLabel(f.hasInfoCenter, "support.facilitiesInfo")}
-                    </span>
-                  </li>
-                );
-              })}
-            </ul>
+            <>
+              <p className="mt-1 text-xs text-sc-muted">{tr("support.facilitiesHint")}</p>
+              <ul className="mt-1.5 space-y-1">
+                {covered.map((id) => {
+                  const f = facilityOf.get(id)!;
+                  return (
+                    <li key={id}>
+                      <button
+                        type="button"
+                        className="flex w-full items-center justify-between gap-3 rounded border border-sc-line bg-sc-surface px-3 py-2 text-left text-sm hover:border-sc-blue"
+                        onClick={() => setOpenStationId(id)}
+                      >
+                        <span className="font-medium">{stationName(id)}</span>
+                        <FacilitySummaryIcons facility={f} tr={tr} />
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            </>
           )}
           {hasMissing && (
             <p className="mt-1.5 text-xs text-sc-muted">{tr("support.facilitiesMissing")}</p>
@@ -102,6 +112,16 @@ export function ExecutionSupport({ snapshot, stationIds, rides, stationName, tr 
             </p>
           )}
         </div>
+      )}
+
+      {openFacility && (
+        <StationFacilityModal
+          facility={openFacility}
+          stationName={stationName(openFacility.stationId)}
+          fetchedAt={snapshot.fetchedAt}
+          onClose={() => setOpenStationId(null)}
+          tr={tr}
+        />
       )}
     </div>
   );
