@@ -77,10 +77,19 @@ type FlightField = {
   status?: string; // 운항 상태 문구 — live 조회 시
 };
 
-const STEPS: MessageKey[] = ["nav.step1", "nav.step2", "nav.step3", "nav.step4"];
+// #85 확정: 촬영지 선택과 일정 결과가 한 화면이라 스테퍼도 3단계다.
+// 무엇을 뺄지 판단하는 순간과 뺀 결과를 보는 순간이 같은 화면에 있어야 한다.
+const STEPS: MessageKey[] = ["nav.step1", "nav.step2", "nav.step3"];
 
 /** 3단계 후보 목록을 한 번에 보여주는 개수 — 나머지는 "더보기" */
 const PLACES_PAGE_SIZE = 5;
+
+/**
+ * 장소 토글 후 자동 재계산까지의 대기(ms) — #85 성능 실측 기준.
+ * 실시드 14곳 92ms·확장 상한 50곳 935ms라 계산 자체는 즉시 반응 범위지만,
+ * 여러 곳을 연달아 끄는 조작에서 매번 돌지 않도록 마지막 토글만 계산한다.
+ */
+const AUTO_PLAN_DEBOUNCE_MS = 400;
 
 /** #80 카드의 "OO 권역 일정과 연결" 문구 — 추천 권역과 같은 권역의 첫 일정 역 */
 function themeStationLabel(
@@ -312,7 +321,7 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates }:
     setSelectedPlaceIds(new Set(initialCandidateIds(data.candidates).filter((id) => !excluded.has(id))));
     dispatchView({ type: "REOPEN", record });
     void refreshThemeExperience(record.days, c.selectedWorkIds);
-    setStep(4);
+    setStep(3); // #85 — 결과는 3단계 우측 열에서 보여준다
   }, [refreshThemeExperience]);
 
   const saveStub = useSaveStub((record) => {
@@ -387,9 +396,11 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates }:
     const sequence = ++planSequence.current;
     dispatchView({ type: "PLAN_START" });
     setThemeExperience(null);
-    setStep(4);
     try {
       const res = await planItinerary(constraints);
+      // #85 기술항목 1 — 연속 토글에서 먼저 보낸 계산이 늦게 도착해 최신 결과를 덮지 않게 한다.
+      // 계산 중에는 리듀서가 직전 결과를 유지하므로 버려도 화면이 비지 않는다.
+      if (sequence !== planSequence.current) return;
       if (res.ok) {
         dispatchView({ type: "PLAN_SUCCESS", result: res.result });
         saveStub.markDirty();
@@ -408,9 +419,25 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates }:
         }
       } else dispatchView({ type: "PLAN_INVALID" }); // 1단계 검증을 우회한 요청 — 기존 결과 유지
     } catch {
+      if (sequence !== planSequence.current) return;
       dispatchView({ type: "PLAN_FAILED" }); // 네트워크·서버 장애 — 기존 결과 유지
     }
   }, [currentConstraints, saveStub, refreshThemeExperience]);
+
+  // #85 기술항목 2 — 장소를 켜고 끄면 자동 재계산한다. 연속 토글은 마지막 것만 계산하고,
+  // 항공편 시각은 확정대로 자동 감지하지 않는다(사용자가 조회·변경 후 "다시 계산").
+  // 재열람 중에는 저장 당시 일정을 보여주는 중이므로 자동 계산이 덮어쓰지 않게 건너뛴다.
+  // plan은 입력이 바뀔 때마다 새로 만들어진다. 아래 디바운스 effect가 plan을 의존성으로 받으면
+  // 타이머가 매 렌더 재설정되므로, 최신 함수는 ref로만 참조한다(갱신은 렌더가 아니라 effect에서).
+  const planRef = useRef(plan);
+  useEffect(() => { planRef.current = plan; }, [plan]);
+  const reopened = view.reopened;
+  useEffect(() => {
+    if (step !== 3 || !candidateData || reopened) return;
+    if (selectedPlaceIds.size === 0) return;
+    const timer = window.setTimeout(() => { void planRef.current(); }, AUTO_PLAN_DEBOUNCE_MS);
+    return () => window.clearTimeout(timer);
+  }, [selectedPlaceIds, step, candidateData, reopened]);
 
   const baseDays = recommendedDays(view);
   const mockAlternatives = useMemo(
@@ -595,7 +622,7 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates }:
         </div>
       </header>
 
-      <nav className="grid grid-cols-4 border-b bg-sc-subtle text-center text-sm">
+      <nav className="grid grid-cols-3 border-b bg-sc-subtle text-center text-sm">
         {STEPS.map((key, i) => (
           <div
             key={key}
@@ -809,7 +836,11 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates }:
           <p className="text-sm text-sc-muted">{tr("step3.subtitle")}</p>
           {/* #61 — 접근시간이 대중교통으로 읽히지 않도록 목록 위에 한 번 고지 */}
           <p className="mt-3 text-xs text-sc-muted">{tr("access.notice")}</p>
-          <div className="mt-2 flex gap-2 text-sm">
+
+          {/* #85 — 좌: 후보 선택 / 우: 계산 결과. 왕복 없이 같은 화면에서 판단한다 */}
+          <div className="mt-3 grid gap-[18px] lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
+          <div className="min-w-0" id="place-picker">
+          <div className="flex gap-2 text-sm">
             {(["relevance", "official"] as const).map((mode) => (
               <button
                 key={mode}
@@ -825,10 +856,7 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates }:
               {tr("step3.noCandidates")}
             </p>
           )}
-          {/* #14 v0.6 sc-place-layout — 좌측 후보 목록 + 우측 지도 (md 미만은 세로 적층) */}
-          <div className="mt-3 grid gap-[18px] md:grid-cols-[minmax(0,1.05fr)_minmax(300px,0.95fr)]">
-          <div className="min-w-0">
-          <ul className="space-y-2">
+          <ul className="mt-3 space-y-2">
             {/* #43 확정: 미확인 후보도 같은 목록에서 선택 가능 — 카드에 경고 배지 */}
             {sortedCandidates.slice(0, visibleCount).map((c) => (
               <PlaceCard key={c.id} candidate={c} locale={locale} tr={tr}
@@ -855,43 +883,38 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates }:
               )}
             </button>
           )}
-          </div>
-          <KoreaMapPanel
-            kind="places"
-            places={step3MapPlaces}
-            stations={mapStations}
-            omittedCount={step3OmittedCount}
-            tr={tr}
-            headingAction={
-              <button
-                type="button"
-                aria-pressed={onlySelectedOnMap}
-                className={`min-h-[30px] rounded-lg border px-2 py-1 text-xs ${onlySelectedOnMap ? "border-sc-blue bg-sc-blue-soft text-sc-blue" : ""}`}
-                onClick={() => setOnlySelectedOnMap((on) => !on)}
-              >
-                {tr("map.filterSelected")}
-              </button>
-            }
-          />
-          </div>
-          <div className="mt-4 flex justify-between">
+          {/* #85 확정 — 지도는 기본 접힘. 선택·결과가 먼저 보이고 필요할 때만 편다 */}
+          <details className="mt-3 rounded-lg border">
+            <summary className="cursor-pointer px-3 py-2 text-sm font-medium">{tr("map.placesTitle")}</summary>
+            <div className="border-t p-3">
+              <KoreaMapPanel
+                kind="places"
+                places={step3MapPlaces}
+                stations={mapStations}
+                omittedCount={step3OmittedCount}
+                tr={tr}
+                headingAction={
+                  <button
+                    type="button"
+                    aria-pressed={onlySelectedOnMap}
+                    className={`min-h-[30px] rounded-lg border px-2 py-1 text-xs ${onlySelectedOnMap ? "border-sc-blue bg-sc-blue-soft text-sc-blue" : ""}`}
+                    onClick={() => setOnlySelectedOnMap((on) => !on)}
+                  >
+                    {tr("map.filterSelected")}
+                  </button>
+                }
+              />
+            </div>
+          </details>
+          <div className="mt-4">
             <button className="rounded border px-4 py-2 text-sm" onClick={() => setStep(2)}>{tr("common.back")}</button>
-            <button
-              className="rounded bg-sc-blue px-4 py-2 text-sm text-white disabled:opacity-40"
-              disabled={selectedPlaceIds.size === 0}
-              onClick={plan}
-            >
-              {tr("step3.generate")}
-            </button>
           </div>
-        </section>
-      )}
+          </div>
 
-      {step === 4 && (
-        <section>
-          <h2 className="text-lg font-semibold">{tr("step4.title")}</h2>
+          {/* 우측 열 — 계산 결과. 장소를 켜고 끄면 여기서 바로 갱신된다 */}
+          <div className="min-w-0">
+          <h3 className="text-base font-semibold">{tr("step4.title")}</h3>
           <p className="text-sm text-sc-muted">{tr("step4.subtitle")}</p>
-          <p className="mt-1 text-xs text-sc-muted">{tr("access.notice")}</p>
 
           {view.planning && <p className="mt-6 text-center text-sm text-sc-muted">{tr("step4.generating")}</p>}
 
@@ -921,13 +944,13 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates }:
               </p>
               <p className="mt-1 text-sm text-sc-orange-text">{tr("step4.overselectionDesc")}</p>
               <p className="mt-1 text-xs text-sc-orange-text">{tr("step4.overselectionPreview")}</p>
-              <button
-                type="button"
-                className="mt-3 rounded border border-sc-orange/50 bg-sc-surface px-3 py-2 text-sm font-medium text-sc-orange-text"
-                onClick={() => setStep(3)}
+              {/* #85 — 후보 목록이 같은 화면 좌측에 있으므로 화면 전환 대신 그쪽으로 이동시킨다 */}
+              <a
+                href="#place-picker"
+                className="mt-3 inline-block rounded border border-sc-orange/50 bg-sc-surface px-3 py-2 text-sm font-medium text-sc-orange-text"
               >
                 {tr("step4.adjustPlaces")}
-              </button>
+              </a>
             </div>
           )}
 
@@ -1123,8 +1146,8 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates }:
           )}
 
           <div className="mt-4 flex flex-wrap items-center justify-between gap-2">
+            {/* #85 — "촬영지 다시 선택"은 왕복이 사라져 필요 없다. 항공편만 1단계로 돌아간다 */}
             <div className="flex gap-2">
-              <button className="rounded border px-3 py-2 text-sm" onClick={() => setStep(3)}>{tr("step4.editPlaces")}</button>
               <button className="rounded border px-3 py-2 text-sm" onClick={() => setStep(1)}>{tr("step4.editFlights")}</button>
               <button className="rounded border px-3 py-2 text-sm" onClick={plan}>{tr("step4.recalculate")}</button>
             </div>
@@ -1146,6 +1169,8 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates }:
                 ♡ {tr("step4.save")}
               </button>
             </div>
+          </div>
+          </div>
           </div>
         </section>
       )}
