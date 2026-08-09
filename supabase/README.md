@@ -14,7 +14,8 @@
 
    ```
    NEXT_PUBLIC_SUPABASE_URL=...
-   NEXT_PUBLIC_SUPABASE_ANON_KEY=...
+   NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=...   # 신규 키 체계(sb_publishable_...) 우선
+   # legacy 프로젝트만: NEXT_PUBLIC_SUPABASE_ANON_KEY (호환용 — publishable이 있으면 무시)
    ```
 
 ## 설계 메모
