@@ -14,7 +14,14 @@
  *   값의 의미: "역 도착·출발 경계 안에서 서비스 기본 활동시간 기준으로 확보된 권역 창".
  *   활동 시간대는 사용자 설정이 아니라 내부 보수 기본값(#14 ver.0.4 — 속도·여유 UI 미노출).
  */
-import type { RegionWindow, TrainRide } from "./types";
+import type { RegionWindow } from "./types";
+
+type TransitTiming = {
+  fromStationId: string;
+  toStationId: string;
+  departAt: string;
+  arriveAt: string;
+};
 
 const KOREA_OFFSET_MS = 9 * 60 * 60 * 1_000;
 const MINUTE_MS = 60_000;
@@ -32,7 +39,7 @@ export type StationRegionInfo = {
 };
 
 export function buildRegionWindows(params: {
-  rides: TrainRide[]; // 시간순 정렬 필요 (관문 진입·복귀 포함 전체)
+  rides: TransitTiming[]; // 시간순 정렬 필요 (철도·GatewayLeg 포함 전체)
   airportReadyAt: string;
   airportArrivalDeadline: string;
   startStationId: string;

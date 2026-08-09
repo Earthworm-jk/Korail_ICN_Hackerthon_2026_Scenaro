@@ -27,13 +27,29 @@ type Seed = {
     officialSourceCount: number;
     reasonText: LocalName;
   }[];
-  stations: { id: string; name: LocalName; lineType: string; regionId: string }[];
+  stations: { id: string; name: LocalName; lineType: string; regionId: string; isAirport?: boolean }[];
   trainLegs: {
     trainNo: string;
     fromStationId: string;
     toStationId: string;
     departAt: string;
     arriveAt: string;
+  }[];
+  gatewayLegs: {
+    id: string;
+    routeId: string;
+    direction: string;
+    mode: string;
+    fromStationId: string;
+    toStationId: string;
+    fromName: LocalName;
+    toName: LocalName;
+    departAt: string;
+    arriveAt: string;
+    serviceName: LocalName;
+    operator: LocalName;
+    sourceUrls: string[];
+    verifiedAt: string;
   }[];
   flights: { flightNo: string; direction: string; scheduledAt: string; terminal?: string }[];
   workPlaceRelations: {
@@ -84,6 +100,7 @@ function baseSeed(): Seed {
         arriveAt: "2026-08-12T09:00:00+09:00",
       },
     ],
+    gatewayLegs: [],
     flights: [
       {
         flightNo: "KE123",
@@ -103,6 +120,48 @@ function baseSeed(): Seed {
       },
     ],
   });
+}
+
+function addValidGatewayPair(raw: Seed): void {
+  raw.stations.push({
+    id: "station-airport",
+    name: { ko: "공항", en: "Airport" },
+    lineType: "AREX",
+    regionId: "seoul_metro",
+    isAirport: true,
+  });
+  const common = {
+    routeId: "route-airport-bus",
+    mode: "airport_bus",
+    serviceName: { ko: "공항버스", en: "Airport Bus" },
+    operator: { ko: "운수사", en: "Operator" },
+    sourceUrls: ["https://example.com/official"],
+    verifiedAt: "2026-08-09",
+  };
+  raw.gatewayLegs.push(
+    {
+      ...common,
+      id: "bus-out",
+      direction: "outbound",
+      fromStationId: "station-airport",
+      toStationId: "station-1",
+      fromName: { ko: "공항 T1", en: "Airport T1" },
+      toName: { ko: "지역 터미널", en: "Regional Terminal" },
+      departAt: "2026-08-12T12:00:00+09:00",
+      arriveAt: "2026-08-12T15:00:00+09:00",
+    },
+    {
+      ...common,
+      id: "bus-in",
+      direction: "inbound",
+      fromStationId: "station-1",
+      toStationId: "station-airport",
+      fromName: { ko: "지역 터미널", en: "Regional Terminal" },
+      toName: { ko: "공항 T1", en: "Airport T1" },
+      departAt: "2026-08-14T12:00:00+09:00",
+      arriveAt: "2026-08-14T15:00:00+09:00",
+    },
+  );
 }
 
 /** 타입이 막는 오염 값을 의도적으로 주입한다 — 검증기가 잡아내야 하는 입력 */
@@ -173,6 +232,18 @@ describe("시드 의미 검증 (#20)", () => {
     const issues = issuesOf(raw);
     expect(issues.some((m) => m.includes("[TrainLeg:802]") && m.includes("departAt < arriveAt"))).toBe(true);
     expect(issues.some((m) => m.includes("[TrainLeg:803]") && m.includes("ISO"))).toBe(true);
+  });
+
+  it("GatewayLeg는 실제 터미널명·공식 출처와 departAt < arriveAt을 강제한다 (#58)", () => {
+    const raw = baseSeed();
+    addValidGatewayPair(raw);
+    expect(() => parseRepositories(raw as RawSeedFiles)).not.toThrow();
+
+    raw.gatewayLegs[0].sourceUrls = [];
+    raw.gatewayLegs[0].arriveAt = raw.gatewayLegs[0].departAt;
+    const issues = issuesOf(raw);
+    expect(issues.some((m) => m.includes("[GatewayLeg:bus-out][sourceUrls]"))).toBe(true);
+    expect(issues.some((m) => m.includes("[GatewayLeg:bus-out][arriveAt]") && m.includes("departAt < arriveAt"))).toBe(true);
   });
 
   // PR #29 리뷰(차단): Date.parse 기반 검증이 통과시키던 세 케이스를 계약으로 고정
@@ -247,6 +318,14 @@ describe("중복 키 검증 (#20 — 복합 키)", () => {
     const issues = issuesOf(raw);
     expect(issues.some((m) => m.includes("[Flight:KE123]") && m.includes("중복 키"))).toBe(true);
   });
+
+  it("GatewayLeg 안정 ID 중복은 실패한다 (#58)", () => {
+    const raw = baseSeed();
+    addValidGatewayPair(raw);
+    raw.gatewayLegs.push({ ...raw.gatewayLegs[0] });
+    const issues = issuesOf(raw);
+    expect(issues.some((m) => m.includes("[GatewayLeg:bus-out]") && m.includes("중복 키"))).toBe(true);
+  });
 });
 
 describe("참조 무결성 검증 (#20)", () => {
@@ -259,6 +338,16 @@ describe("참조 무결성 검증 (#20)", () => {
     expect(issues.some((m) => m.includes("[Place:place-1][nearestStationId]") && m.includes("station-ghost"))).toBe(true);
     expect(issues.some((m) => m.includes("[Actor:actor-a][workIds]") && m.includes("work-ghost"))).toBe(true);
     expect(issues.some((m) => m.includes("[TrainLeg:801][toStationId]"))).toBe(true);
+  });
+
+  it("GatewayLeg의 앵커 참조와 왕복 방향을 검증한다 (#58)", () => {
+    const raw = baseSeed();
+    addValidGatewayPair(raw);
+    raw.gatewayLegs[0].toStationId = "station-ghost";
+    raw.gatewayLegs[1].direction = "outbound";
+    const issues = issuesOf(raw);
+    expect(issues.some((m) => m.includes("[GatewayLeg:bus-out][toStationId]") && m.includes("station-ghost"))).toBe(true);
+    expect(issues.some((m) => m.includes("[GatewayLeg:bus-in][direction]") && m.includes("outbound"))).toBe(true);
   });
 
   it("구조가 깨진 파일에서 파생되는 참조 오류는 연쇄 보고하지 않는다", () => {
@@ -382,6 +471,7 @@ describe("오류 전건 일괄 보고 (#20)", () => {
       "places.json": raw.places,
       "stations.json": raw.stations,
       "train-snapshot.json": raw.trainLegs,
+      "gateway-legs.json": raw.gatewayLegs,
       "flights-snapshot.json": raw.flights,
       "work-place-relations.json": raw.workPlaceRelations,
     };

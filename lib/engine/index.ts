@@ -8,6 +8,7 @@
 import type { Repositories } from "../repositories/json";
 import type { ItineraryResult, TripConstraints } from "./types";
 import { planItinerary } from "./planner";
+import { buildGatewayAlternatives } from "./gateway-alternatives";
 import { z } from "zod";
 
 // PR #30 리뷰 ③: Server Action 경계가 같은 계약을 safeParse해 잘못된 요청을
@@ -74,5 +75,10 @@ export function generateItinerary(
   constraints: TripConstraints,
   repos: Repositories,
 ): ItineraryResult {
-  return planItinerary(TripConstraintsSchema.parse(constraints), repos);
+  const parsed = TripConstraintsSchema.parse(constraints);
+  const result = planItinerary(parsed, repos);
+  const gatewayAlternatives = buildGatewayAlternatives(parsed, repos, result);
+  return result.status === "planned" && gatewayAlternatives.length > 0
+    ? { ...result, gatewayAlternatives }
+    : result;
 }

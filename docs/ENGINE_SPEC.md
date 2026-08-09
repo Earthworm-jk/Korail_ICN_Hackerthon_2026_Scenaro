@@ -108,6 +108,24 @@ const Station = z.object({
   gatewayPriority: z.number().int().nonnegative().optional(),
   isAirport: z.boolean().optional(),
 });
+
+// #58: 열차로 가장하지 않는 목적지 중립 공항 진입 구간
+const GatewayLeg = z.object({
+  id: z.string(),
+  routeId: z.string(),
+  direction: z.enum(["outbound", "inbound"]),
+  mode: z.literal("airport_bus"),
+  fromStationId: z.string(),       // 플래너 권역 앵커
+  toStationId: z.string(),
+  fromName: LocalizedText,         // 실제 승차 터미널 표시명
+  toName: LocalizedText,
+  departAt: IsoDateTime,
+  arriveAt: IsoDateTime,
+  serviceName: LocalizedText,
+  operator: LocalizedText,
+  sourceUrls: z.array(HttpUrl).min(1),
+  verifiedAt: IsoDate,
+});
 ```
 
 버퍼는 저장하지 않고 파생: `bufferMin = max(20, ceil(accessEstimate.minutes * 0.5))`. (#5)
@@ -124,6 +142,12 @@ const Station = z.object({
 6. 후보 일정 생성·비교   — 사전식 비교(아래 6.)로 최선 일정 선택
 7. 결과 조립           — days, rejectedPlaces(사유 코드), comparisonKeys, metrics
 ```
+
+철도 추천 일정과 별도로, 같은 `routeId`의 outbound/inbound `GatewayLeg` 쌍마다
+공항 준비시각 이후 출발·공항 도착 마감 이전 귀환을 먼저 하드 필터한다. 통과한 쌍은
+도착 권역 앵커에서 귀환 버스 출발 전까지 동일 플래너를 다시 실행하고, 버스 구간을 포함한
+`regionWindows[]`와 **전체 `days[]` 대안**을 만든다. 단일 열차 구간만 바꾸지 않는다.
+선택 촬영지와 같은 권역의 앵커만 후보가 되며 목적지 이름·강릉 ID를 알고리즘에 하드코딩하지 않는다.
 
 ### 지역 내 이동 모델 — 역 허브, 왕복 동일 추정 (PR #9 리뷰 A)
 
@@ -234,6 +258,7 @@ type ItineraryResult =
       warnings: CandidateWarning[];
       comparisonKeys: ComparisonKeys;     // '왜 이 일정인가' 화면 재사용 (#3)
       metrics: ItineraryMetrics;
+      gatewayAlternatives?: GatewayAlternative[]; // #58 검증 직행버스 전체 일정 대안
     }
   | {
       status: "empty";              // 정상 처리, 조건을 만족하는 일정 없음

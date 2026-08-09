@@ -108,6 +108,7 @@ describe("결과 화면 상태 전이", () => {
 
   it("대안 선택은 재열람을 해제하고, 재계산 성공은 대안을 해제한다", () => {
     const alt = {
+      kind: "mock" as const,
       id: "mock-1", date: "2026-08-12", shiftMinutes: 60, days: [dayB],
       effects: { localUseDeltaMinutes: -60, excludedPlaceIds: [] },
     };

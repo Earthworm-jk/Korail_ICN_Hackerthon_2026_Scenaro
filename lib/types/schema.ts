@@ -201,6 +201,33 @@ export const TrainLeg = z
     }
   });
 
+// #58 — 공항 진입 구간은 TrainLeg로 가장하지 않고 독립 계약으로 보존한다.
+// 실제 MVP 데이터는 공항버스지만 목적지·노선명에 종속되지 않는 안정 ID와 왕복 방향을 쓴다.
+export const GatewayLeg = z
+  .object({
+    id: NonEmptyId,
+    routeId: NonEmptyId,
+    direction: z.enum(["outbound", "inbound"]),
+    mode: z.literal("airport_bus"),
+    fromStationId: NonEmptyId,
+    toStationId: NonEmptyId,
+    // 플래너는 권역 앵커 ID를 쓰되 UI는 실제 승하차 터미널명을 표시한다.
+    // (예: 강릉시외버스터미널을 강릉역이라고 오표기하지 않음)
+    fromName: LocalizedText,
+    toName: LocalizedText,
+    departAt: IsoDateTime,
+    arriveAt: IsoDateTime,
+    serviceName: LocalizedText,
+    operator: LocalizedText,
+    sourceUrls: z.array(HttpUrl).min(1),
+    verifiedAt: IsoDate,
+  })
+  .superRefine((leg, ctx) => {
+    if (Date.parse(leg.departAt) >= Date.parse(leg.arriveAt)) {
+      ctx.addIssue({ code: "custom", path: ["arriveAt"], message: "departAt < arriveAt 여야 합니다" });
+    }
+  });
+
 export const Flight = z.object({
   flightNo: NonEmptyId,
   direction: z.enum(["arrival", "departure"]),
@@ -213,6 +240,7 @@ export type WorkT = z.infer<typeof Work>;
 export type PlaceT = z.infer<typeof Place>;
 export type StationT = z.infer<typeof Station>;
 export type TrainLegT = z.infer<typeof TrainLeg>;
+export type GatewayLegT = z.infer<typeof GatewayLeg>;
 export type FlightT = z.infer<typeof Flight>;
 export type WorkPlaceRelationT = z.infer<typeof WorkPlaceRelation>;
 

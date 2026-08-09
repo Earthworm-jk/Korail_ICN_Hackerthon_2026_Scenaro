@@ -1,4 +1,5 @@
 /** 일정 엔진 입출력 타입 (docs/ENGINE_SPEC.md §2·§5·§6·§7) */
+import type { GatewayLegT } from "../types/schema";
 
 export type TripConstraints = {
   arrivalAt: string;
@@ -73,6 +74,9 @@ export type TrainRide = {
   arriveAt: string;
 };
 
+/** #58 — 열차로 가장하지 않는 검증 공항 진입 구간. */
+export type GatewayRide = GatewayLegT;
+
 // #33 확정 계약 — 역·권역 단위 현지 활용 가능 시간. UI는 availableMinutes를
 // "약 N시간 M분 활용 가능"으로 포맷만 하고 경계·시각을 재해석·재계산하지 않는다.
 export type RegionWindowStartBoundary =
@@ -101,7 +105,21 @@ export type DayPlan = {
   date: string; // KST 기준 YYYY-MM-DD
   items: ItineraryItem[];
   rides: TrainRide[];
+  gatewayLegs?: GatewayRide[]; // 저장 레코드 v2 호환을 위한 additive optional
   regionWindows: RegionWindow[]; // #33 — 해당 날짜(KST) 시작 창만, startAt 오름차순
+};
+
+export type GatewayAlternative = {
+  id: string;
+  kind: "gateway_bus";
+  routeId: string;
+  serviceName: { ko: string; en: string };
+  operator: { ko: string; en: string };
+  days: DayPlan[]; // 부분 패치가 아닌 전체 교체 일정
+  rejectedPlaces: CandidateRejection[];
+  warnings: CandidateWarning[];
+  metrics: ItineraryMetrics & { totalGatewayMinutes: number };
+  effects: { localUseDeltaMinutes: number; excludedPlaceIds: string[] };
 };
 
 // #14 ver.0.4 확정: 필수 방문·방문일 고정 입력이 없어 사용자 제약 실패(ok:false) 분기가
@@ -114,6 +132,7 @@ export type ItineraryResult =
       warnings: CandidateWarning[]; // 배치는 유지하되 방문 전 확인 필요 (#43)
       comparisonKeys: ComparisonKeys; // '왜 이 일정인가' 표시 재사용 (#3)
       metrics: ItineraryMetrics; // 편집 전후 비교(diff)는 앱 계층이 metrics로 계산 (PR #9 리뷰)
+      gatewayAlternatives?: GatewayAlternative[]; // #58 검증 직행버스 전체 일정 대안
     }
   | {
       status: "empty"; // 정상 처리됐지만 조건을 만족하는 일정 없음 — 허위 metrics 금지 (PR #16 리뷰)
