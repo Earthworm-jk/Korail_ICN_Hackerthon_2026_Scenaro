@@ -57,6 +57,7 @@ import { ThemeExperienceCard, ThemeExperienceMapOverlay } from "./theme-experien
 import { getThemeExperience, type ThemeExperienceResult } from "@/lib/actions/theme-experience";
 import type { StationFacilitiesSnapshotT } from "@/lib/station-facilities";
 import type { StationCoordinatesSnapshotT } from "@/lib/station-coordinates";
+import type { RailGeometrySnapshotT } from "@/lib/rail-geometry";
 import type { DayPlan } from "@/lib/engine/types";
 
 const KST = "Asia/Seoul";
@@ -227,9 +228,10 @@ function SummarySidebar({ arrivalAt, departureAt, readyAt, deadlineAt, actors, w
   );
 }
 
-export default function PlannerWizard({ stationFacilities, stationCoordinates }: {
+export default function PlannerWizard({ stationFacilities, stationCoordinates, railGeometry }: {
   stationFacilities: StationFacilitiesSnapshotT;
   stationCoordinates: StationCoordinatesSnapshotT;
+  railGeometry: RailGeometrySnapshotT;
 }) {
   const [locale, setLocale] = useState<Locale>("ko");
   const [step, setStep] = useState(1);
@@ -1066,6 +1068,7 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates }:
                 days={displayedDays}
                 places={mappablePlaces}
                 stations={mapStations}
+                railLines={railGeometry.lines}
                 tr={tr}
                 sticky
                 // 기본 지도는 공항·철도·촬영지만 — 권역은 토글을 눌렀을 때만 나타난다 (#14 v0.6)
