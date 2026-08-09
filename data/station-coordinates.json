@@ -1,0 +1,67 @@
+{
+  "source": "국가철도공단_철도역 정보 (공공데이터포털 15067652, odcloud REST API)",
+  "fetchedAt": "2026-08-09",
+  "totalStationsInSource": 215,
+  "stations": [
+    {
+      "stationId": "station-incheon-airport-t1",
+      "sourceName": "인천공항1터미널역",
+      "latitude": 37.447159,
+      "longitude": 126.4527808,
+      "source": "fallback",
+      "sourceNote": "원천(국가철도공단)에 없는 공항철도(주) 운영역 — OpenStreetMap 역 노드",
+      "sourceRef": "https://www.openstreetmap.org/node/5919544816",
+      "verifiedAt": "2026-08-09"
+    },
+    {
+      "stationId": "station-seoul",
+      "sourceName": "서울역",
+      "latitude": 37.557863,
+      "longitude": 126.969468,
+      "source": "primary",
+      "address": "서울시 중구 한강대로 405"
+    },
+    {
+      "stationId": "station-gangneung",
+      "sourceName": "강릉역",
+      "latitude": 37.763401,
+      "longitude": 128.898856,
+      "source": "primary",
+      "address": "강원도 강릉시 용지로 176"
+    },
+    {
+      "stationId": "station-jinbu",
+      "sourceName": "진부(오대산)역",
+      "latitude": 37.6425685,
+      "longitude": 128.5748224,
+      "source": "fallback",
+      "sourceNote": "원천 좌표가 0,0 결측이라 대체 — OpenStreetMap 역 노드. 원천 주소('강원도 평창군 진부면 송정길 120')와 행정구역 일치 확인",
+      "sourceRef": "https://www.openstreetmap.org/node/10591459522",
+      "verifiedAt": "2026-08-09"
+    },
+    {
+      "stationId": "station-manjong",
+      "sourceName": "만종역",
+      "latitude": 37.3563988,
+      "longitude": 127.8969128,
+      "source": "primary",
+      "address": "강원도 원주시 호저면 운동들2길 21-33"
+    },
+    {
+      "stationId": "station-busan",
+      "sourceName": "부산역",
+      "latitude": 35.115242,
+      "longitude": 129.042895,
+      "source": "primary",
+      "address": "부산광역시 동구 중앙대로 206"
+    },
+    {
+      "stationId": "station-jeonju",
+      "sourceName": "전주역",
+      "latitude": 35.849552,
+      "longitude": 127.161439,
+      "source": "primary",
+      "address": "전라북도 전주시 덕지구 동부대로 680번지"
+    }
+  ]
+}

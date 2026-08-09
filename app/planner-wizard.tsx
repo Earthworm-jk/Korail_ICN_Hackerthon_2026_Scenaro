@@ -41,7 +41,9 @@ import { formatEpisodeLabel } from "@/lib/episode-label";
 import { AlternativeTimetables } from "./alternative-timetables";
 import { AuthModal, TripsModal, useSaveStub, type SaveStatus } from "./save-stub";
 import { ExecutionSupport } from "./execution-support";
+import { ItineraryRouteMap, KoreaMapPanel, type MapPlace, type MapStation } from "./korea-map";
 import type { StationFacilitiesSnapshotT } from "@/lib/station-facilities";
+import type { StationCoordinatesSnapshotT } from "@/lib/station-coordinates";
 
 const KST = "Asia/Seoul";
 
@@ -175,8 +177,9 @@ function SummarySidebar({ arrivalAt, departureAt, readyAt, deadlineAt, actors, w
   );
 }
 
-export default function PlannerWizard({ stationFacilities }: {
+export default function PlannerWizard({ stationFacilities, stationCoordinates }: {
   stationFacilities: StationFacilitiesSnapshotT;
+  stationCoordinates: StationCoordinatesSnapshotT;
 }) {
   const [locale, setLocale] = useState<Locale>("ko");
   const [step, setStep] = useState(1);
@@ -321,6 +324,7 @@ export default function PlannerWizard({ stationFacilities }: {
   const viewRejected = deriveRejectedPlaces(view);
   const viewWarnings = deriveWarnings(view);
 
+
   const chooseAlternative = useCallback((alt: MockAlternative | null) => {
     dispatchView({ type: "SELECT_ALT", alt });
     saveStub.markDirty();
@@ -367,6 +371,42 @@ export default function PlannerWizard({ stationFacilities }: {
     [sortedCandidates, selectedActors],
   );
 
+  // #14 v0.6 지도 — 좌표가 확인된 장소만 찍는다. 좌표 없는 장소(라라무리·오크밸리)는
+  // 임의 위치나 역 위치로 대체하지 않고 표시에서 빼되(A3), 몇 곳이 빠졌는지 지도 옆에 밝힌다.
+  const mapStations = useMemo<MapStation[]>(() => {
+    const seedById = new Map((candidateData?.stations ?? []).map((s) => [s.id, s]));
+    return stationCoordinates.stations.map((station) => ({
+      id: station.stationId,
+      name: seedById.get(station.stationId)?.name[locale] ?? station.sourceName,
+      latitude: station.latitude,
+      longitude: station.longitude,
+      isAirport: seedById.get(station.stationId)?.isAirport === true,
+    }));
+  }, [stationCoordinates, candidateData, locale]);
+
+  const mappablePlaces = useMemo<MapPlace[]>(
+    () =>
+      (candidateData?.candidates ?? [])
+        .filter((c) => c.latitude !== undefined && c.longitude !== undefined)
+        .map((c) => ({
+          id: c.id,
+          name: c.name[locale],
+          latitude: c.latitude as number,
+          longitude: c.longitude as number,
+          stationId: c.nearestStationId,
+          selected: selectedPlaceIds.has(c.id),
+        })),
+    [candidateData, locale, selectedPlaceIds],
+  );
+  const omittedPlaceCount = (candidateData?.candidates.length ?? 0) - mappablePlaces.length;
+
+  // 3단계 지도 전용 표시 필터 — 지도 안에서만 도는 상태이며 선택·일정에는 영향이 없다
+  const [onlySelectedOnMap, setOnlySelectedOnMap] = useState(false);
+  const step3MapPlaces = onlySelectedOnMap
+    ? mappablePlaces.filter((place) => place.selected)
+    : mappablePlaces;
+
+
   // #33 — availableMinutes 포맷 전용 (재계산 금지)
   const availableLabel = (minutes: number) => {
     const hours = Math.floor(minutes / 60);
@@ -412,7 +452,10 @@ export default function PlannerWizard({ stationFacilities }: {
 
   return (
     // #14 v0.6 시안 — 페이지는 subtle 배경, 앱은 라운드 카드(sc-app)
-    <div className="mx-auto max-w-3xl px-4 py-6 sm:px-6">
+    // 시안의 sc-app에는 max-width가 없다(브라우저 폭 전체). 3·4단계의 2단 그리드가
+    // 220px 요약 사이드바와 함께 들어가려면 폭이 필요해 max-w-6xl로 넓힌다 — 좁으면
+    // 지도 열이 시안의 minmax(320px) 아래로 눌린다.
+    <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6">
       <div className="overflow-hidden rounded-2xl border bg-sc-surface shadow-[0_18px_50px_var(--sc-shadow)]">
       <header className="flex flex-wrap items-center justify-between gap-3 border-b bg-sc-surface px-5 py-4">
         <div className="flex items-center gap-2.5">
@@ -649,7 +692,10 @@ export default function PlannerWizard({ stationFacilities }: {
               {tr("step3.noCandidates")}
             </p>
           )}
-          <ul className="mt-3 space-y-2">
+          {/* #14 v0.6 sc-place-layout — 좌측 후보 목록 + 우측 지도 (md 미만은 세로 적층) */}
+          <div className="mt-3 grid gap-[18px] md:grid-cols-[minmax(0,1.25fr)_minmax(260px,0.75fr)]">
+          <div className="min-w-0">
+          <ul className="space-y-2">
             {/* #43 확정: 미확인 후보도 같은 목록에서 선택 가능 — 카드에 경고 배지 */}
             {candidateGroups.primary.map((c) => (
               <PlaceCard key={c.id} candidate={c} locale={locale} tr={tr}
@@ -685,6 +731,25 @@ export default function PlannerWizard({ stationFacilities }: {
               </ul>
             </div>
           )}
+          </div>
+          <KoreaMapPanel
+            kind="places"
+            places={step3MapPlaces}
+            stations={mapStations}
+            omittedCount={omittedPlaceCount}
+            tr={tr}
+            headingAction={
+              <button
+                type="button"
+                aria-pressed={onlySelectedOnMap}
+                className={`min-h-[30px] rounded-lg border px-2 py-1 text-xs ${onlySelectedOnMap ? "border-sc-blue bg-sc-blue-soft text-sc-blue" : ""}`}
+                onClick={() => setOnlySelectedOnMap((on) => !on)}
+              >
+                {tr("map.filterSelected")}
+              </button>
+            }
+          />
+          </div>
           <div className="mt-4 flex justify-between">
             <button className="rounded border px-4 py-2 text-sm" onClick={() => setStep(2)}>{tr("common.back")}</button>
             <button
@@ -718,7 +783,9 @@ export default function PlannerWizard({ stationFacilities }: {
           )}
 
           {displayedDays && (
-            <div className="mt-4 space-y-4">
+            // #14 v0.6 sc-result-grid — 좌측 일정 타임라인 + 우측 지도·경고·실행 지원
+            <div className="mt-4 grid gap-[18px] md:grid-cols-[minmax(0,1.15fr)_minmax(320px,0.85fr)]">
+              <div className="min-w-0 space-y-4">
               {displayedDays.map((day) => {
                 const baseDay = baseDays?.find((d) => d.date === day.date);
                 return (
@@ -767,6 +834,17 @@ export default function PlannerWizard({ stationFacilities }: {
                   </div>
                 );
               })}
+              </div>
+
+              <div className="min-w-0 space-y-4">
+              <ItineraryRouteMap
+                days={displayedDays}
+                places={mappablePlaces}
+                stations={mapStations}
+                tr={tr}
+                /* 테마체험 권역 오버레이·토글은 #78 P1 별도 스레드 몫 —
+                   experienceOverlay·headingAction 슬롯이 그 자리다 */
+              />
               {viewWarnings.length > 0 && (
                 // #43 수용 기준: 경고 누락 0건 — 배치는 유지하되 방문 전 확인을 안내
                 <div className="rounded-lg border border-sc-orange/30 bg-sc-orange-soft p-4">
@@ -803,6 +881,7 @@ export default function PlannerWizard({ stationFacilities }: {
                 stationName={stationName}
                 tr={tr}
               />
+              </div>
             </div>
           )}
 
