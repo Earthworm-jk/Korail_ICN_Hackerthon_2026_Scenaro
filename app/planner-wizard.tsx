@@ -762,7 +762,10 @@ export default function PlannerWizard({ stationFacilities }: {
       {saveStub.authIntent && (
         <AuthModal
           intent={saveStub.authIntent}
-          onFinish={() => saveStub.finishAuth(savedEntry())}
+          isStub={saveStub.mode !== "supabase"}
+          pending={saveStub.authPending}
+          failed={saveStub.authFailed}
+          onSubmit={(kind, email, password) => void saveStub.submitAuth(kind, email, password, savedEntry())}
           onClose={saveStub.closeAuth}
           tr={tr}
         />
@@ -771,6 +774,8 @@ export default function PlannerWizard({ stationFacilities }: {
         <TripsModal
           saved={saveStub.saved}
           selectedTripId={saveStub.selectedTripId}
+          isStub={saveStub.mode !== "supabase"}
+          loadFailed={saveStub.tripsLoadFailed}
           onSelect={saveStub.selectTrip}
           onReopen={saveStub.reopen}
           onLogout={saveStub.logout}
