@@ -41,10 +41,9 @@
   --color-sc-subtle: var(--sc-subtle);
   --font-sans: Pretendard, "Noto Sans KR", var(--font-geist-sans), system-ui, sans-serif;
 
-  /* The planner now puts selection + calculated itinerary side by side in step 3.
-     1152px made both columns feel like admin-table panes; keep the same utility name
-     while giving the desktop shell enough room for the integrated planner. */
-  --container-6xl: 82.5rem;
+  /* Step 3 is now a three-column decision workspace. Give the shell enough width for
+     candidate cards + a map pillar + itinerary without squeezing the map below 360px. */
+  --container-6xl: 88rem;
 }
 
 @layer base {
@@ -110,7 +109,6 @@
 }
 
 @layer components {
-  /* Common interactive surfaces: stronger affordance without adding visual noise. */
   button.rounded,
   button[class*="rounded-"] {
     transition-property: border-color, background-color, color, box-shadow, opacity, transform;
@@ -123,8 +121,6 @@
     transform: translateY(1px);
   }
 
-  /* Step 3 is the product's decision workspace. Give its selectable place cards a
-     clearer hierarchy while preserving all existing state classes and semantics. */
   #place-picker > ul > li {
     border-radius: 12px;
     padding: 14px;
@@ -157,7 +153,6 @@
     background: var(--sc-blue-soft);
   }
 
-  /* Native controls are important in step 1; keep dates/times easy to hit on notebook screens. */
   input[type="date"],
   input[type="text"],
   input[type="email"],
@@ -166,7 +161,6 @@
     min-height: 36px;
   }
 
-  /* Numeric travel information should scan vertically without digit jitter. */
   time,
   [class*="tabular-nums"] {
     font-variant-numeric: tabular-nums;
@@ -175,13 +169,87 @@
 
 @media (min-width: 1024px) {
   @layer components {
-    /* Integrated step-3 columns need breathing room; the application shell remains centered. */
     body > main > div.mx-auto {
-      padding-inline: 24px;
+      padding-inline: 22px;
     }
 
+    /* Review #114 pass 2: the presentation deck uses the map as the central pillar.
+       Keep the existing two logical areas, but widen the result side so its inner map
+       and itinerary read as two visual columns next to the candidate picker. */
+    section > div.grid:has(> #place-picker) {
+      grid-template-columns: minmax(260px, 0.72fr) minmax(0, 2.28fr) !important;
+      gap: 20px;
+      align-items: start;
+    }
+
+    /* Candidate cards stay visible while the itinerary changes. Only this list scrolls;
+       the page itself does not need to travel several card-heights before the map returns. */
     #place-picker {
+      position: sticky;
+      top: 16px;
+      max-height: calc(100vh - 32px);
+      min-width: 0;
+      padding-right: 4px;
+      overflow-y: auto;
+      overscroll-behavior: contain;
+      scrollbar-gutter: stable;
+    }
+
+    #place-picker > ul {
       padding-right: 2px;
+    }
+
+    /* One shared visual map on desktop. The route map already renders airports, stations
+       and the placed filming locations together, so the older picker-only map becomes
+       redundant in the three-column workspace. Keep it available below lg for now. */
+    #place-picker > details {
+      display: none;
+    }
+
+    /* Result's inner grid becomes map | itinerary. DOM order remains itinerary then map,
+       but explicit columns put the map in the center without changing planning logic. */
+    #place-picker + div[aria-busy] > div[class*="space-y"] > div.grid {
+      grid-template-columns: minmax(360px, 1.08fr) minmax(300px, 0.92fr) !important;
+      gap: 18px;
+      align-items: start;
+    }
+
+    #place-picker + div[aria-busy] > div[class*="space-y"] > div.grid > div:first-child {
+      grid-column: 2;
+      grid-row: 1;
+    }
+
+    /* Flatten the old map/support column: the first aside is the single central map;
+       validation, warnings, theme and station support flow under the itinerary instead. */
+    #place-picker + div[aria-busy] > div[class*="space-y"] > div.grid > div:nth-child(2) {
+      display: contents;
+    }
+
+    #place-picker + div[aria-busy] > div[class*="space-y"] > div.grid > div:nth-child(2) > aside:first-child {
+      grid-column: 1;
+      grid-row: 1 / span 8;
+      align-self: start;
+      position: sticky;
+      top: 16px;
+      z-index: 2;
+      box-shadow: 0 12px 28px var(--sc-shadow-soft);
+    }
+
+    #place-picker + div[aria-busy] > div[class*="space-y"] > div.grid > div:nth-child(2) > :not(aside:first-child) {
+      grid-column: 2;
+    }
+
+    /* Let the map stay visually substantial, like the 304x490 center stage in the
+       preliminary presentation, instead of reading as a small utility card. */
+    #place-picker + div[aria-busy] aside svg[role="img"] {
+      width: 100%;
+      min-width: 0;
+    }
+
+    /* Itinerary and supporting cards become a calmer right rail. */
+    #place-picker + div[aria-busy] > div[class*="space-y"] > div.grid > div:first-child > div,
+    #place-picker + div[aria-busy] > div[class*="space-y"] > div.grid > div:nth-child(2) > :not(aside:first-child) {
+      border-radius: 12px;
     }
   }
 }
@@ -190,6 +258,16 @@
   @layer components {
     body > main > div.mx-auto {
       padding-inline: 28px;
+    }
+
+    section > div.grid:has(> #place-picker) {
+      grid-template-columns: minmax(280px, 0.76fr) minmax(0, 2.24fr) !important;
+      gap: 22px;
+    }
+
+    #place-picker + div[aria-busy] > div[class*="space-y"] > div.grid {
+      grid-template-columns: minmax(390px, 1.05fr) minmax(320px, 0.95fr) !important;
+      gap: 20px;
     }
   }
 }
