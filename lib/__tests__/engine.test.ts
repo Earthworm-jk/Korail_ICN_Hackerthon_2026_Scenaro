@@ -275,7 +275,6 @@ describe("generateItinerary", () => {
     expect(result.comparisonKeys).toMatchObject({
       selectionGroupCoverageCount: 2,
       selectedUnionPlaceCount: 3,
-      visitablePlaceCount: 3,
     });
     expect(result.selectionGroups).toEqual({
       requested: ["actor", "work"],
@@ -674,7 +673,7 @@ describe("generateItinerary", () => {
     expect(performance.now() - startedAt).toBeLessThan(2_000);
     expect(result.status).toBe("planned");
     if (result.status !== "planned") return;
-    expect(result.comparisonKeys.visitablePlaceCount).toBe(15);
+    expect(result.comparisonKeys.selectedUnionPlaceCount).toBe(15);
   });
 
   // PR #45 리뷰: 출력 창(09:00-21:00)과 실제 배치의 정합 — 활동 경계 회귀

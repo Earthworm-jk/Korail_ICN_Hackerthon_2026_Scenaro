@@ -45,11 +45,10 @@ export type CandidateWarning = {
 export type ComparisonKeys = {
   selectionGroupCoverageCount: number; // 1) 배우·작품 요청 그룹 중 실제 방문에 반영된 수(최대 2)
   selectedUnionPlaceCount: number; // 2) 두 엄격 후보 집합 합집합의 고유 방문 장소 수
-  visitablePlaceCount: number; // 3) 전체 방문 가능 장소 수 — 현재 엄격 후보만 있어 2와 같지만 계약상 분리
-  activityWarningCount: number; // 4) 낮을수록 우선 — 운영시간 경고 수 (#43 결정 3, #3 개정)
-  totalTravelMinutes: number; // 5) 열차 + 역–장소 왕복 추정(문전간), 낮을수록 우선
-  transferCount: number; // 6) 낮을수록 우선
-  slackSatisfied: boolean; // 7) 충족 우선 (미달만 불이익, 초과 가점 없음)
+  activityWarningCount: number; // 3) 낮을수록 우선 — 운영시간 경고 수 (#43 결정 3, #3 개정)
+  totalTravelMinutes: number; // 4) 열차 + 역–장소 왕복 추정(문전간), 낮을수록 우선
+  transferCount: number; // 5) 낮을수록 우선
+  slackSatisfied: boolean; // 6) 충족 우선 (미달만 불이익, 초과 가점 없음)
 };
 
 export type SelectionGroupUncoveredReason =

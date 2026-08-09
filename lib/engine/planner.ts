@@ -701,7 +701,6 @@ function completeSchedule(
     keys: {
       selectionGroupCoverageCount,
       selectedUnionPlaceCount: state.visits.length,
-      visitablePlaceCount: state.visits.length,
       activityWarningCount: activityWarningCountOf(state), // #43 결정 3 — 방문 수와 이동시간 사이
       totalTravelMinutes: totalRailMinutes + state.localTravelMinutes,
       transferCount: totalTransfers,

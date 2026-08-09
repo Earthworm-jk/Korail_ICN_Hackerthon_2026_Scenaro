@@ -49,7 +49,6 @@ const planned: ItineraryResult = {
   comparisonKeys: {
     selectionGroupCoverageCount: 1,
     selectedUnionPlaceCount: 1,
-    visitablePlaceCount: 1,
     activityWarningCount: 1,
     totalTravelMinutes: 168,
     transferCount: 0,
@@ -78,7 +77,7 @@ describe("ItineraryResult 2분기 판별 (#14 ver.0.4 — 사용자 제약 실�
     for (const r of [planned, empty]) {
       if (r.status === "planned") {
         expect(r.metrics.totalRailMinutes).toBeGreaterThan(0);
-        expect(r.comparisonKeys.visitablePlaceCount).toBeGreaterThan(0);
+        expect(r.comparisonKeys.selectedUnionPlaceCount).toBeGreaterThan(0);
       }
     }
   });

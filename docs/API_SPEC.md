@@ -50,6 +50,11 @@
 - **AI 촬영지 랭킹**: `data/place-rankings.json` 스냅샷만 사용
   (생성: `scripts/build_place_rankings.py` — OpenAI 호출은 이 오프라인 스크립트에서만).
   미탑재·미검토·하한 미달은 "점수 없음"으로 결정적 폴백 (#48, PLACE_RANKING.md)
+- **배우–장면 근거 검증**: 사용자 검색마다 웹을 조회하지 않는다. OpenAI Web Search와
+  Structured Outputs는 오프라인·비동기 수집 단계에서 근거 후보만 만들고,
+  `lib/actor-presence-verification.ts`가 출처 등급·명시성·독립 출처 수로 자동 확정 여부를
+  결정한다. A/B만 시드·DB로 승격하며 미확정·충돌은 배우 후보에서 제외한다
+  (`ACTOR_PRESENCE_VERIFICATION.md`).
 - **TourAPI·레일포털 등**: 오프라인 데이터 파이프라인(Python, 시드 생성 단계)에서만 사용.
   앱 런타임 호출 없음
 - 위 항목이 바뀌면(런타임 실호출 추가) 이 문서를 먼저 갱신한다 — "실호출만 수록" 원칙
@@ -97,7 +102,7 @@ getCandidatePlaces(selection: {
 //   — 선택 작품 검토 관계 ∪ 선택 배우 장면 등장 확정 관계만 포함
 // REQ-SRCH-005·006·007. 정렬은 UI에서 (관련성 / officialSourceCount 토글).
 // #51 최종 계약: 배우 후보는 actorPresenceReviewed:true + featuredActorIds 포함 관계만,
-// 작품 후보는 사람이 검토한 선택 작품 관계 전체, 복합 선택은 두 집합의 합집합이다.
+// 작품 후보는 검증 완료된 선택 작품 관계 전체, 복합 선택은 두 집합의 합집합이다.
 // 미등장·미검토 관계는 배우 후보의 별도 선택 영역에도 노출하지 않는다.
 
 // lib/actions/itinerary.ts

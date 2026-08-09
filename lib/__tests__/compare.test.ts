@@ -6,7 +6,6 @@ function cand(partial: Partial<Candidate> & { stableId: string }): Candidate {
     keys: {
       selectionGroupCoverageCount: 2,
       selectedUnionPlaceCount: 3,
-      visitablePlaceCount: 3,
       activityWarningCount: 0,
       totalTravelMinutes: 120,
       transferCount: 1,
@@ -68,8 +67,8 @@ describe("운영시간 경고 수 키 (#43 결정 3 — 방문 수 뒤·이동�
   });
 
   it("방문 수가 다르면 경고 수보다 방문 수가 먼저다 — 사용자 선택 의도 우선", () => {
-    const moreVisits = cand({ stableId: "a", keys: { visitablePlaceCount: 3, activityWarningCount: 2 } as never });
-    const fewerClean = cand({ stableId: "b", keys: { visitablePlaceCount: 2, activityWarningCount: 0 } as never });
+    const moreVisits = cand({ stableId: "a", keys: { selectedUnionPlaceCount: 3, activityWarningCount: 2 } as never });
+    const fewerClean = cand({ stableId: "b", keys: { selectedUnionPlaceCount: 2, activityWarningCount: 0 } as never });
     expect(compareCandidates(moreVisits, fewerClean)).toBeLessThan(0);
   });
 
