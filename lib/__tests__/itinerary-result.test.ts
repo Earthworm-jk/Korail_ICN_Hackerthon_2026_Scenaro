@@ -45,11 +45,12 @@ const planned: ItineraryResult = {
   warnings: [
     { code: "ACTIVITY_WINDOW_MISMATCH", placeId: "place-yeongjin-beach", detail: "CONSERVATIVE_BUFFER_MISMATCH" },
   ],
+  selectionGroups: { requested: ["work"], covered: ["work"], uncovered: [] },
   comparisonKeys: {
-    relevanceKey: { selectedWorkPlaceCount: 1, actorOtherWorkPlaceCount: 0 },
-    visitablePlaceCount: 1,
+    selectionGroupCoverageCount: 1,
+    selectedUnionPlaceCount: 1,
     activityWarningCount: 1,
-    totalRailMinutes: 118,
+    totalTravelMinutes: 168,
     transferCount: 0,
     slackSatisfied: true,
   },
@@ -64,6 +65,11 @@ const empty: ItineraryResult = {
     { code: "TRAIN_UNAVAILABLE", placeId: "place-woljeongsa-temple" },
   ],
   warnings: [],
+  selectionGroups: {
+    requested: ["work"],
+    covered: [],
+    uncovered: [{ group: "work", reasons: ["TRAIN_UNAVAILABLE"] }],
+  },
 };
 
 describe("ItineraryResult 2분기 판별 (#14 ver.0.4 — 사용자 제약 실패 분기 소멸)", () => {
@@ -71,7 +77,7 @@ describe("ItineraryResult 2분기 판별 (#14 ver.0.4 — 사용자 제약 실�
     for (const r of [planned, empty]) {
       if (r.status === "planned") {
         expect(r.metrics.totalRailMinutes).toBeGreaterThan(0);
-        expect(r.comparisonKeys.visitablePlaceCount).toBeGreaterThan(0);
+        expect(r.comparisonKeys.selectedUnionPlaceCount).toBeGreaterThan(0);
       }
     }
   });

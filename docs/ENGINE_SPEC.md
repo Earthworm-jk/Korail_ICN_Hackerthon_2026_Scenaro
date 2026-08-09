@@ -47,20 +47,24 @@ function generateItinerary(c: TripConstraints, repos: Repos): ItineraryResult;
 방문일 변경·고정과 필수 방문 입력은 PRD v0.2에서 제거됐다. 엔진은 장소를 특정 날짜에
 강제하거나 반드시 포함시키는 계약을 제공하지 않는다.
 
-### 관계 유형은 시드가 아니라 constraints에서 파생한다 (PR #9 리뷰 B)
+### 엄격한 후보 집합과 합집합 (#51 최종 계약)
 
-장소–선택의 관계는 무엇을 선택했는지에 따라 달라지므로 시드에 정적으로 저장하지 않는다.
-**판정은 순서가 있으며 두 분류는 상호 배타적이다** — 한 장소는 정확히 하나의 분류에만 속한다.
+후보 포함 여부는 넓은 `Place.workIds`·`Actor.workIds`가 아니라 근거 검증을 통과한
+`WorkPlaceRelation`에서 파생한다.
 
 ```
-1) place.workIds ∩ selectedWorkIds ≠ ∅              → selected_work (여기서 판정 종료)
-2) 1)이 아니고, 선택 배우가 있으며
-   place.workIds ∩ actors(selectedActorIds).workIds ≠ ∅ → actor_other_work
-3) 둘 다 아님                                         → 후보 아님 (NFR-ACCU-001)
+배우 집합 = reviewed: true
+          ∧ actorPresenceReviewed: true
+          ∧ featuredActorIds ∩ selectedActorIds ≠ ∅
+
+작품 집합 = reviewed: true ∧ workId ∈ selectedWorkIds
+
+최종 후보 = 배우 집합 ∪ 작품 집합 (placeId 중복 제거)
 ```
 
-선택 작품에도 연결되고 배우의 다른 작품에도 연결된 장소는 1)에서 `selected_work`로
-확정되며 `actor_other_work`로 중복 분류되지 않는다.
+미등장 확정·등장 미검토 관계는 배우 후보에 포함하지 않는다. 작품 후보는 선택 배우의
+장면 등장 여부를 요구하지 않는다. 한 장소가 두 집합에 모두 속하면 후보는 한 번만 만들되
+`actor`·`work` 두 그룹 소속을 모두 보존한다.
 
 ## 3. 시드 데이터 스키마 (Zod 요약)
 
@@ -229,27 +233,23 @@ type CandidateWarning = {
 ## 6. 후보 비교 — 사전식 (#3, 가중합 아님)
 
 키를 순서대로 비교하고, 앞 키에서 갈리면 뒤 키는 보지 않는다.
-**관련성도 상수 점수(5/3)가 아니라 관계 유형별 개수 벡터로 비교한다** (PR #9 리뷰 B —
-가중합 오해 원천 제거):
+작품을 배우보다 절대 우선하지 않는다. 두 선택 그룹의 사용자 의도를 먼저 지키고,
+그 뒤 고유 방문 장소 수와 운영 품질을 비교한다.
 
 ```ts
 type ComparisonKeys = {
-  relevanceKey: {
-    // §2의 상호 배타 분류 기준 — 한 장소는 두 카운트 중 정확히 한쪽에만 집계된다
-    selectedWorkPlaceCount: number;   // 1a) 높을수록 우선
-    actorOtherWorkPlaceCount: number; // 1b) 1a 동점일 때, 높을수록 우선
-  };
-  visitablePlaceCount: number;        // 2) 높을수록 우선
-  activityWarningCount: number;       // 3) 낮을수록 우선 (#43)
-  totalRailMinutes: number;           // 4) 낮을수록 우선
-  transferCount: number;              // 5) 낮을수록 우선
-  slackSatisfied: boolean;            // 6) 충족 우선 (미달만 불이익, 초과 가점 없음)
+  selectionGroupCoverageCount: number; // 1) 배우·작품 요청 그룹 중 실제 방문에 반영된 수
+  selectedUnionPlaceCount: number;     // 2) 엄격 합집합의 고유 방문 장소 수
+  activityWarningCount: number;        // 3) 낮을수록 우선 (#43)
+  totalTravelMinutes: number;          // 4) 열차 + 역–장소 왕복 추정(문전간), 낮을수록 우선
+  transferCount: number;               // 5) 낮을수록 우선
+  slackSatisfied: boolean;             // 6) 충족 우선 (미달만 불이익, 초과 가점 없음)
 };
 ```
 
 동점 타이브레이커(결정성 보장): **출국 전 여유 큼 → 장소 ID·열차번호 사전순.**
 비교 키에 이미 포함된 환승·이동시간은 동점 시점에 같으므로 반복하지 않는다(정의서 v0.5).
-beam pruning도 동일한 1차 관련성 키(`selected_work` 방문 수)를 먼저 사용하고, 그 다음
+beam pruning도 동일한 1차 키(선택 그룹 충족 수)를 먼저 사용하고, 그 다음
 `readyAt`과 안정 ID로 정렬한다. MVP beam 상한은 1,000개이며 회귀 프리셋으로 결과를 고정한다.
 
 ## 7. 출력 타입
@@ -265,12 +265,23 @@ type ItineraryMetrics = {
   departureSlackMinutes: number;
 };
 
+type SelectionGroupSummary = {
+  requested: ("actor" | "work")[];
+  covered: ("actor" | "work")[];
+  uncovered: Array<{
+    group: "actor" | "work";
+    reasons: Array<CandidateRejection["code"]
+      | "NO_STRICT_CANDIDATES" | "EXCLUDED_BY_USER" | "NOT_SCHEDULED">;
+  }>;
+};
+
 type ItineraryResult =
   | {
       status: "planned";            // 선택된 일정이 있는 정상 상태
       days: DayPlan[];              // 장소·열차편(시각·역)·추정 이동 라벨 포함
       rejectedPlaces: CandidateRejection[];
       warnings: CandidateWarning[];
+      selectionGroups: SelectionGroupSummary; // 요청·반영·미반영 그룹과 사유 (#3)
       comparisonKeys: ComparisonKeys;     // '왜 이 일정인가' 화면 재사용 (#3)
       metrics: ItineraryMetrics;
       gatewayAlternatives?: GatewayAlternative[]; // #58 비차단 후속 보강 전체 일정 대안
@@ -280,6 +291,7 @@ type ItineraryResult =
       days: [];
       rejectedPlaces: CandidateRejection[];
       warnings: CandidateWarning[];
+      selectionGroups: SelectionGroupSummary;
     };
 ```
 

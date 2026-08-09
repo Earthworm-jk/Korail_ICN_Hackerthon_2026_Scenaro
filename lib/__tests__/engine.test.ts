@@ -11,7 +11,7 @@ import { loadRepositories, type Repositories } from "../repositories/json";
 const localized = (ko: string, en = ko) => ({ ko, en });
 
 function repositories(): Repositories {
-  return {
+  const repos: Repositories = {
     actors: [
       { id: "actor-a", name: localized("배우 A"), workIds: ["work-1", "work-2"] },
       { id: "actor-b", name: localized("배우 B"), workIds: ["work-3"] },
@@ -51,6 +51,30 @@ function repositories(): Repositories {
     flights: [],
     workPlaceRelations: [],
   };
+  repos.workPlaceRelations = strictRelationsFor(repos.places);
+  return repos;
+}
+
+function strictRelationsFor(places: Repositories["places"]): Repositories["workPlaceRelations"] {
+  const actorsByWork: Record<string, string[]> = {
+    "work-1": ["actor-a"],
+    "work-2": ["actor-a"],
+    "work-3": ["actor-b"],
+  };
+  return places.flatMap((place) => place.workIds.map((workId) => ({
+    workId,
+    placeId: place.id,
+    featuredActorIds: actorsByWork[workId] ?? [],
+    actorPresenceReviewed: true as const,
+    sourceUrls: ["https://example.com/relation"],
+    verifiedAt: "2026-08-09",
+    reviewed: true,
+  })));
+}
+
+function replacePlaces(repos: Repositories, places: Repositories["places"]): void {
+  repos.places = places;
+  repos.workPlaceRelations = strictRelationsFor(places);
 }
 
 function place(
@@ -211,9 +235,9 @@ describe("generateItinerary", () => {
       { id: "station-airport", name: localized("공항"), lineType: "AREX", regionId: "seoul_metro", isAirport: true },
       { id: "station-synthetic", name: localized("합성 목적지"), lineType: "KTX", regionId: "yeongnam" },
     );
-    repos.places = [place("place-synthetic", "work-1", "station-synthetic", {
+    replacePlaces(repos, [place("place-synthetic", "work-1", "station-synthetic", {
       type: "always_open", source: "fixture", verifiedAt: "2026-08-09",
-    })];
+    })]);
     repos.trainLegs = [
       leg("SYN-OUT", "station-seoul", "station-synthetic", "2026-08-12T08:00:00+09:00", "2026-08-12T10:00:00+09:00"),
       leg("SYN-IN", "station-synthetic", "station-seoul", "2026-08-12T17:00:00+09:00", "2026-08-12T19:00:00+09:00"),
@@ -239,32 +263,29 @@ describe("generateItinerary", () => {
 
     expect(result.status).toBe("planned");
     if (result.status !== "planned") return;
-    // place-unverified가 work-1(선택 작품)이라 relevance 2가 되어 기존 3곳 조합을 이긴다
+    // #3 개정: 작품 절대 우선이 아니라 그룹 충족·방문 수 동점 뒤 경고가 적은 조합이 이긴다.
     expect(result.days.flatMap((day) => day.items.map((item) => item.placeId))).toEqual([
-      "place-actor-a",
       "place-selected",
-      "place-unverified",
+      "place-actor-a",
+      "place-actor-b",
     ]);
     expect(result.days.flatMap((day) => day.rides.map((ride) => ride.trainNo))).toEqual([
-      "101", "302",
+      "101", "201", "301",
     ]);
-    expect(result.comparisonKeys.relevanceKey).toEqual({
-      selectedWorkPlaceCount: 2,
-      actorOtherWorkPlaceCount: 1,
+    expect(result.comparisonKeys).toMatchObject({
+      selectionGroupCoverageCount: 2,
+      selectedUnionPlaceCount: 3,
     });
-    expect(result.comparisonKeys.activityWarningCount).toBe(1);
-    expect(result.metrics).toEqual({
-      totalTravelMinutes: 420,
-      totalRailMinutes: 240,
-      transferCount: 0,
-      departureSlackMinutes: 180,
+    expect(result.selectionGroups).toEqual({
+      requested: ["actor", "work"],
+      covered: ["actor", "work"],
+      uncovered: [],
     });
-    expect(result.warnings).toEqual([
-      { code: "ACTIVITY_WINDOW_MISMATCH", placeId: "place-unverified", detail: "UNVERIFIED_HOURS" },
-    ]);
-    expect(result.rejectedPlaces).toEqual([
-      { code: "TRAIN_UNAVAILABLE", placeId: "place-actor-b" },
-    ]);
+    expect(result.comparisonKeys.activityWarningCount).toBe(0);
+    expect(result.warnings).toEqual([]);
+    expect(result.rejectedPlaces).toContainEqual({
+      code: "TRAIN_UNAVAILABLE", placeId: "place-unverified",
+    });
   });
 
   it("사용자가 제외한 장소는 일정과 자동 제외 사유에서 모두 뺀다", () => {
@@ -279,6 +300,63 @@ describe("generateItinerary", () => {
       .toEqual(["place-actor-a", "place-selected", "place-unverified"]);
     expect(result.rejectedPlaces.some((reason) =>
       reason.placeId === "place-actor-b")).toBe(false);
+  });
+
+  it("복합 선택은 작품 장소 수를 독점하지 않고 배우·작품 두 그룹을 먼저 충족한다 (#3)", () => {
+    const repos = repositories();
+    replacePlaces(repos, [
+      place("work-a", "work-1", "station-seoul", { type: "always_open", source: "fixture", verifiedAt: "2026-08-09" }),
+      place("work-b", "work-1", "station-seoul", { type: "always_open", source: "fixture", verifiedAt: "2026-08-09" }),
+      place("work-c", "work-1", "station-seoul", { type: "always_open", source: "fixture", verifiedAt: "2026-08-09" }),
+      place("actor-only", "work-2", "station-seoul", { type: "always_open", source: "fixture", verifiedAt: "2026-08-09" }),
+    ]);
+    repos.workPlaceRelations = [
+      ...["work-a", "work-b", "work-c"].map((placeId) => ({
+        workId: "work-1", placeId, featuredActorIds: [], actorPresenceReviewed: true as const,
+        sourceUrls: ["https://example.com/work"], verifiedAt: "2026-08-09", reviewed: true,
+      })),
+      {
+        workId: "work-2", placeId: "actor-only", featuredActorIds: ["actor-a"],
+        actorPresenceReviewed: true, sourceUrls: ["https://example.com/actor"],
+        verifiedAt: "2026-08-09", reviewed: true,
+      },
+    ];
+
+    const result = generateItinerary(constraints({
+      selectedActorIds: ["actor-a"],
+      selectedWorkIds: ["work-1"],
+      maxPlacesPerDay: 2,
+    }), repos);
+
+    expect(result.status).toBe("planned");
+    if (result.status !== "planned") return;
+    const visited = result.days.flatMap(({ items }) => items.map(({ placeId }) => placeId));
+    expect(visited).toContain("actor-only");
+    expect(visited.filter((id) => id.startsWith("work-"))).toHaveLength(1);
+    expect(result.comparisonKeys.selectionGroupCoverageCount).toBe(2);
+    expect(result.selectionGroups).toEqual({
+      requested: ["actor", "work"], covered: ["actor", "work"], uncovered: [],
+    });
+  });
+
+  it("엄격 배우 후보가 없으면 작품 일정은 유지하고 미반영 배우 그룹 사유를 반환한다 (#3·#51)", () => {
+    const repos = repositories();
+    repos.workPlaceRelations = repos.workPlaceRelations.map((relation) => ({
+      ...relation,
+      featuredActorIds: relation.featuredActorIds?.filter((id) => id !== "actor-b"),
+    }));
+    const result = generateItinerary(constraints({
+      selectedActorIds: ["actor-b"],
+      selectedWorkIds: ["work-1"],
+    }), repos);
+
+    expect(result.status).toBe("planned");
+    if (result.status !== "planned") return;
+    expect(result.selectionGroups).toEqual({
+      requested: ["actor", "work"],
+      covered: ["work"],
+      uncovered: [{ group: "actor", reasons: ["NO_STRICT_CANDIDATES"] }],
+    });
   });
 
 
@@ -512,10 +590,10 @@ describe("generateItinerary", () => {
 
   it("동일 관련성·방문 수에서는 경고 없는 일정이 항상 우선한다 (#43 수용 기준)", () => {
     const repos = repositories();
-    repos.places = [
+    replacePlaces(repos, [
       place("place-clean", "work-1", "station-gangneung", { type: "always_open", source: "fixture", verifiedAt: "2026-08-08" }),
       place("place-warned", "work-1", "station-gangneung", { type: "unverified" }),
-    ];
+    ]);
     // 당일 일정 + 하루 1곳 → 한 곳만 배치 가능. 관련성·방문 수가 같으므로 경고 수가 승부를 가른다
     const result = generateItinerary(constraints({
       selectedActorIds: [],
@@ -562,16 +640,21 @@ describe("generateItinerary", () => {
       days: [],
       rejectedPlaces: [{ code: "TRAIN_UNAVAILABLE", placeId: "place-selected" }],
       warnings: [],
+      selectionGroups: {
+        requested: ["work"],
+        covered: [],
+        uncovered: [{ group: "work", reasons: ["TRAIN_UNAVAILABLE"] }],
+      },
     });
   });
 
   it("시드 상한 15곳에서도 2초 안에 결정적 결과를 만든다", () => {
     const repos = repositories();
-    repos.places = Array.from({ length: 15 }, (_, index) => ({
+    replacePlaces(repos, Array.from({ length: 15 }, (_, index) => ({
       ...repos.places[0],
       id: `place-${String(index + 1).padStart(2, "0")}`,
       stayMinutes: 10,
-    }));
+    })));
     repos.trainLegs.push(leg(
       "399",
       "station-gangneung",
@@ -590,7 +673,7 @@ describe("generateItinerary", () => {
     expect(performance.now() - startedAt).toBeLessThan(2_000);
     expect(result.status).toBe("planned");
     if (result.status !== "planned") return;
-    expect(result.comparisonKeys.visitablePlaceCount).toBe(15);
+    expect(result.comparisonKeys.selectedUnionPlaceCount).toBe(15);
   });
 
   // PR #45 리뷰: 출력 창(09:00-21:00)과 실제 배치의 정합 — 활동 경계 회귀

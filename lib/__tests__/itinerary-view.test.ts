@@ -25,14 +25,24 @@ const dayB = { date: "2026-08-13", rides: [], items: [], regionWindows: [] };
 
 const plannedA: ItineraryResult = {
   status: "planned", days: [dayA], rejectedPlaces: [], warnings: [],
+  selectionGroups: { requested: ["work"], covered: ["work"], uncovered: [] },
   comparisonKeys: {
-    relevanceKey: { selectedWorkPlaceCount: 1, actorOtherWorkPlaceCount: 0 },
-    visitablePlaceCount: 1, activityWarningCount: 0, totalRailMinutes: 100, transferCount: 0, slackSatisfied: true,
+    selectionGroupCoverageCount: 1, selectedUnionPlaceCount: 1,
+    activityWarningCount: 0, totalTravelMinutes: 150, transferCount: 0, slackSatisfied: true,
   },
   metrics: { totalTravelMinutes: 150, totalRailMinutes: 100, transferCount: 0, departureSlackMinutes: 180 },
 };
 const plannedB: ItineraryResult = { ...plannedA, days: [dayB] };
-const empty: ItineraryResult = { status: "empty", days: [], rejectedPlaces: [{ code: "TRAIN_UNAVAILABLE", placeId: "p1" }], warnings: [] };
+const empty: ItineraryResult = {
+  status: "empty",
+  days: [],
+  rejectedPlaces: [{ code: "TRAIN_UNAVAILABLE", placeId: "p1" }],
+  warnings: [],
+  selectionGroups: {
+    requested: ["work"], covered: [],
+    uncovered: [{ group: "work", reasons: ["TRAIN_UNAVAILABLE"] }],
+  },
+};
 
 const constraintsA = constraintsFromTripInputs(
   { arrivalAt: "2026-08-12T10:00", departureAt: "2026-08-14T18:00", airportReadyAt: "2026-08-12T12:00", airportArrivalDeadline: "2026-08-14T16:00" },

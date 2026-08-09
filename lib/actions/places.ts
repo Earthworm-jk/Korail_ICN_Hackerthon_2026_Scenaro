@@ -10,6 +10,11 @@ import { loadRepositories } from "../repositories/json";
 import { roundTripStationIds } from "../timetable-coverage";
 import { deriveAiRelevance } from "../place-ranking";
 import { loadPlaceRankings } from "../place-rankings-snapshot";
+import {
+  deriveStrictSelectionMemberships,
+  selectionGroupsOf,
+  type SelectionGroup,
+} from "../selection-candidates";
 import type { PlaceT, StationT, WorkPlaceRelationT, WorkT } from "../types/schema";
 
 export type Relation = "selected_work" | "actor_other_work";
@@ -22,6 +27,8 @@ export type RelationDetail = Pick<
 
 export type PlaceCandidate = PlaceT & {
   relation: Relation;
+  /** #51 엄격 후보 집합 소속. 한 장소가 배우·작품 두 그룹을 동시에 충족할 수 있다. */
+  selectionGroups: SelectionGroup[];
   relationDetails: RelationDetail[];
   // #48 서버 파생(PR #70 리뷰) — 원시 점수·검토 메타는 응답에 싣지 않는다
   aiRank?: number; // 선택 관련 작품 범위의 검토·배지 통과 점수 순위 (1=최고)
@@ -48,38 +55,30 @@ export async function getCandidatePlaces(selection: {
   const timetableStationIds = roundTripStationIds(repos.trainLegs);
   const selectedWorkIds = new Set(selection.selectedWorkIds);
   const actorIds = new Set(selection.selectedActorIds);
-  const actorWorkIds = new Set(
-    repos.actors.filter((a) => actorIds.has(a.id)).flatMap((a) => a.workIds),
+  const memberships = deriveStrictSelectionMemberships(
+    repos.workPlaceRelations,
+    actorIds,
+    selectedWorkIds,
   );
 
-  const detailsByPlace = new Map<string, RelationDetail[]>();
-  for (const r of repos.workPlaceRelations) {
-    const detail: RelationDetail = {
+  const candidates: PlaceCandidate[] = [];
+  for (const place of repos.places) {
+    const membership = memberships.get(place.id);
+    if (!membership) continue;
+    const relationDetails: RelationDetail[] = membership.relations.map((r) => ({
       workId: r.workId,
       episodeLabel: r.episodeLabel,
       sceneNote: r.sceneNote,
       featuredActorIds: r.featuredActorIds,
       actorPresenceReviewed: r.actorPresenceReviewed,
-    };
-    const list = detailsByPlace.get(r.placeId);
-    if (list) list.push(detail);
-    else detailsByPlace.set(r.placeId, [detail]);
-  }
-
-  // PR #65 리뷰 1 — 카드 표시·배우 필터 판정 모두 "선택한 배우·작품 관계"만 사용한다 (#51).
-  // 무관 작품의 관계가 섞이면 미등장/미확인 판정이 오염되고 카드에도 계약 밖 정보가 노출된다.
-  const relevantWorkIds = new Set([...selectedWorkIds, ...actorWorkIds]);
-
-  const candidates: PlaceCandidate[] = [];
-  for (const place of repos.places) {
-    const relationDetails = (detailsByPlace.get(place.id) ?? []).filter((d) =>
-      relevantWorkIds.has(d.workId),
-    );
-    if (place.workIds.some((id) => selectedWorkIds.has(id))) {
-      candidates.push({ ...place, relation: "selected_work", relationDetails });
-    } else if (place.workIds.some((id) => actorWorkIds.has(id))) {
-      candidates.push({ ...place, relation: "actor_other_work", relationDetails });
-    }
+    }));
+    candidates.push({
+      ...place,
+      // 기존 표시·랭킹 호환 필드. 두 그룹 소속 여부의 진실은 selectionGroups다.
+      relation: membership.work ? "selected_work" : "actor_other_work",
+      selectionGroups: selectionGroupsOf(membership),
+      relationDetails,
+    });
   }
   candidates.sort((a, b) => a.id.localeCompare(b.id, "en"));
 
