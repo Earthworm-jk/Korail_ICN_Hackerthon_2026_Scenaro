@@ -1,0 +1,34 @@
+[
+  {
+    "id": "zone-seoul-jeongdong-daehan",
+    "name": {
+      "ko": "정동·덕수궁 대한제국 근대문화 권역",
+      "en": "Jeongdong and Deoksugung Korean Empire Heritage Area"
+    },
+    "theme": {
+      "ko": "대한제국 근대문화 산책",
+      "en": "Korean Empire modern heritage walk"
+    },
+    "regionId": "seoul_metro",
+    "sourceUrls": [
+      "https://korean.visitkorea.or.kr/detail/ms_detail.do?cotid=e413abf3-f8a7-486d-95fd-4fb12598aefc"
+    ],
+    "verifiedAt": "2026-08-09"
+  },
+  {
+    "id": "zone-seoul-bukchon-hanok",
+    "name": {
+      "ko": "북촌 한옥·전통문화 권역",
+      "en": "Bukchon Hanok and Traditional Culture Area"
+    },
+    "theme": {
+      "ko": "한옥·전통문화 체험",
+      "en": "Hanok and traditional culture"
+    },
+    "regionId": "seoul_metro",
+    "sourceUrls": [
+      "https://korean.visitkorea.or.kr/detail/ms_detail.do?cotid=395d0087-0bd2-42a1-a051-49c4c46d8821"
+    ],
+    "verifiedAt": "2026-08-09"
+  }
+]
