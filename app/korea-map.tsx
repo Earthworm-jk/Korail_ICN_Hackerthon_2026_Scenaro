@@ -17,8 +17,36 @@
  *   서로 1px 미만까지 겹친다(월정사-전나무 숲길 0.25px). 장소마다 라벨을 달면 읽을 수 없어
  *   역 허브 모델(역 단위 체류)에 맞춰 권역 라벨로 바꿨다 — PR 본문 잔차 표에 기록.
  */
-import type { ReactNode } from "react";
-import { catmullRomPath, polylinePath, project, VIEW_BOX } from "@/lib/korea-map-projection";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type KeyboardEvent as ReactKeyboardEvent,
+  type PointerEvent as ReactPointerEvent,
+  type ReactNode,
+} from "react";
+import { catmullRomPath, polylinePath, project } from "@/lib/korea-map-projection";
+import {
+  BASE_VIEWPORT,
+  MAX_SCALE,
+  MIN_SCALE,
+  ZOOM_STEP,
+  boundsOf,
+  fitTo,
+  isZoomed,
+  panBy,
+  pointFromClient,
+  scaleOf,
+  screenUnit,
+  viewBoxOf,
+  zoomAt,
+  zoomByStep,
+  type Viewport,
+} from "@/lib/map-viewport";
 import { KOREA_OUTLINE_PATH } from "@/lib/korea-outline";
 import {
   railRouteSegments,
@@ -26,14 +54,20 @@ import {
   routeStationSequence,
   type RailLineGeometry,
 } from "@/lib/map-route";
-import {
-  LABEL_FONT_SIZE,
-  LABEL_LINE_HEIGHT,
-  layoutLabels,
-  type LabelSeed,
-  type PlacedLabel,
-} from "@/lib/map-labels";
-import type { MessageKey } from "@/lib/i18n/messages";
+import { layoutLabels, type LabelSeed, type PlacedLabel } from "@/lib/map-labels";
+import type { Locale, MessageKey } from "@/lib/i18n/messages";
+
+/**
+ * 오버레이 라벨 키 앞에 붙이는 표식.
+ * 역 라벨과 같은 배치기를 쓰되 그리기만 구분한다 — 권역 이름이 역 이름처럼 보이면 안 된다.
+ */
+const OVERLAY_LABEL_PREFIX = "overlay:";
+/** 권역 표식(점선 고리)의 반지름 — theme-experience.tsx가 그리는 값과 같아야 라벨이 고리를 피한다 */
+const OVERLAY_MARKER_RADIUS = 10;
+/** 역·공항 점의 반지름 (아래 circle과 같은 값) */
+const STATION_MARKER_RADIUS = 7;
+/** 촬영지 점의 반지름 */
+const PLACE_MARKER_RADIUS = 6;
 
 export type MapPlace = {
   id: string;
@@ -52,47 +86,53 @@ export type MapStation = {
   isAirport: boolean;
 };
 
-function MapLabels({ labels }: { labels: readonly PlacedLabel[] }) {
+/** `unit` — 화면에서의 크기를 배율과 무관하게 유지하려고 곱하는 값 (map-viewport의 screenUnit) */
+function MapLabels({ labels, unit }: { labels: readonly PlacedLabel[]; unit: number }) {
   return (
     <>
       {labels.map((label) => {
-        // 지시선은 라벨이 실제로 밀렸을 때만 — 붙어 있으면 선이 오히려 지저분하다
-        const moved = Math.abs(label.y - label.from.y) > 2;
+        // 지시선은 라벨이 실제로 밀렸을 때만 — 붙어 있으면 선이 오히려 지저분하다.
+        // 확대한 창에서는 긴 이름이 창 안으로 밀려 들어가며 가로로도 떠난다 (map-labels 참고)
+        const moved =
+          Math.abs(label.y - label.from.y) > 2 * unit || Math.abs(label.x - label.from.x) > 12 * unit;
+        const overlay = label.key.startsWith(OVERLAY_LABEL_PREFIX);
         return (
           <g key={label.key}>
             {moved && (
               <line
                 x1={label.from.x}
                 y1={label.from.y}
-                x2={label.x + (label.anchor === "start" ? -2 : 2)}
-                y2={label.y - 3}
+                x2={label.x + (label.anchor === "start" ? -2 : 2) * unit}
+                y2={label.y - 3 * unit}
                 className="stroke-sc-line"
-                strokeWidth={0.8}
+                strokeWidth={0.8 * unit}
               />
             )}
-            {/* 알약 배경 — 해안선·동선 위에 글씨가 얹히면 읽히지 않는다 (발표자료 라벨 방식) */}
+            {/* 알약 배경 — 해안선·동선 위에 글씨가 얹히면 읽히지 않는다 (발표자료 라벨 방식).
+                오버레이(권역) 이름은 점선 원과 같은 색·같은 파선으로 묶어 역 이름과 구분한다 */}
             <rect
-              x={label.left - 3.5}
+              x={label.left - 3.5 * unit}
               y={label.top}
-              width={label.right - label.left + 7}
+              width={label.right - label.left + 7 * unit}
               height={label.bottom - label.top}
-              rx={4}
-              className="fill-sc-surface stroke-sc-line"
-              strokeWidth={0.6}
+              rx={4 * unit}
+              className={overlay ? "fill-sc-surface stroke-sc-blue" : "fill-sc-surface stroke-sc-line"}
+              strokeWidth={overlay ? 0.9 * unit : 0.6 * unit}
+              strokeDasharray={overlay ? `${3 * unit} ${2 * unit}` : undefined}
               opacity={0.94}
             />
             <text
               x={label.x}
               y={label.y}
               textAnchor={label.anchor}
-              fontSize={LABEL_FONT_SIZE}
-              className="fill-sc-text font-medium"
+              fontSize={label.fontSize}
+              className={overlay ? "fill-sc-blue-text font-medium" : "fill-sc-text font-medium"}
             >
               {label.lines.map((line, index) => (
                 <tspan
                   key={line}
                   x={label.x}
-                  dy={index === 0 ? 0 : LABEL_LINE_HEIGHT}
+                  dy={index === 0 ? 0 : label.lineHeight}
                 >
                   {line}
                 </tspan>
@@ -107,6 +147,114 @@ function MapLabels({ labels }: { labels: readonly PlacedLabel[] }) {
 
 function LegendSwatch({ className }: { className: string }) {
   return <i aria-hidden className={`inline-block h-2.5 w-2.5 rounded-full ${className}`} />;
+}
+
+/**
+ * 지도 창 상태를 오버레이 슬롯과 나누는 통로.
+ *
+ * `experienceOverlay`는 이미 그려진 ReactNode로 들어오기 때문에 지도가 그 안의 좌표도 이름도
+ * 알 수 없다. prop을 더 만들면 지도를 부르는 화면(planner-wizard)까지 고쳐야 하는데, 그 파일은
+ * 다른 작업이 통째로 다시 쓰는 중이다. 오버레이가 스스로 알리게 해서 두 파일 안에서 끝낸다.
+ */
+
+/** 오버레이가 지도에 등록하는 항목 — 지점과, 지도에 적을 이름 */
+export type MapOverlayEntry = { point: { x: number; y: number }; label?: string };
+
+type MapViewContextValue = {
+  /** 화면에서 같은 크기를 유지하려면 곱할 값 — 오버레이도 이걸 써야 확대 시 원이 커지지 않는다 */
+  unit: number;
+  /**
+   * 표시 언어. 지도는 `tr`만 받아서 자기 문구는 번역할 수 있지만, 오버레이가 얹는 이름은
+   * 데이터(권역명 등)라 언어를 골라야 한다. 지도를 부르는 화면을 고치지 않고 전하는 통로다.
+   */
+  locale: Locale;
+  /** 오버레이 항목 등록 — key마다 하나. null이면 해제 */
+  setOverlayEntry: (key: string, entry: MapOverlayEntry | null) => void;
+};
+
+const MapViewContext = createContext<MapViewContextValue>({
+  unit: 1,
+  locale: "ko",
+  setOverlayEntry: () => {},
+});
+
+/** 오버레이가 현재 배율과 언어를 읽는다 */
+export function useMapView(): Pick<MapViewContextValue, "unit" | "locale"> {
+  const { unit, locale } = useContext(MapViewContext);
+  return { unit, locale };
+}
+
+/**
+ * 오버레이가 자기 항목을 지도에 등록한다 — 켜지면 등록된 항목이 다 보이도록 창을 맞추고
+ * 이름을 지도에 얹으며, 끄면 전체 보기로 돌아온다.
+ *
+ * 좌표·이름 객체는 렌더마다 새로 생기므로 값으로 비교해 같은 항목에 반복 등록이 가지 않게 한다.
+ */
+export function useMapOverlayEntry(key: string, entry: MapOverlayEntry | null): void {
+  const { setOverlayEntry } = useContext(MapViewContext);
+  const encoded = entry ? JSON.stringify(entry) : "";
+
+  useEffect(() => {
+    if (!encoded) {
+      setOverlayEntry(key, null);
+      return;
+    }
+    setOverlayEntry(key, JSON.parse(encoded) as MapOverlayEntry);
+    return () => setOverlayEntry(key, null);
+  }, [key, encoded, setOverlayEntry]);
+}
+
+function ZoomControls({
+  view,
+  onZoom,
+  onReset,
+  tr,
+}: {
+  view: Viewport;
+  onZoom: (factor: number) => void;
+  onReset: () => void;
+  tr: (key: MessageKey) => string;
+}) {
+  const scale = scaleOf(view);
+  const button =
+    "flex size-7 items-center justify-center rounded-md border bg-sc-surface text-sm leading-none text-sc-muted hover:border-sc-blue hover:text-sc-blue disabled:opacity-40 disabled:hover:border-inherit disabled:hover:text-sc-muted";
+
+  /*
+   * 지도 위가 아니라 제목 줄에 둔다. 확대·팬을 하면 라벨이 창 어디로든 오기 때문에 지도 위
+   * 어느 모서리에 놓아도 역 이름을 가리는 자리가 생긴다 — 실제로 오른쪽 위에서는 강원 권역
+   * 라벨을, 오른쪽 아래에서는 부산역 라벨을 덮었다.
+   */
+  return (
+    <div className="flex items-center gap-1">
+      <button
+        type="button"
+        className={button}
+        aria-label={tr("map.zoomIn")}
+        disabled={scale >= MAX_SCALE - 1e-9}
+        onClick={() => onZoom(ZOOM_STEP)}
+      >
+        +
+      </button>
+      <button
+        type="button"
+        className={button}
+        aria-label={tr("map.zoomOut")}
+        disabled={scale <= MIN_SCALE + 1e-9}
+        onClick={() => onZoom(1 / ZOOM_STEP)}
+      >
+        −
+      </button>
+      <button
+        type="button"
+        className={`${button} text-[10px]`}
+        aria-label={tr("map.resetView")}
+        disabled={!isZoomed(view)}
+        onClick={onReset}
+      >
+        ⟲
+      </button>
+    </div>
+  );
 }
 
 export type KoreaMapPanelProps = {
@@ -157,6 +305,164 @@ export function KoreaMapPanel({
   const isRoute = kind === "route";
   const stationById = new Map(stations.map((station) => [station.id, station]));
 
+  // 보이는 창. 좌표계(360×430)는 그대로고 이 값만 움직인다
+  const [view, setView] = useState<Viewport>(BASE_VIEWPORT);
+  const svgRef = useRef<SVGSVGElement | null>(null);
+  /** 화면에 닿아 있는 포인터 — 2개면 핀치 */
+  const pointersRef = useRef(new Map<number, { x: number; y: number }>());
+  const pinchDistanceRef = useRef(0);
+  /** 이벤트 핸들러가 최신 창을 읽는 통로 — 휠은 갱신을 기다리지 않고 지금 판단해야 한다 */
+  const viewRef = useRef(view);
+  useEffect(() => {
+    viewRef.current = view;
+  }, [view]);
+  const unit = screenUnit(view);
+
+  /**
+   * 오버레이(테마체험 필터) 항목 등록부.
+   *
+   * 등록되면 항목이 다 보이도록 창을 맞추고, 이름은 역 라벨과 같은 배치기를 태운다 —
+   * 필터를 켰는데 이름 없는 원만 뜨면 무엇이 켜졌는지 알 수 없다. 등록이 없는 화면(대부분)은
+   * 아무 일도 없어야 하므로 "맞춘 적이 있는지"를 따로 들고 있는다.
+   */
+  const overlayRef = useRef(new Map<string, MapOverlayEntry>());
+  const fittedRef = useRef(false);
+  const [overlaySeeds, setOverlaySeeds] = useState<LabelSeed[]>([]);
+
+  const setOverlayEntry = useCallback((key: string, entry: MapOverlayEntry | null) => {
+    const entries = overlayRef.current;
+    if (entry) entries.set(key, entry);
+    else entries.delete(key);
+
+    setOverlaySeeds(
+      [...entries].flatMap(([id, item]) =>
+        item.label
+          ? [
+              {
+                key: `${OVERLAY_LABEL_PREFIX}${id}`,
+                text: item.label,
+                x: item.point.x,
+                y: item.point.y,
+                radius: OVERLAY_MARKER_RADIUS,
+              },
+            ]
+          : [],
+      ),
+    );
+
+    const points = [...entries.values()].map((item) => item.point);
+    if (points.length > 0) {
+      fittedRef.current = true;
+      setView(fitTo(points));
+    } else if (fittedRef.current) {
+      fittedRef.current = false;
+      setView(BASE_VIEWPORT);
+    }
+  }, []);
+
+  const locale: Locale = tr("app.locale") === "en" ? "en" : "ko";
+  const mapView = useMemo<MapViewContextValue>(
+    () => ({ unit, locale, setOverlayEntry }),
+    [unit, locale, setOverlayEntry],
+  );
+
+  /**
+   * 휠 확대·축소.
+   *
+   * React의 onWheel은 passive로 붙어 preventDefault가 듣지 않으므로 직접 건다.
+   * 축소 한계에서 더 축소하려는 휠은 막지 않고 페이지로 흘려보낸다 — 그러지 않으면 세로로 긴
+   * 지도가 페이지 스크롤을 통째로 삼킨다. 확대해 둔 지도는 배율 1로 돌아온 뒤부터 다시 스크롤된다.
+   */
+  useEffect(() => {
+    const svg = svgRef.current;
+    if (!svg) return;
+
+    const onWheel = (event: WheelEvent) => {
+      const zoomingIn = event.deltaY < 0;
+      // 판단은 setView 밖에서 한다. 갱신 함수는 나중에 실행될 수 있어서 그 안에서 결정하면
+      // preventDefault를 부를 시점을 놓치고 확대와 페이지 스크롤이 동시에 일어난다
+      if (!zoomingIn && !isZoomed(viewRef.current)) return;
+      event.preventDefault();
+      const rect = svg.getBoundingClientRect();
+      const factor = zoomingIn ? ZOOM_STEP : 1 / ZOOM_STEP;
+      setView((current) =>
+        zoomAt(current, factor, pointFromClient(current, rect, event.clientX, event.clientY)),
+      );
+    };
+
+    svg.addEventListener("wheel", onWheel, { passive: false });
+    return () => svg.removeEventListener("wheel", onWheel);
+  }, []);
+
+  const zoomBy = useCallback((factor: number) => setView((v) => zoomByStep(v, factor)), []);
+  const resetView = useCallback(() => setView(BASE_VIEWPORT), []);
+
+  const handlePointerDown = useCallback((event: ReactPointerEvent<SVGSVGElement>) => {
+    if (event.pointerType === "mouse" && event.button !== 0) return;
+    const pointers = pointersRef.current;
+    pointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
+    event.currentTarget.setPointerCapture(event.pointerId);
+    if (pointers.size === 2) {
+      const [a, b] = [...pointers.values()];
+      pinchDistanceRef.current = Math.hypot(a.x - b.x, a.y - b.y);
+    }
+  }, []);
+
+  const handlePointerMove = useCallback((event: ReactPointerEvent<SVGSVGElement>) => {
+    const pointers = pointersRef.current;
+    const previous = pointers.get(event.pointerId);
+    if (!previous) return;
+    pointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
+
+    const rect = svgRef.current?.getBoundingClientRect();
+    if (!rect || rect.width === 0 || rect.height === 0) return;
+
+    // 두 손가락 — 벌린 만큼 확대, 중심은 두 손가락 사이
+    if (pointers.size >= 2) {
+      const [a, b] = [...pointers.values()];
+      const distance = Math.hypot(a.x - b.x, a.y - b.y);
+      const before = pinchDistanceRef.current || distance;
+      pinchDistanceRef.current = distance;
+      if (before <= 0 || distance <= 0) return;
+      const midX = (a.x + b.x) / 2;
+      const midY = (a.y + b.y) / 2;
+      setView((v) => zoomAt(v, distance / before, pointFromClient(v, rect, midX, midY)));
+      return;
+    }
+
+    // 한 손가락·마우스 드래그 — 화면 이동량을 표시 단위로 환산해 그대로 옮긴다
+    const dx = event.clientX - previous.x;
+    const dy = event.clientY - previous.y;
+    setView((v) => panBy(v, (dx / rect.width) * v.width, (dy / rect.height) * v.height));
+  }, []);
+
+  const handlePointerEnd = useCallback((event: ReactPointerEvent<SVGSVGElement>) => {
+    pointersRef.current.delete(event.pointerId);
+    if (pointersRef.current.size < 2) pinchDistanceRef.current = 0;
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
+  }, []);
+
+  /** 키보드 — 드래그·휠만 두면 포인터 없이 쓰는 사용자에게 지도가 고정된 그림이 된다 */
+  const handleKeyDown = useCallback((event: ReactKeyboardEvent<SVGSVGElement>) => {
+    const step = 0.2; // 창의 20%씩
+    const moves: Record<string, [number, number]> = {
+      ArrowLeft: [1, 0],
+      ArrowRight: [-1, 0],
+      ArrowUp: [0, 1],
+      ArrowDown: [0, -1],
+    };
+    if (event.key === "+" || event.key === "=") setView((v) => zoomByStep(v, ZOOM_STEP));
+    else if (event.key === "-" || event.key === "_") setView((v) => zoomByStep(v, 1 / ZOOM_STEP));
+    else if (event.key === "0") setView(BASE_VIEWPORT);
+    else if (moves[event.key]) {
+      const [mx, my] = moves[event.key];
+      setView((v) => panBy(v, mx * v.width * step, my * v.height * step));
+    } else return;
+    event.preventDefault();
+  }, []);
+
   const placePoints = places.map((place) => ({
     place,
     at: project(place.latitude, place.longitude),
@@ -191,21 +497,36 @@ export function KoreaMapPanel({
   const labelSeeds: LabelSeed[] = isRoute
     ? [...new Map(routeStations.map((s) => [s.id, s])).values()].map((station) => {
         const at = project(station.latitude, station.longitude);
-        return { key: station.id, text: station.name, x: at.x, y: at.y };
+        return { key: station.id, text: station.name, x: at.x, y: at.y, radius: STATION_MARKER_RADIUS };
       })
     : [...new Map(placePoints.map(({ place }) => [place.stationId, place.stationId])).values()]
-        .map((stationId) => {
+        .map((stationId): LabelSeed | null => {
           const group = placePoints.filter(({ place }) => place.stationId === stationId);
           const station = stationById.get(stationId);
           if (!station || group.length === 0) return null;
           const x = group.reduce((sum, g) => sum + g.at.x, 0) / group.length;
           const y = group.reduce((sum, g) => sum + g.at.y, 0) / group.length;
-          return { key: stationId, text: station.name, x, y };
+          return { key: stationId, text: station.name, x, y, radius: PLACE_MARKER_RADIUS };
         })
         .filter((seed): seed is LabelSeed => seed !== null);
 
-  const labels = layoutLabels(labelSeeds);
+  /**
+   * 배치는 현재 창과 배율로 다시 계산한다.
+   *
+   * 창 밖 지점은 시드에서 뺀다 — 확대하면 화면 밖 역들이 경계에 라벨을 쌓아 보이는 지점의
+   * 자리를 빼앗는다. 화면에 없는 점의 이름은 어차피 읽을 수 없다.
+   */
+  const bounds = boundsOf(view);
+  const labels = layoutLabels(
+    [...labelSeeds, ...overlaySeeds].filter(
+      (seed) =>
+        seed.x >= bounds.left && seed.x <= bounds.right && seed.y >= bounds.top && seed.y <= bounds.bottom,
+    ),
+    { bounds, scale: scaleOf(view) },
+  );
   const hasPoints = placePoints.length > 0 || routeStations.length > 0;
+  const zoomed = isZoomed(view);
+  const hintId = `map-zoom-hint-${kind}`;
 
   return (
     <aside
@@ -218,27 +539,44 @@ export function KoreaMapPanel({
         <div className="flex flex-wrap items-center justify-end gap-1.5">
           <span className="text-xs text-sc-muted">{tr("map.modeBadge")}</span>
           {headingAction}
+          {hasPoints && <ZoomControls view={view} onZoom={zoomBy} onReset={resetView} tr={tr} />}
         </div>
       </div>
 
       {hasPoints ? (
+        <div>
+        {/* 조작 방법은 화면에 또 한 줄을 늘리지 않고 지도 설명으로만 붙인다 —
+            지도 아래에는 이미 출처·주의 문구가 여러 줄 있다 */}
+        <span id={hintId} className="sr-only">{tr("map.zoomHint")}</span>
+        <MapViewContext value={mapView}>
         <svg
-          viewBox={VIEW_BOX}
+          ref={svgRef}
+          viewBox={viewBoxOf(view)}
           role="img"
           aria-label={tr(isRoute ? "map.ariaRoute" : "map.ariaPlaces")}
-          className="block w-full"
+          aria-describedby={hintId}
+          tabIndex={0}
+          onKeyDown={handleKeyDown}
+          onPointerDown={handlePointerDown}
+          onPointerMove={handlePointerMove}
+          onPointerUp={handlePointerEnd}
+          onPointerCancel={handlePointerEnd}
+          /**
+           * 확대 전에는 세로 스와이프를 페이지에 양보한다 (pan-y). 4단계 지도는 sticky라
+           * 화면을 거의 채우는데, 처음부터 손가락을 다 가져가면 그 위에서는 페이지가 스크롤되지
+           * 않는다. 확대한 뒤에는 지도를 끄는 게 목적이므로 제스처를 전부 받는다.
+           */
+          style={{ touchAction: zoomed ? "none" : "pan-y" }}
+          className={`block w-full focus-visible:outline-2 focus-visible:outline-sc-blue ${zoomed ? "cursor-grab active:cursor-grabbing" : ""}`}
         >
           <desc>{tr(isRoute ? "map.descRoute" : "map.descPlaces")}</desc>
           <path
             d={KOREA_OUTLINE_PATH}
             fillRule="evenodd"
             className="fill-sc-blue-soft stroke-sc-line"
-            strokeWidth={0.8}
+            strokeWidth={0.8 * unit}
             strokeLinejoin="round"
           />
-
-          {/* 테마체험 권역 슬롯 — 경계 위, 점 아래 (시안 순서와 동일) */}
-          {experienceOverlay}
 
           {isRoute &&
             routePaths.map(({ key, d }) =>
@@ -248,7 +586,7 @@ export function KoreaMapPanel({
                   d={d}
                   fill="none"
                   className="stroke-sc-orange"
-                  strokeWidth={3}
+                  strokeWidth={3 * unit}
                   strokeLinecap="round"
                   strokeLinejoin="round"
                 />
@@ -260,9 +598,9 @@ export function KoreaMapPanel({
               key={place.id}
               cx={at.x}
               cy={at.y}
-              r={6}
+              r={6 * unit}
               className="fill-sc-orange stroke-sc-surface"
-              strokeWidth={place.selected ? 5 : 3}
+              strokeWidth={(place.selected ? 5 : 3) * unit}
               opacity={place.selected ? 1 : 0.28}
             >
               <title>{place.name}</title>
@@ -277,17 +615,28 @@ export function KoreaMapPanel({
                   key={station.id}
                   cx={at.x}
                   cy={at.y}
-                  r={7}
+                  r={7 * unit}
                   className={`stroke-sc-surface ${station.isAirport ? "fill-sc-airport" : "fill-sc-blue"}`}
-                  strokeWidth={3}
+                  strokeWidth={3 * unit}
                 >
                   <title>{station.name}</title>
                 </circle>
               );
             })}
 
-          <MapLabels labels={labels} />
+          <MapLabels labels={labels} unit={unit} />
+
+          {/*
+            테마체험 권역 슬롯 — 맨 위에 그린다.
+            시안은 점 아래였다. 그 자리에 두면 지금 데이터에서는 보이지 않는다: 검수된 대표 지점이
+            역과 1km 안팎이라(정동·덕수궁 대표 지점과 서울역은 확대해도 표시 좌표로 0.4 차이) 역
+            점에 덮이고, 그 위를 다시 라벨 알약이 덮는다. 필터가 켜서 보여주려는 대상이 가려지면
+            필터를 켠 의미가 없다. 채움은 15% 투명이라 밑의 점·글자를 지우지 않는다.
+          */}
+          {experienceOverlay}
         </svg>
+        </MapViewContext>
+        </div>
       ) : (
         <p className="rounded-lg border bg-sc-subtle px-3 py-6 text-center text-sm text-sc-muted">
           {tr("map.noCoordinates")}

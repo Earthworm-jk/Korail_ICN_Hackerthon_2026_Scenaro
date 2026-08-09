@@ -8,6 +8,7 @@
  * - 지도 권역 토글은 기본이 숨김이다. 눌렀을 때만 권역 대표 지점을 표시한다 (#14 v0.6)
  */
 import { project } from "@/lib/korea-map-projection";
+import { useMapOverlayEntry, useMapView } from "./korea-map";
 import type { ThemeExperienceResult } from "@/lib/actions/theme-experience";
 import type { MessageKey } from "@/lib/i18n/messages";
 
@@ -17,24 +18,42 @@ import type { MessageKey } from "@/lib/i18n/messages";
  * 원은 권역의 검증된 경계가 아니라 "이 근처"를 가리키는 시각적 표현이다. 대표 지점은
  * 공식 관광정보가 그 권역 대표 관광지의 목적지로 제공하는 좌표이고, 좌표 근거가 없는
  * 권역은 아예 그리지 않는다 (없는 정밀도를 지어내지 않는다 — A3).
+ *
+ * 켜지면 지도가 그 지점에 창을 맞추고 권역 이름을 함께 얹는다. 전국 한 장에 지름 18짜리
+ * 원 하나를 얹는 것만으로는 눌러도 아무 일이 없는 것처럼 보이고, 확대되더라도 이름이 없으면
+ * 그 원이 무엇인지 알 수 없다 — 필터를 켠 사람이 확인해야 하는 건 "무엇이 켜졌는가"다.
+ *
+ * #83은 권역명을 적지 않기로 했었다(역 라벨과 겹친다). 그 근거는 배치가 고정 창에 묶여 있을
+ * 때의 이야기다. 지금은 창·배율마다 배치를 다시 계산하므로 같은 배치기에 태우면 겹치지 않는다 —
+ * 전 배율 겹침 0을 `map-labels.test.ts`가 고정한다.
+ *
+ * 훅은 조건부로 부를 수 없으므로 표시하지 않을 때는 null을 넘겨 등록을 해제한다.
  */
 export function ThemeExperienceMapOverlay({ result, visible }: {
   result: ThemeExperienceResult | null;
   visible: boolean;
 }) {
-  if (!visible || result?.status !== "ok" || !result.point) return null;
-  const at = project(result.point.latitude, result.point.longitude);
-  // 권역명은 지도에 적지 않는다 — 역 라벨과 겹쳐 둘 다 읽을 수 없게 된다(#83이 장소 라벨에서
-  // 이미 겪은 문제). 이름은 바로 위 카드와 범례가 말하고, 지도는 위치만 가리킨다.
+  const shown = visible && result?.status === "ok" && result.point ? result : null;
+  const point = shown?.status === "ok" ? shown.point : null;
+  const at = point ? project(point.latitude, point.longitude) : null;
+  const { unit, locale } = useMapView();
+  useMapOverlayEntry(
+    "theme-experience",
+    at && shown?.status === "ok" ? { point: at, label: shown.zoneName[locale] } : null,
+  );
+
+  if (!at) return null;
   return (
     <g aria-hidden="true">
       <circle
         cx={at.x}
         cy={at.y}
-        r={9}
+        // 역 점(반지름 7)보다 커야 겹쳐 있을 때 고리로 읽힌다 — 검수된 대표 지점은 역과 가깝다.
+        // 확대해도 화면에서는 같은 크기라, 배율이 올라간다고 권역이 넓어 보이지 않는다
+        r={10 * unit}
         className="fill-sc-blue/15 stroke-sc-blue"
-        strokeWidth={1.2}
-        strokeDasharray="3 2"
+        strokeWidth={1.2 * unit}
+        strokeDasharray={`${3 * unit} ${2 * unit}`}
       />
     </g>
   );

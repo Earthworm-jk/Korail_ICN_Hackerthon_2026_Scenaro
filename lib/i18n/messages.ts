@@ -234,6 +234,16 @@ export const messages = {
     // 실제 철로 선형 (OSM) — 선로를 실제로 그린 화면에서만 쓴다
     "map.routeNoticeRail": "철도 구간은 실제 선로 선형을 따라 그렸습니다. 그 밖의 구간은 권역이 이어지는 순서를 보여주는 보조 표시이며, 실제 도로나 이동 경로가 아닙니다.",
     "map.sourceRail": "철도 선형: © OpenStreetMap 기여자 (ODbL 1.0)",
+
+    // 지도 확대·축소·팬 — 버튼은 아이콘뿐이라 이름은 전부 aria-label로 간다
+    "map.zoomIn": "지도 확대",
+    "map.zoomOut": "지도 축소",
+    "map.resetView": "전체 지도로 되돌리기",
+    "map.zoomHint": "휠·두 손가락으로 확대하고 끌어서 옮길 수 있습니다.",
+
+    // 이 묶음이 어느 언어인지 — 지도 오버레이가 데이터(권역명 등)의 언어를 고를 때 읽는다.
+    // 화면에 그대로 나오지 않는 유일한 값이다.
+    "app.locale": "ko",
   },
   en: {
     "app.title": "SCENARO",
@@ -463,6 +473,15 @@ export const messages = {
     // Real rail alignment (OSM) — shown only where track geometry is actually drawn
     "map.routeNoticeRail": "Rail sections follow the actual track alignment. Other sections are a simplified view of the order your regions connect in, not an actual road or transit route.",
     "map.sourceRail": "Rail alignment: © OpenStreetMap contributors (ODbL 1.0)",
+
+    // Zoom and pan — the buttons are icon-only, so the names live in aria-label
+    "map.zoomIn": "Zoom in",
+    "map.zoomOut": "Zoom out",
+    "map.resetView": "Reset to the whole map",
+    "map.zoomHint": "Scroll or pinch to zoom, drag to move the map.",
+
+    // Which locale this bundle is — read by map overlays to pick the language of data names.
+    "app.locale": "en",
   },
 } as const;
 
