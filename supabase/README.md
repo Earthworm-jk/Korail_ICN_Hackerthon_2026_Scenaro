@@ -8,6 +8,8 @@
 2. 프로젝트 대시보드 → **SQL Editor** → `migrations/`의 SQL 파일을 파일명 순서대로 붙여넣고 실행
    - 또는 CLI: `supabase link --project-ref <ref>` 후 `supabase db push`
 3. **Authentication → Providers**에서 Email 활성화 (#25 확정: 관리형 이메일+비밀번호, Google OAuth 후순위)
+   - **Confirm email 비활성화는 해커톤 데모 기간 한정**이다 — 데모 종료 후 다시 활성화한다 (PR #74 리뷰 5)
+   - 데모 계정 비밀번호는 저장소·PR·이슈에 올리지 않고 비공개 채널로만 전달한다 (PR #74 리뷰 2·3)
 4. `.env.local`에 키 추가 (커밋 금지 — `.env.example`에 키 이름만 추가 예정):
 
    ```

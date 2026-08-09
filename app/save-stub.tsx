@@ -185,8 +185,9 @@ export function AuthModal({ intent, isStub, pending, failed, onSubmit, onClose, 
   onClose: () => void;
   tr: (key: MessageKey) => string;
 }) {
-  const [email, setEmail] = useState("demo@scenaro.kr");
-  const [password, setPassword] = useState("demo1234");
+  // PR #74 리뷰 3: 데모 계정 정보를 저장소·UI 기본값에 하드코딩하지 않는다 — 시연 시 직접 입력
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   return (
     <ModalBackdrop onClose={onClose}>
       <div className="flex items-start justify-between gap-2">
