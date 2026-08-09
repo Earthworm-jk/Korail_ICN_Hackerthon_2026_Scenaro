@@ -199,5 +199,40 @@
     ],
     "verifiedAt": "2026-08-08",
     "reviewed": true
+  },
+  {
+    "workId": "work-the-king",
+    "placeId": "place-bexco",
+    "episodeLabel": "5화",
+    "sceneNote": {
+      "ko": "태을이 코레아를 탐험하며 서울행 고속열차를 타러 향하는 ‘부산 CTX역’으로 등장",
+      "en": "Appears as 'Busan CTX Station' where Tae-eul heads to board a train to Seoul while exploring Corea"
+    },
+    "featuredActorIds": [
+      "actor-kim-go-eun"
+    ],
+    "actorPresenceReviewed": true,
+    "sourceUrls": [
+      "https://www.data.go.kr/data/15111405/fileData.do"
+    ],
+    "verifiedAt": "2026-08-09",
+    "reviewed": true
+  },
+  {
+    "workId": "work-the-king",
+    "placeId": "place-busan-cinema-center",
+    "sceneNote": {
+      "ko": "이곤이 경호대와 함께 이림의 부하들과 싸워 정태을을 구하는 장면으로 등장",
+      "en": "The scene where Lee Gon and his guards fight Lee Lim's men to rescue Jeong Tae-eul"
+    },
+    "featuredActorIds": [
+      "actor-kim-go-eun"
+    ],
+    "actorPresenceReviewed": true,
+    "sourceUrls": [
+      "https://www.data.go.kr/data/15111405/fileData.do"
+    ],
+    "verifiedAt": "2026-08-09",
+    "reviewed": true
   }
 ]

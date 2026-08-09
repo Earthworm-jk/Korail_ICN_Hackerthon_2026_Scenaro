@@ -129,7 +129,7 @@ describe("실시드 장면 배우 상태 (#26 참고 섹션 대조)", () => {
       (r) => r.actorPresenceReviewed && r.featuredActorIds?.length === 0,
     );
     const c = repos.workPlaceRelations.filter((r) => !r.actorPresenceReviewed);
-    expect(a).toHaveLength(8);
+    expect(a).toHaveLength(10);
     expect(b).toHaveLength(3);
     expect(c.map((r) => r.placeId)).toEqual(["place-yeongjin-beach"]);
   });

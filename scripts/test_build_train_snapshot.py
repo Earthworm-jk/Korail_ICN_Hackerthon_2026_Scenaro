@@ -26,6 +26,24 @@ KORAIL_ITEM = {
     "trn_plan_arvl_dt": "2026-08-12 07:03:00.0",
 }
 
+KORAIL_ITEM_BUSAN = {
+    "trn_no": "00101",
+    "run_ymd": "20260812",
+    "dptre_stn_nm": "서울",
+    "arvl_stn_nm": "부산",
+    "trn_plan_dptre_dt": "2026-08-12 06:00:00.0",
+    "trn_plan_arvl_dt": "2026-08-12 08:45:00.0",
+}
+
+KORAIL_ITEM_BUSAN_REVERSE = {
+    "trn_no": "00102",
+    "run_ymd": "20260812",
+    "dptre_stn_nm": "부산",
+    "arvl_stn_nm": "서울",
+    "trn_plan_dptre_dt": "2026-08-12 09:30:00.0",
+    "trn_plan_arvl_dt": "2026-08-12 12:15:00.0",
+}
+
 KORAIL_ITEM_REVERSE = {
     "trn_no": "00802",
     "run_ymd": "20260812",
@@ -41,9 +59,9 @@ KORAIL_ITEM_OTHER_OD = {
     "trn_no": "00001",
     "run_ymd": "20260812",
     "dptre_stn_nm": "서울",
-    "arvl_stn_nm": "부산",
+    "arvl_stn_nm": "대전",  # 데모 OD 밖 구간 예시 — 부산은 #72 경부선 팩으로 데모 OD가 됨
     "trn_plan_dptre_dt": "2026-08-12 05:13:00.0",
-    "trn_plan_arvl_dt": "2026-08-12 07:50:00.0",
+    "trn_plan_arvl_dt": "2026-08-12 06:00:00.0",
 }
 
 
@@ -51,7 +69,7 @@ def plan_items(date: str) -> list[dict]:
     """운행계획(runPlan2) 일별 응답 — 날짜 cond에 맞춰 재작성한 fixture"""
     day = f"{date[0:4]}-{date[4:6]}-{date[6:8]}"
     out = []
-    for item in (KORAIL_ITEM, KORAIL_ITEM_REVERSE, KORAIL_ITEM_OTHER_OD):
+    for item in (KORAIL_ITEM, KORAIL_ITEM_REVERSE, KORAIL_ITEM_BUSAN, KORAIL_ITEM_BUSAN_REVERSE, KORAIL_ITEM_OTHER_OD):
         row = dict(item)
         row["run_ymd"] = date
         row["trn_plan_dptre_dt"] = day + row["trn_plan_dptre_dt"][10:]
@@ -169,7 +187,8 @@ class EmptyResponseGuardTest(unittest.TestCase):
         def tago_responder(base, op, key, params, timeout=10.0):
             if op == pipeline.TAGO_STATION_OP:
                 return payload_with([{"nodename": "서울", "nodeid": "NAT010000"},
-                                     {"nodename": "강릉", "nodeid": "NAT601936"}])
+                                     {"nodename": "강릉", "nodeid": "NAT601936"},
+                                     {"nodename": "부산", "nodeid": "NAT014445"}])
             date = params["depPlandTime"]
             return payload_with([{"trainno": "801",
                                   "depplandtime": f"{date}050600", "arrplandtime": f"{date}070300"}])
@@ -198,10 +217,10 @@ class EmptyResponseGuardTest(unittest.TestCase):
             legs = pipeline.fetch_korail_legs("dummy-key")
         self.assertTrue(all(leg.departAt.endswith("+09:00") for leg in legs))
         self.assertEqual(legs[0].trainNo, "00801")
-        # 데모 OD 밖 행(서울→부산 00001)은 legs에 포함되지 않는다
+        # 데모 OD 밖 행(서울→대전 00001)은 legs에 포함되지 않는다
         self.assertNotIn("00001", {leg.trainNo for leg in legs})
-        # 시종착(계획) 3일 × 양방향 각 1건 + 중간 정차(실적) 3일 × 8건(진부·만종 경유 왕복)
-        self.assertEqual(len(legs), len(pipeline.DATES) * 2 + len(pipeline.DATES) * 8)
+        # 시종착(계획) 3일 × 2쌍(강릉·부산) 양방향 + 중간 정차(실적) 3일 × 8건(진부·만종 경유 왕복)
+        self.assertEqual(len(legs), len(pipeline.DATES) * 4 + len(pipeline.DATES) * 8)
 
 
 class StopoverContractTest(unittest.TestCase):

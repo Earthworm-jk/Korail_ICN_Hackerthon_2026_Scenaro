@@ -49,6 +49,7 @@ DATES = ["20260812", "20260813", "20260814"]
 # (우리 역 id, API 역 이름) — OD 양방향 모두 조회한다. 시종착 OD만 가능(운행계획 v2의 한계, #56 실측)
 OD_PAIRS: list[tuple[tuple[str, str], tuple[str, str]]] = [
     (("station-seoul", "서울"), ("station-gangneung", "강릉")),
+    (("station-seoul", "서울"), ("station-busan", "부산")),  # 경부선 팩 (#72 부산 채택)
 ]
 
 # 중간 정차(경유역) OD — 운행계획(runPlan2)에는 중간 정차 행이 없어(#56 실측 2026-08-09)
