@@ -234,7 +234,7 @@ export function AuthModal({ intent, isStub, pending, failed, onSubmit, onClose, 
           {pending ? tr("common.loading") : intent === "save" ? tr("save.loginAndSave") : tr("save.login")}
         </button>
       </div>
-      {isStub && <p className="mt-3 text-xs text-sc-orange">{tr("save.stubBadge")}</p>}
+      {isStub && <p className="mt-3 text-xs text-sc-orange-text">{tr("save.stubBadge")}</p>}
     </ModalBackdrop>
   );
 }
@@ -293,7 +293,7 @@ export function TripsModal({ saved, selectedTripId, isStub, loadFailed, onSelect
         </div>
       )}
       <div className="mt-4 flex justify-between">
-        <span className="self-center text-xs text-sc-orange">{isStub ? tr("save.stubBadge") : ""}</span>
+        <span className="self-center text-xs text-sc-orange-text">{isStub ? tr("save.stubBadge") : ""}</span>
         <button className="rounded border px-3 py-2 text-sm" onClick={onLogout}>{tr("trips.logout")}</button>
       </div>
     </ModalBackdrop>

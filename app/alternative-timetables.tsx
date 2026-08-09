@@ -43,11 +43,11 @@ export function AlternativeTimetables({ date, alternatives, selectedAltId, recom
         onClick={() => setOpen(!open)}
       >
         {tr("alt.toggle")} {open ? "−" : "+"}
-        <span className="ml-2 rounded bg-sc-orange-soft px-1 py-0.5 text-sc-orange">{tr("alt.mockBadge")}</span>
+        <span className="ml-2 rounded bg-sc-orange-soft px-1 py-0.5 text-sc-orange-text">{tr("alt.mockBadge")}</span>
       </button>
       {open && (
         <div className="mt-2 space-y-1">
-          <p className="rounded bg-sc-airport-soft p-2 text-xs text-sc-airport">{tr("alt.note")}</p>
+          <p className="rounded bg-sc-airport-soft p-2 text-xs text-sc-airport-text">{tr("alt.note")}</p>
           <button
             className={`block w-full rounded border px-3 py-2 text-left text-sm ${selectedAltId === null ? "border-sc-blue bg-sc-blue-soft" : ""}`}
             aria-pressed={selectedAltId === null}

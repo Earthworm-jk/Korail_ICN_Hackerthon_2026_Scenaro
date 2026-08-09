@@ -155,7 +155,7 @@ function SummarySidebar({ arrivalAt, departureAt, readyAt, deadlineAt, actors, w
                 <span key={a.id} className="rounded-full bg-sc-blue-soft px-2 py-0.5 text-xs text-sc-blue">{a.name[locale]}</span>
               ))}
               {works.map((w) => (
-                <span key={w.id} className="rounded-full bg-sc-airport-soft px-2 py-0.5 text-xs text-sc-airport">{w.title[locale]}</span>
+                <span key={w.id} className="rounded-full bg-sc-airport-soft px-2 py-0.5 text-xs text-sc-airport-text">{w.title[locale]}</span>
               ))}
             </div>
           ) : (
@@ -423,7 +423,7 @@ export default function PlannerWizard({ stationFacilities }: {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <span className="rounded-full bg-sc-orange-soft px-2.5 py-1 text-xs text-sc-orange">{tr("app.snapshotBadge")}</span>
+          <span className="rounded-full bg-sc-orange-soft px-2.5 py-1 text-xs text-sc-orange-text">{tr("app.snapshotBadge")}</span>
           <button className="rounded-[10px] border px-3 py-1.5 text-sm font-medium hover:border-sc-blue" onClick={saveStub.requestTrips}>
             {tr("trips.button")}
           </button>
@@ -476,7 +476,7 @@ export default function PlannerWizard({ stationFacilities }: {
               <div key={direction} className="rounded-lg border p-4">
                 <h3 className="font-medium">
                   {tr(direction === "arrival" ? "step1.arrival" : "step1.departure")}
-                  <span className="ml-2 rounded bg-sc-airport-soft px-1.5 py-0.5 text-xs text-sc-airport">ICN</span>
+                  <span className="ml-2 rounded bg-sc-airport-soft px-1.5 py-0.5 text-xs text-sc-airport-text">ICN</span>
                 </h3>
                 <label className="mt-3 block text-xs text-sc-muted">{tr("step1.flightNo")}</label>
                 <div className="mt-1 flex gap-2">
@@ -493,7 +493,7 @@ export default function PlannerWizard({ stationFacilities }: {
                 {field.notFound && <p className="mt-1 text-xs text-sc-red">{tr("step1.notFound")}</p>}
                 {field.source && (
                   <p className="mt-1 text-xs">
-                    <span className={field.source === "live" ? "rounded bg-sc-airport-soft px-1.5 py-0.5 text-sc-airport" : "rounded bg-sc-orange-soft px-1.5 py-0.5 text-sc-orange"}>
+                    <span className={field.source === "live" ? "rounded bg-sc-airport-soft px-1.5 py-0.5 text-sc-airport-text" : "rounded bg-sc-orange-soft px-1.5 py-0.5 text-sc-orange-text"}>
                       {tr(field.source === "live" ? "step1.sourceLive" : "step1.sourceSnapshot")}
                     </span>
                     {/* PR #59 리뷰 1 — remark 원문 대신 매핑 문구, 매핑 불가는 영어에서 숨김 */}
@@ -563,7 +563,7 @@ export default function PlannerWizard({ stationFacilities }: {
             onChange={(e) => runSearch(e.target.value)}
           />
           {searched && results.actors.length === 0 && results.works.length === 0 && (
-            <p className="mt-3 rounded border border-sc-orange/30 bg-sc-orange-soft p-3 text-sm text-sc-orange">
+            <p className="mt-3 rounded border border-sc-orange/30 bg-sc-orange-soft p-3 text-sm text-sc-orange-text">
               {tr("step2.noResult")}
             </p>
           )}
@@ -607,7 +607,7 @@ export default function PlannerWizard({ stationFacilities }: {
                 {selectedWorks.map((w) => (
                   <button
                     key={w.id}
-                    className="rounded-full bg-sc-airport-soft px-3 py-1 text-sm text-sc-airport"
+                    className="rounded-full bg-sc-airport-soft px-3 py-1 text-sm text-sc-airport-text"
                     onClick={() => toggleChip(selectedWorks, setSelectedWorks, w)}
                   >
                     {w.title[locale]} · {tr("step2.work")} ×
@@ -645,7 +645,7 @@ export default function PlannerWizard({ stationFacilities }: {
             ))}
           </div>
           {sortedCandidates.length === 0 && (
-            <p className="mt-4 rounded border border-sc-orange/30 bg-sc-orange-soft p-3 text-sm text-sc-orange">
+            <p className="mt-4 rounded border border-sc-orange/30 bg-sc-orange-soft p-3 text-sm text-sc-orange-text">
               {tr("step3.noCandidates")}
             </p>
           )}
@@ -712,7 +712,7 @@ export default function PlannerWizard({ stationFacilities }: {
           )}
 
           {viewBanner && (
-            <div className="mt-4 rounded-lg border border-sc-airport/30 bg-sc-airport-soft p-3 text-sm text-sc-airport">
+            <div className="mt-4 rounded-lg border border-sc-airport/30 bg-sc-airport-soft p-3 text-sm text-sc-airport-text">
               {tr(viewBanner === "reopened" ? "trips.reopened" : "alt.swapped")}
             </div>
           )}
@@ -770,8 +770,8 @@ export default function PlannerWizard({ stationFacilities }: {
               {viewWarnings.length > 0 && (
                 // #43 수용 기준: 경고 누락 0건 — 배치는 유지하되 방문 전 확인을 안내
                 <div className="rounded-lg border border-sc-orange/30 bg-sc-orange-soft p-4">
-                  <h3 className="text-sm font-medium text-sc-orange">{tr("step4.warningsTitle")}</h3>
-                  <ul className="mt-2 space-y-1 text-sm text-sc-orange">
+                  <h3 className="text-sm font-medium text-sc-orange-text">{tr("step4.warningsTitle")}</h3>
+                  <ul className="mt-2 space-y-1 text-sm text-sc-orange-text">
                     {viewWarnings.map((warning) => (
                       <li key={warning.placeId}>
                         ⚠️ {placeName(warning.placeId)} — {tr(`reason.${warning.detail}` as MessageKey)}
@@ -782,8 +782,8 @@ export default function PlannerWizard({ stationFacilities }: {
               )}
               {viewRejected.length > 0 && (
                 <div className="rounded-lg border border-sc-orange/30 bg-sc-orange-soft p-4">
-                  <h3 className="text-sm font-medium text-sc-orange">{tr("step4.rejectedTitle")}</h3>
-                  <ul className="mt-2 space-y-1 text-sm text-sc-orange">
+                  <h3 className="text-sm font-medium text-sc-orange-text">{tr("step4.rejectedTitle")}</h3>
+                  <ul className="mt-2 space-y-1 text-sm text-sc-orange-text">
                     {viewRejected.map((reason) => (
                       <li key={`${reason.placeId}-${reason.code}`}>
                         {placeName(reason.placeId)} — {tr(`reason.${reason.code}` as MessageKey)}
@@ -808,10 +808,10 @@ export default function PlannerWizard({ stationFacilities }: {
 
           {showEmpty(view) && view.result?.status === "empty" && (
             <div className="mt-4 rounded-lg border border-sc-orange/30 bg-sc-orange-soft p-4">
-              <h3 className="font-medium text-sc-orange">{tr("step4.emptyTitle")}</h3>
-              <p className="mt-1 text-sm text-sc-orange">{tr("step4.emptyDesc")}</p>
+              <h3 className="font-medium text-sc-orange-text">{tr("step4.emptyTitle")}</h3>
+              <p className="mt-1 text-sm text-sc-orange-text">{tr("step4.emptyDesc")}</p>
               {view.result.rejectedPlaces.length > 0 && (
-                <ul className="mt-2 space-y-1 text-sm text-sc-orange">
+                <ul className="mt-2 space-y-1 text-sm text-sc-orange-text">
                   {view.result.rejectedPlaces.map((reason) => (
                     <li key={`${reason.placeId}-${reason.code}`}>
                       {placeName(reason.placeId)} — {tr(`reason.${reason.code}` as MessageKey)}
@@ -944,13 +944,13 @@ function PlaceCard({ candidate, locale, tr, selected, onToggle, stationName, wor
           )}
           {/* #48 — 검토된 항목의 관련 이유만 ko/en 표시, 내부 점수는 노출하지 않는다 */}
           {aiReason && (
-            <p className="mt-0.5 text-xs text-sc-airport">
+            <p className="mt-0.5 text-xs text-sc-airport-text">
               ✨ {tr("step3.aiReasonLabel")}: {aiReason[locale]}
             </p>
           )}
           <p className="mt-0.5 text-xs text-sc-muted">
             {hoursLabel ?? (
-              <span className="rounded bg-sc-orange-soft px-1.5 py-0.5 text-sc-orange">
+              <span className="rounded bg-sc-orange-soft px-1.5 py-0.5 text-sc-orange-text">
                 ⚠️ {tr("step3.hoursUnverified")}
               </span>
             )}
