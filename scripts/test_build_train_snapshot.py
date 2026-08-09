@@ -65,11 +65,34 @@ KORAIL_ITEM_OTHER_OD = {
 }
 
 
+# 전라선 팩(#72) — 계획 응답의 종단은 행신·여수엑스포다. 서울·전주는 중간 정차라
+# 계획에는 행이 없고 실적(runInfo2)에서만 보인다(진부와 동일 구조, 2026-08-09 실측).
+# 여기 있는 이유는 정차 수록 allowlist(운행 여부의 근거는 계획)를 만들기 위해서다.
+KORAIL_ITEM_JEOLLA = {
+    "trn_no": "00503",
+    "run_ymd": "20260812",
+    "dptre_stn_nm": "행신",
+    "arvl_stn_nm": "여수엑스포",
+    "trn_plan_dptre_dt": "2026-08-12 06:45:00.0",
+    "trn_plan_arvl_dt": "2026-08-12 10:30:00.0",
+}
+
+
 def plan_items(date: str) -> list[dict]:
     """운행계획(runPlan2) 일별 응답 — 날짜 cond에 맞춰 재작성한 fixture"""
     day = f"{date[0:4]}-{date[4:6]}-{date[6:8]}"
     out = []
-    for item in (KORAIL_ITEM, KORAIL_ITEM_REVERSE, KORAIL_ITEM_BUSAN, KORAIL_ITEM_BUSAN_REVERSE, KORAIL_ITEM_OTHER_OD):
+    jeolla_reverse = dict(KORAIL_ITEM_JEOLLA, trn_no="00502", dptre_stn_nm="여수엑스포",
+                          arvl_stn_nm="행신", trn_plan_dptre_dt="2026-08-12 04:55:00.0",
+                          trn_plan_arvl_dt="2026-08-12 08:50:00.0")
+    jeolla_itx = dict(KORAIL_ITEM_JEOLLA, trn_no="01501", dptre_stn_nm="서울",
+                      trn_plan_dptre_dt="2026-08-12 13:00:00.0",
+                      trn_plan_arvl_dt="2026-08-12 18:00:00.0")
+    jeolla_unknown = dict(jeolla_itx, trn_no="00599",
+                          trn_plan_dptre_dt="2026-08-12 14:00:00.0",
+                          trn_plan_arvl_dt="2026-08-12 19:00:00.0")
+    for item in (KORAIL_ITEM, KORAIL_ITEM_REVERSE, KORAIL_ITEM_BUSAN, KORAIL_ITEM_BUSAN_REVERSE,
+                 KORAIL_ITEM_OTHER_OD, KORAIL_ITEM_JEOLLA, jeolla_reverse, jeolla_itx, jeolla_unknown):
         row = dict(item)
         row["run_ymd"] = date
         row["trn_plan_dptre_dt"] = day + row["trn_plan_dptre_dt"][10:]
@@ -79,11 +102,12 @@ def plan_items(date: str) -> list[dict]:
 
 
 def runinfo_stop(trn_no: str, date: str, sn: int, stn: str, stop_se: str,
-                 arvl: str | None, dptre: str | None, direction: str) -> dict:
+                 arvl: str | None, dptre: str | None, direction: str,
+                 line: str = "강릉선") -> dict:
     """정차역 실적(runInfo2) 실응답 형태 행 — #56 실측 필드 그대로"""
     day = f"{date[0:4]}-{date[4:6]}-{date[6:8]}"
     return {
-        "mrnt_cd": "25", "mrnt_nm": "강릉선", "run_ymd": date,
+        "mrnt_cd": "25", "mrnt_nm": line, "run_ymd": date,
         "stn_cd": "0000000", "stn_nm": stn,
         "stop_se_cd": {"시발": "01", "여객승하차": "11", "종착": "02"}[stop_se],
         "stop_se_nm": stop_se,
@@ -93,10 +117,36 @@ def runinfo_stop(trn_no: str, date: str, sn: int, stn: str, stop_se: str,
     }
 
 
+def jeolla_runinfo_items(date: str) -> list[dict]:
+    """전라선 팩(#72) 실적 fixture — 서울·전주는 중간 정차다(2026-08-05 실측 시각 반영).
+
+    00503·00502는 실제 편성이고, 01501·00599는 **가드용 합성 행**이다. 실측상 서울역에
+    정차하는 전주행은 전량 KTX 계열이지만, 등급 필터가 그 우연에 기대지 않음을 고정한다
+    (일반열차 전라선은 용산 착발이라 서울역 정차 데이터에 안 잡힌다)."""
+    stop = lambda *args: runinfo_stop(*args, line="전라선")  # noqa: E731
+    return [
+        stop("00503", date, 1, "행신", "시발", None, "06:45", "D"),
+        stop("00503", date, 2, "서울", "여객승하차", "07:00", "07:03", "D"),
+        stop("00503", date, 3, "전주", "여객승하차", "08:57", "08:59", "D"),
+        stop("00503", date, 4, "여수엑스포", "종착", "10:30", None, "D"),
+        stop("00502", date, 1, "여수엑스포", "시발", None, "04:55", "U"),
+        stop("00502", date, 2, "전주", "여객승하차", "06:27", "06:29", "U"),
+        stop("00502", date, 3, "서울", "여객승하차", "08:26", "08:29", "U"),
+        stop("00502", date, 4, "행신", "종착", "08:50", None, "U"),
+        stop("01501", date, 1, "서울", "시발", None, "13:00", "D"),          # ITX-새마을 — 등급으로 제외
+        stop("01501", date, 2, "전주", "여객승하차", "16:10", "16:12", "D"),
+        stop("01501", date, 3, "여수엑스포", "종착", "18:00", None, "D"),
+        stop("00599", date, 1, "서울", "시발", None, "14:00", "D"),          # 등급 미확인 — 보수적 제외
+        stop("00599", date, 2, "전주", "여객승하차", "17:10", "17:12", "D"),
+        stop("00599", date, 3, "여수엑스포", "종착", "19:00", None, "D"),
+    ]
+
+
 def runinfo_items(date: str) -> list[dict]:
     """실적 일별 fixture — 하행 00801(서울-만종-진부-강릉)·상행 00802(강릉-진부-만종-서울)와
-    계획에 없는 열차 99999(allowlist 제외 검증용). 만종은 #56 2단계 실운행 패턴 반영."""
-    return [
+    계획에 없는 열차 99999(allowlist 제외 검증용). 만종은 #56 2단계 실운행 패턴 반영.
+    전라선 팩(#72) 행은 `jeolla_runinfo_items`에서 합류한다."""
+    return jeolla_runinfo_items(date) + [
         runinfo_stop("00801", date, 1, "서울", "시발", None, "05:06", "D"),
         runinfo_stop("00801", date, 2, "만종", "여객승하차", "06:00", "06:02", "D"),
         runinfo_stop("00801", date, 3, "진부", "여객승하차", "06:30", "06:32", "D"),
@@ -118,10 +168,12 @@ def runinfo_row_of(items: list[dict], trn_no: str, stn_nm: str) -> dict:
 
 TAGO_STATIONS = [{"nodename": "서울", "nodeid": "NAT010000"},
                  {"nodename": "강릉", "nodeid": "NAT601936"},
-                 {"nodename": "부산", "nodeid": "NAT014445"}]
+                 {"nodename": "부산", "nodeid": "NAT014445"},
+                 {"nodename": "전주", "nodeid": "NAT040257"}]
 
-# 열차번호 → TAGO 공식 등급 fixture. 00999는 의도적으로 없음(등급 미확인 케이스)
-TAGO_GRADES = {"00101": "KTX", "00102": "KTX-산천(A-type)", "01001": "ITX-새마을"}
+# 열차번호 → TAGO 공식 등급 fixture. 00999·00599는 의도적으로 없음(등급 미확인 케이스)
+TAGO_GRADES = {"00101": "KTX", "00102": "KTX-산천(A-type)", "01001": "ITX-새마을",
+               "00503": "KTX", "00502": "KTX-산천(A-type)", "01501": "ITX-새마을"}
 
 
 def korail_side_effect(runinfo_mutate=None, plan_mutate=None):
@@ -242,8 +294,9 @@ class EmptyResponseGuardTest(unittest.TestCase):
         self.assertEqual(legs[0].trainNo, "00801")
         # 데모 OD 밖 행(서울→대전 00001)은 legs에 포함되지 않는다
         self.assertNotIn("00001", {leg.trainNo for leg in legs})
-        # 시종착(계획) 3일 × 2쌍(강릉·부산) 양방향 + 중간 정차(실적) 3일 × 8건(진부·만종 경유 왕복)
-        self.assertEqual(len(legs), len(pipeline.DATES) * 4 + len(pipeline.DATES) * 8)
+        # 시종착(계획) 3일 × 2쌍(강릉·부산) 양방향 + 중간 정차(실적) 3일 × 10건
+        # (진부·만종 경유 왕복 8 + 전라선 서울↔전주 왕복 2 — 비KTX·등급 미확인 제외 후)
+        self.assertEqual(len(legs), len(pipeline.DATES) * 4 + len(pipeline.DATES) * 10)
 
 
 class StopoverContractTest(unittest.TestCase):
@@ -390,6 +443,35 @@ class KtxGradeFilterTest(unittest.TestCase):
         self.assertNotIn("00999", busan)  # 등급 미확인 — 보수적으로 제외
         # 무필터 축(강릉)은 등급 fixture에 없어도 그대로 수록된다
         self.assertIn("00801", {leg.trainNo for leg in legs})
+
+    def test_정차_구간도_비KTX와_등급_미확인을_제외한다(self) -> None:
+        """전라선 팩(#72): 중간 정차 OD도 시종착 OD와 같은 등급 규칙을 받는다.
+        서울역 정차 전주행이 실측상 전량 KTX라는 우연에 수록 기준 2를 맡기지 않는다."""
+        with mock.patch.object(pipeline, "get_json", side_effect=korail_side_effect()):
+            legs = pipeline.fetch_korail_legs("dummy-key")
+        jeonju = {leg.trainNo for leg in legs
+                  if "station-jeonju" in (leg.fromStationId, leg.toStationId)}
+        self.assertEqual(jeonju, {"00503", "00502"})  # KTX 계열만
+        self.assertNotIn("01501", jeonju)  # ITX-새마을 — 제외
+        self.assertNotIn("00599", jeonju)  # 등급 미확인 — 보수적으로 제외
+        # 무필터 정차 축(진부·만종)은 등급 fixture에 없어도 그대로 수록된다
+        self.assertIn("00801", {leg.trainNo for leg in legs
+                                if "station-jinbu" in (leg.fromStationId, leg.toStationId)})
+
+    def test_정차_구간_KTX_확인_편이_0건이면_중단하고_스냅샷이_불변이다(self) -> None:
+        def jeonju_itx_only(items, date):
+            # KTX 편성만 사라지고 ITX(01501)·등급 미확인(00599)만 남은 날
+            return [row for row in items if row["trn_no"] not in ("00503", "00502")]
+
+        before = pipeline.SNAPSHOT_PATH.read_text(encoding="utf-8")
+        with mock.patch.object(pipeline, "get_json",
+                               side_effect=korail_side_effect(runinfo_mutate=jeonju_itx_only)):
+            with self.assertRaises(pipeline.ApiError) as caught:
+                pipeline.fetch_korail_legs("dummy-key")
+            self.assertIn("KTX 확인 편 0건", str(caught.exception))
+            exit_code = pipeline.main_with_args(["--source", "korail"], service_key="dummy-key")
+        self.assertEqual(exit_code, 1)
+        self.assertEqual(pipeline.SNAPSHOT_PATH.read_text(encoding="utf-8"), before)
 
     def test_KTX_확인_편이_0건이면_중단하고_스냅샷이_불변이다(self) -> None:
         def busan_itx_only(items, date):

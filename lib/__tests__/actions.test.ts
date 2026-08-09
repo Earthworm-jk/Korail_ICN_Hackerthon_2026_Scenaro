@@ -238,14 +238,15 @@ describe("#56 열차 스냅샷 권역 확장 — 실데이터 회귀", () => {
     }
   });
 
-  it("관문·후속 단계 전 상태: 전주 경기전은 단독 선택도 아직 열차 미연결 (#56 3단계)", async () => {
+  it("전주 앵커 경기전이 단독 선택 시 배치된다 — 전라선 팩 (#72 · #56 3단계)", async () => {
+    // 서울역↔전주 직결 KTX 스냅샷 수록 전에는 이 장소가 TRAIN_UNAVAILABLE로 빠졌다.
+    // 후보에서 감추는 대신 데이터를 채우는 방향(팀 결정)의 회귀다.
     const res = await planOnly("place-gyeonggijeon-shrine");
     expect(res.ok).toBe(true);
     if (!res.ok) return;
-    expect(res.result.status).toBe("empty");
-    expect(res.result.rejectedPlaces).toContainEqual({
-      code: "TRAIN_UNAVAILABLE",
-      placeId: "place-gyeonggijeon-shrine",
-    });
+    expect(res.result.status).toBe("planned");
+    if (res.result.status !== "planned") return;
+    expect(res.result.days.flatMap((day) => day.items.map((item) => item.placeId)))
+      .toContain("place-gyeonggijeon-shrine");
   });
 });
