@@ -43,6 +43,7 @@ import {
   scaleOf,
   screenUnit,
   viewBoxOf,
+  wheelZoomFactor,
   zoomAt,
   zoomByStep,
   type Viewport,
@@ -378,13 +379,21 @@ export function KoreaMapPanel({
     if (!svg) return;
 
     const onWheel = (event: WheelEvent) => {
-      const zoomingIn = event.deltaY < 0;
+      // 배율 변화는 이벤트 횟수가 아니라 이동량에 비례한다 (map-viewport의 wheelZoomFactor)
+      const factor = wheelZoomFactor(event.deltaY, event.deltaMode);
       // 판단은 setView 밖에서 한다. 갱신 함수는 나중에 실행될 수 있어서 그 안에서 결정하면
       // preventDefault를 부를 시점을 놓치고 확대와 페이지 스크롤이 동시에 일어난다
-      if (!zoomingIn && !isZoomed(viewRef.current)) return;
+      const scale = scaleOf(viewRef.current);
+      // 더 이상 창이 바뀌지 않는 방향의 휠은 삼키지 않고 페이지 스크롤로 넘긴다 (PR #111 리뷰).
+      // 세로로 긴 지도가 양 끝 배율에서 페이지 스크롤을 가두는 것을 막는다
+      const stuck =
+        factor === 1 ||
+        (factor > 1 && scale >= MAX_SCALE - 1e-9) ||
+        (factor < 1 && scale <= MIN_SCALE + 1e-9);
+      if (stuck) return;
+
       event.preventDefault();
       const rect = svg.getBoundingClientRect();
-      const factor = zoomingIn ? ZOOM_STEP : 1 / ZOOM_STEP;
       setView((current) =>
         zoomAt(current, factor, pointFromClient(current, rect, event.clientX, event.clientY)),
       );

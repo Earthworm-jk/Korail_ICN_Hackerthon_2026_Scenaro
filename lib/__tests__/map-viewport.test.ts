@@ -16,6 +16,7 @@ import {
   scaleOf,
   screenUnit,
   viewBoxOf,
+  wheelZoomFactor,
   zoomAt,
   zoomByStep,
 } from "../map-viewport";
@@ -134,6 +135,67 @@ describe("지도 표시 창", () => {
 
   it("맞출 지점이 없으면 전체 보기다", () => {
     expect(fitTo([])).toEqual(BASE_VIEWPORT);
+  });
+
+  /**
+   * 휠 배율 (PR #111 리뷰).
+   *
+   * 이벤트마다 고정 배수를 곱하면 트랙패드에서 네 건(1.5^4 = 5.06)만에 상한에 닿아 지도를
+   * 제어할 수 없다. 배율 변화가 이벤트 횟수가 아니라 총 이동량에 비례한다는 것을 고정한다.
+   */
+  describe("휠 배율", () => {
+    it("한 칸(deltaY 100)은 정확히 한 단계다", () => {
+      expect(wheelZoomFactor(-100)).toBeCloseTo(ZOOM_STEP, 9);
+      expect(wheelZoomFactor(100)).toBeCloseTo(1 / ZOOM_STEP, 9);
+      expect(wheelZoomFactor(0)).toBeCloseTo(1, 9);
+    });
+
+    it("작은 delta는 작게 움직인다 — 트랙패드 한 건으로 튀지 않는다", () => {
+      const factor = wheelZoomFactor(-4);
+      expect(factor).toBeGreaterThan(1);
+      expect(factor).toBeCloseTo(Math.pow(ZOOM_STEP, 0.04), 9);
+    });
+
+    it("같은 총 이동량이면 나눠 와도 결과가 같다 — 이 등식이 이번 회귀의 핵심이다", () => {
+      const once = wheelZoomFactor(-100);
+      const split = Array.from({ length: 10 }).reduce<number>(
+        (acc) => acc * wheelZoomFactor(-10),
+        1,
+      );
+      expect(split).toBeCloseTo(once, 9);
+
+      const finer = Array.from({ length: 50 }).reduce<number>(
+        (acc) => acc * wheelZoomFactor(-2),
+        1,
+      );
+      expect(finer).toBeCloseTo(once, 9);
+    });
+
+    it("작은 delta가 여러 건 와도 한 제스처가 상한으로 튀지 않는다", () => {
+      // 트랙패드가 한 번 쓸 때 보내는 정도 — 4px짜리 20건
+      let view = BASE_VIEWPORT;
+      for (let i = 0; i < 20; i += 1) view = zoomByStep(view, wheelZoomFactor(-4));
+      expect(scaleOf(view)).toBeLessThan(MAX_SCALE);
+      expect(scaleOf(view)).toBeCloseTo(Math.pow(ZOOM_STEP, 0.8), 6);
+
+      // 고정 1.5배였다면 네 건 만에 상한이었다 — 회귀하면 여기서 걸린다
+      let fixed = BASE_VIEWPORT;
+      for (let i = 0; i < 4; i += 1) fixed = zoomByStep(fixed, ZOOM_STEP);
+      expect(scaleOf(fixed)).toBeCloseTo(MAX_SCALE, 6);
+    });
+
+    it("이벤트 하나가 한 단계를 넘지 못한다", () => {
+      expect(wheelZoomFactor(-100000)).toBeCloseTo(ZOOM_STEP, 9);
+      expect(wheelZoomFactor(100000)).toBeCloseTo(1 / ZOOM_STEP, 9);
+    });
+
+    it("줄·페이지 단위를 픽셀로 정규화한다", () => {
+      // deltaMode 1 = 줄(16px), 2 = 쪽(800px)
+      expect(wheelZoomFactor(-100 / 16, 1)).toBeCloseTo(wheelZoomFactor(-100), 9);
+      expect(wheelZoomFactor(-100 / 800, 2)).toBeCloseTo(wheelZoomFactor(-100), 9);
+      // 쪽 단위 한 건은 상한에 걸려 한 단계까지만
+      expect(wheelZoomFactor(-1, 2)).toBeCloseTo(ZOOM_STEP, 9);
+    });
   });
 
   it("표시 요소는 배율로 나눠 화면 크기를 유지한다", () => {

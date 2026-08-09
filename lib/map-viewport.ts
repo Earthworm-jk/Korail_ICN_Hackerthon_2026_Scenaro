@@ -39,6 +39,31 @@ export const MIN_SCALE = 1;
 export const MAX_SCALE = 5;
 /** 버튼 한 번 / 휠 한 칸의 배율 변화 */
 export const ZOOM_STEP = 1.5;
+
+/** 마우스 휠 한 칸의 표준 이동량(px). 이만큼 굴리면 정확히 한 단계다 */
+const WHEEL_NOTCH_PX = 100;
+/** deltaMode 1 — 한 줄의 픽셀 환산 */
+const WHEEL_LINE_PX = 16;
+/** deltaMode 2 — 한 쪽의 픽셀 환산 */
+const WHEEL_PAGE_PX = 800;
+
+/**
+ * 휠 한 이벤트의 배율 변화 — 이벤트 "횟수"가 아니라 이동량 `deltaY`에 비례한다.
+ *
+ * 이벤트마다 고정 배수를 곱하면 트랙패드에서 지도를 제어할 수 없다. 트랙패드는 한 번 쓸어도
+ * 작은 deltaY 이벤트를 여러 건 보내므로, 고정 1.5배라면 네 건(1.5^4 = 5.06)만에 상한에 닿는다.
+ * 지수를 쓰면 곱이 지수의 합이 되어, 같은 총 이동량이면 잘게 나뉘어 오든 한 번에 오든 결과가
+ * 같다 — `map-viewport.test.ts`가 이 등식을 고정한다 (PR #111 리뷰).
+ *
+ * 이벤트 하나의 변화량은 한 단계로 잠근다. deltaMode 2(페이지 단위)처럼 한 건이 800px씩
+ * 들어오는 입력에서 한 번에 상한까지 튀지 않게 한다.
+ */
+export function wheelZoomFactor(deltaY: number, deltaMode = 0): number {
+  const pixels = deltaY * (deltaMode === 1 ? WHEEL_LINE_PX : deltaMode === 2 ? WHEEL_PAGE_PX : 1);
+  // 위로 굴리면(deltaY < 0) 확대
+  const steps = clamp(-pixels / WHEEL_NOTCH_PX, -1, 1);
+  return Math.exp(steps * Math.log(ZOOM_STEP));
+}
 /**
  * "대표 지점 보기"가 잡는 배율.
  * 상한(5)까지 당기면 주변 역이 화면에서 사라져 그 지점이 어디쯤인지 알 수 없다. 3이면 창이
