@@ -35,8 +35,9 @@ export const RailLine = z
   .object({
     id: NonEmptyId,
     name: z.object({ ko: z.string().min(1), en: z.string().min(1) }),
-    mode: z.enum(["relation", "graph"]),
-    // graph 축은 OSM route 관계가 불완전해 선로 그래프에서 만든다 — 관계 ID가 없다(null)
+    // relation 한 개로 만든 축 / 선로 그래프에서 만든 축 / 관계 여러 개를 이어 붙인 축
+    mode: z.enum(["relation", "graph", "spliced"]),
+    // graph·spliced 축은 대표 관계 ID가 없다(null)
     relationId: z.number().int().positive().nullable(),
     // 축 하나가 이어 주는 역이 하나뿐이면 자를 구간이 없다 — 그런 축은 실을 이유가 없다
     stations: z.array(RailStationAnchor).min(2),

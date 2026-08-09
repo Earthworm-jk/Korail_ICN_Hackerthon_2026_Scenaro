@@ -19,8 +19,13 @@ describe("철로 선형 스냅샷", () => {
     loadStationCoordinates().stations.map((station) => [station.stationId, station]),
   );
 
-  it("축 3개를 싣고, 앵커가 가리키는 역은 모두 시드에 있다", () => {
-    expect(snapshot.lines.map((line) => line.id)).toEqual(["gangneung", "gyeongbu", "arex"]);
+  it("축 4개를 싣고, 앵커가 가리키는 역은 모두 시드에 있다", () => {
+    expect(snapshot.lines.map((line) => line.id)).toEqual([
+      "gangneung",
+      "gyeongbu",
+      "arex",
+      "jeolla",
+    ]);
     const seedIds = new Set(loadRepositories().stations.map((station) => station.id));
     for (const line of snapshot.lines) {
       for (const anchor of line.stations) {
@@ -111,8 +116,36 @@ describe("동선 구간 나누기", () => {
     expect(backward.points).toEqual([...forward.points].reverse());
   });
 
+  // PR #96 리뷰(차단): #95·#97이 전주·용산 OD를 들여왔다. 곡선 폴백으로 조용히 남으면 안 된다
+  it("전주·용산 신규 OD가 전부 전라선 축의 실선형으로 잡힌다", () => {
+    const newOds = [
+      ["station-seoul", "station-jeonju"],
+      ["station-jeonju", "station-seoul"],
+      ["station-yongsan", "station-jeonju"],
+      ["station-jeonju", "station-yongsan"],
+      ["station-seoul", "station-yongsan"],
+      ["station-yongsan", "station-seoul"],
+    ];
+    for (const [from, to] of newOds) {
+      const segments = railRouteSegments([from, to], lines);
+      expect(segments.map((segment) => segment.kind), `${from}→${to}`).toEqual(["rail"]);
+      const only = segments[0];
+      if (only.kind !== "rail") throw new Error("rail 구간이 아님");
+      expect(only.lineId, `${from}→${to}`).toBe("jeolla");
+    }
+  });
+
+  it("전라선 축은 서울-용산-전주 순서로 앵커가 놓인다", () => {
+    const jeolla = lines.find((line) => line.id === "jeolla")!;
+    expect(jeolla.stations.map((anchor) => anchor.stationId)).toEqual([
+      "station-seoul",
+      "station-yongsan",
+      "station-jeonju",
+    ]);
+  });
+
   it("축을 못 찾은 구간은 기존 곡선으로 남는다 — 선이 사라지지 않는다", () => {
-    const stationIds = ["station-jeonju", "station-namwon"];
+    const stationIds = ["station-namwon", "station-yeosu"];
     const segments = railRouteSegments(stationIds, lines);
     expect(segments).toEqual([{ kind: "curve", stationIds }]);
   });

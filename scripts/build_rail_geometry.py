@@ -54,6 +54,7 @@ TRANSLATE_Y = 1675.0702691478289
 #   relation — OSM에 완결된 route 관계가 있는 축. 관계의 way를 순서대로 이으면 끝난다.
 #   graph    — 관계가 불완전한 축(강릉선은 이름만 "서울 → 강릉"이고 지오메트리가 양평까지다).
 #              회랑의 railway=rail 전체를 받아 선로 그래프를 만들고 역 사이를 최단경로로 잇는다.
+#   spliced  — 한 관계로는 안 되는 축. 관계 여러 개를 역 기준으로 잘라 이어 붙인다.
 AXES = [
     {
         "id": "gangneung",
@@ -79,6 +80,22 @@ AXES = [
         "relationId": 9961459,
         "endpoints": ("station-seoul", "station-incheon-airport-t1"),
         "via": [],
+    },
+    {
+        "id": "jeolla",
+        "name": {"ko": "전라선 축", "en": "Jeolla axis"},
+        "mode": "spliced",
+        # OSM에 서울역에서 출발하는 전라선 관계가 없다(전라선 KTX 관계는 모두 용산 시작).
+        # 실제 열차가 지나는 선로 그대로 두 관계를 잘라 붙인다:
+        #   서울-용산  경부선 KTX 관계에서 (용산은 그 관계 42번째 점, 역과 118m)
+        #   용산-전주  전라선 KTX 관계 그대로 (용산 시작, 전주 끝)
+        # 선형을 지어내지 않는다는 규율은 그대로다 — 두 조각 모두 OSM way 지오메트리다.
+        "parts": [
+            {"relationId": 11214334, "from": "station-seoul", "to": "station-yongsan"},
+            {"relationId": 11314593, "from": "station-yongsan", "to": "station-jeonju"},
+        ],
+        "endpoints": ("station-seoul", "station-jeonju"),
+        "via": ["station-yongsan"],
     },
 ]
 
@@ -271,15 +288,51 @@ def shortest_path(adjacency: dict, source, target) -> list:
     return path
 
 
+def nearest_index(line: list[tuple[float, float]], target: tuple[float, float]) -> tuple[int, float]:
+    """선형에서 역에 가장 가까운 점의 인덱스와 그 거리(m)"""
+    best_index, best_distance = -1, math.inf
+    for index, point in enumerate(line):
+        distance = haversine_m(target, point)
+        if distance < best_distance:
+            best_index, best_distance = index, distance
+    return best_index, best_distance
+
+
+def relation_line(relation_id: int) -> list[tuple[float, float]]:
+    print(f"    route 관계 rel/{relation_id} 사용")
+    payload = overpass(
+        f"[out:json][timeout:180];rel({relation_id});out geom;",
+        cache_key=f"rel-{relation_id}",
+    )
+    return stitch(payload["elements"][0]["members"])
+
+
 def axis_line(spec: dict, seed_by_id: dict) -> list[tuple[float, float]]:
     """축 하나의 (lat, lon) 선형을 얻는다."""
+    if spec["mode"] == "spliced":
+        line: list[tuple[float, float]] = []
+        for part in spec["parts"]:
+            raw = relation_line(part["relationId"])
+            start, start_distance = nearest_index(raw, seed_by_id[part["from"]])
+            end, end_distance = nearest_index(raw, seed_by_id[part["to"]])
+            for station_id, distance in ((part["from"], start_distance), (part["to"], end_distance)):
+                if distance > STATION_SNAP_METERS:
+                    raise SystemExit(
+                        f"{station_id}이 rel/{part['relationId']} 선형에서 {distance/1000:.1f}km 떨어져 있다"
+                    )
+            # 관계가 반대 방향이면 뒤집어 붙인다 — 축은 endpoints 순서로 진행해야 한다
+            piece = raw[start : end + 1] if start <= end else list(reversed(raw[end : start + 1]))
+            print(
+                f"      {part['from']} → {part['to']}: {len(piece)}점"
+                f" (관계 {start}-{end}, 스냅 {start_distance:.0f}m/{end_distance:.0f}m)"
+            )
+            # 이음매의 첫 점은 앞 조각의 끝점과 같은 역이다 — 한 번만 남긴다
+            line.extend(piece if not line else piece[1:])
+            time.sleep(3)
+        return line
+
     if spec["mode"] == "relation":
-        print(f"    route 관계 rel/{spec['relationId']} 사용")
-        payload = overpass(
-            f"[out:json][timeout:180];rel({spec['relationId']});out geom;",
-            cache_key=f"rel-{spec['relationId']}",
-        )
-        return stitch(payload["elements"][0]["members"])
+        return relation_line(spec["relationId"])
 
     south, west, north, east = spec["bbox"]
     print(f"    회랑 railway=rail 전체 수신 ({south},{west},{north},{east})")
@@ -315,12 +368,7 @@ def build() -> dict:
         wanted = [spec["endpoints"][0], *spec["via"], spec["endpoints"][1]]
         on_line: list[tuple[str, int]] = []
         for station_id in wanted:
-            target = seed_by_id[station_id]
-            best_index, best_distance = -1, math.inf
-            for index, point in enumerate(raw):
-                distance = haversine_m(target, point)
-                if distance < best_distance:
-                    best_index, best_distance = index, distance
+            best_index, best_distance = nearest_index(raw, seed_by_id[station_id])
             if best_distance > STATION_SNAP_METERS:
                 raise SystemExit(
                     f"{station_id}이 {spec['id']} 축 선형에서 {best_distance/1000:.1f}km 떨어져 있다"
