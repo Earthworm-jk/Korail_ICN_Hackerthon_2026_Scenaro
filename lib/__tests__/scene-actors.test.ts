@@ -21,6 +21,7 @@ function fixtureSeed(): RawSeedFiles {
     accessEstimate: { minutes: 35, source: "fixture", verifiedAt: "2026-08-08" },
     openingHours: { type: "always_open", source: "fixture", verifiedAt: "2026-08-08" },
     stayMinutes: 60,
+    stayMetadata: { category: "nature_walk" as const, basis: "category_default" as const },
     verificationLevel: "원본확인",
     officialSourceCount: 1,
     reasonText: KO_EN("사유", "Reason"),
