@@ -25,7 +25,7 @@ PLACES_PATH = REPO_ROOT / "data" / "places.json"
 
 OPENAI_EMBEDDINGS_URL = "https://api.openai.com/v1/embeddings"
 DEFAULT_MODEL = "text-embedding-3-small"
-DEFAULT_BADGE_THRESHOLD = 0.7
+DEFAULT_BADGE_THRESHOLD = 0.25
 MAX_INPUTS = 100
 MAX_TOTAL_CHARS = 50_000
 
