@@ -138,7 +138,7 @@
       "type": "unverified"
     },
     "stayMinutes": 60,
-    "stayMetadata": { "category": "heritage_culture", "basis": "category_default" },
+    "stayMetadata": { "category": "culture_venue", "basis": "category_default" },
     "verificationLevel": "교차확인",
     "officialSourceCount": 2,
     "reasonText": {
@@ -368,7 +368,7 @@
       "verifiedAt": "2026-08-08"
     },
     "stayMinutes": 60,
-    "stayMetadata": { "category": "heritage_culture", "basis": "category_default" },
+    "stayMetadata": { "category": "culture_venue", "basis": "category_default" },
     "verificationLevel": "교차확인",
     "officialSourceCount": 2,
     "reasonText": {
@@ -398,7 +398,7 @@
       "type": "unverified"
     },
     "stayMinutes": 60,
-    "stayMetadata": { "category": "heritage_culture", "basis": "category_default" },
+    "stayMetadata": { "category": "culture_venue", "basis": "category_default" },
     "verificationLevel": "교차확인",
     "officialSourceCount": 2,
     "reasonText": {
@@ -428,7 +428,7 @@
       "type": "unverified"
     },
     "stayMinutes": 60,
-    "stayMetadata": { "category": "heritage_culture", "basis": "category_default" },
+    "stayMetadata": { "category": "culture_venue", "basis": "category_default" },
     "verificationLevel": "교차확인",
     "officialSourceCount": 2,
     "reasonText": {

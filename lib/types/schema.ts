@@ -105,7 +105,7 @@ export const STAY_CATEGORY_DEFAULT_MINUTES = {
   brief_exterior: 45,
   nature_walk: 60,
   food_cafe: 60,
-  heritage_culture: 60,
+  culture_venue: 60,
   resort_visit: 90,
   large_experience: 120,
 } as const;
@@ -114,7 +114,7 @@ export const StayCategory = z.enum([
   "brief_exterior",
   "nature_walk",
   "food_cafe",
-  "heritage_culture",
+  "culture_venue",
   "resort_visit",
   "large_experience",
 ]);

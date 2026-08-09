@@ -100,7 +100,7 @@ const Place = z.object({
   stayMinutes: z.number(),          // 엔진이 소비하는 단일 보수 체류시간
   stayMetadata: z.object({          // #84 additive — 공식 관람시간이 아닌 서비스 기본값 근거
     category: z.enum([
-      "brief_exterior", "nature_walk", "food_cafe", "heritage_culture",
+      "brief_exterior", "nature_walk", "food_cafe", "culture_venue",
       "resort_visit", "large_experience",
     ]),
     basis: z.literal("category_default"),
@@ -227,7 +227,7 @@ visitEnd         = visitStart + stayMinutes
 ```
 
 장소 하나의 총 시간예산은 다음 서비스 추정식으로 계산한다. 이는 실제 체류·도로 상황을
-보장하는 값이나 공식 권장 관람시간이 아니라, 일정 가능성을 보수적으로 판정하기 위한 MVP 기본값이다.
+보장하는 값도, 공식 권장 관람시간도 아니며 일정 가능성을 보수적으로 판정하기 위한 MVP 기본값이다.
 
 ```text
 buffer = max(20분, ceil(accessEstimate.minutes × 0.5))
@@ -243,7 +243,7 @@ buffer = max(20분, ceil(accessEstimate.minutes × 0.5))
 | `brief_exterior` | 외관·도심 촬영지 중심의 짧은 확인 | 45분 |
 | `nature_walk` | 해변·숲길 등 자연 공간과 산책 | 60분 |
 | `food_cafe` | 식당·카페 방문 | 60분 |
-| `heritage_culture` | 사찰·유적·전시·공연 복합공간 | 60분 |
+| `culture_venue` | 사찰·유적·전시·공연 복합공간 | 60분 |
 | `resort_visit` | 리조트 외부·공용공간 방문 | 90분 |
 | `large_experience` | 목장·케이블카 등 이동을 포함한 대형 체험 | 120분 |
 

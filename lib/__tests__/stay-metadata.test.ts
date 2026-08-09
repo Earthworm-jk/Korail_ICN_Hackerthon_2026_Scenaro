@@ -9,16 +9,16 @@ const EXPECTED_CATEGORIES = {
   "place-lala-muri": "food_cafe",
   "place-eomma-son-makguksu": "food_cafe",
   "place-skybay-hotel-gyeongpo": "brief_exterior",
-  "place-woljeongsa-temple": "heritage_culture",
+  "place-woljeongsa-temple": "culture_venue",
   "place-woljeongsa-fir-forest": "nature_walk",
   "place-samyang-ranch": "large_experience",
   "place-balwangsan-cable-car": "large_experience",
   "place-oak-valley-resort": "resort_visit",
   "place-seoullo-7017": "brief_exterior",
   "place-deoksugung-stone-wall-road": "brief_exterior",
-  "place-gyeonggijeon-shrine": "heritage_culture",
-  "place-bexco": "heritage_culture",
-  "place-busan-cinema-center": "heritage_culture",
+  "place-gyeonggijeon-shrine": "culture_venue",
+  "place-bexco": "culture_venue",
+  "place-busan-cinema-center": "culture_venue",
 } as const;
 
 describe("보수 체류 추정 기준 (#84 P0-4)", () => {
@@ -27,7 +27,7 @@ describe("보수 체류 추정 기준 (#84 P0-4)", () => {
       brief_exterior: 45,
       nature_walk: 60,
       food_cafe: 60,
-      heritage_culture: 60,
+      culture_venue: 60,
       resort_visit: 90,
       large_experience: 120,
     });
