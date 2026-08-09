@@ -70,6 +70,16 @@
       "longitude": 127.161439,
       "source": "primary",
       "address": "전라북도 전주시 덕지구 동부대로 680번지"
+    },
+    {
+      "stationId": "station-namwon",
+      "sourceName": "남원역",
+      "latitude": 35.411053,
+      "longitude": 127.362289,
+      "source": "fallback",
+      "sourceNote": "국가철도공단 좌표 재생성 전 보조 출처 — Wikimedia Commons 사진 위치와 역 주소 대조",
+      "sourceRef": "https://commons.wikimedia.org/wiki/File:Namwon_Station_2013-02-13.jpg",
+      "verifiedAt": "2026-08-10"
     }
   ]
 }

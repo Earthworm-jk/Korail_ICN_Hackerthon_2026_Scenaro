@@ -2,6 +2,26 @@
   {
     "id": "actor-kim-go-eun",
     "name": { "ko": "김고은", "en": "Kim Go-eun" },
-    "workIds": ["work-goblin", "work-yumi-cells", "work-little-women", "work-the-king"]
+    "workIds": ["work-goblin", "work-yumi-cells", "work-yumi-cells-2", "work-little-women", "work-the-king"]
+  },
+  {
+    "id": "actor-park-bo-gum",
+    "name": { "ko": "박보검", "en": "Park Bo-gum" },
+    "workIds": ["work-encounter", "work-record-of-youth", "work-love-in-the-moonlight"]
+  },
+  {
+    "id": "actor-gong-yoo",
+    "name": { "ko": "공유", "en": "Gong Yoo" },
+    "workIds": ["work-goblin"]
+  },
+  {
+    "id": "actor-lee-min-ho",
+    "name": { "ko": "이민호", "en": "Lee Min-ho" },
+    "workIds": ["work-the-king"]
+  },
+  {
+    "id": "actor-kim-tae-ri",
+    "name": { "ko": "김태리", "en": "Kim Tae-ri" },
+    "workIds": ["work-mr-sunshine", "work-twenty-five-twenty-one"]
   }
 ]

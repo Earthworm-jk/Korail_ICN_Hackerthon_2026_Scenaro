@@ -117,7 +117,7 @@ describe("동선 구간 나누기", () => {
   });
 
   // PR #96 리뷰(차단): #95·#97이 전주·용산 OD를 들여왔다. 곡선 폴백으로 조용히 남으면 안 된다
-  it("전주·용산 신규 OD가 전부 전라선 축의 실선형으로 잡힌다", () => {
+  it("전주·용산·남원 OD가 전부 전라선 축의 실선형으로 잡힌다", () => {
     const newOds = [
       ["station-seoul", "station-jeonju"],
       ["station-jeonju", "station-seoul"],
@@ -125,6 +125,8 @@ describe("동선 구간 나누기", () => {
       ["station-jeonju", "station-yongsan"],
       ["station-seoul", "station-yongsan"],
       ["station-yongsan", "station-seoul"],
+      ["station-seoul", "station-namwon"],
+      ["station-namwon", "station-seoul"],
     ];
     for (const [from, to] of newOds) {
       const segments = railRouteSegments([from, to], lines);
@@ -135,12 +137,13 @@ describe("동선 구간 나누기", () => {
     }
   });
 
-  it("전라선 축은 서울-용산-전주 순서로 앵커가 놓인다", () => {
+  it("전라선 축은 서울-용산-전주-남원 순서로 앵커가 놓인다", () => {
     const jeolla = lines.find((line) => line.id === "jeolla")!;
     expect(jeolla.stations.map((anchor) => anchor.stationId)).toEqual([
       "station-seoul",
       "station-yongsan",
       "station-jeonju",
+      "station-namwon",
     ]);
   });
 

@@ -51,5 +51,11 @@
     "name": { "ko": "전주역", "en": "Jeonju Station" },
     "lineType": "KTX",
     "regionId": "honam"
+  },
+  {
+    "id": "station-namwon",
+    "name": { "ko": "남원역", "en": "Namwon Station" },
+    "lineType": "KTX",
+    "regionId": "honam"
   }
 ]

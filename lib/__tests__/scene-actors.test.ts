@@ -123,7 +123,7 @@ describe("장면 출연 배우 3상태 검증", () => {
 describe("실시드 장면 배우 상태 (#26 참고 섹션 대조)", () => {
   const repos = loadRepositories();
 
-  it("등장 확정 11곳 · 미등장 확정 3곳 · 미검토 0곳", () => {
+  it("등장 확정 41건·미검토 1건이고 자동 근거 없이 미등장을 추정하지 않는다", () => {
     const a = repos.workPlaceRelations.filter(
       (r) => r.actorPresenceReviewed && (r.featuredActorIds?.length ?? 0) > 0,
     );
@@ -131,9 +131,13 @@ describe("실시드 장면 배우 상태 (#26 참고 섹션 대조)", () => {
       (r) => r.actorPresenceReviewed && r.featuredActorIds?.length === 0,
     );
     const c = repos.workPlaceRelations.filter((r) => !r.actorPresenceReviewed);
-    expect(a).toHaveLength(11);
-    expect(b).toHaveLength(3);
-    expect(c).toHaveLength(0);
+    expect(a).toHaveLength(41);
+    expect(b).toHaveLength(0);
+    expect(c).toHaveLength(1);
+    expect(c[0]).toMatchObject({
+      workId: "work-mr-sunshine",
+      placeId: "place-munhwa-gonggam-sujeong",
+    });
     expect(a.find((r) => r.placeId === "place-yeongjin-beach")?.actorPresenceVerification)
       .toMatchObject({ method: "automatic", grade: "A", decision: "confirmed" });
   });
@@ -164,15 +168,20 @@ describe("실시드 장면 배우 상태 (#26 참고 섹션 대조)", () => {
     }))).toThrow(/관계 sourceUrls에도 포함/);
   });
 
-  it("미등장 확정 3곳은 삼양목장·덕수궁 돌담길·경기전이다 (데모 멘트 회귀)", () => {
-    const confirmedAbsent = repos.workPlaceRelations
-      .filter((r) => r.actorPresenceReviewed && r.featuredActorIds?.length === 0)
-      .map((r) => r.placeId)
-      .sort();
-    expect(confirmedAbsent).toEqual([
-      "place-deoksugung-stone-wall-road",
-      "place-gyeonggijeon-shrine",
-      "place-samyang-ranch",
+  it("기존 미등장 3곳은 공유·이민호 엔티티 확장 후 원천 문구로 자동 승격된다", () => {
+    const expected = new Map([
+      ["place-deoksugung-stone-wall-road", "actor-gong-yoo"],
+      ["place-samyang-ranch", "actor-gong-yoo"],
+      ["place-gyeonggijeon-shrine", "actor-lee-min-ho"],
     ]);
+    for (const [placeId, actorId] of expected) {
+      const relation = repos.workPlaceRelations.find((item) => item.placeId === placeId);
+      expect(relation?.featuredActorIds, placeId).toContain(actorId);
+      expect(relation?.actorPresenceVerification, placeId).toMatchObject({
+        method: "automatic",
+        grade: "A",
+        decision: "confirmed",
+      });
+    }
   });
 });

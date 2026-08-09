@@ -167,6 +167,15 @@ export const PlaceType = z.enum([
   "stay", // 호텔·리조트
   "convention",
   "cinema",
+  "port",
+  "workshop",
+  "square",
+  "library",
+  "bookstore",
+  "transit",
+  "park",
+  "cultural_center",
+  "filming_set",
 ]);
 
 export const Place = z.object({

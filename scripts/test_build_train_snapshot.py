@@ -129,12 +129,14 @@ def jeolla_runinfo_items(date: str) -> list[dict]:
         stop("00503", date, 2, "서울", "여객승하차", "07:00", "07:03", "D"),
         stop("00503", date, 3, "용산", "여객승하차", "07:07", "07:09", "D"),
         stop("00503", date, 4, "전주", "여객승하차", "08:57", "08:59", "D"),
-        stop("00503", date, 5, "여수엑스포", "종착", "10:30", None, "D"),
+        stop("00503", date, 5, "남원", "여객승하차", "09:23", "09:25", "D"),
+        stop("00503", date, 6, "여수엑스포", "종착", "10:30", None, "D"),
         stop("00502", date, 1, "여수엑스포", "시발", None, "04:55", "U"),
-        stop("00502", date, 2, "전주", "여객승하차", "06:27", "06:29", "U"),
-        stop("00502", date, 3, "용산", "여객승하차", "08:17", "08:21", "U"),
-        stop("00502", date, 4, "서울", "여객승하차", "08:26", "08:29", "U"),
-        stop("00502", date, 5, "행신", "종착", "08:50", None, "U"),
+        stop("00502", date, 2, "남원", "여객승하차", "06:00", "06:02", "U"),
+        stop("00502", date, 3, "전주", "여객승하차", "06:27", "06:29", "U"),
+        stop("00502", date, 4, "용산", "여객승하차", "08:17", "08:21", "U"),
+        stop("00502", date, 5, "서울", "여객승하차", "08:26", "08:29", "U"),
+        stop("00502", date, 6, "행신", "종착", "08:50", None, "U"),
         stop("01501", date, 1, "서울", "시발", None, "13:00", "D"),          # ITX-새마을 — 등급으로 제외
         stop("01501", date, 2, "용산", "여객승하차", "13:05", "13:07", "D"),
         stop("01501", date, 3, "전주", "여객승하차", "16:10", "16:12", "D"),
@@ -174,6 +176,7 @@ TAGO_STATIONS = [{"nodename": "서울", "nodeid": "NAT010000"},
                  {"nodename": "강릉", "nodeid": "NAT601936"},
                  {"nodename": "부산", "nodeid": "NAT014445"},
                  {"nodename": "전주", "nodeid": "NAT040257"},
+                 {"nodename": "남원", "nodeid": "NAT040868"},
                  {"nodename": "용산", "nodeid": "NAT010032"}]
 
 # 열차번호 → TAGO 공식 등급 fixture. 00999·00599는 의도적으로 없음(등급 미확인 케이스)
@@ -299,10 +302,10 @@ class EmptyResponseGuardTest(unittest.TestCase):
         self.assertEqual(legs[0].trainNo, "00801")
         # 데모 OD 밖 행(서울→대전 00001)은 legs에 포함되지 않는다
         self.assertNotIn("00001", {leg.trainNo for leg in legs})
-        # 시종착(계획) 3일 × 2쌍(강릉·부산) 양방향 + 중간 정차(실적) 3일 × 14건
-        # (진부·만종 경유 왕복 8 + 전라선 서울↔전주·서울↔용산·용산↔전주 왕복 6
-        #  — 비KTX·등급 미확인 제외 후)
-        self.assertEqual(len(legs), len(pipeline.DATES) * 4 + len(pipeline.DATES) * 14)
+        # fixture는 일자·OD·방향별 KTX 1편을 남긴다. 남원 팩처럼 OD를
+        # 늘려도 기대값을 숫자로 따로 고치지 않도록 생성 계약에서 계산한다.
+        expected_per_day = 2 * (len(pipeline.OD_PAIRS) + len(pipeline.STOPOVER_OD_PAIRS))
+        self.assertEqual(len(legs), len(pipeline.DATES) * expected_per_day)
 
 
 class StopoverContractTest(unittest.TestCase):

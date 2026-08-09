@@ -40,6 +40,15 @@ export const PLACE_TYPE_ICON: Record<PlaceTypeT, string> = {
   stay: "🏨",
   convention: "🏢",
   cinema: "🎬",
+  port: "⚓",
+  workshop: "🧶",
+  square: "🏙️",
+  library: "📚",
+  bookstore: "📖",
+  transit: "🚏",
+  park: "🌳",
+  cultural_center: "🎭",
+  filming_set: "🎥",
 };
 
 export function placeTypeIcon(placeType: PlaceTypeT | undefined): string {

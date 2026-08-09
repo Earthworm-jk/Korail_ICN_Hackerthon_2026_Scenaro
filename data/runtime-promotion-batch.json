@@ -1,0 +1,230 @@
+{
+  "version": 1,
+  "verifiedAt": "2026-08-10",
+  "maxAccessMinutes": 60,
+  "retiredRuntimePlaceIds": ["place-dadaepo-beach"],
+  "places": [
+    {
+      "catalogPlaceId": "catalog-place-1672903b4005",
+      "runtimePlaceId": "place-gwanghwamun-square",
+      "nameEn": "Gwanghwamun Square",
+      "stayCategory": "nature_walk",
+      "placeType": "square",
+      "relationNoteEn": {
+        "work-love-in-the-moonlight": "Crown Prince Hyomyeong dances here in the first teaser.",
+        "work-the-king": "Lee Gon and Jeong Tae-eul meet and embrace in the square."
+      }
+    },
+    {
+      "catalogPlaceId": "catalog-place-bf406e700ce3",
+      "runtimePlaceId": "place-sowol-ro",
+      "nameEn": "Sowol-ro",
+      "stayCategory": "brief_exterior",
+      "placeType": "walkway",
+      "relationNoteEn": {
+        "work-encounter": "Cha Soo-hyun and Kim Jin-hyuk walk along this road in episode 16.",
+        "work-record-of-youth": "Sa Hye-jun rides a bus along this road in episode 1.",
+        "work-the-king": "Jeong Tae-eul follows a clue about Lee Gon's movements along this road in episode 4."
+      }
+    },
+    {
+      "catalogPlaceId": "catalog-place-46171c55e9a6",
+      "runtimePlaceId": "place-sinchon-mural-tunnel",
+      "nameEn": "Sinchon Mural Tunnel",
+      "stayCategory": "brief_exterior",
+      "placeType": "walkway",
+      "relationNoteEn": {
+        "work-goblin": "Kim Shin and the Grim Reaper stride through the tunnel after buying green onions for Ji Eun-tak in episode 10.",
+        "work-record-of-youth": "Sa Hye-jun and An Jeong-ha appear near the tunnel entrance in episode 4."
+      }
+    },
+    {
+      "catalogPlaceId": "catalog-place-3d4088ac621c",
+      "runtimePlaceId": "place-subway-dongnimmun",
+      "nameEn": "Subway Dongnimmun",
+      "stayCategory": "food_cafe",
+      "placeType": "restaurant",
+      "relationNoteEn": {
+        "work-record-of-youth": "Sa Hye-jun works part-time at this restaurant, first shown in episodes 1 and 6."
+      }
+    },
+    {
+      "catalogPlaceId": "catalog-place-24c76048754b",
+      "runtimePlaceId": "place-namsan-library",
+      "nameEn": "Namsan Library",
+      "stayCategory": "culture_venue",
+      "placeType": "library",
+      "relationNoteEn": {
+        "work-encounter": "Kim Jin-hyuk visits this library in episode 2."
+      }
+    },
+    {
+      "catalogPlaceId": "catalog-place-bcb6944a0b10",
+      "runtimePlaceId": "place-youngpoong-jongno",
+      "nameEn": "Youngpoong Bookstore Jongno",
+      "stayCategory": "culture_venue",
+      "placeType": "bookstore",
+      "relationNoteEn": {
+        "work-encounter": "Cha Soo-hyun and Kim Jin-hyuk browse the bookstore on a date in episode 14."
+      }
+    },
+    {
+      "catalogPlaceId": "catalog-place-551f71d2e8ce",
+      "runtimePlaceId": "place-gwanghwamun-gate",
+      "nameEn": "Gwanghwamun Gate",
+      "stayCategory": "culture_venue",
+      "placeType": "heritage",
+      "relationNoteEn": {
+        "work-goblin": "Kim Shin and Ji Eun-tak return through this large gate after their trip to Canada."
+      }
+    },
+    {
+      "catalogPlaceId": "catalog-place-9dc71d84b609",
+      "runtimePlaceId": "place-unhyeongung-western-house",
+      "nameEn": "Unhyeongung Western House",
+      "stayCategory": "brief_exterior",
+      "placeType": "heritage",
+      "relationNoteEn": {
+        "work-goblin": "The building appears as Kim Shin's home, later shared with the Grim Reaper and Ji Eun-tak."
+      }
+    },
+    {
+      "catalogPlaceId": "catalog-place-b6303073085a",
+      "runtimePlaceId": "place-forest-of-wisdom",
+      "nameEn": "Forest of Wisdom",
+      "stayCategory": "culture_venue",
+      "placeType": "library",
+      "relationNoteEn": {
+        "work-the-king": "Lee Gon and Jeong Tae-eul investigate parallel worlds at this library in episode 15.",
+        "work-yumi-cells-2": "Kim Yu-mi and Yoo Ba-bi go on a date at this book cafe in episode 4."
+      }
+    },
+    {
+      "catalogPlaceId": "catalog-place-6c826601c4d8",
+      "runtimePlaceId": "place-national-museum-bus-stop",
+      "nameEn": "National Museum of Korea Bus Stop",
+      "stayCategory": "brief_exterior",
+      "placeType": "transit",
+      "relationNoteEn": {
+        "work-yumi-cells-2": "Kim Yu-mi waits here for Yoo Ba-bi to arrive in episode 2."
+      }
+    },
+    {
+      "catalogPlaceId": "catalog-place-502b16a58ff1",
+      "runtimePlaceId": "place-history-bookshop",
+      "nameEn": "History Bookshop",
+      "stayCategory": "culture_venue",
+      "placeType": "bookstore",
+      "relationNoteEn": {
+        "work-yumi-cells-2": "Kim Yu-mi works part-time at this bookstore, appearing as Sundol Bookshop in episode 7."
+      }
+    },
+    {
+      "catalogPlaceId": "catalog-place-7e12acd7788f",
+      "runtimePlaceId": "place-ieum-center",
+      "nameEn": "I-Eum Center",
+      "stayCategory": "brief_exterior",
+      "placeType": "cultural_center",
+      "relationNoteEn": {
+        "work-yumi-cells-2": "Kim Yu-mi reads at the cafe here while worrying about her future in episode 6."
+      }
+    },
+    {
+      "catalogPlaceId": "catalog-place-5a9f94fcfba8",
+      "runtimePlaceId": "place-sejong-daero",
+      "nameEn": "Sejong-daero",
+      "stayCategory": "brief_exterior",
+      "placeType": "walkway",
+      "relationNoteEn": {
+        "work-twenty-five-twenty-one": "Na Hee-do and Baek Yi-jin reunite here after a brief separation in episode 6."
+      }
+    },
+    {
+      "catalogPlaceId": "catalog-place-11a0339a6398",
+      "runtimePlaceId": "place-bosingak-site",
+      "nameEn": "Bosingak Belfry",
+      "stayCategory": "culture_venue",
+      "placeType": "heritage",
+      "relationNoteEn": {
+        "work-twenty-five-twenty-one": "Na Hee-do joins Baek Yi-jin at the 2001 New Year's Eve event in episode 15."
+      }
+    },
+    {
+      "catalogPlaceId": "catalog-place-04454035a27e",
+      "runtimePlaceId": "place-waryong-park",
+      "nameEn": "Waryong Park",
+      "stayCategory": "nature_walk",
+      "placeType": "park",
+      "relationNoteEn": {
+        "work-twenty-five-twenty-one": "Na Hee-do trains in this park in episode 3."
+      }
+    },
+    {
+      "catalogPlaceId": "catalog-place-004c46eb014a",
+      "runtimePlaceId": "place-omokdae-gil",
+      "nameEn": "Omokdae-gil",
+      "stayCategory": "nature_walk",
+      "placeType": "walkway",
+      "relationNoteEn": {
+        "work-twenty-five-twenty-one": "Baek Yi-jin sees Na Hee-do leaving home and rides down this street in episode 1."
+      }
+    },
+    {
+      "catalogPlaceId": "catalog-place-0c85161a4e47",
+      "runtimePlaceId": "place-old-seodo-station-set",
+      "nameEn": "Old Seodo Station Filming Set",
+      "stayCategory": "culture_venue",
+      "placeType": "filming_set",
+      "relationNoteEn": {
+        "work-mr-sunshine": "Go Ae-shin is confronted by U.S. soldiers here after a rifle goes missing."
+      },
+      "actorEvidence": {
+        "work-mr-sunshine": {
+          "actor-kim-tae-ri": {
+            "sourceUrl": "https://korean.visitkorea.or.kr/detail/rem_detail.do?cotid=01ea7149-6dcf-4c23-88e7-3030e5536e7a&temp=",
+            "excerpt": "고애신(김태리)을 기다리고 있는 고동매(유연석)의 모습",
+            "actorExplicit": true,
+            "characterActorLinked": true
+          }
+        }
+      }
+    },
+    {
+      "catalogPlaceId": "catalog-place-68bc26e81f91",
+      "runtimePlaceId": "place-munhwa-gonggam-sujeong",
+      "nameEn": "Munhwa Gonggam Sujeong",
+      "stayCategory": "culture_venue",
+      "placeType": "cultural_center",
+      "relationNoteEn": {
+        "work-mr-sunshine": "The building appears as Hwayollu, where American Logan Taylor is assassinated."
+      }
+    }
+  ],
+  "existingRelationActorPromotions": [
+    {
+      "workId": "work-goblin",
+      "runtimePlaceId": "place-woljeongsa-fir-forest",
+      "catalogPlaceId": "catalog-place-12f62b8eb67f"
+    },
+    {
+      "workId": "work-goblin",
+      "runtimePlaceId": "place-samyang-ranch",
+      "catalogPlaceId": "catalog-place-ab873b7b4b47"
+    },
+    {
+      "workId": "work-goblin",
+      "runtimePlaceId": "place-deoksugung-stone-wall-road",
+      "catalogPlaceId": "catalog-place-5ded7cf2c2e7"
+    },
+    {
+      "workId": "work-the-king",
+      "runtimePlaceId": "place-gyeonggijeon-shrine",
+      "catalogPlaceId": "catalog-place-5c2ccda18b05"
+    },
+    {
+      "workId": "work-the-king",
+      "runtimePlaceId": "place-busan-cinema-center",
+      "catalogPlaceId": "catalog-place-a45869471edd"
+    }
+  ]
+}

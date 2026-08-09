@@ -94,9 +94,9 @@ describe("formatEpisodeLabel — 영어 경로 한글 잔류 방지", () => {
 });
 
 describe("실시드 엄격 후보 회귀", () => {
-  it("김고은 배우 결과는 등장 확정 11곳만 반환하고 미등장 장소를 노출하지 않는다", async () => {
+  it("김고은 배우 결과는 등장 확정 20곳만 반환하고 타 배우 전용 장소를 노출하지 않는다", async () => {
     const { candidates } = await getCandidatePlaces({ selectedActorIds: [KIM], selectedWorkIds: [] });
-    expect(candidates).toHaveLength(11);
+    expect(candidates).toHaveLength(20);
     expect(candidates.every(({ selectionGroups }) => selectionGroups.includes("actor"))).toBe(true);
     expect(candidates.some(({ id }) => id === "place-yeongjin-beach")).toBe(true);
     for (const id of [
