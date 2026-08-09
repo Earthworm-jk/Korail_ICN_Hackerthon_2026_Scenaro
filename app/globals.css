@@ -1,26 +1,49 @@
 @import "tailwindcss";
 
+/* #14 v0.6 와이어프레임 디자인 토큰 (wireframes/scenaro-wireframe-v0.6.html — 계약 기준 시안)
+   데모 안정성을 위해 라이트 값으로 고정한다. 다크 값은 와이어프레임의 light-dark() 정의를
+   후속에서 그대로 옮긴다 — 지금 켜면 하드코딩된 밝은 배경과 섞여 깨진다. */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --sc-blue: #005bac;
+  --sc-blue-soft: #eaf3ff;
+  --sc-airport: #008f98;
+  --sc-airport-soft: #e8f8f8;
+  --sc-orange: #d97706;
+  --sc-orange-soft: #fff4df;
+  --sc-green: #198754;
+  --sc-red: #c0392b;
+  --sc-text: #17212b;
+  --sc-muted: #637083;
+  --sc-line: #dce3eb;
+  --sc-surface: #ffffff;
+  --sc-subtle: #f5f8fb;
+  --sc-shadow: rgba(18, 44, 70, 0.12);
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-sc-blue: var(--sc-blue);
+  --color-sc-blue-soft: var(--sc-blue-soft);
+  --color-sc-airport: var(--sc-airport);
+  --color-sc-airport-soft: var(--sc-airport-soft);
+  --color-sc-orange: var(--sc-orange);
+  --color-sc-orange-soft: var(--sc-orange-soft);
+  --color-sc-green: var(--sc-green);
+  --color-sc-red: var(--sc-red);
+  --color-sc-text: var(--sc-text);
+  --color-sc-muted: var(--sc-muted);
+  --color-sc-line: var(--sc-line);
+  --color-sc-surface: var(--sc-surface);
+  --color-sc-subtle: var(--sc-subtle);
+  --font-sans: Pretendard, "Noto Sans KR", var(--font-geist-sans), system-ui, sans-serif;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+@layer base {
+  * {
+    border-color: var(--sc-line); /* v0.6 라인 컬러를 기본 보더로 — 색 지정 클래스는 그대로 우선 */
   }
-}
-
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  body {
+    background: var(--sc-subtle);
+    color: var(--sc-text);
+    font-family: Pretendard, "Noto Sans KR", system-ui, sans-serif;
+  }
 }

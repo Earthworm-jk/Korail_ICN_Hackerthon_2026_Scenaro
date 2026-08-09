@@ -169,7 +169,7 @@ function ModalBackdrop({ children, onClose }: { children: React.ReactNode; onClo
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
-      <div className="max-h-[85vh] w-full max-w-md overflow-auto rounded-lg bg-white p-5 shadow-xl">
+      <div className="max-h-[85vh] w-full max-w-md overflow-auto rounded-lg bg-sc-surface p-5 shadow-xl">
         {children}
       </div>
     </div>
@@ -193,7 +193,7 @@ export function AuthModal({ intent, isStub, pending, failed, onSubmit, onClose, 
       <div className="flex items-start justify-between gap-2">
         <div>
           <h3 className="font-semibold">{tr(intent === "save" ? "save.loginTitle" : "save.tripsLoginTitle")}</h3>
-          <p className="mt-1 text-sm text-gray-500">{tr("save.loginSubtitle")}</p>
+          <p className="mt-1 text-sm text-sc-muted">{tr("save.loginSubtitle")}</p>
         </div>
         <button className="rounded border px-2 py-1 text-sm" onClick={onClose} aria-label={tr("save.close")}>×</button>
       </div>
@@ -217,7 +217,7 @@ export function AuthModal({ intent, isStub, pending, failed, onSubmit, onClose, 
           />
         </label>
       </div>
-      {failed && <p className="mt-2 text-sm text-red-600">{tr("save.authFailed")}</p>}
+      {failed && <p className="mt-2 text-sm text-sc-red">{tr("save.authFailed")}</p>}
       <div className="mt-4 flex justify-end gap-2">
         <button
           className="rounded border px-3 py-2 text-sm disabled:opacity-40"
@@ -227,14 +227,14 @@ export function AuthModal({ intent, isStub, pending, failed, onSubmit, onClose, 
           {intent === "save" ? tr("save.signupAndSave") : tr("save.signup")}
         </button>
         <button
-          className="rounded bg-blue-600 px-3 py-2 text-sm text-white disabled:opacity-40"
+          className="rounded bg-sc-blue px-3 py-2 text-sm text-white disabled:opacity-40"
           disabled={pending}
           onClick={() => onSubmit("signin", email, password)}
         >
           {pending ? tr("common.loading") : intent === "save" ? tr("save.loginAndSave") : tr("save.login")}
         </button>
       </div>
-      {isStub && <p className="mt-3 text-xs text-amber-700">{tr("save.stubBadge")}</p>}
+      {isStub && <p className="mt-3 text-xs text-sc-orange">{tr("save.stubBadge")}</p>}
     </ModalBackdrop>
   );
 }
@@ -256,35 +256,35 @@ export function TripsModal({ saved, selectedTripId, isStub, loadFailed, onSelect
       <div className="flex items-start justify-between gap-2">
         <div>
           <h3 className="font-semibold">{tr("trips.title")}</h3>
-          <p className="mt-1 text-sm text-gray-500">{tr("trips.subtitle")}</p>
+          <p className="mt-1 text-sm text-sc-muted">{tr("trips.subtitle")}</p>
         </div>
         <button className="rounded border px-2 py-1 text-sm" onClick={onClose} aria-label={tr("save.close")}>×</button>
       </div>
       {loadFailed && (
-        <p className="mt-3 rounded border border-red-200 bg-red-50 p-2 text-sm text-red-700">
+        <p className="mt-3 rounded border border-sc-red/30 bg-sc-red/5 p-2 text-sm text-sc-red">
           {tr("trips.loadError")}
         </p>
       )}
       {saved.length === 0 ? (
-        !loadFailed && <p className="mt-4 text-sm text-gray-400">{tr("trips.empty")}</p>
+        !loadFailed && <p className="mt-4 text-sm text-sc-muted/70">{tr("trips.empty")}</p>
       ) : (
         <div className="mt-4 space-y-2">
           {saved.map((s) => (
             <button
               key={s.id}
-              className={`block w-full rounded border px-3 py-2 text-left text-sm ${selected?.id === s.id ? "border-blue-600 bg-blue-50" : ""}`}
+              className={`block w-full rounded border px-3 py-2 text-left text-sm ${selected?.id === s.id ? "border-sc-blue bg-sc-blue-soft" : ""}`}
               aria-pressed={selected?.id === s.id}
               onClick={() => onSelect(s.id)}
             >
               <span className="font-medium">{s.title}</span>
-              <span className="mt-0.5 block text-xs text-gray-500">
+              <span className="mt-0.5 block text-xs text-sc-muted">
                 {tr("trips.savedAt")} {new Intl.DateTimeFormat("ko-KR", { timeZone: "Asia/Seoul", month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit", hour12: false }).format(new Date(s.savedAt))}
               </span>
             </button>
           ))}
           {selected && (
             <button
-              className="w-full rounded bg-blue-600 px-3 py-2 text-sm text-white"
+              className="w-full rounded bg-sc-blue px-3 py-2 text-sm text-white"
               onClick={() => onReopen(selected.id)}
             >
               {tr("trips.reopen")}
@@ -293,7 +293,7 @@ export function TripsModal({ saved, selectedTripId, isStub, loadFailed, onSelect
         </div>
       )}
       <div className="mt-4 flex justify-between">
-        <span className="self-center text-xs text-amber-700">{isStub ? tr("save.stubBadge") : ""}</span>
+        <span className="self-center text-xs text-sc-orange">{isStub ? tr("save.stubBadge") : ""}</span>
         <button className="rounded border px-3 py-2 text-sm" onClick={onLogout}>{tr("trips.logout")}</button>
       </div>
     </ModalBackdrop>

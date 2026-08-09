@@ -31,57 +31,57 @@ export function ExecutionSupport({ snapshot, stationIds, rides, stationName, tr 
   return (
     <div className="rounded-lg border p-4">
       <h3 className="font-medium">{tr("support.title")}</h3>
-      <p className="mt-0.5 text-xs text-gray-500">{tr("support.subtitle")}</p>
+      <p className="mt-0.5 text-xs text-sc-muted">{tr("support.subtitle")}</p>
 
       {(showArrivalGuide || showReturnGuide) && (
         <div className="mt-3 grid gap-3 sm:grid-cols-2">
           {showArrivalGuide && (
-            <div className="rounded border bg-gray-50/50 p-3">
+            <div className="rounded border bg-sc-subtle/60 p-3">
               <h4 className="text-sm font-medium">✈️ {tr("support.arrivalTitle")}</h4>
-              <ol className="mt-1 list-decimal space-y-0.5 pl-5 text-sm text-gray-700">
+              <ol className="mt-1 list-decimal space-y-0.5 pl-5 text-sm text-sc-text/80">
                 <li>{tr("support.arrivalStep1")}</li>
                 <li>{tr("support.arrivalStep2")}</li>
                 <li>{tr("support.arrivalStep3")}</li>
               </ol>
-              <p className="mt-1.5 text-xs text-gray-400">{tr("support.arexSource")}</p>
+              <p className="mt-1.5 text-xs text-sc-muted/70">{tr("support.arexSource")}</p>
             </div>
           )}
 
           {showReturnGuide && (
-            <div className="rounded border bg-gray-50/50 p-3">
+            <div className="rounded border bg-sc-subtle/60 p-3">
               <h4 className="text-sm font-medium">🛫 {tr("support.returnTitle")}</h4>
-              <ol className="mt-1 list-decimal space-y-0.5 pl-5 text-sm text-gray-700">
+              <ol className="mt-1 list-decimal space-y-0.5 pl-5 text-sm text-sc-text/80">
                 <li>{tr("support.returnStep1")}</li>
                 <li>{tr("support.returnStep2")}</li>
                 <li>{tr("support.returnStep3")}</li>
               </ol>
-              <p className="mt-1.5 text-xs text-gray-400">{tr("support.arexSource")}</p>
+              <p className="mt-1.5 text-xs text-sc-muted/70">{tr("support.arexSource")}</p>
             </div>
           )}
         </div>
       )}
 
-      <div className="mt-3 rounded border bg-gray-50/50 p-3">
+      <div className="mt-3 rounded border bg-sc-subtle/60 p-3">
         <h4 className="text-sm font-medium">🧳 {tr("support.luggageTitle")}</h4>
-        <ul className="mt-1 list-disc space-y-0.5 pl-5 text-sm text-gray-700">
+        <ul className="mt-1 list-disc space-y-0.5 pl-5 text-sm text-sc-text/80">
           <li>{tr("support.luggageInTrain")}</li>
           <li>{tr("support.luggageLocker")}</li>
         </ul>
-        <p className="mt-1.5 text-xs text-gray-400">{tr("support.luggageSource")}</p>
+        <p className="mt-1.5 text-xs text-sc-muted/70">{tr("support.luggageSource")}</p>
       </div>
 
       {/* PR #59 리뷰 비차단 — 전부 미수록이어도 블록을 유지해 '미확보' 상태를 명시한다 */}
       {stationIds.length > 0 && (
-        <div className="mt-3 rounded border bg-gray-50/50 p-3">
+        <div className="mt-3 rounded border bg-sc-subtle/60 p-3">
           <h4 className="text-sm font-medium">🛗 {tr("support.facilitiesTitle")}</h4>
           {covered.length > 0 && (
-            <ul className="mt-1 space-y-1 text-sm text-gray-700">
+            <ul className="mt-1 space-y-1 text-sm text-sc-text/80">
               {covered.map((id) => {
                 const f = facilityOf.get(id)!;
                 return (
                   <li key={id}>
                     <span className="font-medium">{stationName(id)}</span>
-                    <span className="ml-2 text-gray-600">
+                    <span className="ml-2 text-sc-muted">
                       {tr("support.facilitiesElevator")} {f.elevatorCount} ·{" "}
                       {tr("support.facilitiesEscalator")} {f.escalatorCount} ·{" "}
                       {boolLabel(f.hasToilet, "support.facilitiesToilet")} ·{" "}
@@ -94,10 +94,10 @@ export function ExecutionSupport({ snapshot, stationIds, rides, stationName, tr 
             </ul>
           )}
           {hasMissing && (
-            <p className="mt-1.5 text-xs text-gray-500">{tr("support.facilitiesMissing")}</p>
+            <p className="mt-1.5 text-xs text-sc-muted">{tr("support.facilitiesMissing")}</p>
           )}
           {covered.length > 0 && (
-            <p className="mt-1.5 text-xs text-gray-400">
+            <p className="mt-1.5 text-xs text-sc-muted/70">
               {tr("support.facilitiesSource")} · {snapshot.fetchedAt}
             </p>
           )}

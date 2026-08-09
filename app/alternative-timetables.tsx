@@ -38,35 +38,35 @@ export function AlternativeTimetables({ date, alternatives, selectedAltId, recom
   return (
     <div className="mt-2">
       <button
-        className="rounded border border-blue-300 bg-blue-50 px-2 py-1 text-xs text-blue-700"
+        className="rounded border border-sc-blue/50 bg-sc-blue-soft px-2 py-1 text-xs text-sc-blue"
         aria-expanded={open}
         onClick={() => setOpen(!open)}
       >
         {tr("alt.toggle")} {open ? "−" : "+"}
-        <span className="ml-2 rounded bg-amber-100 px-1 py-0.5 text-amber-800">{tr("alt.mockBadge")}</span>
+        <span className="ml-2 rounded bg-sc-orange-soft px-1 py-0.5 text-sc-orange">{tr("alt.mockBadge")}</span>
       </button>
       {open && (
         <div className="mt-2 space-y-1">
-          <p className="rounded bg-teal-50 p-2 text-xs text-teal-700">{tr("alt.note")}</p>
+          <p className="rounded bg-sc-airport-soft p-2 text-xs text-sc-airport">{tr("alt.note")}</p>
           <button
-            className={`block w-full rounded border px-3 py-2 text-left text-sm ${selectedAltId === null ? "border-blue-600 bg-blue-50" : ""}`}
+            className={`block w-full rounded border px-3 py-2 text-left text-sm ${selectedAltId === null ? "border-sc-blue bg-sc-blue-soft" : ""}`}
             aria-pressed={selectedAltId === null}
             onClick={() => onSelect(null)}
           >
             <span className="font-medium tabular-nums">{fmtKstTime(recommendedDepartAt)}</span>
-            <span className="ml-2 text-xs text-gray-500">{tr("alt.recommended")}</span>
+            <span className="ml-2 text-xs text-sc-muted">{tr("alt.recommended")}</span>
           </button>
           {dayAlts.map((alt) => (
             <button
               key={alt.id}
-              className={`block w-full rounded border px-3 py-2 text-left text-sm ${selectedAltId === alt.id ? "border-blue-600 bg-blue-50" : ""}`}
+              className={`block w-full rounded border px-3 py-2 text-left text-sm ${selectedAltId === alt.id ? "border-sc-blue bg-sc-blue-soft" : ""}`}
               aria-pressed={selectedAltId === alt.id}
               onClick={() => onSelect(alt)}
             >
               <span className="font-medium tabular-nums">
                 {fmtKstTime(alt.days.find((d) => d.date === date)!.rides[0].departAt)}
               </span>
-              <span className="ml-2 text-xs text-gray-500">{effectLabel(alt)}</span>
+              <span className="ml-2 text-xs text-sc-muted">{effectLabel(alt)}</span>
             </button>
           ))}
         </div>
