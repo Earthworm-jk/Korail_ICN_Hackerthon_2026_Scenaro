@@ -1,6 +1,6 @@
 # 씬나로 일정 엔진 명세 v0.3
 
-> 근거: 이슈 #2(편집·사유 코드), #3(점수·사전식 비교), #5·#43(운영시간) 최종 결정 + PR #9 리뷰 반영.
+> 근거: 이슈 #2(편집·사유 코드), #3(점수·사전식 비교), #5·#43(운영시간), #84(과선택) 최종 결정 + PR #9 리뷰 반영.
 > 상위 문서: PRD v0.2, 요구사항 정의서 v0.5.
 
 ## 1. 원칙
@@ -189,8 +189,24 @@ const GatewayLeg = z.object({
 | 제약 | 사유 코드 |
 |---|---|
 | 연결 가능한 열차 존재 | TRAIN_UNAVAILABLE |
+| 하루별 장소 수 상한 안에서 배치 가능 | DAILY_CAPACITY_EXCEEDED |
 | 출국 역산: 마지막 방문의 역 복귀 + 열차 + 공항 이동 완료 ≤ airportArrivalDeadline | DEPARTURE_DEADLINE_EXCEEDED |
 | 사용자 제외 장소 미포함 | (후보 수집 단계에서 제거, 코드 불필요 — 사용자 직접 제외는 rejectedPlaces에 넣지 않는다) |
+
+### 과선택 결과 계약 (#84)
+
+엔진은 비교 규칙에 따른 최선 부분집합을 계속 계산하지만, UI는 선택 장소가 모두 배치되지 않은
+결과를 최종 일정으로 확정하거나 저장하지 않는다. 결과 화면은 배치된 고유 장소를 기준으로 아래
+세 수치를 함께 표시한다.
+
+```text
+선택 N / 배치 가능 M / 최소 K곳 제외 필요
+K = N - M
+```
+
+부분 일정은 사용자가 제외 대상을 판단하기 위한 미리보기로만 표시한다. 엔진이 제외할 장소를
+자동 확정하지 않으며, 사용자가 최소 K곳을 직접 선택 해제한 뒤 전체 재계산한다. 재계산 후에도
+미배치가 남으면 같은 안내와 `rejectedPlaces`의 구체적인 사유를 반복한다.
 
 ### 운영시간 판정식 (PR #9 리뷰 A — open·stayMinutes 포함)
 
@@ -216,6 +232,7 @@ type ActivityWindowDetail =
 // 후보 하나의 자동 제외 사유
 type CandidateRejection =
   | { code: "TRAIN_UNAVAILABLE"; placeId: string }
+  | { code: "DAILY_CAPACITY_EXCEEDED"; placeId: string }
   | { code: "DEPARTURE_DEADLINE_EXCEEDED"; placeId: string };
 
 // 자동 제외하지 않고 사용자에게 표시하는 운영시간 경고

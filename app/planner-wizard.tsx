@@ -56,6 +56,7 @@ import { getThemeExperience, type ThemeExperienceResult } from "@/lib/actions/th
 import type { StationFacilitiesSnapshotT } from "@/lib/station-facilities";
 import type { StationCoordinatesSnapshotT } from "@/lib/station-coordinates";
 import type { DayPlan } from "@/lib/engine/types";
+import { summarizeSelectionCapacity } from "@/lib/selection-capacity";
 
 const KST = "Asia/Seoul";
 
@@ -421,6 +422,13 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates }:
   const viewRejected = deriveRejectedPlaces(view);
   const viewWarnings = deriveWarnings(view);
   const uncoveredSelectionGroups = view.result?.selectionGroups.uncovered ?? [];
+  // #84: 추천 결과가 선택 전부를 담지 못하면 아래 일정은 제외 판단용 미리보기다.
+  // 재열람은 이미 저장된 과거 레코드이므로 현재 계산의 과선택 차단을 적용하지 않는다.
+  const selectionCapacity = useMemo(() => (
+    view.planning || view.reopened || !view.result
+      ? null
+      : summarizeSelectionCapacity(selectedPlaceIds, view.result.days)
+  ), [selectedPlaceIds, view.planning, view.reopened, view.result]);
 
   const chooseAlternative = useCallback((alt: SelectableAlternative | null) => {
     dispatchView({ type: "SELECT_ALT", alt });
@@ -428,7 +436,7 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates }:
   }, [saveStub]);
 
   const savedEntry = useCallback((): Omit<SavedItineraryStub, "id" | "savedAt"> | null => {
-    if (!displayedDays) return null;
+    if (!displayedDays || selectionCapacity?.requiresAdjustment) return null;
     // 재열람 중 재저장은 저장 당시 조건을 그대로 보존한다
     const constraints = view.reopened?.constraints ?? currentConstraints();
     if (!constraints) return null;
@@ -446,7 +454,7 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates }:
       context,
       warnings,
     };
-  }, [displayedDays, view.reopened, viewWarnings, currentConstraints, selectedActors, selectedWorks, locale]);
+  }, [displayedDays, selectionCapacity, view.reopened, viewWarnings, currentConstraints, selectedActors, selectedWorks, locale]);
 
   const SAVE_STATUS_KEY: Record<SaveStatus, MessageKey> = {
     none: "save.statusNone",
@@ -900,6 +908,30 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates }:
             </div>
           )}
 
+          {selectionCapacity?.requiresAdjustment && (
+            <div
+              className="mt-4 rounded-lg border border-sc-orange/40 bg-sc-orange-soft p-4"
+              role="alert"
+            >
+              <h3 className="font-medium text-sc-orange-text">{tr("step4.overselectionTitle")}</h3>
+              <p className="mt-2 font-medium text-sc-orange-text">
+                {tr("step4.overselectionSummary")
+                  .replace("{selected}", String(selectionCapacity.selectedCount))
+                  .replace("{schedulable}", String(selectionCapacity.schedulableCount))
+                  .replace("{minimum}", String(selectionCapacity.minimumExclusionCount))}
+              </p>
+              <p className="mt-1 text-sm text-sc-orange-text">{tr("step4.overselectionDesc")}</p>
+              <p className="mt-1 text-xs text-sc-orange-text">{tr("step4.overselectionPreview")}</p>
+              <button
+                type="button"
+                className="mt-3 rounded border border-sc-orange/50 bg-sc-surface px-3 py-2 text-sm font-medium text-sc-orange-text"
+                onClick={() => setStep(3)}
+              >
+                {tr("step4.adjustPlaces")}
+              </button>
+            </div>
+          )}
+
           {displayedDays && (
             <div className="mt-4 space-y-4">
               {!view.reopened && view.result?.status === "planned" && (
@@ -1106,7 +1138,7 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates }:
               </span>
               <button
                 className="rounded bg-sc-blue px-4 py-2 text-sm text-white disabled:opacity-40"
-                disabled={!displayedDays}
+                disabled={!displayedDays || selectionCapacity?.requiresAdjustment}
                 onClick={() => {
                   const entry = savedEntry();
                   if (entry) saveStub.requestSave(entry);
