@@ -462,6 +462,33 @@ export function planItinerary(
   };
 }
 
+/**
+ * 배치 실패 원인 가르기 (#84 P0-1)
+ *
+ * `dateAvailable`(하루 장소 수 상한)이 `findVisitWindow` 인자로 들어가 있어, 창을 못 찾은
+ * 결과만으로는 "상한이 날짜를 막았다"와 "여행 마감이 부족하다"를 구분할 수 없다.
+ * 상한을 뺀 조건으로 한 번만 다시 조회해, 그때는 찾아지면 원인이 상한이다.
+ *
+ * 실패 경로에서만 호출된다 — 정상 배치에는 추가 비용이 없다.
+ */
+function rejectionCause(
+  ctx: PlanContext,
+  place: PlaceT,
+  stationArrival: number,
+  deadline: number,
+): "DAILY_CAPACITY_EXCEEDED" | "DEPARTURE_DEADLINE_EXCEEDED" {
+  const withoutDailyCap = findVisitWindow(
+    ctx,
+    place,
+    stationArrival,
+    true,
+    deadline,
+    () => true,
+    "ignore-hours",
+  );
+  return withoutDailyCap ? "DAILY_CAPACITY_EXCEEDED" : "DEPARTURE_DEADLINE_EXCEEDED";
+}
+
 function appendVisit(
   state: PlannerState,
   candidate: CandidatePlace,
@@ -499,10 +526,14 @@ function appendVisit(
     warning = activityWarningDetail(ctx, place, stationArrival, deadline, dateAvailable);
     window = findVisitWindow(ctx, place, stationArrival, true, deadline, dateAvailable, "ignore-hours");
     if (!window) {
-      // 남은 기간 안에 배치 자체가 불가능(마감·하루 상한) — 운영시간 사유가 아니다 (#43)
+      // 남은 기간 안에 배치 자체가 불가능 — 운영시간 사유가 아니다 (#43).
+      // 다만 원인이 두 가지다: 하루 장소 수 상한이 날짜를 막았거나, 여행 마감 자체가 부족하거나.
+      // dateAvailable이 findVisitWindow 안으로 들어가 있어 여기서는 구분되지 않으므로,
+      // 상한을 뺀 조건으로 한 번만 다시 조회해 원인을 가른다 (#84 P0-1).
+      // 실패 경로에서만 도는 추가 조회라 정상 경로 비용은 그대로다.
       return {
         ok: false,
-        reason: { code: "DEPARTURE_DEADLINE_EXCEEDED", placeId: place.id },
+        reason: { code: rejectionCause(ctx, place, stationArrival, deadline), placeId: place.id },
       };
     }
   }
@@ -511,9 +542,10 @@ function appendVisit(
   const dateIndex = ctx.dateIndex.get(date);
   if (dateIndex === undefined
     || (state.dateCounts[dateIndex] ?? 0) >= constraints.maxPlacesPerDay) {
+    // 찾은 창의 날짜가 이미 하루 상한을 채웠다 — 원인이 상한임이 확정된 분기 (#84 P0-1)
     return {
       ok: false,
-      reason: { code: "DEPARTURE_DEADLINE_EXCEEDED", placeId: place.id },
+      reason: { code: "DAILY_CAPACITY_EXCEEDED", placeId: place.id },
     };
   }
 
