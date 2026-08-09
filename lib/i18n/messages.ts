@@ -11,7 +11,6 @@ export const messages = {
     "nav.step1": "여행 조건",
     "nav.step2": "K-콘텐츠",
     "nav.step3": "촬영지",
-    "nav.step4": "일정 결과",
     "common.next": "다음",
     "common.back": "이전",
     "common.loading": "불러오는 중…",
@@ -62,7 +61,6 @@ export const messages = {
     "step3.hideDetail": "접기",
     "step3.showMore": "더보기 ({n}곳)",
     "step3.sourceLink": "출처 보기",
-    "step3.generate": "일정 만들기",
     "step4.title": "추천 일정",
     "step4.subtitle": "열차·역 단위 시각으로 안내합니다. 장소별 시각은 지역 이동을 계산하지 않아 표시하지 않습니다.",
     "step4.generating": "일정을 계산하고 있습니다…",
@@ -79,7 +77,6 @@ export const messages = {
     "step4.overselectionDesc": "어떤 장소를 뺄지는 직접 선택해 주세요. 선택을 줄인 뒤 다시 계산합니다.",
     "step4.overselectionPreview": "아래 일정은 제외 판단을 돕는 미리보기이며 최종 일정으로 저장할 수 없습니다.",
     "step4.adjustPlaces": "제외할 장소 선택",
-    "step4.editPlaces": "촬영지 다시 선택",
     "step4.editFlights": "항공편 시각 변경",
     "step4.recalculate": "다시 계산",
     "step4.save": "일정 저장",
@@ -235,6 +232,22 @@ export const messages = {
     "map.routeNoticeRail": "철도 구간은 실제 선로 선형을 따라 그렸습니다. 그 밖의 구간은 권역이 이어지는 순서를 보여주는 보조 표시이며, 실제 도로나 이동 경로가 아닙니다.",
     "map.sourceRail": "철도 선형: © OpenStreetMap 기여자 (ODbL 1.0)",
 
+    // #85 즉시 재계산 — 갱신 중 표시와 "선택 필요" 상태
+    "step4.updating": "갱신 중",
+    "step4.needSelection": "촬영지를 한 곳 이상 선택하면 일정이 여기에 나타납니다.",
+
+    // #83 §F 시안 sc-data-notice·validation-copy — 결과 열 상단과 일정 아래에 각각 붙인다.
+    // 검증 문구는 시안 문장을 그대로 쓰지 않는다. 시안은 "열차·선택 장소·공항 복귀 조건을
+    // 통과했습니다"였는데, #43이 운영시간을 경고 모델로 바꾸고 #84가 과선택을 정상 흐름으로
+    // 만든 뒤로는 거짓이 될 수 있다. 엔진이 실제로 지키는 것은 검증 시간표와 공항 도착
+    // 마감뿐이고, 선택 장소 전부 배치는 보장하지 않는다(CandidateRejection 3종).
+    "step4.dataNoticeTitle": "데이터 기준",
+    "step4.dataNotice": "열차·공항 진입편·촬영지 정보는 검증 스냅샷 기준입니다. 항공편을 조회할 수 없으면 저장된 정보나 직접 입력한 시각을 사용합니다. 예약 전에 운송사 편성을 다시 확인해 주세요.",
+    // PR #106 리뷰 비차단 — 경고는 UNVERIFIED_HOURS 하나가 아니다. OUTSIDE_VERIFIED_HOURS
+    // (확인된 운영시간 밖)와 CONSERVATIVE_BUFFER_MISMATCH(보수 버퍼 적용 시 불가)도 같은
+    // 경고로 나온다. "확인되지 않은"만 쓰면 앞의 둘을 반대로 설명하게 되므로 셋을 포괄한다.
+    "step4.validation": "표시된 일정은 검증 시간표(열차·공항 진입편)와 공항 도착 마감을 지켜 계산했습니다. 운영시간이 확인되지 않았거나 방문 가능 시간과 맞지 않을 수 있는 장소도 배치하되 경고로 표시하고, 넣지 못한 장소는 사유와 함께 따로 보여줍니다.",
+
     // 지도 확대·축소·팬 — 버튼은 아이콘뿐이라 이름은 전부 aria-label로 간다
     "map.zoomIn": "지도 확대",
     "map.zoomOut": "지도 축소",
@@ -252,7 +265,6 @@ export const messages = {
     "nav.step1": "Trip window",
     "nav.step2": "K-content",
     "nav.step3": "Filming spots",
-    "nav.step4": "Itinerary",
     "common.next": "Next",
     "common.back": "Back",
     "common.loading": "Loading…",
@@ -301,7 +313,6 @@ export const messages = {
     "step3.hideDetail": "Hide",
     "step3.showMore": "Show more ({n})",
     "step3.sourceLink": "View source",
-    "step3.generate": "Build itinerary",
     "step4.title": "Recommended itinerary",
     "step4.subtitle": "Times are shown per train and station. Per-place clock times are not shown because local transit is not calculated.",
     "step4.generating": "Calculating your itinerary…",
@@ -318,7 +329,6 @@ export const messages = {
     "step4.overselectionDesc": "Choose which places to remove, then recalculate with the smaller selection.",
     "step4.overselectionPreview": "The itinerary below is only a preview to help you decide what to remove and cannot be saved as final.",
     "step4.adjustPlaces": "Choose places to remove",
-    "step4.editPlaces": "Reselect places",
     "step4.editFlights": "Change flight times",
     "step4.recalculate": "Recalculate",
     "step4.save": "Save itinerary",
@@ -473,6 +483,19 @@ export const messages = {
     // Real rail alignment (OSM) — shown only where track geometry is actually drawn
     "map.routeNoticeRail": "Rail sections follow the actual track alignment. Other sections are a simplified view of the order your regions connect in, not an actual road or transit route.",
     "map.sourceRail": "Rail alignment: © OpenStreetMap contributors (ODbL 1.0)",
+
+    // #85 instant recalculation - updating badge and the "needs selection" state
+    "step4.updating": "Updating",
+    "step4.needSelection": "Select at least one filming location and your itinerary appears here.",
+
+    // #83 §F wireframe sc-data-notice / validation-copy. The validation line is deliberately
+    // not the wireframe's sentence — see the ko block for why. The data notice had no English
+    // in the wireframe at all, so it is written here for the first time.
+    "step4.dataNoticeTitle": "Data basis",
+    "step4.dataNotice": "Train, airport-access and filming location details come from verified snapshots. If a flight lookup is unavailable, saved details or the times you enter are used. Re-check the operator's schedule before booking.",
+    // PR #106 review, non-blocking — see the ko block: the warning covers three details,
+    // not just unverified hours.
+    "step4.validation": "This itinerary is calculated to respect verified timetables (rail and airport access) and your airport arrival deadline. Places whose opening hours are unverified or may not line up with the visit time are still scheduled and flagged as warnings, and any places that could not fit are listed separately with the reason.",
 
     // Zoom and pan — the buttons are icon-only, so the names live in aria-label
     "map.zoomIn": "Zoom in",

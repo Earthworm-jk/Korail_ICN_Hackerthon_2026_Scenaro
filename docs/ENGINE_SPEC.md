@@ -98,13 +98,23 @@ const Place = z.object({
   accessEstimate: AccessEstimate,      // 역→장소 추정 (#5)
   openingHours: OpeningHours,
   stayMinutes: z.number(),          // 엔진이 소비하는 단일 보수 체류시간
-  stayMetadata: z.object({          // #84 additive — 공식 관람시간이 아닌 서비스 기본값 근거
-    category: z.enum([
-      "brief_exterior", "nature_walk", "food_cafe", "culture_venue",
-      "resort_visit", "large_experience",
-    ]),
-    basis: z.literal("category_default"),
-  }).optional(),
+  stayMetadata: z.discriminatedUnion("basis", [ // Place 타입은 additive optional, 배포 시드는 필수
+    z.object({
+      category: StayCategory,
+      basis: z.literal("category_default"),
+    }),
+    z.object({
+      category: StayCategory,
+      basis: z.literal("official_source"),
+      sourceMinutes: z.number(),
+      sourceScope: LocalizedText,
+      source: HttpUrl,
+      sourceFormat: z.literal("html"),
+      sourceQuote: z.string(),       // 원문 변경 감지용 짧은 인용
+      sourceLocator: z.string(),     // 사람이 재검토할 페이지 내 위치
+      verifiedAt: IsoDate,
+    }),
+  ]).optional(),
   verificationLevel: z.enum(["원본확인", "교차확인", "TourAPI대조"]),
   officialSourceCount: z.number(),     // UI 정렬 전용 — 엔진 점수와 분리 (#3)
   reasonText: z.object({ ko: z.string(), en: z.string() }), // 사전 작성 추천 사유
@@ -236,7 +246,17 @@ buffer = max(20분, ceil(accessEstimate.minutes × 0.5))
 ```
 
 `stayMinutes`는 엔진 입력으로 그대로 유지하고 `stayMetadata`는 산정 근거만 additive로 기록한다.
-`basis: category_default`이면 아래 유형 기본값과 `stayMinutes`가 반드시 일치해야 한다.
+Place 타입에서는 하위 호환을 위해 optional이지만 배포 JSON 시드 로더는 메타 누락을 거부한다.
+
+- `basis: category_default`: 아래 유형 기본값과 `stayMinutes`가 반드시 일치한다.
+- `basis: official_source`: 장소 전체에 직접 적용 가능한 공식 코스 소요시간만 허용한다.
+  `stayMinutes === sourceMinutes`를 강제하고, 코스 범위·http/https 출처·검증일과 함께
+  HTML 원문의 짧은 인용(`sourceQuote`) 및 사람이 찾을 위치(`sourceLocator`)를 기록한다.
+- 운영시간, 편도 탑승시간 또는 더 넓은 주변 관광 코스만 있는 자료는 장소 체류시간의
+  `official_source`로 확대 해석하지 않는다.
+- 주기 검증은 공식 HTML에서 인용이 사라졌거나 페이지에 접근할 수 없을 때 실패 신호만 낸다.
+  외부 원문의 변경만으로 `stayMinutes`를 자동 수정하지 않으며, 근거·범위·일정 영향을 사람이
+  재검토한 뒤 별도 변경으로 반영한다.
 
 | category | 적용 범위 | 기본 체류시간 |
 |---|---|---:|
@@ -247,8 +267,10 @@ buffer = max(20분, ceil(accessEstimate.minutes × 0.5))
 | `resort_visit` | 리조트 외부·공용공간 방문 | 90분 |
 | `large_experience` | 목장·케이블카 등 이동을 포함한 대형 체험 | 120분 |
 
-공식 `source`·`verifiedAt`은 조사 전에는 만들지 않는다. 공식 권장 관람시간 조사와 유형별
-재산정, 근거 메타 필수 검증은 #84 P1에서 수행한다.
+#84 P1 조사로 공식 코스가 확인된 월정사 전나무숲길(60분), 삼양라운드힐 힐코스(120분),
+경기전 역사투어(60분)는 `official_source`로 승격했다. 세 값 모두 기존 유형 기본값과 같아
+엔진 입력과 일정 결과는 바뀌지 않으며, 나머지는 적용 범위가 일치하는 공식 분 단위 자료가 없어
+유형 기본값을 유지한다.
 
 - `always_open`(출처 확인)은 판정을 통과 처리하되 복귀시간 모델은 동일 적용. (#5)
 - 운영시간 판정 결과는 배치 선호와 경고에 사용한다. 장소가 철거 또는 접근 불가가 아니라면

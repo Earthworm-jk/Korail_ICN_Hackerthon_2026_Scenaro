@@ -49,8 +49,8 @@ jobs:
       - name: Test
         run: pnpm test
 
-      - name: Snapshot pipeline unit tests (Python)
-        run: python3 -m unittest scripts.test_build_train_snapshot -v
+      - name: Pipeline and source verifier unit tests (Python)
+        run: python3 -m unittest scripts.test_build_train_snapshot scripts.test_verify_stay_sources -v
 
       - name: Build
         run: pnpm build

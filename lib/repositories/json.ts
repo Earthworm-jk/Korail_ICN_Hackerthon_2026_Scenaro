@@ -149,6 +149,21 @@ function validate(
     }
   }
 
+  // #84 P1: Place 타입의 additive 호환성은 유지하되, 배포 시드에는 체류시간 근거를 필수화한다.
+  if (!failed.has("places")) {
+    parsed.places!.forEach((place, index) => {
+      if (place.stayMetadata === undefined) {
+        issues.push(formatIssue(
+          "places",
+          place,
+          index,
+          "stayMetadata",
+          "체류시간 근거 메타가 필요합니다 (#84 P1)",
+        ));
+      }
+    });
+  }
+
   // 2단계 — 중복 키 (구조 통과 파일만)
   for (const key of SEED_KEYS) {
     if (failed.has(key)) continue;
