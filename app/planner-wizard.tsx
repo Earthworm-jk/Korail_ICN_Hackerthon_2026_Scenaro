@@ -94,7 +94,7 @@ function DateTimeField({ value, onChange, className }: {
       >
         {HOURS.map((h) => <option key={h} value={h}>{h}</option>)}
       </select>
-      <span className="text-sm text-gray-400">:</span>
+      <span className="text-sm text-sc-muted/70">:</span>
       <select
         className="rounded border px-1.5 py-1 text-sm"
         value={minute}
@@ -103,6 +103,75 @@ function DateTimeField({ value, onChange, className }: {
         {MINUTES.map((m) => <option key={m} value={m}>{m}</option>)}
       </select>
     </div>
+  );
+}
+
+// #14 v0.6 sc-summary — 선택 요약 사이드바 (2단계 디자인 패스, 표시 전용·상태 재해석 없음)
+function fmtMonthDay(at: string): string {
+  const [date] = at.split("T");
+  const [, month, day] = date.split("-");
+  return `${Number(month)}.${Number(day)}`;
+}
+
+function SummarySidebar({ arrivalAt, departureAt, readyAt, deadlineAt, actors, works, placeCount, locale, tr }: {
+  arrivalAt: string;
+  departureAt: string;
+  readyAt: string;
+  deadlineAt: string;
+  actors: ActorSummary[];
+  works: WorkSummary[];
+  placeCount: number;
+  locale: Locale;
+  tr: (key: MessageKey) => string;
+}) {
+  const nights = Math.max(0, Math.round(
+    (Date.parse(departureAt.split("T")[0]) - Date.parse(arrivalAt.split("T")[0])) / 86_400_000,
+  ));
+  const nightsLabel = tr("summary.nights")
+    .replace("{n}", String(nights))
+    .replace("{d}", String(nights + 1));
+  const hasContent = actors.length > 0 || works.length > 0;
+  return (
+    <aside aria-label={tr("summary.title")} className="border-b bg-sc-subtle px-5 py-4 md:border-b-0 md:border-r md:px-4 md:py-5">
+      <h3 className="text-sm font-medium">{tr("summary.title")}</h3>
+      <div className="mt-3 grid grid-cols-2 gap-3 md:grid-cols-1 md:gap-4">
+        <div>
+          <span className="block text-xs text-sc-muted">{tr("summary.period")}</span>
+          <strong className="mt-0.5 block text-sm font-medium">
+            {fmtMonthDay(arrivalAt)}–{fmtMonthDay(departureAt)} · {nightsLabel}
+          </strong>
+        </div>
+        <div>
+          <span className="block text-xs text-sc-muted">{tr("summary.window")}</span>
+          <strong className="mt-0.5 block text-sm font-medium">
+            {fmtMonthDay(readyAt)} {readyAt.split("T")[1]}–{fmtMonthDay(deadlineAt)} {deadlineAt.split("T")[1]}
+          </strong>
+        </div>
+        <div>
+          <span className="block text-xs text-sc-muted">{tr("summary.content")}</span>
+          {hasContent ? (
+            <div className="mt-1 flex flex-wrap gap-1.5">
+              {actors.map((a) => (
+                <span key={a.id} className="rounded-full bg-sc-blue-soft px-2 py-0.5 text-xs text-sc-blue">{a.name[locale]}</span>
+              ))}
+              {works.map((w) => (
+                <span key={w.id} className="rounded-full bg-sc-airport-soft px-2 py-0.5 text-xs text-sc-airport-text">{w.title[locale]}</span>
+              ))}
+            </div>
+          ) : (
+            <strong className="mt-0.5 block text-sm font-medium text-sc-muted/70">—</strong>
+          )}
+        </div>
+        <div>
+          <span className="block text-xs text-sc-muted">{tr("summary.places")}</span>
+          <strong className="mt-0.5 block text-sm font-medium">
+            {placeCount > 0
+              ? tr("summary.placesCount").replace("{n}", String(placeCount))
+              : <span className="text-sc-muted/70">—</span>}
+          </strong>
+        </div>
+      </div>
+    </aside>
   );
 }
 
@@ -342,19 +411,24 @@ export default function PlannerWizard({ stationFacilities }: {
     departure.at && airportDeadline.at ? Math.round((ms(departure.at) - ms(airportDeadline.at)) / 60_000) : null;
 
   return (
-    <div className="mx-auto max-w-3xl p-6">
-      <header className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold">{tr("app.title")}</h1>
-          <p className="text-sm text-gray-500">{tr("app.tagline")}</p>
+    // #14 v0.6 시안 — 페이지는 subtle 배경, 앱은 라운드 카드(sc-app)
+    <div className="mx-auto max-w-3xl px-4 py-6 sm:px-6">
+      <div className="overflow-hidden rounded-2xl border bg-sc-surface shadow-[0_18px_50px_var(--sc-shadow)]">
+      <header className="flex flex-wrap items-center justify-between gap-3 border-b bg-sc-surface px-5 py-4">
+        <div className="flex items-center gap-2.5">
+          <span aria-hidden className="grid h-9 w-9 place-items-center rounded-[10px] bg-sc-blue text-sm font-medium text-white">SC</span>
+          <div>
+            <h1 className="text-lg font-semibold tracking-wide">{tr("app.title")}</h1>
+            <p className="mt-0.5 text-xs text-sc-muted">{tr("app.tagline")}</p>
+          </div>
         </div>
         <div className="flex items-center gap-2">
-          <span className="rounded-full bg-amber-100 px-2 py-1 text-xs text-amber-800">{tr("app.snapshotBadge")}</span>
-          <button className="rounded border px-2 py-1 text-xs" onClick={saveStub.requestTrips}>
+          <span className="rounded-full bg-sc-orange-soft px-2.5 py-1 text-xs text-sc-orange-text">{tr("app.snapshotBadge")}</span>
+          <button className="rounded-[10px] border px-3 py-1.5 text-sm font-medium hover:border-sc-blue" onClick={saveStub.requestTrips}>
             {tr("trips.button")}
           </button>
           <button
-            className="rounded border px-2 py-1 text-xs"
+            className="rounded-[10px] border px-3 py-1.5 text-sm font-medium hover:border-sc-blue"
             onClick={() => setLocale(locale === "ko" ? "en" : "ko")}
           >
             {locale === "ko" ? "EN" : "한국어"}
@@ -362,21 +436,38 @@ export default function PlannerWizard({ stationFacilities }: {
         </div>
       </header>
 
-      <nav className="mt-6 grid grid-cols-4 gap-1 text-center text-sm">
+      <nav className="grid grid-cols-4 border-b bg-sc-subtle text-center text-sm">
         {STEPS.map((key, i) => (
           <div
             key={key}
-            className={`rounded border-b-2 px-1 py-2 ${step === i + 1 ? "border-blue-600 bg-blue-50 font-semibold text-blue-700" : "border-transparent text-gray-400"}`}
+            aria-current={step === i + 1 ? "step" : undefined}
+            className={`flex min-h-[52px] items-center justify-center gap-2 border-r px-1 last:border-r-0 ${step === i + 1 ? "bg-sc-blue-soft font-medium text-sc-blue" : "text-sc-muted"}`}
           >
-            {i + 1}. {tr(key)}
+            <span aria-hidden className="grid h-6 w-6 shrink-0 place-items-center rounded-full border border-current text-xs">{i + 1}</span>
+            <span className="truncate">{tr(key)}</span>
           </div>
         ))}
       </nav>
 
+      {/* #14 v0.6 sc-layout — 좌측 선택 요약 + 본문 (md 미만은 상단 밴드) */}
+      <div className="grid md:grid-cols-[220px_minmax(0,1fr)]">
+      <SummarySidebar
+        arrivalAt={arrival.at}
+        departureAt={departure.at}
+        readyAt={airportReady.at}
+        deadlineAt={airportDeadline.at}
+        actors={selectedActors}
+        works={selectedWorks}
+        placeCount={selectedPlaceIds.size}
+        locale={locale}
+        tr={tr}
+      />
+      <div className="min-w-0 p-5 sm:p-6">
+
       {step === 1 && (
-        <section className="mt-6">
+        <section>
           <h2 className="text-lg font-semibold">{tr("step1.title")}</h2>
-          <p className="text-sm text-gray-500">{tr("step1.subtitle")}</p>
+          <p className="text-sm text-sc-muted">{tr("step1.subtitle")}</p>
           <div className="mt-4 grid gap-4 sm:grid-cols-2">
             {([
               ["arrival", arrival, setArrival] as const,
@@ -385,9 +476,9 @@ export default function PlannerWizard({ stationFacilities }: {
               <div key={direction} className="rounded-lg border p-4">
                 <h3 className="font-medium">
                   {tr(direction === "arrival" ? "step1.arrival" : "step1.departure")}
-                  <span className="ml-2 rounded bg-teal-50 px-1.5 py-0.5 text-xs text-teal-700">ICN</span>
+                  <span className="ml-2 rounded bg-sc-airport-soft px-1.5 py-0.5 text-xs text-sc-airport-text">ICN</span>
                 </h3>
-                <label className="mt-3 block text-xs text-gray-500">{tr("step1.flightNo")}</label>
+                <label className="mt-3 block text-xs text-sc-muted">{tr("step1.flightNo")}</label>
                 <div className="mt-1 flex gap-2">
                   <input
                     className="w-28 rounded border px-2 py-1 text-sm"
@@ -399,19 +490,19 @@ export default function PlannerWizard({ stationFacilities }: {
                     {tr("step1.lookup")}
                   </button>
                 </div>
-                {field.notFound && <p className="mt-1 text-xs text-red-600">{tr("step1.notFound")}</p>}
+                {field.notFound && <p className="mt-1 text-xs text-sc-red">{tr("step1.notFound")}</p>}
                 {field.source && (
                   <p className="mt-1 text-xs">
-                    <span className={field.source === "live" ? "rounded bg-teal-50 px-1.5 py-0.5 text-teal-700" : "rounded bg-amber-50 px-1.5 py-0.5 text-amber-800"}>
+                    <span className={field.source === "live" ? "rounded bg-sc-airport-soft px-1.5 py-0.5 text-sc-airport-text" : "rounded bg-sc-orange-soft px-1.5 py-0.5 text-sc-orange-text"}>
                       {tr(field.source === "live" ? "step1.sourceLive" : "step1.sourceSnapshot")}
                     </span>
                     {/* PR #59 리뷰 1 — remark 원문 대신 매핑 문구, 매핑 불가는 영어에서 숨김 */}
                     {formatFlightStatus(locale, field.status) && (
-                      <span className="ml-1 text-gray-500">{formatFlightStatus(locale, field.status)}</span>
+                      <span className="ml-1 text-sc-muted">{formatFlightStatus(locale, field.status)}</span>
                     )}
                   </p>
                 )}
-                <label className="mt-3 block text-xs text-gray-500">{tr("step1.scheduledAt")}</label>
+                <label className="mt-3 block text-xs text-sc-muted">{tr("step1.scheduledAt")}</label>
                 <DateTimeField
                   className="mt-1"
                   value={field.at}
@@ -429,7 +520,7 @@ export default function PlannerWizard({ stationFacilities }: {
                 onChange={(at) => setAirportReady({ at, touched: true })}
               />
               {readySlackMin !== null && readySlackMin >= 0 && (
-                <p className="mt-1 text-xs text-gray-500">
+                <p className="mt-1 text-xs text-sc-muted">
                   {tr("step1.slackAfterArrival")}: {readySlackMin}{tr("step1.minutes")}
                 </p>
               )}
@@ -442,16 +533,16 @@ export default function PlannerWizard({ stationFacilities }: {
                 onChange={(at) => setAirportDeadline({ at, touched: true })}
               />
               {deadlineSlackMin !== null && deadlineSlackMin >= 0 && (
-                <p className="mt-1 text-xs text-gray-500">
+                <p className="mt-1 text-xs text-sc-muted">
                   {tr("step1.slackBeforeDeparture")}: {deadlineSlackMin}{tr("step1.minutes")}
                 </p>
               )}
             </div>
           </div>
           <div className="mt-4 flex items-center justify-end gap-3">
-            {step1Error && <p className="text-sm text-red-600">{tr(step1Error)}</p>}
+            {step1Error && <p className="text-sm text-sc-red">{tr(step1Error)}</p>}
             <button
-              className="rounded bg-blue-600 px-4 py-2 text-sm text-white disabled:opacity-40"
+              className="rounded bg-sc-blue px-4 py-2 text-sm text-white disabled:opacity-40"
               disabled={step1Error !== null}
               onClick={() => setStep(2)}
             >
@@ -462,9 +553,9 @@ export default function PlannerWizard({ stationFacilities }: {
       )}
 
       {step === 2 && (
-        <section className="mt-6">
+        <section>
           <h2 className="text-lg font-semibold">{tr("step2.title")}</h2>
-          <p className="text-sm text-gray-500">{tr("step2.subtitle")}</p>
+          <p className="text-sm text-sc-muted">{tr("step2.subtitle")}</p>
           <input
             className="mt-4 w-full rounded border px-3 py-2"
             placeholder={tr("step2.placeholder")}
@@ -472,7 +563,7 @@ export default function PlannerWizard({ stationFacilities }: {
             onChange={(e) => runSearch(e.target.value)}
           />
           {searched && results.actors.length === 0 && results.works.length === 0 && (
-            <p className="mt-3 rounded border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
+            <p className="mt-3 rounded border border-sc-orange/30 bg-sc-orange-soft p-3 text-sm text-sc-orange-text">
               {tr("step2.noResult")}
             </p>
           )}
@@ -480,34 +571,34 @@ export default function PlannerWizard({ stationFacilities }: {
             {results.actors.map((a) => (
               <li key={a.id}>
                 <button
-                  className="w-full rounded border px-3 py-2 text-left text-sm hover:bg-gray-50"
+                  className="w-full rounded border px-3 py-2 text-left text-sm hover:bg-sc-subtle"
                   onClick={() => toggleChip(selectedActors, setSelectedActors, a)}
                 >
-                  {a.name[locale]} <span className="ml-1 text-xs text-gray-400">{tr("step2.actor")}</span>
+                  {a.name[locale]} <span className="ml-1 text-xs text-sc-muted/70">{tr("step2.actor")}</span>
                 </button>
               </li>
             ))}
             {results.works.map((w) => (
               <li key={w.id}>
                 <button
-                  className="w-full rounded border px-3 py-2 text-left text-sm hover:bg-gray-50"
+                  className="w-full rounded border px-3 py-2 text-left text-sm hover:bg-sc-subtle"
                   onClick={() => toggleChip(selectedWorks, setSelectedWorks, w)}
                 >
-                  {w.title[locale]} <span className="ml-1 text-xs text-gray-400">{tr("step2.work")}</span>
+                  {w.title[locale]} <span className="ml-1 text-xs text-sc-muted/70">{tr("step2.work")}</span>
                 </button>
               </li>
             ))}
           </ul>
-          <div className="mt-4 rounded-lg border bg-gray-50 p-3">
+          <div className="mt-4 rounded-lg border bg-sc-subtle p-3">
             <h3 className="text-sm font-medium">{tr("step2.selected")}</h3>
             {selectedActors.length === 0 && selectedWorks.length === 0 ? (
-              <p className="mt-1 text-sm text-gray-400">{tr("step2.empty")}</p>
+              <p className="mt-1 text-sm text-sc-muted/70">{tr("step2.empty")}</p>
             ) : (
               <div className="mt-2 flex flex-wrap gap-2">
                 {selectedActors.map((a) => (
                   <button
                     key={a.id}
-                    className="rounded-full bg-blue-100 px-3 py-1 text-sm text-blue-800"
+                    className="rounded-full bg-sc-blue-soft px-3 py-1 text-sm text-sc-blue"
                     onClick={() => toggleChip(selectedActors, setSelectedActors, a)}
                   >
                     {a.name[locale]} · {tr("step2.actor")} ×
@@ -516,7 +607,7 @@ export default function PlannerWizard({ stationFacilities }: {
                 {selectedWorks.map((w) => (
                   <button
                     key={w.id}
-                    className="rounded-full bg-violet-100 px-3 py-1 text-sm text-violet-800"
+                    className="rounded-full bg-sc-airport-soft px-3 py-1 text-sm text-sc-airport-text"
                     onClick={() => toggleChip(selectedWorks, setSelectedWorks, w)}
                   >
                     {w.title[locale]} · {tr("step2.work")} ×
@@ -528,7 +619,7 @@ export default function PlannerWizard({ stationFacilities }: {
           <div className="mt-4 flex justify-between">
             <button className="rounded border px-4 py-2 text-sm" onClick={() => setStep(1)}>{tr("common.back")}</button>
             <button
-              className="rounded bg-blue-600 px-4 py-2 text-sm text-white disabled:opacity-40"
+              className="rounded bg-sc-blue px-4 py-2 text-sm text-white disabled:opacity-40"
               disabled={selectedActors.length === 0 && selectedWorks.length === 0}
               onClick={loadCandidates}
             >
@@ -539,14 +630,14 @@ export default function PlannerWizard({ stationFacilities }: {
       )}
 
       {step === 3 && candidateData && (
-        <section className="mt-6">
+        <section>
           <h2 className="text-lg font-semibold">{tr("step3.title")}</h2>
-          <p className="text-sm text-gray-500">{tr("step3.subtitle")}</p>
+          <p className="text-sm text-sc-muted">{tr("step3.subtitle")}</p>
           <div className="mt-3 flex gap-2 text-sm">
             {(["relevance", "official"] as const).map((mode) => (
               <button
                 key={mode}
-                className={`rounded border px-3 py-1 ${sortBy === mode ? "border-blue-600 bg-blue-50 text-blue-700" : ""}`}
+                className={`rounded border px-3 py-1 ${sortBy === mode ? "border-sc-blue bg-sc-blue-soft text-sc-blue" : ""}`}
                 onClick={() => setSortBy(mode)}
               >
                 {tr(mode === "relevance" ? "step3.sortRelevance" : "step3.sortOfficial")}
@@ -554,7 +645,7 @@ export default function PlannerWizard({ stationFacilities }: {
             ))}
           </div>
           {sortedCandidates.length === 0 && (
-            <p className="mt-4 rounded border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
+            <p className="mt-4 rounded border border-sc-orange/30 bg-sc-orange-soft p-3 text-sm text-sc-orange-text">
               {tr("step3.noCandidates")}
             </p>
           )}
@@ -576,7 +667,7 @@ export default function PlannerWizard({ stationFacilities }: {
           {/* #51 합의 3 — 배우 선택 모드: 미등장 확정·미확인은 별도 구분 영역, 선택은 동일하게 가능 */}
           {candidateGroups.separated.length > 0 && (
             <div className="mt-4">
-              <h3 className="text-sm font-medium text-gray-600">{tr("step3.actorSeparatedTitle")}</h3>
+              <h3 className="text-sm font-medium text-sc-muted">{tr("step3.actorSeparatedTitle")}</h3>
               <ul className="mt-2 space-y-2">
                 {candidateGroups.separated.map(({ candidate: c, status }) => (
                   <PlaceCard key={c.id} candidate={c} locale={locale} tr={tr}
@@ -597,7 +688,7 @@ export default function PlannerWizard({ stationFacilities }: {
           <div className="mt-4 flex justify-between">
             <button className="rounded border px-4 py-2 text-sm" onClick={() => setStep(2)}>{tr("common.back")}</button>
             <button
-              className="rounded bg-blue-600 px-4 py-2 text-sm text-white disabled:opacity-40"
+              className="rounded bg-sc-blue px-4 py-2 text-sm text-white disabled:opacity-40"
               disabled={selectedPlaceIds.size === 0}
               onClick={plan}
             >
@@ -608,20 +699,20 @@ export default function PlannerWizard({ stationFacilities }: {
       )}
 
       {step === 4 && (
-        <section className="mt-6">
+        <section>
           <h2 className="text-lg font-semibold">{tr("step4.title")}</h2>
-          <p className="text-sm text-gray-500">{tr("step4.subtitle")}</p>
+          <p className="text-sm text-sc-muted">{tr("step4.subtitle")}</p>
 
-          {view.planning && <p className="mt-6 text-center text-sm text-gray-500">{tr("step4.generating")}</p>}
+          {view.planning && <p className="mt-6 text-center text-sm text-sc-muted">{tr("step4.generating")}</p>}
 
           {!view.planning && view.planError && (
-            <div className="mt-4 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+            <div className="mt-4 rounded-lg border border-sc-red/30 bg-sc-red/5 p-4 text-sm text-sc-red">
               {tr(view.planError === "invalid" ? "step4.errInvalid" : "step4.errUnexpected")}
             </div>
           )}
 
           {viewBanner && (
-            <div className="mt-4 rounded-lg border border-teal-200 bg-teal-50 p-3 text-sm text-teal-800">
+            <div className="mt-4 rounded-lg border border-sc-airport/30 bg-sc-airport-soft p-3 text-sm text-sc-airport-text">
               {tr(viewBanner === "reopened" ? "trips.reopened" : "alt.swapped")}
             </div>
           )}
@@ -635,16 +726,16 @@ export default function PlannerWizard({ stationFacilities }: {
                     <h3 className="font-medium">{day.date}</h3>
                     <ul className="mt-2 space-y-1 text-sm">
                       {day.rides.map((ride) => (
-                        <li key={`${ride.trainNo}-${ride.departAt}`} className="text-gray-700">
+                        <li key={`${ride.trainNo}-${ride.departAt}`} className="text-sc-text/80">
                           🚆 {fmtTime(ride.departAt)} {stationName(ride.fromStationId)} → {fmtTime(ride.arriveAt)} {stationName(ride.toStationId)}
-                          <span className="ml-2 text-xs text-gray-400">{tr("step4.train")} {ride.trainNo}</span>
+                          <span className="ml-2 text-xs text-sc-muted/70">{tr("step4.train")} {ride.trainNo}</span>
                         </li>
                       ))}
                       {/* #14: 장소 단위 시각 미표기 — 역 단위 활용시간은 regionWindows로 표시 (#33) */}
                       {day.items.map((item) => (
-                        <li key={item.placeId} className="text-gray-700">
+                        <li key={item.placeId} className="text-sc-text/80">
                           📍 {placeName(item.placeId)}
-                          <span className="ml-2 text-xs text-gray-500">{accessLabel(item.accessMinutes)}</span>
+                          <span className="ml-2 text-xs text-sc-muted">{accessLabel(item.accessMinutes)}</span>
                         </li>
                       ))}
                     </ul>
@@ -654,7 +745,7 @@ export default function PlannerWizard({ stationFacilities }: {
                         {day.regionWindows.map((window) => (
                           <div
                             key={window.startAt}
-                            className="rounded border-l-2 border-amber-300 bg-amber-50/70 px-3 py-1.5 text-sm text-gray-700"
+                            className="rounded border-l-2 border-sc-orange/50 bg-sc-orange-soft/70 px-3 py-1.5 text-sm text-sc-text/80"
                           >
                             <span className="font-medium">{stationName(window.stationId)}</span>
                             {" "}{tr("region.block")} · {availableLabel(window.availableMinutes)}
@@ -678,9 +769,9 @@ export default function PlannerWizard({ stationFacilities }: {
               })}
               {viewWarnings.length > 0 && (
                 // #43 수용 기준: 경고 누락 0건 — 배치는 유지하되 방문 전 확인을 안내
-                <div className="rounded-lg border border-amber-200 bg-amber-50 p-4">
-                  <h3 className="text-sm font-medium text-amber-800">{tr("step4.warningsTitle")}</h3>
-                  <ul className="mt-2 space-y-1 text-sm text-amber-800">
+                <div className="rounded-lg border border-sc-orange/30 bg-sc-orange-soft p-4">
+                  <h3 className="text-sm font-medium text-sc-orange-text">{tr("step4.warningsTitle")}</h3>
+                  <ul className="mt-2 space-y-1 text-sm text-sc-orange-text">
                     {viewWarnings.map((warning) => (
                       <li key={warning.placeId}>
                         ⚠️ {placeName(warning.placeId)} — {tr(`reason.${warning.detail}` as MessageKey)}
@@ -690,9 +781,9 @@ export default function PlannerWizard({ stationFacilities }: {
                 </div>
               )}
               {viewRejected.length > 0 && (
-                <div className="rounded-lg border border-amber-200 bg-amber-50 p-4">
-                  <h3 className="text-sm font-medium text-amber-800">{tr("step4.rejectedTitle")}</h3>
-                  <ul className="mt-2 space-y-1 text-sm text-amber-800">
+                <div className="rounded-lg border border-sc-orange/30 bg-sc-orange-soft p-4">
+                  <h3 className="text-sm font-medium text-sc-orange-text">{tr("step4.rejectedTitle")}</h3>
+                  <ul className="mt-2 space-y-1 text-sm text-sc-orange-text">
                     {viewRejected.map((reason) => (
                       <li key={`${reason.placeId}-${reason.code}`}>
                         {placeName(reason.placeId)} — {tr(`reason.${reason.code}` as MessageKey)}
@@ -716,11 +807,11 @@ export default function PlannerWizard({ stationFacilities }: {
           )}
 
           {showEmpty(view) && view.result?.status === "empty" && (
-            <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-4">
-              <h3 className="font-medium text-amber-800">{tr("step4.emptyTitle")}</h3>
-              <p className="mt-1 text-sm text-amber-700">{tr("step4.emptyDesc")}</p>
+            <div className="mt-4 rounded-lg border border-sc-orange/30 bg-sc-orange-soft p-4">
+              <h3 className="font-medium text-sc-orange-text">{tr("step4.emptyTitle")}</h3>
+              <p className="mt-1 text-sm text-sc-orange-text">{tr("step4.emptyDesc")}</p>
               {view.result.rejectedPlaces.length > 0 && (
-                <ul className="mt-2 space-y-1 text-sm text-amber-800">
+                <ul className="mt-2 space-y-1 text-sm text-sc-orange-text">
                   {view.result.rejectedPlaces.map((reason) => (
                     <li key={`${reason.placeId}-${reason.code}`}>
                       {placeName(reason.placeId)} — {tr(`reason.${reason.code}` as MessageKey)}
@@ -739,13 +830,13 @@ export default function PlannerWizard({ stationFacilities }: {
             </div>
             <div className="flex items-center gap-2">
               <span
-                className={`text-xs ${saveStub.saveStatus === "saved" ? "text-green-700" : saveStub.saveStatus === "error" ? "text-red-600" : "text-gray-500"}`}
+                className={`text-xs ${saveStub.saveStatus === "saved" ? "text-sc-green" : saveStub.saveStatus === "error" ? "text-sc-red" : "text-sc-muted"}`}
                 role="status"
               >
                 {tr(SAVE_STATUS_KEY[saveStub.saveStatus])}
               </span>
               <button
-                className="rounded bg-blue-600 px-4 py-2 text-sm text-white disabled:opacity-40"
+                className="rounded bg-sc-blue px-4 py-2 text-sm text-white disabled:opacity-40"
                 disabled={!displayedDays}
                 onClick={() => {
                   const entry = savedEntry();
@@ -758,6 +849,10 @@ export default function PlannerWizard({ stationFacilities }: {
           </div>
         </section>
       )}
+
+      </div>
+      </div>
+      </div>
 
       {saveStub.authIntent && (
         <AuthModal
@@ -812,21 +907,21 @@ function PlaceCard({ candidate, locale, tr, selected, onToggle, stationName, wor
     : null;
 
   return (
-    <li className={`rounded-lg border p-3 ${selected ? "border-blue-400 bg-blue-50/40" : ""}`}>
+    <li className={`rounded-lg border p-3 ${selected ? "border-sc-blue bg-sc-blue-soft/60" : ""}`}>
       <div className="flex items-start justify-between gap-2">
         <div className="text-sm">
           <p className="font-medium">
             {candidate.name[locale]}
-            <span className="ml-2 rounded bg-gray-100 px-1.5 py-0.5 text-xs text-gray-600">
+            <span className="ml-2 rounded bg-sc-subtle px-1.5 py-0.5 text-xs text-sc-muted">
               {tr(candidate.relation === "selected_work" ? "step3.relationSelected" : "step3.relationActor")}
             </span>
             {presence && (
-              <span className="ml-1 rounded bg-gray-200 px-1.5 py-0.5 text-xs text-gray-700">
+              <span className="ml-1 rounded bg-sc-line/60 px-1.5 py-0.5 text-xs text-sc-text/80">
                 {tr(presence === "absent" ? "step3.actorAbsent" : "step3.actorUnreviewed")}
               </span>
             )}
           </p>
-          <p className="mt-1 text-xs text-gray-500">
+          <p className="mt-1 text-xs text-sc-muted">
             {stationName(candidate.nearestStationId)} · {tr("step3.accessAbout")} {candidate.accessEstimate.minutes}{tr("step3.accessEstimate")}
           </p>
           {/* #51 계약 5·6·7 — 작품별 `작품명 · 회차` + 검증된 장면 설명, 회차 미확인은 작품명만.
@@ -835,7 +930,7 @@ function PlaceCard({ candidate, locale, tr, selected, onToggle, stationName, wor
             candidate.relationDetails.map((detail) => {
               const episode = formatEpisodeLabel(locale, detail.episodeLabel);
               return (
-                <p key={detail.workId} className="mt-0.5 text-xs text-gray-600">
+                <p key={detail.workId} className="mt-0.5 text-xs text-sc-muted">
                   <span className="font-medium">
                     {workTitles([detail.workId])}
                     {episode ? ` · ${episode}` : ""}
@@ -845,17 +940,17 @@ function PlaceCard({ candidate, locale, tr, selected, onToggle, stationName, wor
               );
             })
           ) : (
-            <p className="mt-0.5 text-xs text-gray-600">{workTitles(candidate.workIds)}</p>
+            <p className="mt-0.5 text-xs text-sc-muted">{workTitles(candidate.workIds)}</p>
           )}
           {/* #48 — 검토된 항목의 관련 이유만 ko/en 표시, 내부 점수는 노출하지 않는다 */}
           {aiReason && (
-            <p className="mt-0.5 text-xs text-teal-700">
+            <p className="mt-0.5 text-xs text-sc-airport-text">
               ✨ {tr("step3.aiReasonLabel")}: {aiReason[locale]}
             </p>
           )}
-          <p className="mt-0.5 text-xs text-gray-500">
+          <p className="mt-0.5 text-xs text-sc-muted">
             {hoursLabel ?? (
-              <span className="rounded bg-amber-100 px-1.5 py-0.5 text-amber-800">
+              <span className="rounded bg-sc-orange-soft px-1.5 py-0.5 text-sc-orange-text">
                 ⚠️ {tr("step3.hoursUnverified")}
               </span>
             )}
@@ -863,7 +958,7 @@ function PlaceCard({ candidate, locale, tr, selected, onToggle, stationName, wor
           </p>
         </div>
         <button
-          className={`shrink-0 rounded px-3 py-1 text-sm ${selected ? "bg-blue-600 text-white" : "border"}`}
+          className={`shrink-0 rounded px-3 py-1 text-sm ${selected ? "bg-sc-blue text-white" : "border"}`}
           onClick={onToggle}
         >
           {selected ? "✓" : "+"}
