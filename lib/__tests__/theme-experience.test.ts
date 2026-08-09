@@ -216,7 +216,8 @@ describe("운영 성공 경로 (#80 — 실제 일정에서 카드가 나온다)
     expect(result.reason.ko).toBeTruthy();
     expect(result.reason.en).toBeTruthy();
     // 원시 점수·검토 메타는 응답에 실리지 않는다 (PR #70 리뷰 규율)
-    expect(Object.keys(result).sort()).toEqual(["reason", "regionId", "status", "theme", "zoneName"]);
+    expect(Object.keys(result).sort()).toEqual(["point", "reason", "regionId", "status", "theme", "zoneName"]);
+    expect(result.point).toEqual({ latitude: expect.any(Number), longitude: expect.any(Number) });
   });
 
   it("서사 근거가 없는 《도깨비》 단독 선택은 같은 일정에서도 추천 없음이다", async () => {
@@ -287,6 +288,23 @@ describe("운영 시드 (#20 참조 무결성)", () => {
     const goblinRows = themeZoneRankingsSeed.rankings.filter((r) => r.workId === "work-goblin");
     expect(goblinRows.length).toBeGreaterThan(0);
     for (const row of goblinRows) expect(row.reviewed, `${row.zoneId}`).toBe(false);
+  });
+
+  it("권역 대표 좌표는 쌍으로만 존재하고 한반도 범위 안에 있다", () => {
+    for (const zone of parsedZones) {
+      expect(zone.latitude === undefined, zone.id).toBe(zone.longitude === undefined);
+      if (zone.latitude === undefined || zone.longitude === undefined) continue;
+      // 대표 지점은 권역 경계가 아니라 공식 관광정보의 대표 관광지 좌표다 — 값 자체의 온전성만 본다
+      expect(zone.latitude, zone.id).toBeGreaterThan(33);
+      expect(zone.latitude, zone.id).toBeLessThan(39);
+      expect(zone.longitude, zone.id).toBeGreaterThan(124);
+      expect(zone.longitude, zone.id).toBeLessThan(132);
+    }
+  });
+
+  it("좌표 한쪽만 있는 권역은 로드에 실패한다", () => {
+    const broken = [{ ...parsedZones[0], longitude: undefined }];
+    expect(z.array(ThemeZone).safeParse(broken).success).toBe(false);
   });
 
   it("랭킹 스냅샷은 시드 참조 무결성을 만족한다", () => {

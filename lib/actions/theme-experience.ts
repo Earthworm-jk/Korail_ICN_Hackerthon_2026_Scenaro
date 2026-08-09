@@ -12,7 +12,15 @@ import { loadThemeZoneRankings, loadThemeZones } from "../theme-zones-snapshot";
 import { pickThemeExperience } from "../theme-zones";
 
 export type ThemeExperienceResult =
-  | { status: "ok"; zoneName: { ko: string; en: string }; theme: { ko: string; en: string }; reason: { ko: string; en: string }; regionId: string }
+  | {
+      status: "ok";
+      zoneName: { ko: string; en: string };
+      theme: { ko: string; en: string };
+      reason: { ko: string; en: string };
+      regionId: string;
+      /** 지도 표시용 대표 지점 — 좌표 근거가 없는 권역은 생략된다(지도에 그리지 않는다) */
+      point?: { latitude: number; longitude: number };
+    }
   // 관련도 기준을 통과한 검증 권역이 없음 — 스냅샷은 정상
   | { status: "none" }
   // 권역 카탈로그나 검증 스냅샷 자체가 없음
@@ -35,11 +43,15 @@ export async function getThemeExperience(input: {
   });
   if (!pick) return { status: "none" };
 
+  const hasPoint = pick.zone.latitude !== undefined && pick.zone.longitude !== undefined;
   return {
     status: "ok",
     zoneName: pick.zone.name,
     theme: pick.zone.theme,
     reason: pick.reason,
     regionId: pick.zone.regionId,
+    ...(hasPoint
+      ? { point: { latitude: pick.zone.latitude!, longitude: pick.zone.longitude! } }
+      : {}),
   };
 }

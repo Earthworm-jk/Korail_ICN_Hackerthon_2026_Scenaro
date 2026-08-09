@@ -48,7 +48,7 @@ import { AlternativeTimetables } from "./alternative-timetables";
 import { AuthModal, TripsModal, useSaveStub, type SaveStatus } from "./save-stub";
 import { ExecutionSupport } from "./execution-support";
 import { ItineraryRouteMap, KoreaMapPanel, type MapPlace, type MapStation } from "./korea-map";
-import { ThemeExperienceCard } from "./theme-experience";
+import { ThemeExperienceCard, ThemeExperienceMapOverlay } from "./theme-experience";
 import { getThemeExperience, type ThemeExperienceResult } from "@/lib/actions/theme-experience";
 import type { StationFacilitiesSnapshotT } from "@/lib/station-facilities";
 import type { StationCoordinatesSnapshotT } from "@/lib/station-coordinates";
@@ -264,11 +264,14 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates }:
   // #80 테마체험 권역 — 일정이 확정된 시점(생성 성공·재열람)에만 조회한다.
   // 입력은 표시 중인 일정의 권역과 선택 작품뿐이며, 런타임 OpenAI 호출은 없다.
   const [themeExperience, setThemeExperience] = useState<ThemeExperienceResult | null>(null);
+  // #14 v0.6 — 지도 권역 표시는 기본 숨김. 카드 버튼과 지도 헤딩 버튼이 같은 상태를 쓴다.
+  const [themeMapVisible, setThemeMapVisible] = useState(false);
   // PR #82 리뷰 비차단 — 연속 재계산에서 먼저 보낸 요청의 늦은 응답이 최신 화면을 덮지 않게
   // 요청 순번을 붙이고, 자기 순번이 아니면 응답을 버린다.
   const themeRequestRef = useRef(0);
   const refreshThemeExperience = useCallback(async (days: DayPlan[] | null, workIds: string[]) => {
     const seq = ++themeRequestRef.current;
+    setThemeMapVisible(false);
     const regionIds = [
       ...new Set((days ?? []).flatMap((day) => day.regionWindows.map((w) => w.regionId))),
     ];
@@ -959,8 +962,30 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates }:
                 stations={mapStations}
                 tr={tr}
                 sticky
-                /* 테마체험 권역 오버레이·토글은 #78 P1 별도 스레드 몫 —
-                   experienceOverlay·headingAction 슬롯이 그 자리다 */
+                // 기본 지도는 공항·철도·촬영지만 — 권역은 토글을 눌렀을 때만 나타난다 (#14 v0.6)
+                headingAction={
+                  themeExperience?.status === "ok" && themeExperience.point ? (
+                    <button
+                      type="button"
+                      aria-pressed={themeMapVisible}
+                      onClick={() => setThemeMapVisible((visible) => !visible)}
+                      className="rounded border px-2 py-0.5 text-xs text-sc-muted hover:border-sc-blue hover:text-sc-blue"
+                    >
+                      {tr(themeMapVisible ? "theme.mapFilterHide" : "theme.mapFilterShow")}
+                    </button>
+                  ) : undefined
+                }
+                experienceOverlay={
+                  <ThemeExperienceMapOverlay result={themeExperience} visible={themeMapVisible} />
+                }
+                experienceLegend={
+                  themeMapVisible && themeExperience?.status === "ok" && themeExperience.point ? (
+                    <span className="inline-flex items-center gap-1.5">
+                      <span className="inline-block size-2 rounded-full border border-dashed border-sc-blue bg-sc-blue/15" />
+                      {tr("theme.mapLegend")}
+                    </span>
+                  ) : undefined
+                }
               />
               {viewWarnings.length > 0 && (
                 // #43 수용 기준: 경고 누락 0건 — 배치는 유지하되 방문 전 확인을 안내
@@ -993,6 +1018,8 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates }:
                 stationName={themeStationLabel(displayedDays, themeExperience, stationName)}
                 locale={locale}
                 tr={tr}
+                mapVisible={themeMapVisible}
+                onToggleMap={() => setThemeMapVisible((visible) => !visible)}
               />
               {/* #24 A5 — 실행 지원: 일정에 등장하는 역만, 스냅샷 수록분만 안내 */}
               <ExecutionSupport
