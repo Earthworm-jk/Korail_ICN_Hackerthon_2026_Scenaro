@@ -14,6 +14,10 @@
  * `stations[].index`는 앵커다: 폴리라인에서 그 역이 놓인 점의 인덱스. 「서울→만종」 구간은
  * points를 두 앵커 사이로 잘라 쓴다 (lib/map-route.ts railRouteSegments).
  *
+ * 전라선 축은 관계 두 개를 이어 붙였다(mode "spliced"). 서울역 직결 KTX가 실재하지만
+ * 종단이 행신·여수엑스포라 OSM 관계가 "용산 → 전주"로만 등록돼 있고, 그 열차들은 실제로
+ * 용산을 중간 정차한다 — 근거는 scripts/build_rail_geometry.py의 AXES 주석.
+ *
  * ODbL 1.0 의무: 이 데이터를 화면에 그리면 출처 표기를 함께 띄운다 (app/korea-map.tsx).
  */
 import "server-only";
