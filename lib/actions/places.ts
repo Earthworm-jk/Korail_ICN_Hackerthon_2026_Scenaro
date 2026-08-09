@@ -7,6 +7,8 @@
  * 엔진 후보 분류는 Place.workIds, 표시는 관계라는 이원 구조 유지 (PR #52 리뷰).
  */
 import { loadRepositories } from "../repositories/json";
+import { deriveAiRelevance } from "../place-ranking";
+import { loadPlaceRankings } from "../place-rankings-snapshot";
 import type { PlaceT, StationT, WorkPlaceRelationT, WorkT } from "../types/schema";
 
 export type Relation = "selected_work" | "actor_other_work";
@@ -20,6 +22,9 @@ export type RelationDetail = Pick<
 export type PlaceCandidate = PlaceT & {
   relation: Relation;
   relationDetails: RelationDetail[];
+  // #48 서버 파생(PR #70 리뷰) — 원시 점수·검토 메타는 응답에 싣지 않는다
+  aiRank?: number; // 선택 관련 작품 범위의 검토·배지 통과 점수 순위 (1=최고)
+  aiReason?: { ko: string; en: string }; // 검토된 관련 이유
 };
 
 export type CandidateResponse = {
@@ -69,6 +74,16 @@ export async function getCandidatePlaces(selection: {
     }
   }
   candidates.sort((a, b) => a.id.localeCompare(b.id, "en"));
+
+  // #48 — 랭킹 스냅샷은 서버에서만 읽고 안전 파생값(순위·이유)만 후보에 붙인다
+  const relevance = deriveAiRelevance(candidates, loadPlaceRankings());
+  for (const candidate of candidates) {
+    const derived = relevance.get(candidate.id);
+    if (derived) {
+      candidate.aiRank = derived.aiRank;
+      candidate.aiReason = derived.aiReason;
+    }
+  }
 
   return {
     candidates,

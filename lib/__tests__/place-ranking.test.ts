@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createPlaceRankingSnapshotSchema, sortCandidatePlaces } from "../place-ranking";
+import { createPlaceRankingSnapshotSchema, deriveAiRelevance, sortCandidatePlaces } from "../place-ranking";
 
 const ids = {
   works: new Set(["work-a", "work-b"]),
@@ -46,22 +46,28 @@ describe("촬영지 랭킹 스냅샷 계약 (#48)", () => {
   });
 });
 
-describe("촬영지 후보 정렬 (#48)", () => {
+describe("촬영지 후보 정렬 (#48 — PR #70 리뷰: 서버 파생 aiRank 사용)", () => {
   const candidates = [
-    { id: "place-a", workIds: ["work-a"], relation: "selected_work" as const, officialSourceCount: 1 },
-    { id: "place-b", workIds: ["work-a"], relation: "selected_work" as const, officialSourceCount: 3 },
-    { id: "place-c", workIds: ["work-b"], relation: "actor_other_work" as const, officialSourceCount: 9 },
+    { id: "place-a", relationDetails: [{ workId: "work-a" }], relation: "selected_work" as const, officialSourceCount: 1 },
+    { id: "place-b", relationDetails: [{ workId: "work-a" }], relation: "selected_work" as const, officialSourceCount: 3 },
+    { id: "place-c", relationDetails: [{ workId: "work-b" }], relation: "actor_other_work" as const, officialSourceCount: 9 },
   ];
 
+  /** 서버 액션과 동일한 경로 — 파생 순위를 붙인 뒤 정렬한다 */
+  const withRank = (snap: Parameters<typeof deriveAiRelevance>[1]) => {
+    const relevance = deriveAiRelevance(candidates, snap);
+    return candidates.map((c) => ({ ...c, aiRank: relevance.get(c.id)?.aiRank }));
+  };
+
   it("스냅샷이 없으면 후보를 유지하고 관계·출처·ID로 결정적으로 폴백한다", () => {
-    expect(sortCandidatePlaces(candidates, "relevance").map(({ id }) => id)).toEqual([
+    expect(sortCandidatePlaces(withRank(null), "relevance").map(({ id }) => id)).toEqual([
       "place-b",
       "place-a",
       "place-c",
     ]);
   });
 
-  it("검토된 AI 점수는 같은 관계 범주의 순서만 바꾸고 후보를 제거하지 않는다", () => {
+  it("검토된 AI 순위는 같은 관계 범주의 순서만 바꾸고 후보를 제거하지 않는다", () => {
     const withUnreviewedHighScore = {
       ...snapshot,
       rankings: [
@@ -69,7 +75,7 @@ describe("촬영지 후보 정렬 (#48)", () => {
         { workId: "work-a", placeId: "place-b", score: 0.99, reviewed: false as const },
       ],
     };
-    expect(sortCandidatePlaces(candidates, "relevance", withUnreviewedHighScore).map(({ id }) => id)).toEqual([
+    expect(sortCandidatePlaces(withRank(withUnreviewedHighScore), "relevance").map(({ id }) => id)).toEqual([
       "place-a",
       "place-b",
       "place-c",
@@ -85,15 +91,36 @@ describe("촬영지 후보 정렬 (#48)", () => {
         reason: undefined,
       }],
     };
-    expect(sortCandidatePlaces(candidates, "relevance", belowThreshold).map(({ id }) => id)).toEqual([
+    expect(sortCandidatePlaces(withRank(belowThreshold), "relevance").map(({ id }) => id)).toEqual([
       "place-b",
       "place-a",
       "place-c",
     ]);
   });
 
-  it("공식 출처순은 AI 점수와 무관하게 기존 계약을 유지한다", () => {
-    expect(sortCandidatePlaces(candidates, "official_sources", snapshot).map(({ id }) => id)).toEqual([
+  it("선택과 무관한 작품의 고득점은 순서에 영향을 주지 않는다 (PR #70 리뷰 2)", () => {
+    // place-b의 relationDetails는 work-a뿐 — work-b 고득점은 선택 관련 범위 밖이라 무시된다
+    const unrelatedHighScore = {
+      ...snapshot,
+      rankings: [{
+        workId: "work-b",
+        placeId: "place-b",
+        score: 0.99,
+        reviewed: true as const,
+        reviewedAt: "2026-08-09",
+        reviewedBy: "reviewer",
+        reason: { ko: "무관 작품", en: "Unrelated" },
+      }],
+    };
+    expect(sortCandidatePlaces(withRank(unrelatedHighScore), "relevance").map(({ id }) => id)).toEqual([
+      "place-b", // 출처·ID 폴백 그대로 — work-b 점수가 place-b를 올리지 않는다
+      "place-a",
+      "place-c",
+    ]);
+  });
+
+  it("공식 출처순은 AI 순위와 무관하게 기존 계약을 유지한다", () => {
+    expect(sortCandidatePlaces(withRank(snapshot), "official_sources").map(({ id }) => id)).toEqual([
       "place-c",
       "place-b",
       "place-a",

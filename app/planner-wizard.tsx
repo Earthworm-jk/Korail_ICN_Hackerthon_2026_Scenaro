@@ -14,7 +14,7 @@ import {
 } from "@/lib/actions/places";
 import { planItinerary } from "@/lib/actions/itinerary";
 import { excludedPlaceIdsFrom, initialCandidateIds, initialSelectedIds, splitByActorPresence } from "@/lib/candidates";
-import { reviewedReasonFor, sortCandidatePlaces, type PlaceRankingSnapshot } from "@/lib/place-ranking";
+import { sortCandidatePlaces } from "@/lib/place-ranking";
 import { getFlightInfo } from "@/lib/actions/flights";
 import { t, type Locale, type MessageKey } from "@/lib/i18n/messages";
 import { buildMockAlternatives, type MockAlternative } from "@/lib/alternatives-mock";
@@ -106,9 +106,8 @@ function DateTimeField({ value, onChange, className }: {
   );
 }
 
-export default function PlannerWizard({ stationFacilities, placeRankings }: {
+export default function PlannerWizard({ stationFacilities }: {
   stationFacilities: StationFacilitiesSnapshotT;
-  placeRankings: PlaceRankingSnapshot | null; // #48 — 미탑재(null)면 결정적 폴백
 }) {
   const [locale, setLocale] = useState<Locale>("ko");
   const [step, setStep] = useState(1);
@@ -289,13 +288,9 @@ export default function PlannerWizard({ stationFacilities, placeRankings }: {
 
   const sortedCandidates = useMemo(() => {
     if (!candidateData) return [];
-    // #48 정렬 연결 — 검토·배지 기준 통과 점수만 반영, 스냅샷 없으면 관계·출처·ID 폴백
-    return sortCandidatePlaces(
-      candidateData.candidates,
-      sortBy === "relevance" ? "relevance" : "official_sources",
-      placeRankings ?? undefined,
-    );
-  }, [candidateData, sortBy, placeRankings]);
+    // #48 정렬 연결 — 서버가 파생한 aiRank(선택 관련 작품 범위)만 사용, 없으면 관계·출처·ID 폴백
+    return sortCandidatePlaces(candidateData.candidates, sortBy === "relevance" ? "relevance" : "official_sources");
+  }, [candidateData, sortBy]);
 
   // #51 배우 선택 필터 — 등장 확정·작품 유래는 기본 목록, 미등장·미확인은 별도 구분(선택은 가능)
   const candidateGroups = useMemo(
@@ -569,7 +564,7 @@ export default function PlannerWizard({ stationFacilities, placeRankings }: {
               <PlaceCard key={c.id} candidate={c} locale={locale} tr={tr}
                 selected={selectedPlaceIds.has(c.id)}
                 stationName={stationName} workTitles={workTitles}
-                aiReason={reviewedReasonFor(c.id, c.relationDetails.map((d) => d.workId), placeRankings)}
+                aiReason={c.aiReason ?? null}
                 onToggle={() => {
                   const next = new Set(selectedPlaceIds);
                   if (next.has(c.id)) next.delete(c.id); else next.add(c.id);
@@ -588,7 +583,7 @@ export default function PlannerWizard({ stationFacilities, placeRankings }: {
                     selected={selectedPlaceIds.has(c.id)}
                     stationName={stationName} workTitles={workTitles}
                     presence={status}
-                    aiReason={reviewedReasonFor(c.id, c.relationDetails.map((d) => d.workId), placeRankings)}
+                    aiReason={c.aiReason ?? null}
                     onToggle={() => {
                       const next = new Set(selectedPlaceIds);
                       if (next.has(c.id)) next.delete(c.id); else next.add(c.id);
