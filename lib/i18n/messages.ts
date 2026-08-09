@@ -247,6 +247,16 @@ export const messages = {
     // (확인된 운영시간 밖)와 CONSERVATIVE_BUFFER_MISMATCH(보수 버퍼 적용 시 불가)도 같은
     // 경고로 나온다. "확인되지 않은"만 쓰면 앞의 둘을 반대로 설명하게 되므로 셋을 포괄한다.
     "step4.validation": "표시된 일정은 검증 시간표(열차·공항 진입편)와 공항 도착 마감을 지켜 계산했습니다. 운영시간이 확인되지 않았거나 방문 가능 시간과 맞지 않을 수 있는 장소도 배치하되 경고로 표시하고, 넣지 못한 장소는 사유와 함께 따로 보여줍니다.",
+
+    // 지도 확대·축소·팬 — 버튼은 아이콘뿐이라 이름은 전부 aria-label로 간다
+    "map.zoomIn": "지도 확대",
+    "map.zoomOut": "지도 축소",
+    "map.resetView": "전체 지도로 되돌리기",
+    "map.zoomHint": "휠로 확대·축소하고 끌어서 옮길 수 있습니다.",
+
+    // 이 묶음이 어느 언어인지 — 지도 오버레이가 데이터(권역명 등)의 언어를 고를 때 읽는다.
+    // 화면에 그대로 나오지 않는 유일한 값이다.
+    "app.locale": "ko",
   },
   en: {
     "app.title": "SCENARO",
@@ -486,6 +496,15 @@ export const messages = {
     // PR #106 review, non-blocking — see the ko block: the warning covers three details,
     // not just unverified hours.
     "step4.validation": "This itinerary is calculated to respect verified timetables (rail and airport access) and your airport arrival deadline. Places whose opening hours are unverified or may not line up with the visit time are still scheduled and flagged as warnings, and any places that could not fit are listed separately with the reason.",
+
+    // Zoom and pan — the buttons are icon-only, so the names live in aria-label
+    "map.zoomIn": "Zoom in",
+    "map.zoomOut": "Zoom out",
+    "map.resetView": "Reset to the whole map",
+    "map.zoomHint": "Scroll to zoom, drag to move the map.",
+
+    // Which locale this bundle is — read by map overlays to pick the language of data names.
+    "app.locale": "en",
   },
 } as const;
 
