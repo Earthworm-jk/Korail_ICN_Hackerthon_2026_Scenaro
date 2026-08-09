@@ -5,7 +5,7 @@
  * - 편집 = 촬영지 재선택·항공 시각 변경 후 전체 재계산 (무상태)
  * - 대안 시간표는 mock(#14 ⑨ 선행), 저장·내 일정은 in-memory 스텁(#25 선행) — 엔진·Supabase 연결 시 교체
  */
-import { useCallback, useEffect, useMemo, useReducer, useState } from "react";
+import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from "react";
 import { searchEntities, type ActorSummary, type WorkSummary } from "@/lib/actions/search";
 import {
   getCandidatePlaces,
@@ -235,18 +235,21 @@ export default function PlannerWizard({ stationFacilities }: {
   // #80 테마체험 권역 — 일정이 확정된 시점(생성 성공·재열람)에만 조회한다.
   // 입력은 표시 중인 일정의 권역과 선택 작품뿐이며, 런타임 OpenAI 호출은 없다.
   const [themeExperience, setThemeExperience] = useState<ThemeExperienceResult | null>(null);
+  // PR #82 리뷰 비차단 — 연속 재계산에서 먼저 보낸 요청의 늦은 응답이 최신 화면을 덮지 않게
+  // 요청 순번을 붙이고, 자기 순번이 아니면 응답을 버린다.
+  const themeRequestRef = useRef(0);
   const refreshThemeExperience = useCallback(async (days: DayPlan[] | null, workIds: string[]) => {
+    const seq = ++themeRequestRef.current;
     const regionIds = [
       ...new Set((days ?? []).flatMap((day) => day.regionWindows.map((w) => w.regionId))),
     ];
     if (regionIds.length === 0 || workIds.length === 0) { setThemeExperience(null); return; }
     try {
-      setThemeExperience(
-        await getThemeExperience({ selectedWorkIds: workIds, itineraryRegionIds: regionIds }),
-      );
+      const result = await getThemeExperience({ selectedWorkIds: workIds, itineraryRegionIds: regionIds });
+      if (seq === themeRequestRef.current) setThemeExperience(result);
     } catch {
       // 조회 실패도 계약 상태로 표현한다 — 검증 결과를 제시할 수 없다는 뜻은 '추천 불가'와 같다
-      setThemeExperience({ status: "unavailable" });
+      if (seq === themeRequestRef.current) setThemeExperience({ status: "unavailable" });
     }
   }, []);
 
