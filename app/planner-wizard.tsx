@@ -420,13 +420,19 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates }:
         })),
     [candidateData, locale, selectedPlaceIds],
   );
-  const omittedPlaceCount = (candidateData?.candidates.length ?? 0) - mappablePlaces.length;
+  // 지도에 못 실은 장소 수는 "지금 지도가 대상으로 삼는 집합" 기준이어야 한다.
+  // 전체 후보 기준으로 세면 "선택한 장소만 보기"를 켠 상태에서 좌표 없는 장소를 하나도
+  // 고르지 않았는데도 "2곳 미표시"가 남는다 (PR #83 리뷰).
 
   // 3단계 지도 전용 표시 필터 — 지도 안에서만 도는 상태이며 선택·일정에는 영향이 없다
   const [onlySelectedOnMap, setOnlySelectedOnMap] = useState(false);
   const step3MapPlaces = onlySelectedOnMap
     ? mappablePlaces.filter((place) => place.selected)
     : mappablePlaces;
+  const step3MapScope = onlySelectedOnMap
+    ? (candidateData?.candidates ?? []).filter((c) => selectedPlaceIds.has(c.id))
+    : (candidateData?.candidates ?? []);
+  const step3OmittedCount = step3MapScope.length - step3MapPlaces.length;
 
 
   // #33 — availableMinutes 포맷 전용 (재계산 금지)
@@ -772,7 +778,7 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates }:
             kind="places"
             places={step3MapPlaces}
             stations={mapStations}
-            omittedCount={omittedPlaceCount}
+            omittedCount={step3OmittedCount}
             tr={tr}
             headingAction={
               <button
