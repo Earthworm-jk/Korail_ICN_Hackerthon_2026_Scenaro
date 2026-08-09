@@ -131,10 +131,12 @@ export const Place = z.object({
 // 같은 placeId에 작품별 관계를 각각 연결한다. 회차 근거가 없으면 episodeLabel을 생략한다.
 //
 // 장면 출연 배우 3상태 (#51 합의 — 회차 출연 ≠ 장면 출연):
-//   ⓐ featuredActorIds: [...] + actorPresenceReviewed: true — 등장 배우가 검토로 확정
-//   ⓑ featuredActorIds: []  + actorPresenceReviewed: true — 시드 배우 미등장이 검토로 확정
+//   ⓐ featuredActorIds: [...] + actorPresenceReviewed: true — 등장이 근거로 확정
+//   ⓑ featuredActorIds: []  + actorPresenceReviewed: true — 시드 배우 미등장이 근거로 확정
 //   ⓒ 두 필드 모두 생략 — 미검토(모름). "없음-확정"(ⓑ)과 "모름"(ⓒ)을 섞지 않는다.
 // reviewed(작품–장소 관계 검토)를 배우 등장 확인으로 확대 해석하지 않는다.
+// actorPresenceVerification은 자동·수동 검증의 출처와 등급을 보존하는 additive provenance다.
+// 기존 수동 검토 시드는 생략 가능하지만 자동 확정 데이터에는 반드시 기록한다.
 export const WorkPlaceRelation = z
   .object({
     workId: NonEmptyId,
@@ -144,7 +146,14 @@ export const WorkPlaceRelation = z
     featuredActorIds: z.array(NonEmptyId).optional(), // 장면 등장이 검증된 배우만 (추측 금지)
     // PR #63 리뷰: 미검토(ⓒ)의 표현은 '생략' 하나뿐 — false 명시는 네 번째 상태가 되므로 금지
     actorPresenceReviewed: z.literal(true).optional(),
-    sourceUrls: z.array(HttpUrl).min(1), // 사람 검증 출처 필수 — http/https 형식 검사 (#51, PR #52 리뷰)
+    actorPresenceVerification: z.object({
+      // 근거 추출 방식이 아니라 관계의 최종 검증·승격 방식이다.
+      method: z.enum(["manual", "automatic"]),
+      grade: z.enum(["A", "B"]),
+      decision: z.enum(["confirmed", "absent"]),
+      evidenceSourceUrls: z.array(HttpUrl).min(1),
+    }).optional(),
+    sourceUrls: z.array(HttpUrl).min(1), // 검증 근거 필수 — http/https 형식 검사 (#51, PR #52 리뷰)
     verifiedAt: IsoDate,
     reviewed: z.boolean(),
   })
@@ -165,6 +174,32 @@ export const WorkPlaceRelation = z
           code: "custom",
           path: ["featuredActorIds"],
           message: "featuredActorIds에 중복 배우가 있습니다",
+        });
+      }
+    }
+    const verification = relation.actorPresenceVerification;
+    if (verification) {
+      if (!reviewed) {
+        ctx.addIssue({
+          code: "custom",
+          path: ["actorPresenceVerification"],
+          message: "배우 등장 검증 provenance는 actorPresenceReviewed:true 관계에만 기록할 수 있습니다",
+        });
+      }
+      const hasFeaturedActors = (relation.featuredActorIds?.length ?? 0) > 0;
+      if ((verification.decision === "confirmed") !== hasFeaturedActors) {
+        ctx.addIssue({
+          code: "custom",
+          path: ["actorPresenceVerification", "decision"],
+          message: "confirmed는 등장 배우가 있어야 하고 absent는 빈 featuredActorIds여야 합니다",
+        });
+      }
+      const relationSources = new Set(relation.sourceUrls);
+      if (verification.evidenceSourceUrls.some((url) => !relationSources.has(url))) {
+        ctx.addIssue({
+          code: "custom",
+          path: ["actorPresenceVerification", "evidenceSourceUrls"],
+          message: "검증 근거 URL은 관계 sourceUrls에도 포함되어야 합니다",
         });
       }
     }

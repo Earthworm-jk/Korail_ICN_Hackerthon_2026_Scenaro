@@ -1,4 +1,9 @@
 import type { Repositories } from "../repositories/json";
+import {
+  deriveStrictSelectionMemberships,
+  selectionGroupsOf,
+  type SelectionGroup,
+} from "../selection-candidates";
 import { accessBufferMinutes, type PlaceT, type TrainLegT } from "../types/schema";
 import { compareCandidates, type Candidate } from "./compare";
 import { buildRegionWindows, DAY_ACTIVITY_END, DAY_ACTIVITY_START } from "./region-windows";
@@ -10,6 +15,7 @@ import type {
   ItineraryItem,
   ItineraryResult,
   RegionWindow,
+  SelectionGroupSummary,
   TrainRide,
   TripConstraints,
 } from "./types";
@@ -19,16 +25,14 @@ const MINUTE_MS = 60_000;
 const MAX_BEAM_SIZE = 1_000;
 const MIN_TRANSFER_MINUTES = 15;
 
-type Relation = "selected_work" | "actor_other_work";
-
 type CandidatePlace = {
   place: PlaceT;
-  relation: Relation;
+  selectionGroups: SelectionGroup[];
 };
 
 type ScheduledVisit = {
   place: PlaceT;
-  relation: Relation;
+  selectionGroups: SelectionGroup[];
   visitStart: number;
   visitEnd: number;
   stationReadyAt: number;
@@ -46,7 +50,8 @@ type DerivedState = {
   stableKey: string; // 완성된 안정 타이브레이커 — 비교자에서 재조립하지 않도록 전이 시 확정
   dateCountsKey: string; // 날짜별 배치 수 서명 — pruneStates 서명용
   warningCount: number;
-  selectedWorkCount: number;
+  actorGroupCovered: boolean;
+  workGroupCovered: boolean;
 };
 
 type PlannerState = {
@@ -199,7 +204,8 @@ function initialDerived(ctx: PlanContext): DerivedState {
     stableKey: "",
     dateCountsKey: dateCountsKeyOf(ctx.tripDates.map(() => 0)),
     warningCount: 0,
-    selectedWorkCount: 0,
+    actorGroupCovered: false,
+    workGroupCovered: false,
   };
 }
 
@@ -217,7 +223,7 @@ function appendDerived(
   ctx: PlanContext,
   parent: DerivedState,
   placeId: string,
-  relation: Relation,
+  selectionGroups: readonly SelectionGroup[],
   warning: ActivityWindowDetail | null,
   route: TrainLegT[],
   dateCounts: readonly number[],
@@ -239,7 +245,8 @@ function appendDerived(
     stableKey: stableKeyOf(visitPath, ridePath),
     dateCountsKey: dateCountsKeyOf(dateCounts),
     warningCount: parent.warningCount + (warning !== null ? 1 : 0),
-    selectedWorkCount: parent.selectedWorkCount + (relation === "selected_work" ? 1 : 0),
+    actorGroupCovered: parent.actorGroupCovered || selectionGroups.includes("actor"),
+    workGroupCovered: parent.workGroupCovered || selectionGroups.includes("work"),
   };
 }
 
@@ -259,7 +266,8 @@ function recomputeDerived(state: PlannerState, ctx: PlanContext): DerivedState {
     dateCountsKey: dateCountsKeyOf(ctx.tripDates.map((date) =>
       state.visits.filter(({ visitStart }) => koreaDate(visitStart) === date).length)),
     warningCount: state.visits.filter(({ warning }) => warning !== null).length,
-    selectedWorkCount: state.visits.filter(({ relation }) => relation === "selected_work").length,
+    actorGroupCovered: state.visits.some(({ selectionGroups }) => selectionGroups.includes("actor")),
+    workGroupCovered: state.visits.some(({ selectionGroups }) => selectionGroups.includes("work")),
   };
 }
 
@@ -273,7 +281,8 @@ function assertDerivedIntegrity(states: PlannerState[], ctx: PlanContext): void 
       || actual.stableKey !== expected.stableKey
       || actual.dateCountsKey !== expected.dateCountsKey
       || actual.warningCount !== expected.warningCount
-      || actual.selectedWorkCount !== expected.selectedWorkCount) {
+      || actual.actorGroupCovered !== expected.actorGroupCovered
+      || actual.workGroupCovered !== expected.workGroupCovered) {
       throw new Error(
         `[검증] 파생 캐시 불일치: ${JSON.stringify({ actual, expected })}`,
       );
@@ -307,32 +316,27 @@ export function planItinerary(
     ...(constraints.selectedActorIds ?? []),
     ...(constraints.selectedActorId ? [constraints.selectedActorId] : []),
   ]);
-  const actorWorkIds = new Set(
-    repos.actors
-      .filter((actor) => actorIds.has(actor.id))
-      .flatMap((actor) => actor.workIds),
-  );
   const selectedWorkIds = new Set(constraints.selectedWorkIds);
   const excludedPlaceIds = new Set(constraints.excludedPlaceIds);
 
   assertReferences(constraints, repos, actorIds);
 
   const rejectedPlaces: CandidateRejection[] = [];
+  const memberships = deriveStrictSelectionMemberships(
+    repos.workPlaceRelations,
+    actorIds,
+    selectedWorkIds,
+  );
+  const allCandidates: CandidatePlace[] = [];
   const candidates: CandidatePlace[] = [];
   for (const place of [...repos.places].sort((a, b) => a.id.localeCompare(b.id, "en"))) {
-    if (excludedPlaceIds.has(place.id)) continue;
-
-    const relation = classifyPlace(place, selectedWorkIds, actorWorkIds);
-    if (!relation) continue;
+    const membership = memberships.get(place.id);
+    if (!membership) continue;
     // #43 결정 1: 운영시간 미확인은 후보 제외 사유가 아니다 — 배치 시 경고로 전달한다
-    candidates.push({ place, relation });
+    const candidate = { place, selectionGroups: selectionGroupsOf(membership) };
+    allCandidates.push(candidate);
+    if (!excludedPlaceIds.has(place.id)) candidates.push(candidate);
   }
-
-  candidates.sort((a, b) => {
-    const byRelation = (a.relation === "selected_work" ? 0 : 1)
-      - (b.relation === "selected_work" ? 0 : 1);
-    return byRelation || a.place.id.localeCompare(b.place.id, "en");
-  });
 
   const gatewayStationId = constraints.gatewayStationId ?? findGatewayStationId(repos);
   const endpointStationId = constraints.airportStationId
@@ -409,6 +413,14 @@ export function planItinerary(
       days: [],
       rejectedPlaces: uniqueReasons(rejectedPlaces),
       warnings: [],
+      selectionGroups: selectionGroupSummary(
+        actorIds,
+        selectedWorkIds,
+        allCandidates,
+        candidates,
+        [],
+        uniqueReasons(rejectedPlaces),
+      ),
     };
   }
 
@@ -451,6 +463,14 @@ export function planItinerary(
     days: buildDays(ctx, best.state.visits, allRides, regionWindows),
     rejectedPlaces: uniqueReasons(rejectedPlaces),
     warnings,
+    selectionGroups: selectionGroupSummary(
+      actorIds,
+      selectedWorkIds,
+      allCandidates,
+      candidates,
+      best.state.visits,
+      uniqueReasons(rejectedPlaces),
+    ),
     comparisonKeys: best.keys,
     metrics: {
       totalTravelMinutes:
@@ -559,7 +579,7 @@ function appendVisit(
       readyAt: window.stationReadyAt,
       visits: [...state.visits, {
         place,
-        relation: candidate.relation,
+        selectionGroups: candidate.selectionGroups,
         visitStart: window.visitStart,
         visitEnd: window.visitEnd,
         stationReadyAt: window.stationReadyAt,
@@ -570,7 +590,15 @@ function appendVisit(
       transferCount: state.transferCount + transferCount(route),
       localTravelMinutes: state.localTravelMinutes + localRoundTrip,
       dateCounts,
-      derived: appendDerived(ctx, state.derived, place.id, candidate.relation, warning, route, dateCounts),
+      derived: appendDerived(
+        ctx,
+        state.derived,
+        place.id,
+        candidate.selectionGroups,
+        warning,
+        route,
+        dateCounts,
+      ),
     },
   };
 }
@@ -661,8 +689,8 @@ function completeSchedule(
     : state.readyAt;
   if (returnedAt > deadline) return null;
 
-  const selectedWorkPlaceCount = state.derived.selectedWorkCount;
-  const actorOtherWorkPlaceCount = state.visits.length - selectedWorkPlaceCount;
+  const selectionGroupCoverageCount = Number(state.derived.actorGroupCovered)
+    + Number(state.derived.workGroupCovered);
   const totalRailMinutes = state.railMinutes + routeMinutes(returnRides);
   const totalTransfers = state.transferCount + transferCount(returnRides);
   const departureSlackMinutes = minutesBetween(returnedAt, departureAt);
@@ -671,10 +699,10 @@ function completeSchedule(
     returnRides,
     returnedAt,
     keys: {
-      relevanceKey: { selectedWorkPlaceCount, actorOtherWorkPlaceCount },
-      visitablePlaceCount: state.visits.length,
+      selectionGroupCoverageCount,
+      selectedUnionPlaceCount: state.visits.length,
       activityWarningCount: activityWarningCountOf(state), // #43 결정 3 — 방문 수와 이동시간 사이
-      totalRailMinutes,
+      totalTravelMinutes: totalRailMinutes + state.localTravelMinutes,
       transferCount: totalTransfers,
       slackSatisfied: hasDailySlack(
         ctx,
@@ -787,16 +815,6 @@ function findEarliestRoute(
   return result;
 }
 
-function classifyPlace(
-  place: PlaceT,
-  selectedWorkIds: Set<string>,
-  actorWorkIds: Set<string>,
-): Relation | null {
-  if (place.workIds.some((id) => selectedWorkIds.has(id))) return "selected_work";
-  if (place.workIds.some((id) => actorWorkIds.has(id))) return "actor_other_work";
-  return null;
-}
-
 function assertReferences(
   constraints: TripConstraints,
   repos: Repositories,
@@ -866,10 +884,10 @@ function pruneStates(states: PlannerState[], ctx: PlanContext): PlannerState[] {
   }
   return [...bestBySignature.values()]
     .sort((a, b) => {
-      const aSelected = a.derived.selectedWorkCount;
-      const bSelected = b.derived.selectedWorkCount;
+      const aCoverage = Number(a.derived.actorGroupCovered) + Number(a.derived.workGroupCovered);
+      const bCoverage = Number(b.derived.actorGroupCovered) + Number(b.derived.workGroupCovered);
       // 경고 수는 최종 비교 키(#43)와 같은 방향으로 beam에서도 우선한다
-      return bSelected - aSelected
+      return bCoverage - aCoverage
         || activityWarningCountOf(a) - activityWarningCountOf(b)
         || a.readyAt - b.readyAt
         || a.derived.stableKey.localeCompare(b.derived.stableKey, "en");
@@ -1016,6 +1034,45 @@ function activityWarningCountOf(state: PlannerState): number {
   return state.derived.warningCount;
 }
 
+function selectionGroupSummary(
+  actorIds: ReadonlySet<string>,
+  workIds: ReadonlySet<string>,
+  allCandidates: readonly CandidatePlace[],
+  eligibleCandidates: readonly CandidatePlace[],
+  visits: readonly ScheduledVisit[],
+  rejectedPlaces: readonly CandidateRejection[],
+): SelectionGroupSummary {
+  const requested: SelectionGroup[] = [];
+  if (actorIds.size > 0) requested.push("actor");
+  if (workIds.size > 0) requested.push("work");
+
+  const covered = requested.filter((group) =>
+    visits.some(({ selectionGroups }) => selectionGroups.includes(group)));
+  const rejectedByPlace = new Map<string, CandidateRejection["code"][]>();
+  for (const rejection of rejectedPlaces) {
+    const codes = rejectedByPlace.get(rejection.placeId);
+    if (codes) codes.push(rejection.code);
+    else rejectedByPlace.set(rejection.placeId, [rejection.code]);
+  }
+
+  const uncovered = requested
+    .filter((group) => !covered.includes(group))
+    .map((group) => {
+      const strict = allCandidates.filter(({ selectionGroups }) => selectionGroups.includes(group));
+      const eligible = eligibleCandidates.filter(({ selectionGroups }) => selectionGroups.includes(group));
+      if (strict.length === 0) {
+        return { group, reasons: ["NO_STRICT_CANDIDATES" as const] };
+      }
+      if (eligible.length === 0) {
+        return { group, reasons: ["EXCLUDED_BY_USER" as const] };
+      }
+      const reasons = [...new Set(eligible.flatMap(({ place }) => rejectedByPlace.get(place.id) ?? []))];
+      return { group, reasons: reasons.length > 0 ? reasons : ["NOT_SCHEDULED" as const] };
+    });
+
+  return { requested, covered, uncovered };
+}
+
 function uniqueReasons(reasons: CandidateRejection[]): CandidateRejection[] {
   const seen = new Set<string>();
   return reasons.filter((reason) => {
@@ -1025,4 +1082,3 @@ function uniqueReasons(reasons: CandidateRejection[]): CandidateRejection[] {
     return true;
   });
 }
-

@@ -1,5 +1,6 @@
 /** 일정 엔진 입출력 타입 (docs/ENGINE_SPEC.md §2·§5·§6·§7) */
 import type { GatewayLegT } from "../types/schema";
+import type { SelectionGroup } from "../selection-candidates";
 
 export type TripConstraints = {
   arrivalAt: string;
@@ -40,18 +41,27 @@ export type CandidateWarning = {
   detail: ActivityWindowDetail;
 };
 
-// #3 최종 결정 + PR #9 리뷰: 가중합·상수 점수 없이 키들을 순서대로 비교(사전식).
-// 관련성도 관계 유형별 '개수 벡터'로 비교해 임의 가중치를 원천 제거한다.
+// #3 최종 결정: 가중합·상수 점수 없이 선택 그룹 충족부터 키를 순서대로 비교한다.
 export type ComparisonKeys = {
-  relevanceKey: {
-    selectedWorkPlaceCount: number; // 1a) 높을수록 우선
-    actorOtherWorkPlaceCount: number; // 1b) 1a 동점일 때, 높을수록 우선
-  };
-  visitablePlaceCount: number; // 2) 높을수록 우선
+  selectionGroupCoverageCount: number; // 1) 배우·작품 요청 그룹 중 실제 방문에 반영된 수(최대 2)
+  selectedUnionPlaceCount: number; // 2) 두 엄격 후보 집합 합집합의 고유 방문 장소 수
   activityWarningCount: number; // 3) 낮을수록 우선 — 운영시간 경고 수 (#43 결정 3, #3 개정)
-  totalRailMinutes: number; // 4) 낮을수록 우선
+  totalTravelMinutes: number; // 4) 열차 + 역–장소 왕복 추정(문전간), 낮을수록 우선
   transferCount: number; // 5) 낮을수록 우선
   slackSatisfied: boolean; // 6) 충족 우선 (미달만 불이익, 초과 가점 없음)
+};
+
+export type SelectionGroupUncoveredReason =
+  | CandidateRejection["code"]
+  | "NO_STRICT_CANDIDATES"
+  | "EXCLUDED_BY_USER"
+  | "NOT_SCHEDULED";
+
+/** #3: 한 그룹을 반영하지 못해도 가능한 일정은 유지하고 그룹·사유를 함께 반환한다. */
+export type SelectionGroupSummary = {
+  requested: SelectionGroup[];
+  covered: SelectionGroup[];
+  uncovered: Array<{ group: SelectionGroup; reasons: SelectionGroupUncoveredReason[] }>;
 };
 
 export type ItineraryMetrics = {
@@ -139,6 +149,7 @@ export type ItineraryResult =
       days: DayPlan[];
       rejectedPlaces: CandidateRejection[]; // 숨기지 않고 사유와 함께 (REQ-ITIN-005)
       warnings: CandidateWarning[]; // 배치는 유지하되 방문 전 확인 필요 (#43)
+      selectionGroups: SelectionGroupSummary;
       comparisonKeys: ComparisonKeys; // '왜 이 일정인가' 표시 재사용 (#3)
       metrics: ItineraryMetrics; // 편집 전후 비교(diff)는 앱 계층이 metrics로 계산 (PR #9 리뷰)
       gatewayAlternatives?: GatewayAlternative[]; // #58 검증 직행버스 전체 일정 대안
@@ -148,4 +159,5 @@ export type ItineraryResult =
       days: [];
       rejectedPlaces: CandidateRejection[];
       warnings: CandidateWarning[]; // empty에서는 항상 빈 배열 — 배치가 없으면 경고도 없다
+      selectionGroups: SelectionGroupSummary;
     };

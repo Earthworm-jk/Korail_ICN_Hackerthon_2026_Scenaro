@@ -18,7 +18,7 @@ import {
   type PlaceCandidate,
 } from "@/lib/actions/places";
 import { planGatewayAlternatives, planItinerary } from "@/lib/actions/itinerary";
-import { excludedPlaceIdsFrom, initialCandidateIds, initialSelectedIds, splitByActorPresence } from "@/lib/candidates";
+import { excludedPlaceIdsFrom, initialCandidateIds, initialSelectedIds } from "@/lib/candidates";
 import { sortCandidatePlaces } from "@/lib/place-ranking";
 import { getFlightInfo } from "@/lib/actions/flights";
 import { t, type Locale, type MessageKey } from "@/lib/i18n/messages";
@@ -32,6 +32,7 @@ import {
 } from "@/lib/saved-itineraries-stub";
 import {
   banner,
+  displayedSelectionCapacity,
   displayedDays as deriveDisplayedDays,
   initialItineraryView,
   itineraryWarnings as deriveWarnings,
@@ -307,8 +308,7 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates }:
     });
     setCandidateData(data);
     const excluded = new Set(c.excludedPlaceIds);
-    // 재열람에는 배우 필터 초기 미선택(#65 리뷰 2)을 적용하지 않는다 — 저장 당시 선택
-    // (excluded의 여집합)이 단일 기준이라, 사용자가 직접 담았던 별도 구분 후보를 잃지 않는다
+    // 재열람은 현재 엄격 후보 중 저장 당시 excluded의 여집합을 복원한다.
     setSelectedPlaceIds(new Set(initialCandidateIds(data.candidates).filter((id) => !excluded.has(id))));
     dispatchView({ type: "REOPEN", record });
     void refreshThemeExperience(record.days, c.selectedWorkIds);
@@ -364,11 +364,8 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates }:
       selectedWorkIds: selectedWorks.map((w) => w.id),
     });
     setCandidateData(data);
-    // #43(운영시간 미확인 포함 전체 선택)은 유지하되, 배우 선택 모드의 미등장·미확인 장면
-    // 후보(#51 별도 구분)는 초기 미선택 — 사용자가 별도 영역에서 직접 선택 (PR #65 리뷰 2)
-    setSelectedPlaceIds(new Set(
-      initialSelectedIds(data.candidates, new Set(selectedActors.map((a) => a.id))),
-    ));
+    // #51 최종 계약: 서버가 엄격한 배우 후보 ∪ 검토된 작품 후보만 반환하므로 전체 초기 선택.
+    setSelectedPlaceIds(new Set(initialSelectedIds(data.candidates)));
     setVisibleCount(PLACES_PAGE_SIZE); // 새 후보는 처음부터 다시 센다
     setStep(3);
   }, [selectedActors, selectedWorks]);
@@ -424,6 +421,13 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates }:
   const viewBanner = banner(view);
   const viewRejected = deriveRejectedPlaces(view);
   const viewWarnings = deriveWarnings(view);
+  const uncoveredSelectionGroups = view.result?.selectionGroups.uncovered ?? [];
+  // #84: 추천안 또는 선택한 전체 교체 대안 중 현재 화면에 보이는 일정으로만 판정한다.
+  // empty와 재열람은 displayedSelectionCapacity에서 과선택 패널 대상에서 제외한다.
+  const selectionCapacity = useMemo(
+    () => displayedSelectionCapacity(view, selectedPlaceIds),
+    [selectedPlaceIds, view],
+  );
 
   const chooseAlternative = useCallback((alt: SelectableAlternative | null) => {
     dispatchView({ type: "SELECT_ALT", alt });
@@ -431,7 +435,7 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates }:
   }, [saveStub]);
 
   const savedEntry = useCallback((): Omit<SavedItineraryStub, "id" | "savedAt"> | null => {
-    if (!displayedDays) return null;
+    if (!displayedDays || selectionCapacity?.requiresAdjustment) return null;
     // 재열람 중 재저장은 저장 당시 조건을 그대로 보존한다
     const constraints = view.reopened?.constraints ?? currentConstraints();
     if (!constraints) return null;
@@ -449,7 +453,7 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates }:
       context,
       warnings,
     };
-  }, [displayedDays, view.reopened, viewWarnings, currentConstraints, selectedActors, selectedWorks, locale]);
+  }, [displayedDays, selectionCapacity, view.reopened, viewWarnings, currentConstraints, selectedActors, selectedWorks, locale]);
 
   const SAVE_STATUS_KEY: Record<SaveStatus, MessageKey> = {
     none: "save.statusNone",
@@ -463,12 +467,6 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates }:
     // #48 정렬 연결 — 서버가 파생한 aiRank(선택 관련 작품 범위)만 사용, 없으면 관계·출처·ID 폴백
     return sortCandidatePlaces(candidateData.candidates, sortBy === "relevance" ? "relevance" : "official_sources");
   }, [candidateData, sortBy]);
-
-  // #51 배우 선택 필터 — 등장 확정·작품 유래는 기본 목록, 미등장·미확인은 별도 구분(선택은 가능)
-  const candidateGroups = useMemo(
-    () => splitByActorPresence(sortedCandidates, new Set(selectedActors.map((a) => a.id))),
-    [sortedCandidates, selectedActors],
-  );
 
   // #14 v0.6 지도 — 좌표가 확인된 장소만 찍는다. 좌표 없는 장소(라라무리·오크밸리)는
   // 임의 위치나 역 위치로 대체하지 않고 표시에서 빼되(A3), 몇 곳이 빠졌는지 지도 옆에 밝힌다.
@@ -832,7 +830,7 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates }:
           <div className="min-w-0">
           <ul className="space-y-2">
             {/* #43 확정: 미확인 후보도 같은 목록에서 선택 가능 — 카드에 경고 배지 */}
-            {candidateGroups.primary.slice(0, visibleCount).map((c) => (
+            {sortedCandidates.slice(0, visibleCount).map((c) => (
               <PlaceCard key={c.id} candidate={c} locale={locale} tr={tr}
                 selected={selectedPlaceIds.has(c.id)}
                 stationName={stationName} workTitles={workTitles}
@@ -845,7 +843,7 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates }:
               />
             ))}
           </ul>
-          {candidateGroups.primary.length > visibleCount && (
+          {sortedCandidates.length > visibleCount && (
             <button
               type="button"
               className="mt-2 w-full rounded-lg border py-2 text-sm hover:bg-sc-subtle"
@@ -853,30 +851,9 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates }:
             >
               {tr("step3.showMore").replace(
                 "{n}",
-                String(candidateGroups.primary.length - visibleCount),
+                String(sortedCandidates.length - visibleCount),
               )}
             </button>
-          )}
-          {/* #51 합의 3 — 배우 선택 모드: 미등장 확정·미확인은 별도 구분 영역, 선택은 동일하게 가능 */}
-          {candidateGroups.separated.length > 0 && (
-            <div className="mt-4">
-              <h3 className="text-sm font-medium text-sc-muted">{tr("step3.actorSeparatedTitle")}</h3>
-              <ul className="mt-2 space-y-2">
-                {candidateGroups.separated.map(({ candidate: c, status }) => (
-                  <PlaceCard key={c.id} candidate={c} locale={locale} tr={tr}
-                    selected={selectedPlaceIds.has(c.id)}
-                    stationName={stationName} workTitles={workTitles}
-                    presence={status}
-                    aiReason={c.aiReason ?? null}
-                    onToggle={() => {
-                      const next = new Set(selectedPlaceIds);
-                      if (next.has(c.id)) next.delete(c.id); else next.add(c.id);
-                      setSelectedPlaceIds(next);
-                    }}
-                  />
-                ))}
-              </ul>
-            </div>
           )}
           </div>
           <KoreaMapPanel
@@ -927,6 +904,30 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates }:
           {viewBanner && (
             <div className="mt-4 rounded-lg border border-sc-airport/30 bg-sc-airport-soft p-3 text-sm text-sc-airport-text">
               {tr(viewBanner === "reopened" ? "trips.reopened" : viewBanner === "gateway" ? "gateway.swapped" : "alt.swapped")}
+            </div>
+          )}
+
+          {selectionCapacity?.requiresAdjustment && (
+            <div
+              className="mt-4 rounded-lg border border-sc-orange/40 bg-sc-orange-soft p-4"
+              role="status"
+            >
+              <h3 className="font-medium text-sc-orange-text">{tr("step4.overselectionTitle")}</h3>
+              <p className="mt-2 font-medium text-sc-orange-text">
+                {tr("step4.overselectionSummary")
+                  .replace("{selected}", String(selectionCapacity.selectedCount))
+                  .replace("{schedulable}", String(selectionCapacity.schedulableCount))
+                  .replace("{minimum}", String(selectionCapacity.minimumExclusionCount))}
+              </p>
+              <p className="mt-1 text-sm text-sc-orange-text">{tr("step4.overselectionDesc")}</p>
+              <p className="mt-1 text-xs text-sc-orange-text">{tr("step4.overselectionPreview")}</p>
+              <button
+                type="button"
+                className="mt-3 rounded border border-sc-orange/50 bg-sc-surface px-3 py-2 text-sm font-medium text-sc-orange-text"
+                onClick={() => setStep(3)}
+              >
+                {tr("step4.adjustPlaces")}
+              </button>
             </div>
           )}
 
@@ -1051,6 +1052,22 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates }:
                   </ul>
                 </div>
               )}
+              {uncoveredSelectionGroups.length > 0 && (
+                <div className="rounded-lg border border-sc-orange/30 bg-sc-orange-soft p-4">
+                  <h3 className="text-sm font-medium text-sc-orange-text">
+                    {tr("step4.uncoveredGroupsTitle")}
+                  </h3>
+                  <ul className="mt-2 space-y-1 text-sm text-sc-orange-text">
+                    {uncoveredSelectionGroups.map(({ group, reasons }) => (
+                      <li key={group}>
+                        {tr(group === "actor" ? "step4.groupActor" : "step4.groupWork")}
+                        {" — "}
+                        {reasons.map((reason) => tr(`reason.${reason}` as MessageKey)).join(" · ")}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
               {viewRejected.length > 0 && (
                 <div className="rounded-lg border border-sc-orange/30 bg-sc-orange-soft p-4">
                   <h3 className="text-sm font-medium text-sc-orange-text">{tr("step4.rejectedTitle")}</h3>
@@ -1120,7 +1137,7 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates }:
               </span>
               <button
                 className="rounded bg-sc-blue px-4 py-2 text-sm text-white disabled:opacity-40"
-                disabled={!displayedDays}
+                disabled={!displayedDays || selectionCapacity?.requiresAdjustment}
                 onClick={() => {
                   const entry = savedEntry();
                   if (entry) saveStub.requestSave(entry);
@@ -1165,7 +1182,7 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates }:
   );
 }
 
-function PlaceCard({ candidate, locale, tr, selected, onToggle, stationName, workTitles, presence, aiReason }: {
+function PlaceCard({ candidate, locale, tr, selected, onToggle, stationName, workTitles, aiReason }: {
   candidate: PlaceCandidate;
   locale: Locale;
   tr: (key: MessageKey) => string;
@@ -1173,7 +1190,6 @@ function PlaceCard({ candidate, locale, tr, selected, onToggle, stationName, wor
   onToggle: () => void; // #43: 미확인 후보도 선택 가능 — 표시 전용 카드 없음
   stationName: (id: string) => string;
   workTitles: (ids: string[]) => string;
-  presence?: "absent" | "unreviewed"; // #51 — 별도 구분 영역 카드의 사유 배지
   aiReason?: { ko: string; en: string } | null; // #48 — 검토된 관련 이유(점수 비노출)
 }) {
   // 카드는 기본이 요약이다. 작품·회차·장면·검토 이유·출처를 한 번에 펼치면 후보 5개만으로
@@ -1200,14 +1216,14 @@ function PlaceCard({ candidate, locale, tr, selected, onToggle, stationName, wor
         <div className="min-w-0 text-sm">
           <p className="font-medium">
             {candidate.name[locale]}
-            <span className="ml-2 rounded bg-sc-subtle px-1.5 py-0.5 text-xs text-sc-muted">
-              {tr(candidate.relation === "selected_work" ? "step3.relationSelected" : "step3.relationActor")}
-            </span>
-            {presence && (
-              <span className="ml-1 rounded bg-sc-line/60 px-1.5 py-0.5 text-xs text-sc-text/80">
-                {tr(presence === "absent" ? "step3.actorAbsent" : "step3.actorUnreviewed")}
+            {candidate.selectionGroups.map((group) => (
+              <span
+                key={group}
+                className="ml-2 rounded bg-sc-subtle px-1.5 py-0.5 text-xs text-sc-muted"
+              >
+                {tr(group === "work" ? "step3.relationSelected" : "step3.relationActor")}
               </span>
-            )}
+            ))}
           </p>
           {/* 요약 — 어디인지, 얼마나 걸리는지, 열려 있는지. 고르는 데 필요한 것만 */}
           <p className="mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-xs text-sc-muted">

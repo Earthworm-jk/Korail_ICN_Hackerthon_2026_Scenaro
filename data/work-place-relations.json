@@ -3,13 +3,27 @@
     "workId": "work-goblin",
     "placeId": "place-yeongjin-beach",
     "sceneNote": {
-      "ko": "도깨비 방파제로 알려진 바닷가 촬영지",
-      "en": "The seaside filming location commonly known as the Goblin Breakwater"
+      "ko": "은탁이 생일 촛불을 끈 뒤 김신을 만나 메밀꽃을 받는 장면",
+      "en": "Eun-tak meets Kim Shin after blowing out her birthday candles and receives buckwheat flowers"
+    },
+    "featuredActorIds": [
+      "actor-kim-go-eun"
+    ],
+    "actorPresenceReviewed": true,
+    "actorPresenceVerification": {
+      "method": "automatic",
+      "grade": "A",
+      "decision": "confirmed",
+      "evidenceSourceUrls": [
+        "https://english.visitkorea.or.kr/svc/sp/HallyuNew/contentsView.do?dataSetId=70&vcontsId=216921"
+      ]
     },
     "sourceUrls": [
-      "https://www.data.go.kr/data/15111405/fileData.do"
+      "https://www.data.go.kr/data/15111405/fileData.do",
+      "https://english.visitkorea.or.kr/svc/whereToGo/locIntrdn/rgnContentsView.do?vcontsId=112532",
+      "https://english.visitkorea.or.kr/svc/sp/HallyuNew/contentsView.do?dataSetId=70&vcontsId=216921"
     ],
-    "verifiedAt": "2026-08-08",
+    "verifiedAt": "2026-08-09",
     "reviewed": true
   },
   {

@@ -122,7 +122,7 @@ describe("장면 출연 배우 3상태 검증", () => {
 describe("실시드 장면 배우 상태 (#26 참고 섹션 대조)", () => {
   const repos = loadRepositories();
 
-  it("등장 확정 8곳 · 미등장 확정 3곳 · 미검토 1곳 (12곳 — #61 죽림동성당 제외)", () => {
+  it("등장 확정 11곳 · 미등장 확정 3곳 · 미검토 0곳", () => {
     const a = repos.workPlaceRelations.filter(
       (r) => r.actorPresenceReviewed && (r.featuredActorIds?.length ?? 0) > 0,
     );
@@ -130,9 +130,37 @@ describe("실시드 장면 배우 상태 (#26 참고 섹션 대조)", () => {
       (r) => r.actorPresenceReviewed && r.featuredActorIds?.length === 0,
     );
     const c = repos.workPlaceRelations.filter((r) => !r.actorPresenceReviewed);
-    expect(a).toHaveLength(10);
+    expect(a).toHaveLength(11);
     expect(b).toHaveLength(3);
-    expect(c.map((r) => r.placeId)).toEqual(["place-yeongjin-beach"]);
+    expect(c).toHaveLength(0);
+    expect(a.find((r) => r.placeId === "place-yeongjin-beach")?.actorPresenceVerification)
+      .toMatchObject({ method: "automatic", grade: "A", decision: "confirmed" });
+  });
+
+  it("자동 검증 provenance는 등장 상태·관계 출처와 일치해야 한다", () => {
+    const withVerification = (actorPresenceVerification: Record<string, unknown>) => {
+      const seed = fixtureSeed();
+      Object.assign((seed.workPlaceRelations as Record<string, unknown>[])[0], {
+        featuredActorIds: ["actor-fx"],
+        actorPresenceReviewed: true,
+        actorPresenceVerification,
+      });
+      return seed;
+    };
+
+    expect(() => parseRepositories(withVerification({
+      method: "automatic",
+      grade: "A",
+      decision: "absent",
+      evidenceSourceUrls: ["https://example.com/source"],
+    }))).toThrow(/confirmed는 등장 배우가 있어야/);
+
+    expect(() => parseRepositories(withVerification({
+      method: "automatic",
+      grade: "A",
+      decision: "confirmed",
+      evidenceSourceUrls: ["https://other.example/source"],
+    }))).toThrow(/관계 sourceUrls에도 포함/);
   });
 
   it("미등장 확정 3곳은 삼양목장·덕수궁 돌담길·경기전이다 (데모 멘트 회귀)", () => {

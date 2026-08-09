@@ -3,6 +3,7 @@ import { getCandidatePlaces } from "../actions/places";
 import { planGatewayAlternatives, planItinerary, type PlanRequest } from "../actions/itinerary";
 import { gatewayPlanningBaselineOf, type GatewayPlanningBaseline } from "../engine/gateway-baseline";
 import { excludedPlaceIdsFrom, initialCandidateIds } from "../candidates";
+import { loadRepositories } from "../repositories/json";
 
 // PR #30 리뷰 재리뷰 조건: 후보 합집합·미확인 제외·잘못된 시각 요청의 액션 단위 테스트
 
@@ -176,12 +177,19 @@ describe("#56 열차 스냅샷 권역 확장 — 실데이터 회귀", () => {
   // 배치 가능 전환의 증명은 단독 선택 배치다 — 12곳 동시 요청에서는 3일 수용량 경쟁으로
   // 밀린 후보에 엔진이 마지막 실패 지점의 폴백 사유(TRAIN_UNAVAILABLE 등)를 붙이기 때문.
   async function planOnly(placeId: string) {
+    // #51 엄격 배우 후보에서는 미등장·미검토 장소를 의도적으로 찾을 수 없다.
+    // 노선 회귀는 장소의 검토 작품 관계로 후보를 만든 뒤 단독 선택해 검색 계약과 분리한다.
+    const place = loadRepositories().places.find(({ id }) => id === placeId);
+    if (!place?.workIds[0]) throw new Error(`fixture work missing: ${placeId}`);
+    const selectedWorkIds = [place.workIds[0]];
     const { candidates } = await getCandidatePlaces({
-      selectedActorIds: [ACTOR],
-      selectedWorkIds: [],
+      selectedActorIds: [],
+      selectedWorkIds,
     });
     const excluded = candidates.map(({ id }) => id).filter((id) => id !== placeId);
-    return planItinerary({ ...validRequest(), excludedPlaceIds: excluded });
+    return planItinerary({
+      ...validRequest(), selectedActorIds: [], selectedWorkIds, excludedPlaceIds: excluded,
+    });
   }
 
   it("진부 앵커 4곳이 각각 단독 선택 시 TRAIN_UNAVAILABLE 없이 배치된다", async () => {

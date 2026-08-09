@@ -4,10 +4,10 @@ import { compareCandidates, type Candidate } from "../engine/compare";
 function cand(partial: Partial<Candidate> & { stableId: string }): Candidate {
   return {
     keys: {
-      relevanceKey: { selectedWorkPlaceCount: 3, actorOtherWorkPlaceCount: 1 },
-      visitablePlaceCount: 3,
+      selectionGroupCoverageCount: 2,
+      selectedUnionPlaceCount: 3,
       activityWarningCount: 0,
-      totalRailMinutes: 120,
+      totalTravelMinutes: 120,
       transferCount: 1,
       slackSatisfied: true,
       ...(partial.keys ?? {}),
@@ -18,16 +18,22 @@ function cand(partial: Partial<Candidate> & { stableId: string }): Candidate {
 }
 
 describe("사전식 비교 (#3 — 가중합 아님)", () => {
-  it("관련성 벡터가 다르면 뒤 키와 무관하게 관련성이 이긴다", () => {
-    const high = cand({ stableId: "a", keys: { relevanceKey: { selectedWorkPlaceCount: 3, actorOtherWorkPlaceCount: 0 }, totalRailMinutes: 999 } as never });
-    const low = cand({ stableId: "b", keys: { relevanceKey: { selectedWorkPlaceCount: 2, actorOtherWorkPlaceCount: 9 }, totalRailMinutes: 1 } as never });
-    expect(compareCandidates(high, low)).toBeLessThan(0);
+  it("배우·작품 그룹을 모두 충족한 일정이 작품 장소만 많은 일정보다 우선한다", () => {
+    const both = cand({
+      stableId: "a",
+      keys: { selectionGroupCoverageCount: 2, selectedUnionPlaceCount: 2, totalTravelMinutes: 999 } as never,
+    });
+    const workOnly = cand({
+      stableId: "b",
+      keys: { selectionGroupCoverageCount: 1, selectedUnionPlaceCount: 9, totalTravelMinutes: 1 } as never,
+    });
+    expect(compareCandidates(both, workOnly)).toBeLessThan(0);
   });
 
-  it("선택 작품 개수 동점이면 배우 타출연작 개수로 비교한다", () => {
-    const moreOther = cand({ stableId: "a", keys: { relevanceKey: { selectedWorkPlaceCount: 2, actorOtherWorkPlaceCount: 2 } } as never });
-    const lessOther = cand({ stableId: "b", keys: { relevanceKey: { selectedWorkPlaceCount: 2, actorOtherWorkPlaceCount: 1 } } as never });
-    expect(compareCandidates(moreOther, lessOther)).toBeLessThan(0);
+  it("그룹 충족 수가 같으면 엄격 합집합의 고유 방문 장소 수로 비교한다", () => {
+    const moreUnion = cand({ stableId: "a", keys: { selectedUnionPlaceCount: 4 } as never });
+    const lessUnion = cand({ stableId: "b", keys: { selectedUnionPlaceCount: 3 } as never });
+    expect(compareCandidates(moreUnion, lessUnion)).toBeLessThan(0);
   });
 
   it("여유시간은 충족 여부만 본다 — 초과 가점 없음", () => {
@@ -55,20 +61,20 @@ describe("사전식 비교 (#3 — 가중합 아님)", () => {
 
 describe("운영시간 경고 수 키 (#43 결정 3 — 방문 수 뒤·이동시간 앞)", () => {
   it("방문 수가 같으면 경고가 적은 일정이 이동시간과 무관하게 우선한다", () => {
-    const clean = cand({ stableId: "a", keys: { activityWarningCount: 0, totalRailMinutes: 999 } as never });
-    const warned = cand({ stableId: "b", keys: { activityWarningCount: 1, totalRailMinutes: 1 } as never });
+    const clean = cand({ stableId: "a", keys: { activityWarningCount: 0, totalTravelMinutes: 999 } as never });
+    const warned = cand({ stableId: "b", keys: { activityWarningCount: 1, totalTravelMinutes: 1 } as never });
     expect(compareCandidates(clean, warned)).toBeLessThan(0);
   });
 
   it("방문 수가 다르면 경고 수보다 방문 수가 먼저다 — 사용자 선택 의도 우선", () => {
-    const moreVisits = cand({ stableId: "a", keys: { visitablePlaceCount: 3, activityWarningCount: 2 } as never });
-    const fewerClean = cand({ stableId: "b", keys: { visitablePlaceCount: 2, activityWarningCount: 0 } as never });
+    const moreVisits = cand({ stableId: "a", keys: { selectedUnionPlaceCount: 3, activityWarningCount: 2 } as never });
+    const fewerClean = cand({ stableId: "b", keys: { selectedUnionPlaceCount: 2, activityWarningCount: 0 } as never });
     expect(compareCandidates(moreVisits, fewerClean)).toBeLessThan(0);
   });
 
   it("경고 수가 같으면 기존 이동시간 순서로 비교한다", () => {
-    const faster = cand({ stableId: "a", keys: { activityWarningCount: 1, totalRailMinutes: 100 } as never });
-    const slower = cand({ stableId: "b", keys: { activityWarningCount: 1, totalRailMinutes: 200 } as never });
+    const faster = cand({ stableId: "a", keys: { activityWarningCount: 1, totalTravelMinutes: 100 } as never });
+    const slower = cand({ stableId: "b", keys: { activityWarningCount: 1, totalTravelMinutes: 200 } as never });
     expect(compareCandidates(faster, slower)).toBeLessThan(0);
   });
 });
