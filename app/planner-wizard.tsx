@@ -6,7 +6,12 @@
  * - 대안 시간표는 mock(#14 ⑨ 선행), 저장·내 일정은 in-memory 스텁(#25 선행) — 엔진·Supabase 연결 시 교체
  */
 import { useCallback, useEffect, useMemo, useReducer, useState } from "react";
-import { searchEntities, type ActorSummary, type WorkSummary } from "@/lib/actions/search";
+import {
+  searchEntities,
+  type ActorSummary,
+  type EntitySearchResult,
+  type WorkSummary,
+} from "@/lib/actions/search";
 import {
   getCandidatePlaces,
   type CandidateResponse,
@@ -205,7 +210,7 @@ export default function PlannerWizard({ stationFacilities }: {
 
   // step 2 — 검색·복수 선택
   const [query, setQuery] = useState("");
-  const [results, setResults] = useState<{ actors: ActorSummary[]; works: WorkSummary[] }>({ actors: [], works: [] });
+  const [results, setResults] = useState<EntitySearchResult>({ actors: [], works: [] });
   const [searched, setSearched] = useState(false);
   const [selectedActors, setSelectedActors] = useState<ActorSummary[]>([]);
   const [selectedWorks, setSelectedWorks] = useState<WorkSummary[]>([]);
@@ -583,6 +588,14 @@ export default function PlannerWizard({ stationFacilities }: {
               if (!nextQuery.trim()) setResults({ actors: [], works: [] });
             }}
           />
+          {searched && results.interpretedByAi && (
+            <p
+              aria-live="polite"
+              className="mt-3 rounded border border-sc-airport/30 bg-sc-airport-soft p-3 text-sm text-sc-airport-text"
+            >
+              ✨ {tr("step2.aiInterpreted")}
+            </p>
+          )}
           {searched && results.actors.length === 0 && results.works.length === 0 && (
             <p className="mt-3 rounded border border-sc-orange/30 bg-sc-orange-soft p-3 text-sm text-sc-orange-text">
               {tr("step2.noResult")}

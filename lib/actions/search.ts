@@ -4,12 +4,9 @@
  * 결과 0건은 예외가 아니라 빈 배열 (결과 없음 안내는 UI, REQ-SRCH-008)
  */
 import { searchEntitiesCore } from "../search/entities";
-import type { ActorSummary, WorkSummary } from "../search/entities";
-export type { ActorSummary, WorkSummary } from "../search/entities";
+import type { EntitySearchResult } from "../search/entities";
+export type { ActorSummary, EntitySearchResult, WorkSummary } from "../search/entities";
 
-export async function searchEntities(query: string): Promise<{
-  actors: ActorSummary[];
-  works: WorkSummary[];
-}> {
+export async function searchEntities(query: string): Promise<EntitySearchResult> {
   return searchEntitiesCore(query);
 }

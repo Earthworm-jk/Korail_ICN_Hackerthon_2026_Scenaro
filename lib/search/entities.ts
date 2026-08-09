@@ -6,7 +6,12 @@ import { loadRepositories } from "../repositories/json";
 
 export type ActorSummary = { id: string; name: { ko: string; en: string } };
 export type WorkSummary = { id: string; title: { ko: string; en: string } };
-export type EntitySearchResult = { actors: ActorSummary[]; works: WorkSummary[] };
+export type EntitySearchResult = {
+  actors: ActorSummary[];
+  works: WorkSummary[];
+  /** 원시 모델 응답·확신도 없이, UI가 실제 LLM 보조 사용 여부만 설명하는 안전 파생값. */
+  interpretedByAi?: true;
+};
 
 type Interpreter = (
   query: string,
@@ -70,7 +75,7 @@ export async function searchEntitiesCore(
       ? interpreted.entityId
       : undefined;
 
-    return {
+    const matched = {
       actors: repos.actors
         .filter(({ id }) => id === actorId)
         .map(({ id, name }) => ({ id, name })),
@@ -78,6 +83,8 @@ export async function searchEntitiesCore(
         .filter(({ id }) => id === workId)
         .map(({ id, title }) => ({ id, title })),
     };
+    if (matched.actors.length === 0 && matched.works.length === 0) return EMPTY;
+    return { ...matched, interpretedByAi: true };
   } catch {
     return EMPTY;
   }
