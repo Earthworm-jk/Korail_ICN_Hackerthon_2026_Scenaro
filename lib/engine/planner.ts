@@ -35,6 +35,20 @@ type ScheduledVisit = {
   warning: ActivityWindowDetail | null; // #43: 운영시간 판정 결과 — 배치는 유지, 경고로 전달
 };
 
+// #56 A+B 합의(B): 빔 정리·비교마다 재계산하던 파생값을 상태 전이 시 1회만 갱신한다.
+// 원본(visits·rides)에서 언제든 재계산 가능해야 하며, PLANNER_VERIFY_DERIVED=1이면
+// 모든 상태 전이에서 원본 재계산값과 대조한다 (수용 기준 4).
+type DerivedState = {
+  sortedVisitOrdinals: number[]; // 방문 장소 서수 오름차순 — id 사전순 서수라 기존 id .sort()와 동순
+  sortedVisitKey: string; // sortedVisitOrdinals.join(",") — pruneStates 서명용(짧은 키)
+  visitPath: string; // 방문 id join("/") — 안정 타이브레이커 앞부분
+  ridePath: string; // 탑승 trainNo join("/") — 안정 타이브레이커 뒷부분
+  stableKey: string; // 완성된 안정 타이브레이커 — 비교자에서 재조립하지 않도록 전이 시 확정
+  dateCountsKey: string; // 날짜별 배치 수 서명 — pruneStates 서명용
+  warningCount: number;
+  selectedWorkCount: number;
+};
+
 type PlannerState = {
   stationId: string;
   readyAt: number;
@@ -43,7 +57,8 @@ type PlannerState = {
   railMinutes: number;
   transferCount: number;
   localTravelMinutes: number;
-  dateCounts: Map<string, number>;
+  dateCounts: readonly number[]; // ctx.tripDates 자리별 배치 수 — 내부 표현(서명·상한 검사 전용)
+  derived: DerivedState;
 };
 
 type Transition =
@@ -65,6 +80,205 @@ function buildRouteContext(trainLegs: TrainLegT[]): RouteContext {
     .map((leg) => ({ leg, departMs: Date.parse(leg.departAt), arriveMs: Date.parse(leg.arriveAt) }))
     .sort((a, b) => a.departMs - b.departMs || a.leg.trainNo.localeCompare(b.leg.trainNo, "en"));
   return { legs, cache: new Map() };
+}
+
+// #56 A+B 합의(A): KST 날짜·시각 변환 메모. 프로파일 결과 비용의 45%가 같은 값의
+// Date 재생성이었다. 캐시는 실행(planItinerary 호출) 단위로 생성·폐기한다 —
+// 전역 가변 캐시 금지·요청 간 오염 방지 (수용 기준 5).
+type PlanContext = {
+  routes: RouteContext;
+  /** koreaDate 메모 — KST 일 단위 버킷당 1회만 포맷한다 */
+  dateOf: (epoch: number) => string;
+  /** koreaDateTime 메모 — (날짜, 시각) 키 */
+  timeOf: (date: string, time: string) => number;
+  /** enumerateDates 메모 — (시작일, 끝일) 키. 결과는 읽기 전용으로만 순회한다 */
+  datesBetween: (start: string, end: string) => readonly string[];
+  /** 여행 가능 날짜(공항 준비일-마감일, KST) — dateCounts 배열의 자리 배정 */
+  tripDates: readonly string[];
+  dateIndex: ReadonlyMap<string, number>;
+  /** 날짜별 고정 시각 메모 — 활동 시작(09:00)·종료(21:00)·자정. timeOf와 같은 값 */
+  activityStartOf: (date: string) => number;
+  activityEndOf: (date: string) => number;
+  dayStartOf: (date: string) => number;
+  /** 장소 id → 실행 단위 서수 (id 사전순) — 서명 키 축약용. 단사라 그룹핑 동등성 보존 */
+  placeOrdinalOf: (placeId: string) => number;
+};
+
+const DAY_MS = 24 * 60 * MINUTE_MS;
+
+function buildPlanContext(
+  trainLegs: TrainLegT[],
+  places: readonly PlaceT[],
+  availableAt: number,
+  deadline: number,
+): PlanContext {
+  const dayCache = new Map<number, string>();
+  const timeCache = new Map<string, number>();
+  const rangeCache = new Map<string, readonly string[]>();
+  const ctx: {
+    -readonly [K in keyof PlanContext]: PlanContext[K];
+  } = {
+    routes: buildRouteContext(trainLegs),
+    dateOf: (epoch) => {
+      const day = Math.floor((epoch + KOREA_OFFSET_MS) / DAY_MS);
+      let value = dayCache.get(day);
+      if (value === undefined) {
+        value = koreaDate(epoch);
+        dayCache.set(day, value);
+      }
+      return value;
+    },
+    timeOf: (date, time) => {
+      const key = `${date}T${time}`;
+      let value = timeCache.get(key);
+      if (value === undefined) {
+        value = koreaDateTime(date, time);
+        timeCache.set(key, value);
+      }
+      return value;
+    },
+    datesBetween: (start, end) => {
+      const key = `${start}|${end}`;
+      let value = rangeCache.get(key);
+      if (value === undefined) {
+        value = enumerateDates(ctx, start, end);
+        rangeCache.set(key, value);
+      }
+      return value;
+    },
+    tripDates: [],
+    dateIndex: new Map(),
+    activityStartOf: (date) => ctx.timeOf(date, DAY_ACTIVITY_START),
+    activityEndOf: (date) => ctx.timeOf(date, DAY_ACTIVITY_END),
+    dayStartOf: (date) => ctx.timeOf(date, "00:00"),
+    placeOrdinalOf: () => -1,
+  };
+  const placeOrdinals = new Map(
+    [...places].map(({ id }) => id).sort().map((id, ordinal) => [id, ordinal] as const),
+  );
+  ctx.placeOrdinalOf = (placeId) => placeOrdinals.get(placeId) ?? -1;
+  const activityStartCache = new Map<string, number>();
+  const activityEndCache = new Map<string, number>();
+  const dayStartCache = new Map<string, number>();
+  ctx.activityStartOf = (date) => {
+    let value = activityStartCache.get(date);
+    if (value === undefined) {
+      value = koreaDateTime(date, DAY_ACTIVITY_START);
+      activityStartCache.set(date, value);
+    }
+    return value;
+  };
+  ctx.activityEndOf = (date) => {
+    let value = activityEndCache.get(date);
+    if (value === undefined) {
+      value = koreaDateTime(date, DAY_ACTIVITY_END);
+      activityEndCache.set(date, value);
+    }
+    return value;
+  };
+  ctx.dayStartOf = (date) => {
+    let value = dayStartCache.get(date);
+    if (value === undefined) {
+      value = koreaDateTime(date, "00:00");
+      dayStartCache.set(date, value);
+    }
+    return value;
+  };
+  const tripDates = enumerateDates(ctx, koreaDate(availableAt), koreaDate(deadline));
+  ctx.tripDates = tripDates;
+  ctx.dateIndex = new Map(tripDates.map((date, index) => [date, index]));
+  return ctx;
+}
+
+function initialDerived(ctx: PlanContext): DerivedState {
+  return {
+    sortedVisitOrdinals: [],
+    sortedVisitKey: "",
+    visitPath: "",
+    ridePath: "",
+    stableKey: "",
+    dateCountsKey: dateCountsKeyOf(ctx.tripDates.map(() => 0)),
+    warningCount: 0,
+    selectedWorkCount: 0,
+  };
+}
+
+function stableKeyOf(visitPath: string, ridePath: string): string {
+  if (visitPath === "") return ridePath;
+  if (ridePath === "") return visitPath;
+  return `${visitPath}/${ridePath}`;
+}
+
+function dateCountsKeyOf(dateCounts: readonly number[]): string {
+  return dateCounts.join(",");
+}
+
+function appendDerived(
+  ctx: PlanContext,
+  parent: DerivedState,
+  placeId: string,
+  relation: Relation,
+  warning: ActivityWindowDetail | null,
+  route: TrainLegT[],
+  dateCounts: readonly number[],
+): DerivedState {
+  const ordinal = ctx.placeOrdinalOf(placeId);
+  const sortedVisitOrdinals = [...parent.sortedVisitOrdinals];
+  let at = sortedVisitOrdinals.length;
+  while (at > 0 && ordinal < sortedVisitOrdinals[at - 1]) at -= 1;
+  sortedVisitOrdinals.splice(at, 0, ordinal);
+  const routePath = route.map(({ trainNo }) => trainNo).join("/");
+  const visitPath = parent.visitPath === "" ? placeId : `${parent.visitPath}/${placeId}`;
+  const ridePath = routePath === "" ? parent.ridePath
+    : parent.ridePath === "" ? routePath : `${parent.ridePath}/${routePath}`;
+  return {
+    sortedVisitOrdinals,
+    sortedVisitKey: sortedVisitOrdinals.join(","),
+    visitPath,
+    ridePath,
+    stableKey: stableKeyOf(visitPath, ridePath),
+    dateCountsKey: dateCountsKeyOf(dateCounts),
+    warningCount: parent.warningCount + (warning !== null ? 1 : 0),
+    selectedWorkCount: parent.selectedWorkCount + (relation === "selected_work" ? 1 : 0),
+  };
+}
+
+/** 수용 기준 4: 파생 캐시를 원본(visits·rides)에서 재계산해 대조 — 검증 플래그에서만 실행 */
+function recomputeDerived(state: PlannerState, ctx: PlanContext): DerivedState {
+  const ids = state.visits.map(({ place }) => place.id);
+  const sortedVisitOrdinals = ids.map((id) => ctx.placeOrdinalOf(id)).sort((a, b) => a - b);
+  const visitPath = ids.join("/");
+  const ridePath = state.rides.map(({ trainNo }) => trainNo).join("/");
+  return {
+    sortedVisitOrdinals,
+    sortedVisitKey: sortedVisitOrdinals.join(","),
+    visitPath,
+    ridePath,
+    stableKey: stableKeyOf(visitPath, ridePath),
+    // 원본 재계산: 방문 기록의 visitStart에서 날짜별 수를 다시 센다 (배열 신뢰 안 함)
+    dateCountsKey: dateCountsKeyOf(ctx.tripDates.map((date) =>
+      state.visits.filter(({ visitStart }) => koreaDate(visitStart) === date).length)),
+    warningCount: state.visits.filter(({ warning }) => warning !== null).length,
+    selectedWorkCount: state.visits.filter(({ relation }) => relation === "selected_work").length,
+  };
+}
+
+function assertDerivedIntegrity(states: PlannerState[], ctx: PlanContext): void {
+  for (const state of states) {
+    const expected = recomputeDerived(state, ctx);
+    const actual = state.derived;
+    if (actual.sortedVisitKey !== expected.sortedVisitKey
+      || actual.visitPath !== expected.visitPath
+      || actual.ridePath !== expected.ridePath
+      || actual.stableKey !== expected.stableKey
+      || actual.dateCountsKey !== expected.dateCountsKey
+      || actual.warningCount !== expected.warningCount
+      || actual.selectedWorkCount !== expected.selectedWorkCount) {
+      throw new Error(
+        `[검증] 파생 캐시 불일치: ${JSON.stringify({ actual, expected })}`,
+      );
+    }
+  }
 }
 
 /** legs에서 departMs >= notBefore인 첫 위치 — 기존의 "departAt < notBefore면 skip"과 동치 */
@@ -127,7 +341,7 @@ export function planItinerary(
   const availableAt = Date.parse(constraints.airportReadyAt);
   const departureAt = Date.parse(constraints.departureAt);
   const deadline = Date.parse(constraints.airportArrivalDeadline);
-  const routes = buildRouteContext(repos.trainLegs);
+  const ctx = buildPlanContext(repos.trainLegs, repos.places, availableAt, deadline);
   const initial: PlannerState = {
     stationId: endpointStationId,
     readyAt: availableAt,
@@ -136,7 +350,8 @@ export function planItinerary(
     railMinutes: 0,
     transferCount: 0,
     localTravelMinutes: 0,
-    dateCounts: new Map(),
+    dateCounts: ctx.tripDates.map(() => 0),
+    derived: initialDerived(ctx),
   };
 
   let frontier = [initial];
@@ -152,7 +367,7 @@ export function planItinerary(
           state,
           candidate,
           constraints,
-          routes,
+          ctx,
           deadline,
         );
         if (!transition.ok) continue;
@@ -161,14 +376,14 @@ export function planItinerary(
     }
 
     if (next.length === 0) break;
-    frontier = pruneStates(next);
+    frontier = pruneStates(next, ctx);
 
     for (const state of frontier) {
       const schedule = completeSchedule(
         state,
         endpointStationId,
         constraints,
-        routes,
+        ctx,
         departureAt,
         deadline,
       );
@@ -184,7 +399,7 @@ export function planItinerary(
         initial,
         candidate,
         constraints,
-        routes,
+        ctx,
         endpointStationId,
       );
       if (reason) rejectedPlaces.push(reason);
@@ -206,7 +421,7 @@ export function planItinerary(
       best.state,
       candidate,
       constraints,
-      routes,
+      ctx,
       endpointStationId,
     );
     if (reason) rejectedPlaces.push(reason);
@@ -233,7 +448,7 @@ export function planItinerary(
     }));
   return {
     status: "planned",
-    days: buildDays(best.state.visits, allRides, regionWindows),
+    days: buildDays(ctx, best.state.visits, allRides, regionWindows),
     rejectedPlaces: uniqueReasons(rejectedPlaces),
     warnings,
     comparisonKeys: best.keys,
@@ -251,12 +466,12 @@ function appendVisit(
   state: PlannerState,
   candidate: CandidatePlace,
   constraints: TripConstraints,
-  routes: RouteContext,
+  ctx: PlanContext,
   deadline: number,
 ): Transition {
   const place = candidate.place;
   const route = findEarliestRoute(
-    routes,
+    ctx.routes,
     state.stationId,
     place.nearestStationId,
     state.readyAt,
@@ -269,18 +484,20 @@ function appendVisit(
   const stationArrival = route.length > 0
     ? Date.parse(route[route.length - 1].arriveAt)
     : state.readyAt;
-  const dateAvailable = (date: string) =>
-    (state.dateCounts.get(date) ?? 0) < constraints.maxPlacesPerDay;
+  const dateAvailable = (date: string) => {
+    const index = ctx.dateIndex.get(date);
+    return index !== undefined && (state.dateCounts[index] ?? 0) < constraints.maxPlacesPerDay;
+  };
 
   // #43 결정 1: 검증 운영시간 안 배치를 먼저 시도하고, 불가능하면 판정식(#5) 결과를
   // 경고로 강등해 배치는 유지한다 — 하드 제약은 열차·출국 마감뿐
   let window = place.openingHours.type === "unverified"
     ? null
-    : findVisitWindow(place, stationArrival, true, deadline, dateAvailable, "verified");
+    : findVisitWindow(ctx, place, stationArrival, true, deadline, dateAvailable, "verified");
   let warning: ActivityWindowDetail | null = null;
   if (!window) {
-    warning = activityWarningDetail(place, stationArrival, deadline, dateAvailable);
-    window = findVisitWindow(place, stationArrival, true, deadline, dateAvailable, "ignore-hours");
+    warning = activityWarningDetail(ctx, place, stationArrival, deadline, dateAvailable);
+    window = findVisitWindow(ctx, place, stationArrival, true, deadline, dateAvailable, "ignore-hours");
     if (!window) {
       // 남은 기간 안에 배치 자체가 불가능(마감·하루 상한) — 운영시간 사유가 아니다 (#43)
       return {
@@ -290,16 +507,18 @@ function appendVisit(
     }
   }
 
-  const date = koreaDate(window.visitStart);
-  if ((state.dateCounts.get(date) ?? 0) >= constraints.maxPlacesPerDay) {
+  const date = ctx.dateOf(window.visitStart);
+  const dateIndex = ctx.dateIndex.get(date);
+  if (dateIndex === undefined
+    || (state.dateCounts[dateIndex] ?? 0) >= constraints.maxPlacesPerDay) {
     return {
       ok: false,
       reason: { code: "DEPARTURE_DEADLINE_EXCEEDED", placeId: place.id },
     };
   }
 
-  const dateCounts = new Map(state.dateCounts);
-  dateCounts.set(date, (dateCounts.get(date) ?? 0) + 1);
+  const dateCounts = [...state.dateCounts];
+  dateCounts[dateIndex] += 1;
   const localRoundTrip = 2 * window.accessAndBufferMinutes;
   return {
     ok: true,
@@ -319,11 +538,13 @@ function appendVisit(
       transferCount: state.transferCount + transferCount(route),
       localTravelMinutes: state.localTravelMinutes + localRoundTrip,
       dateCounts,
+      derived: appendDerived(ctx, state.derived, place.id, candidate.relation, warning, route, dateCounts),
     },
   };
 }
 
 function findVisitWindow(
+  ctx: PlanContext,
   place: PlaceT,
   stationArrival: number,
   includeBuffer: boolean,
@@ -334,26 +555,28 @@ function findVisitWindow(
   const buffer = includeBuffer ? accessBufferMinutes(place.accessEstimate.minutes) : 0;
   const accessAndBufferMinutes = place.accessEstimate.minutes + buffer;
   const earliestPlaceArrival = stationArrival + accessAndBufferMinutes * MINUTE_MS;
-  const startDate = koreaDate(earliestPlaceArrival);
-  const dates = enumerateDates(startDate, koreaDate(deadline));
+  const startDate = ctx.dateOf(earliestPlaceArrival);
+  // 시작일은 항상 여행 날짜 범위 안(도착 이후)이고, 범위 밖(마감 이후)이면 후보 날짜가 없다
+  const startIndex = ctx.dateIndex.get(startDate);
+  const dates = startIndex === undefined ? [] : ctx.tripDates.slice(startIndex);
 
   for (const date of dates) {
-    if (date < startDate || !dateAvailable(date)) continue;
-    if (mode === "verified" && isClosedDay(place, date)) continue;
+    if (!dateAvailable(date)) continue;
+    if (mode === "verified" && isClosedDay(ctx, place, date)) continue;
     // PR #45 리뷰: 출력 창(regionWindows)과 배치가 어긋나지 않도록 같은 활동 경계를 적용한다
     // — 역 출발 가능 시각 >= 09:00 (장소 도착 하한 = 09:00 + 접근·보수 버퍼),
     //   장소 방문 + 역 복귀 완료 <= min(출국 마감, 해당 날짜 21:00). hours·상시 개방·경고 폴백 공통.
-    const activityDeadline = Math.min(deadline, koreaDateTime(date, DAY_ACTIVITY_END));
+    const activityDeadline = Math.min(deadline, ctx.activityEndOf(date));
     let visitStart = Math.max(
       earliestPlaceArrival,
-      koreaDateTime(date, DAY_ACTIVITY_START) + accessAndBufferMinutes * MINUTE_MS,
+      ctx.activityStartOf(date) + accessAndBufferMinutes * MINUTE_MS,
     );
     if (mode === "verified" && place.openingHours.type === "hours") {
-      const open = koreaDateTime(date, place.openingHours.open);
-      const close = koreaDateTime(date, place.openingHours.close);
+      const open = ctx.timeOf(date, place.openingHours.open);
+      const close = ctx.timeOf(date, place.openingHours.close);
       visitStart = Math.max(visitStart, open);
       if (place.openingHours.lastEntry
-        && visitStart > koreaDateTime(date, place.openingHours.lastEntry)) continue;
+        && visitStart > ctx.timeOf(date, place.openingHours.lastEntry)) continue;
       const visitEnd = visitStart + place.stayMinutes * MINUTE_MS;
       const stationReadyAt = visitEnd + accessAndBufferMinutes * MINUTE_MS;
       if (visitEnd <= close && stationReadyAt <= activityDeadline) {
@@ -364,7 +587,7 @@ function findVisitWindow(
 
     const visitEnd = visitStart + place.stayMinutes * MINUTE_MS;
     const stationReadyAt = visitEnd + accessAndBufferMinutes * MINUTE_MS;
-    if (koreaDate(visitStart) === date && stationReadyAt <= activityDeadline) {
+    if (ctx.dateOf(visitStart) === date && stationReadyAt <= activityDeadline) {
       return { visitStart, visitEnd, stationReadyAt, accessAndBufferMinutes };
     }
   }
@@ -373,13 +596,14 @@ function findVisitWindow(
 
 /** #5 판정식 유지 — 결과만 제외 대신 경고 상세로 쓴다 (#43 결정 1) */
 function activityWarningDetail(
+  ctx: PlanContext,
   place: PlaceT,
   stationArrival: number,
   deadline: number,
   dateAvailable: (date: string) => boolean,
 ): ActivityWindowDetail {
   if (place.openingHours.type === "unverified") return "UNVERIFIED_HOURS";
-  return findVisitWindow(place, stationArrival, false, deadline, dateAvailable, "verified")
+  return findVisitWindow(ctx, place, stationArrival, false, deadline, dateAvailable, "verified")
     ? "CONSERVATIVE_BUFFER_MISMATCH"
     : "OUTSIDE_VERIFIED_HOURS";
 }
@@ -388,12 +612,12 @@ function completeSchedule(
   state: PlannerState,
   endpointStationId: string,
   constraints: TripConstraints,
-  routes: RouteContext,
+  ctx: PlanContext,
   departureAt: number,
   deadline: number,
 ): CompleteSchedule | null {
   const returnRides = findEarliestRoute(
-    routes,
+    ctx.routes,
     state.stationId,
     endpointStationId,
     state.readyAt,
@@ -405,8 +629,7 @@ function completeSchedule(
     : state.readyAt;
   if (returnedAt > deadline) return null;
 
-  const selectedWorkPlaceCount = state.visits
-    .filter(({ relation }) => relation === "selected_work").length;
+  const selectedWorkPlaceCount = state.derived.selectedWorkCount;
   const actorOtherWorkPlaceCount = state.visits.length - selectedWorkPlaceCount;
   const totalRailMinutes = state.railMinutes + routeMinutes(returnRides);
   const totalTransfers = state.transferCount + transferCount(returnRides);
@@ -422,6 +645,7 @@ function completeSchedule(
       totalRailMinutes,
       transferCount: totalTransfers,
       slackSatisfied: hasDailySlack(
+        ctx,
         state,
         returnRides,
         constraints,
@@ -430,15 +654,12 @@ function completeSchedule(
       ),
     },
     departureSlackMinutes,
-    stableId: [
-      ...state.visits.map(({ place }) => place.id),
-      ...state.rides.map(({ trainNo }) => trainNo),
-      ...returnRides.map(({ trainNo }) => trainNo),
-    ].join("/"),
+    stableId: stableKeyOf(state.derived.stableKey, returnRides.map(({ trainNo }) => trainNo).join("/")),
   };
 }
 
 function hasDailySlack(
+  ctx: PlanContext,
   state: PlannerState,
   returnRides: TrainLegT[],
   constraints: TripConstraints,
@@ -460,15 +681,15 @@ function hasDailySlack(
   ];
   const activeDates = new Set<string>();
   for (const interval of intervals) {
-    let cursor = koreaDateTime(koreaDate(interval.start), "00:00");
+    let cursor = ctx.dayStartOf(ctx.dateOf(interval.start));
     while (cursor < interval.end) {
-      activeDates.add(koreaDate(cursor));
+      activeDates.add(ctx.dateOf(cursor));
       cursor += 24 * 60 * MINUTE_MS;
     }
   }
 
   return [...activeDates].every((date) => {
-    const dayStart = koreaDateTime(date, "00:00");
+    const dayStart = ctx.dayStartOf(date);
     const dayEnd = dayStart + 24 * 60 * MINUTE_MS;
     const windowStart = Math.max(dayStart, tripStart);
     const windowEnd = Math.min(dayEnd, tripEnd);
@@ -594,15 +815,14 @@ function findAirportStationId(repos: Repositories): string | undefined {
     .sort((a, b) => a.id.localeCompare(b.id, "en"))[0]?.id;
 }
 
-function pruneStates(states: PlannerState[]): PlannerState[] {
+function pruneStates(states: PlannerState[], ctx: PlanContext): PlannerState[] {
+  if (process.env.PLANNER_VERIFY_DERIVED === "1") {
+    assertDerivedIntegrity(states, ctx); // 모든 전이가 pruneStates 입력을 지난다 (수용 기준 4)
+  }
   const bestBySignature = new Map<string, PlannerState>();
   for (const state of states) {
-    const signature = [
-      state.stationId,
-      [...state.visits].map(({ place }) => place.id).sort().join(","),
-      state.readyAt,
-      [...state.dateCounts].sort(([a], [b]) => a.localeCompare(b, "en")).map(([d, n]) => `${d}:${n}`).join(","),
-    ].join("|");
+    const signature =
+      `${state.stationId}|${state.derived.sortedVisitKey}|${state.readyAt}|${state.derived.dateCountsKey}`;
     const previous = bestBySignature.get(signature);
     if (!previous
       || activityWarningCountOf(state) < activityWarningCountOf(previous)
@@ -614,18 +834,19 @@ function pruneStates(states: PlannerState[]): PlannerState[] {
   }
   return [...bestBySignature.values()]
     .sort((a, b) => {
-      const aSelected = a.visits.filter(({ relation }) => relation === "selected_work").length;
-      const bSelected = b.visits.filter(({ relation }) => relation === "selected_work").length;
+      const aSelected = a.derived.selectedWorkCount;
+      const bSelected = b.derived.selectedWorkCount;
       // 경고 수는 최종 비교 키(#43)와 같은 방향으로 beam에서도 우선한다
       return bSelected - aSelected
         || activityWarningCountOf(a) - activityWarningCountOf(b)
         || a.readyAt - b.readyAt
-        || stableStateId(a).localeCompare(stableStateId(b), "en");
+        || a.derived.stableKey.localeCompare(b.derived.stableKey, "en");
     })
     .slice(0, MAX_BEAM_SIZE);
 }
 
 function buildDays(
+  ctx: PlanContext,
   visits: ScheduledVisit[],
   rides: TrainLegT[],
   regionWindows: RegionWindow[],
@@ -645,15 +866,15 @@ function buildDays(
       departAt: new Date(visit.visitEnd).toISOString(),
       accessMinutes: visit.place.accessEstimate.minutes,
     };
-    getDay(koreaDate(visit.visitStart)).items.push(item);
+    getDay(ctx.dateOf(visit.visitStart)).items.push(item);
   }
   for (const ride of rides) {
     const item: TrainRide = { ...ride };
-    getDay(koreaDate(Date.parse(ride.departAt))).rides.push(item);
+    getDay(ctx.dateOf(Date.parse(ride.departAt))).rides.push(item);
   }
   // #33 — 창은 KST 자정 분할되어 있으므로 시작 시각의 날짜에 단독 귀속된다
   for (const window of regionWindows) {
-    getDay(koreaDate(Date.parse(window.startAt))).regionWindows.push(window);
+    getDay(ctx.dateOf(Date.parse(window.startAt))).regionWindows.push(window);
   }
   return [...days.values()]
     .sort((a, b) => a.date.localeCompare(b.date, "en"))
@@ -667,20 +888,20 @@ function buildDays(
     }));
 }
 
-function enumerateDates(start: string, end: string): string[] {
+function enumerateDates(ctx: PlanContext, start: string, end: string): string[] {
   const dates: string[] = [];
-  let cursor = koreaDateTime(start, "00:00");
-  const last = koreaDateTime(end, "00:00");
+  let cursor = ctx.timeOf(start, "00:00");
+  const last = ctx.timeOf(end, "00:00");
   while (cursor <= last) {
-    dates.push(koreaDate(cursor));
+    dates.push(ctx.dateOf(cursor));
     cursor += 24 * 60 * MINUTE_MS;
   }
   return dates;
 }
 
-function isClosedDay(place: PlaceT, date: string): boolean {
+function isClosedDay(ctx: PlanContext, place: PlaceT, date: string): boolean {
   if (place.openingHours.type !== "hours" || !place.openingHours.closedDays) return false;
-  const day = new Date(koreaDateTime(date, "12:00")).getUTCDay();
+  const day = new Date(ctx.timeOf(date, "12:00")).getUTCDay();
   const weekday = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"][day] as
     "sun" | "mon" | "tue" | "wed" | "thu" | "fri" | "sat";
   return place.openingHours.closedDays.includes(weekday);
@@ -711,19 +932,19 @@ function completionFailure(
   state: PlannerState,
   candidate: CandidatePlace,
   constraints: TripConstraints,
-  routes: RouteContext,
+  ctx: PlanContext,
   endpointStationId: string,
 ): CandidateRejection | null {
   const departureAt = Date.parse(constraints.departureAt);
   const deadline = Date.parse(constraints.airportArrivalDeadline);
-  const transition = appendVisit(state, candidate, constraints, routes, deadline);
+  const transition = appendVisit(state, candidate, constraints, ctx, deadline);
   if (!transition.ok) {
     if (transition.reason.code === "TRAIN_UNAVAILABLE") {
       const withoutDepartureBuffer = appendVisit(
         state,
         candidate,
         constraints,
-        routes,
+        ctx,
         departureAt,
       );
       if (withoutDepartureBuffer.ok) {
@@ -734,7 +955,7 @@ function completionFailure(
   }
 
   const returnBeforeDeadline = findEarliestRoute(
-    routes,
+    ctx.routes,
     transition.state.stationId,
     endpointStationId,
     transition.state.readyAt,
@@ -744,7 +965,7 @@ function completionFailure(
     return null;
   }
   const returnBeforeDeparture = findEarliestRoute(
-    routes,
+    ctx.routes,
     transition.state.stationId,
     endpointStationId,
     transition.state.readyAt,
@@ -760,14 +981,7 @@ function minutesBetween(start: number, end: number): number {
 }
 
 function activityWarningCountOf(state: PlannerState): number {
-  return state.visits.filter(({ warning }) => warning !== null).length;
-}
-
-function stableStateId(state: PlannerState): string {
-  return [
-    ...state.visits.map(({ place }) => place.id),
-    ...state.rides.map(({ trainNo }) => trainNo),
-  ].join("/");
+  return state.derived.warningCount;
 }
 
 function uniqueReasons(reasons: CandidateRejection[]): CandidateRejection[] {
