@@ -7,6 +7,7 @@
  * 엔진 후보 분류는 Place.workIds, 표시는 관계라는 이원 구조 유지 (PR #52 리뷰).
  */
 import { loadRepositories } from "../repositories/json";
+import { roundTripStationIds } from "../timetable-coverage";
 import { deriveAiRelevance } from "../place-ranking";
 import { loadPlaceRankings } from "../place-rankings-snapshot";
 import type { PlaceT, StationT, WorkPlaceRelationT, WorkT } from "../types/schema";
@@ -32,6 +33,7 @@ export type CandidateResponse = {
   // isAirport는 v0.6 지도가 공항 점을 역과 다른 색으로 찍는 데 쓴다 (#14) — 표시 전용
   // hasTimetable은 #61 문구 분기용: 시간표 범위 밖이라 못 가는 것과 일정 안에 열차가
   // 없는 것을 구분해 표시한다. 공개 사유 코드는 늘리지 않는다.
+  // 판정 기준은 #61 수록 기준 5의 **왕복** 확보다 (단방향만으로는 커버로 치지 않는다).
   stations: (Pick<StationT, "id" | "name" | "isAirport"> & { hasTimetable: boolean })[];
   works: Pick<WorkT, "id" | "title">[];
 };
@@ -41,10 +43,9 @@ export async function getCandidatePlaces(selection: {
   selectedWorkIds: string[];
 }): Promise<CandidateResponse> {
   const repos = loadRepositories();
-  // 스냅샷에 한 구간이라도 등장하는 역 — 없으면 "열차가 없다"가 아니라 "우리가 아직 안 받았다"
-  const timetableStationIds = new Set(
-    repos.trainLegs.flatMap((leg) => [leg.fromStationId, leg.toStationId]),
-  );
+  // #61 수록 기준 5 — 왕복 시간표가 확보된 역만 커버로 본다.
+  // 한 방향만 있으면 돌아올 수 없어 일정이 성립하지 않으므로 "범위 밖"이 맞다 (PR #91 리뷰).
+  const timetableStationIds = roundTripStationIds(repos.trainLegs);
   const selectedWorkIds = new Set(selection.selectedWorkIds);
   const actorIds = new Set(selection.selectedActorIds);
   const actorWorkIds = new Set(

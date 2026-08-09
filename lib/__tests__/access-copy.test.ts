@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { messages } from "../i18n/messages";
 import { getCandidatePlaces } from "../actions/places";
 import { loadRepositories } from "../repositories/json";
+import { roundTripStationIds } from "../timetable-coverage";
 
 /**
  * #61 확정 표기 계약 전파 회귀 (#84 P0-3)
@@ -41,11 +42,9 @@ describe("접근시간 표기 계약 (#61)", () => {
 });
 
 describe("시간표 커버리지 노출", () => {
-  it("스냅샷에 구간이 있는 역만 hasTimetable이 참이다", async () => {
+  it("왕복이 가능한 역만 hasTimetable이 참이다", async () => {
     const repos = loadRepositories();
-    const covered = new Set(
-      repos.trainLegs.flatMap((leg) => [leg.fromStationId, leg.toStationId]),
-    );
+    const covered = roundTripStationIds(repos.trainLegs);
     const response = await getCandidatePlaces({
       selectedActorIds: ["actor-kim-go-eun"],
       selectedWorkIds: [],
@@ -67,5 +66,44 @@ describe("시간표 커버리지 노출", () => {
       (s) => anchorIds.has(s.id) && !s.hasTimetable,
     );
     expect(uncovered.length).toBeGreaterThan(0);
+  });
+});
+
+describe("왕복 커버리지 판정 (#61 수록 기준 5)", () => {
+  it("단방향 구간만 있는 역은 커버로 치지 않는다", () => {
+    // 가는 열차만 있고 돌아오는 열차가 없으면 일정이 성립하지 않는다.
+    // "일정 안에 KTX 없음"이 아니라 "시간표 범위 밖"이 맞다 (PR #91 리뷰).
+    const covered = roundTripStationIds([{ fromStationId: "A", toStationId: "B" }]);
+    expect(covered.size).toBe(0);
+  });
+
+  it("양방향 구간이 있으면 양쪽 역 모두 커버다", () => {
+    const covered = roundTripStationIds([
+      { fromStationId: "A", toStationId: "B" },
+      { fromStationId: "B", toStationId: "A" },
+    ]);
+    expect([...covered].sort()).toEqual(["A", "B"]);
+  });
+
+  it("나가는 축과 들어오는 축이 다르면 커버가 아니다", () => {
+    // A→B 와 C→A 만 있으면 A는 등장 횟수가 둘이지만 A 기점 왕복은 못 만든다
+    const covered = roundTripStationIds([
+      { fromStationId: "A", toStationId: "B" },
+      { fromStationId: "C", toStationId: "A" },
+    ]);
+    expect(covered.has("A")).toBe(false);
+  });
+
+  it("자기 자신으로 가는 구간은 왕복으로 치지 않는다", () => {
+    expect(roundTripStationIds([{ fromStationId: "A", toStationId: "A" }]).size).toBe(0);
+  });
+
+  it("실시드에서는 등장 역이 모두 왕복 가능하다 — 단방향 수집분이 생기면 알려 준다", () => {
+    const repos = loadRepositories();
+    const appearing = new Set(
+      repos.trainLegs.flatMap((leg) => [leg.fromStationId, leg.toStationId]),
+    );
+    const roundTrip = roundTripStationIds(repos.trainLegs);
+    expect([...appearing].filter((id) => !roundTrip.has(id))).toEqual([]);
   });
 });
