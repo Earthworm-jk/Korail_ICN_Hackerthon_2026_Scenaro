@@ -81,6 +81,60 @@ describe("일정 재계산 전후 비교 (#103)", () => {
     expect(diff.changed).toBe(false);
   });
 
+  describe("못 타게 된 편 판정 범위 (PR #105 리뷰)", () => {
+    // 첫날 부산행과 둘째날 강릉행이 모두 빠졌고, 둘 다 경계보다 이르다.
+    // 사용자가 늦춘 것은 둘째날 서울→강릉 하나뿐이다.
+    const before = planned([
+      day("2026-08-12", [ride("00033", "station-seoul", "station-busan", "2026-08-12T04:18:00.000Z")], []),
+      day("2026-08-13", [ride("00815", "station-seoul", "station-gangneung", "2026-08-13T04:55:00.000Z")], []),
+    ]);
+    const after = planned([
+      day("2026-08-13", [ride("00819", "station-seoul", "station-gangneung", "2026-08-13T08:29:00.000Z")], []),
+    ]);
+    const notBefore = "2026-08-13T07:55:00.000Z";
+
+    it("구간을 지정하면 그 구간의 편만 못 타게 된 것으로 본다", () => {
+      const diff = diffItineraries(before, after, {
+        unusable: {
+          kind: "segment",
+          fromStationId: "station-seoul",
+          toStationId: "station-gangneung",
+          notBefore,
+        },
+      });
+      expect(diff.rides.dropped.map((r) => r.trainNo).sort()).toEqual(["00033", "00815"]);
+      // 첫날 부산행은 경계보다 이르지만 사용자가 늦춘 구간이 아니다 — 재최적화로 바뀐 것이다
+      expect(diff.rides.missed.map((r) => r.trainNo)).toEqual(["00815"]);
+    });
+
+    it("여행 시작 경계가 밀린 경우에는 이전 출발 전부가 대상이다", () => {
+      const diff = diffItineraries(before, after, {
+        unusable: { kind: "trip_start", notBefore },
+      });
+      expect(diff.rides.missed.map((r) => r.trainNo).sort()).toEqual(["00033", "00815"]);
+    });
+
+    it("경로가 쪼개져 일치하는 구간이 없으면 판정하지 않는다", () => {
+      // 서울→강릉이 아니라 서울→청량리·청량리→강릉으로 쪼개진 경우
+      const split = planned([
+        day("2026-08-13", [
+          ride("00815", "station-seoul", "station-cheongnyangni", "2026-08-13T04:55:00.000Z"),
+          ride("00815", "station-cheongnyangni", "station-gangneung", "2026-08-13T05:20:00.000Z"),
+        ], []),
+      ]);
+      const diff = diffItineraries(split, planned([]), {
+        unusable: {
+          kind: "segment",
+          fromStationId: "station-seoul",
+          toStationId: "station-gangneung",
+          notBefore,
+        },
+      });
+      expect(diff.rides.dropped).toHaveLength(2);
+      expect(diff.rides.missed).toEqual([]);
+    });
+  });
+
   it("다음 날로 밀린 방문을 제외가 아니라 이동으로 구분한다", () => {
     const before = planned([day("2026-08-12", [], ["place-a", "place-b"])]);
     const after = planned([day("2026-08-12", [], ["place-a"]), day("2026-08-13", [], ["place-b"])]);
@@ -156,7 +210,9 @@ describe("항공편 지연 재계산 — 실시드 회귀 (#103 · 발표 시나
     if (!before.ok || !after.ok) return;
 
     const newReadyAt = "2026-08-12T14:00:00+09:00";
-    const diff = diffItineraries(before.result, after.result, { notBefore: newReadyAt });
+    const diff = diffItineraries(before.result, after.result, {
+      unusable: { kind: "trip_start", notBefore: newReadyAt },
+    });
     expect(diff.changed).toBe(true);
 
     // 놓친 편이 실제로 존재하고, 전부 새 출발 가능 시각 이전에 떠난 편이다

@@ -29,10 +29,10 @@ export type RideDiff = {
   /** 이전 일정에 있었고 새 일정에는 없는 탑승 전부 */
   dropped: TrainRide[];
   /**
-   * `dropped` 중 새 출발 가능 시각 이전에 떠나 **탈 수 없게 된** 편.
-   * 나머지 `dropped`는 엔진이 전체를 다시 최적화하며 바뀐 것이지 놓친 것이 아니다.
-   * 이 둘을 뭉쳐 "놓쳤다"고 말하면 사실이 아닌 설명이 된다.
-   * `notBefore` 옵션을 주지 않으면 항상 빈 배열이다 — 경계를 모르면 판정하지 않는다.
+   * `dropped` 중 **주어진 경계 때문에 탈 수 없게 된** 편.
+   * 나머지 `dropped`는 엔진이 전체를 다시 최적화하며 바뀐 것이지 못 타게 된 것이 아니다.
+   * 이 둘을 뭉치면 사실이 아닌 설명이 된다.
+   * `unusable` 옵션이 없으면 항상 빈 배열이다 — 경계를 모르면 판정하지 않는다.
    */
   missed: TrainRide[];
   /** 새 일정에만 있는 탑승 — "재선택된 열차" */
@@ -41,12 +41,28 @@ export type RideDiff = {
   kept: TrainRide[];
 };
 
-export type DiffOptions = {
+/**
+ * 무엇 때문에 열차를 탈 수 없게 됐는지. **범위를 함께 선언해야 한다** (PR #105 리뷰).
+ *
+ * 경계를 시각 하나로만 받으면 범위가 전역이 되어, 특정 구간을 늦춘 경우에도 앞선 날짜의
+ * 무관한 구간까지 "못 타게 됐다"로 분류된다. 그 열차는 재최적화로 바뀐 것이지 사용자가
+ * 놓친 것이 아니다.
+ */
+export type UnusableScope =
   /**
-   * 재계산 후 이동을 시작할 수 있는 가장 이른 시각(ISO). 항공 지연이면 새 `airportReadyAt`,
-   * 사용자가 열차를 늦춘 경우면 그 구간의 새 최소 출발 시각이다.
+   * 여행 시작 경계가 뒤로 밀린 경우 — 항공 지연 등. 그 시각 이전 출발은 전부 탈 수 없다.
    */
-  notBefore?: string;
+  | { kind: "trip_start"; notBefore: string }
+  /**
+   * 사용자가 특정 구간을 늦춘 경우 (#103 `transitOverrides`). **그 구간의 편만** 본다.
+   *
+   * 경로가 중간역에서 쪼개져 정확히 일치하는 구간이 없으면 `missed`는 비어 있다 —
+   * 판정할 수 없으면 판정하지 않는다.
+   */
+  | { kind: "segment"; fromStationId: string; toStationId: string; notBefore: string };
+
+export type DiffOptions = {
+  unusable?: UnusableScope;
 };
 
 export type PlaceDiff = {
@@ -87,6 +103,20 @@ function daysOf(result: ItineraryResult): readonly DayPlan[] {
 }
 
 /**
+ * 이 탑승이 주어진 경계 때문에 탈 수 없게 됐는가.
+ *
+ * 시각만으로 판정하지 않는다 — `segment` 범위에서는 그 구간의 편만 본다. 앞선 날짜나
+ * 다른 구간의 편은 경계보다 이르더라도 재최적화로 바뀐 것이지 못 타게 된 것이 아니다.
+ */
+function becameUnusable(ride: TrainRide, scope: UnusableScope | undefined): boolean {
+  if (scope === undefined) return false;
+  if (Date.parse(ride.departAt) >= Date.parse(scope.notBefore)) return false;
+  if (scope.kind === "trip_start") return true;
+  return ride.fromStationId === scope.fromStationId
+    && ride.toStationId === scope.toStationId;
+}
+
+/**
  * 두 일정 결과를 비교한다.
  *
  * `before`가 `empty`여도(= 이전에 세운 일정이 없어도) 동작한다 — 그 경우 모든 것이
@@ -107,12 +137,9 @@ export function diffItineraries(
   const beforeRideKeys = new Set(beforeRides.map(rideKey));
 
   const dropped = beforeRides.filter((ride) => !afterRideKeys.has(rideKey(ride)));
-  const notBefore = options.notBefore ? Date.parse(options.notBefore) : null;
   const rides: RideDiff = {
     dropped,
-    missed: notBefore === null
-      ? []
-      : dropped.filter((ride) => Date.parse(ride.departAt) < notBefore),
+    missed: dropped.filter((ride) => becameUnusable(ride, options.unusable)),
     added: afterRides.filter((ride) => !beforeRideKeys.has(rideKey(ride))),
     kept: beforeRides.filter((ride) => afterRideKeys.has(rideKey(ride))),
   };
