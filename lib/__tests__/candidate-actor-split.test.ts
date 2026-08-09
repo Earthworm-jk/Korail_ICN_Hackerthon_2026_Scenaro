@@ -125,7 +125,7 @@ describe("실시드 배우 선택 화면 회귀 (김고은)", () => {
       .toBe("unreviewed");
     expect(separated.filter(({ status }) => status === "absent")).toHaveLength(3);
     expect(primary.map((c) => c.id)).not.toContain("place-samyang-ranch");
-    expect(primary).toHaveLength(8); // 등장 확정 8곳 (12곳 시드 — #61 죽림동성당 제외)
+    expect(primary).toHaveLength(10); // 등장 확정 10곳 (14곳 시드 — #61 죽림동 제외 + #72 부산 2곳)
   });
 
   it("작품을 함께 선택하면 그 작품 유래 후보는 장면 배우와 무관하게 기본 목록에 남는다", async () => {
@@ -156,7 +156,7 @@ describe("실시드 배우 선택 화면 회귀 (김고은)", () => {
   it("배우 선택 모드의 초기 선택에 미등장·미확인 후보가 들어가지 않는다", async () => {
     const { candidates } = await getCandidatePlaces({ selectedActorIds: [KIM], selectedWorkIds: [] });
     const initial = new Set(initialSelectedIds(candidates, kimSet));
-    expect(initial.size).toBe(8);
+    expect(initial.size).toBe(10);
     for (const id of [
       "place-samyang-ranch", "place-deoksugung-stone-wall-road",
       "place-gyeonggijeon-shrine", "place-yeongjin-beach",

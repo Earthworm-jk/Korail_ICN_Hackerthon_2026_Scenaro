@@ -178,6 +178,24 @@ describe("#56 열차 스냅샷 권역 확장 — 실데이터 회귀", () => {
     });
   });
 
+  it("부산 앵커 2곳(벡스코·영화의전당)이 단독 선택 시 배치된다 — 경부선 팩 (#72)", async () => {
+    for (const placeId of ["place-bexco", "place-busan-cinema-center"]) {
+      const res = await planOnly(placeId);
+      expect(res.ok).toBe(true);
+      if (!res.ok) return;
+      expect(res.result.status).toBe("planned");
+      if (res.result.status !== "planned") return;
+      expect(res.result.days.flatMap((day) => day.items.map((item) => item.placeId)))
+        .toContain(placeId);
+      // 운영시간 미확인이라 경고와 함께 배치된다 (#43 계약)
+      expect(res.result.warnings).toContainEqual({
+        code: "ACTIVITY_WINDOW_MISMATCH",
+        placeId,
+        detail: "UNVERIFIED_HOURS",
+      });
+    }
+  });
+
   it("관문·후속 단계 전 상태: 전주 경기전은 단독 선택도 아직 열차 미연결 (#56 3단계)", async () => {
     const res = await planOnly("place-gyeonggijeon-shrine");
     expect(res.ok).toBe(true);

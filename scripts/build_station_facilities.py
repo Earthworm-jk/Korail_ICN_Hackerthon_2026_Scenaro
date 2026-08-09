@@ -39,6 +39,7 @@ PAGE_SIZE = 500
 #   - station-incheon-airport-t1: 공항철도(주) 운영 — 동일하게 원천 밖
 STATION_NAME_MAP: dict[str, str] = {
     "station-seoul": "서울",
+    "station-busan": "부산",
     "station-gangneung": "강릉",
     "station-jinbu": "진부(오대산)",
     "station-manjong": "만종",

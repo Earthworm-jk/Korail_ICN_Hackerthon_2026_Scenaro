@@ -366,5 +366,63 @@
     "address": "전라북도 전주시 완산구 태조로 44",
     "latitude": 35.815488,
     "longitude": 127.149771
+  },
+  {
+    "id": "place-bexco",
+    "name": {
+      "ko": "벡스코",
+      "en": "BEXCO"
+    },
+    "workIds": [
+      "work-the-king"
+    ],
+    "nearestStationId": "station-busan",
+    "accessEstimate": {
+      "minutes": 35,
+      "source": "카카오맵 자동차 길찾기 부산역→벡스코 34분·14.1km의 5분 올림값 (2026-08-09; 실시간 교통·교통수단 보장 아님)",
+      "verifiedAt": "2026-08-09"
+    },
+    "openingHours": {
+      "type": "unverified"
+    },
+    "stayMinutes": 60,
+    "verificationLevel": "교차확인",
+    "officialSourceCount": 2,
+    "reasonText": {
+      "ko": "더 킹: 영원의 군주에서 대한제국의 ‘부산 CTX역’으로 등장한 촬영지예요. 전시 일정에 따라 내부 이용이 달라질 수 있어요.",
+      "en": "Appears as the Kingdom of Corea's 'Busan CTX Station' in The King: Eternal Monarch. Indoor access may vary by exhibition schedule."
+    },
+    "address": "부산광역시 해운대구 APEC로 55",
+    "latitude": 35.1688706,
+    "longitude": 129.135456
+  },
+  {
+    "id": "place-busan-cinema-center",
+    "name": {
+      "ko": "영화의전당",
+      "en": "Busan Cinema Center"
+    },
+    "workIds": [
+      "work-the-king"
+    ],
+    "nearestStationId": "station-busan",
+    "accessEstimate": {
+      "minutes": 30,
+      "source": "카카오맵 자동차 길찾기 부산역→영화의전당 27분·13.2km의 5분 올림값 (2026-08-09; 실시간 교통·교통수단 보장 아님)",
+      "verifiedAt": "2026-08-09"
+    },
+    "openingHours": {
+      "type": "unverified"
+    },
+    "stayMinutes": 60,
+    "verificationLevel": "교차확인",
+    "officialSourceCount": 2,
+    "reasonText": {
+      "ko": "더 킹: 영원의 군주에서 이곤이 정태을을 구하는 장면을 촬영한 곳이에요. 야외 광장은 볼 수 있지만 상영·공연 일정에 따라 내부 이용이 달라질 수 있어요.",
+      "en": "The site of Lee Gon's rescue scene in The King: Eternal Monarch. The outdoor plaza is viewable, while indoor access varies by screening schedule."
+    },
+    "address": "부산광역시 해운대구 수영강변대로 120",
+    "latitude": 35.171178,
+    "longitude": 129.12715
   }
 ]

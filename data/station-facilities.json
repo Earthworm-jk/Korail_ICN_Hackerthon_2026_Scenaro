@@ -14,6 +14,16 @@
       "hasInfoCenter": true
     },
     {
+      "stationId": "station-busan",
+      "stationCode": "3900114",
+      "sourceName": "부산",
+      "elevatorCount": 13,
+      "escalatorCount": 24,
+      "hasToilet": true,
+      "hasNursingRoom": true,
+      "hasInfoCenter": true
+    },
+    {
       "stationId": "station-gangneung",
       "stationCode": "3900587",
       "sourceName": "강릉",

@@ -31,24 +31,28 @@ describe("시드 스키마 검증 (REQ-DATA-004)", () => {
     }
   });
 
-  it("김고은 데모 fixture는 ITX 비범위 장소를 제외한 12곳이다 (#61)", () => {
+  it("김고은 데모 fixture는 ITX 비범위 장소를 제외한 14곳이다 (#61·#72 부산 팩)", () => {
     const repos = loadRepositories();
     const gyeonggijeon = repos.places.find(({ id }) => id === "place-gyeonggijeon-shrine");
 
-    expect(repos.places).toHaveLength(12);
+    expect(repos.places).toHaveLength(14);
     // #51 확정: 관계 미검증·김고은 미등장 — MVP 런타임 시드에서 장소·관계 완전 제외
     expect(repos.places.some(({ id }) => id === "place-gangchon-rail-park")).toBe(false);
     expect(repos.workPlaceRelations.some(({ placeId }) => placeId === "place-gangchon-rail-park")).toBe(false);
     expect(gyeonggijeon?.workIds).toContain("work-the-king");
     expect(gyeonggijeon?.nearestStationId).toBe("station-jeonju");
     expect(repos.stations.some(({ id }) => id === "station-jeonju")).toBe(true);
+    // #72 부산 팩: 더 킹 김고은 장면 후보 2곳 + 부산역 (경부선)
+    expect(repos.places.some(({ id }) => id === "place-bexco")).toBe(true);
+    expect(repos.places.some(({ id }) => id === "place-busan-cinema-center")).toBe(true);
+    expect(repos.stations.find(({ id }) => id === "station-busan")?.regionId).toBe("yeongnam");
     expect(repos.places.some(({ id }) => id === "place-naju-image-theme-park")).toBe(false);
     expect(repos.stations.some(({ id }) => id === "station-naju")).toBe(false);
     expect(repos.places.some(({ id }) => id === "place-jukrim-catholic-church")).toBe(false);
     expect(repos.stations.some(({ id }) => id === "station-chuncheon")).toBe(false);
   });
 
-  it("#61 데이터는 12개 작품–장소 관계를 제공하고 장소 직접 검색 별칭은 노출하지 않는다", () => {
+  it("#72 데이터는 14개 작품–장소 관계를 제공하고 장소 직접 검색 별칭은 노출하지 않는다", () => {
     const repos = loadRepositories();
     const relationKeys = new Set(
       repos.workPlaceRelations.map(({ workId, placeId }) => `${workId}|${placeId}`),
@@ -59,7 +63,7 @@ describe("시드 스키마 검증 (REQ-DATA-004)", () => {
     const yeongjin = repos.places.find(({ id }) => id === "place-yeongjin-beach");
 
     expect(relationKeys).toEqual(expectedKeys);
-    expect(repos.workPlaceRelations).toHaveLength(12);
+    expect(repos.workPlaceRelations).toHaveLength(14);
     expect(repos.workPlaceRelations.every(({ reviewed, sourceUrls }) => reviewed && sourceUrls.length > 0)).toBe(true);
     expect(yeongjin?.name).toEqual({ ko: "영진해변", en: "Yeongjin Beach" });
     expect(yeongjin?.searchAliases).toBeUndefined();

@@ -1,370 +1,430 @@
 {
-  "meta": {
-    "model": "text-embedding-3-small",
-    "inputRuleVersion": "v1",
-    "generatedAt": "2026-08-09T12:17:27+09:00",
-    "badgeThreshold": 0.25
+ "meta": {
+  "model": "text-embedding-3-small",
+  "inputRuleVersion": "v1",
+  "generatedAt": "2026-08-09T12:17:27+09:00",
+  "badgeThreshold": 0.25
+ },
+ "rankings": [
+  {
+   "workId": "work-goblin",
+   "placeId": "place-balwangsan-cable-car",
+   "score": 0.351465,
+   "reviewed": true,
+   "reviewedAt": "2026-08-09",
+   "reviewedBy": "Earthworm-jk/Codex",
+   "reason": {
+    "ko": "지은탁이 집을 나와 일하러 간 스키장으로 등장합니다.",
+    "en": "It appears as the ski resort where Ji Eun-tak goes to work after leaving home."
+   }
   },
-  "rankings": [
-    {
-      "workId": "work-goblin",
-      "placeId": "place-balwangsan-cable-car",
-      "score": 0.351465,
-      "reviewed": true,
-      "reviewedAt": "2026-08-09",
-      "reviewedBy": "Earthworm-jk/Codex",
-      "reason": {
-        "ko": "지은탁이 집을 나와 일하러 간 스키장으로 등장합니다.",
-        "en": "It appears as the ski resort where Ji Eun-tak goes to work after leaving home."
-      }
-    },
-    {
-      "workId": "work-goblin",
-      "placeId": "place-deoksugung-stone-wall-road",
-      "score": 0.422785,
-      "reviewed": true,
-      "reviewedAt": "2026-08-09",
-      "reviewedBy": "Earthworm-jk/Codex",
-      "reason": {
-        "ko": "김신이 돌담길을 지나며 대화하는 장면으로 등장합니다.",
-        "en": "It appears in scenes where Kim Shin walks along the stonewall road while talking."
-      }
-    },
-    {
-      "workId": "work-goblin",
-      "placeId": "place-eomma-son-makguksu",
-      "score": 0.27466,
-      "reviewed": false
-    },
-    {
-      "workId": "work-goblin",
-      "placeId": "place-gyeonggijeon-shrine",
-      "score": 0.213022,
-      "reviewed": false
-    },
-    {
-      "workId": "work-goblin",
-      "placeId": "place-lala-muri",
-      "score": 0.458038,
-      "reviewed": true,
-      "reviewedAt": "2026-08-09",
-      "reviewedBy": "Earthworm-jk/Codex",
-      "reason": {
-        "ko": "어린 지은탁이 살던 집으로 등장합니다.",
-        "en": "It appears as the home where young Ji Eun-tak lives."
-      }
-    },
-    {
-      "workId": "work-goblin",
-      "placeId": "place-oak-valley-resort",
-      "score": 0.257709,
-      "reviewed": false
-    },
-    {
-      "workId": "work-goblin",
-      "placeId": "place-samyang-ranch",
-      "score": 0.4026,
-      "reviewed": true,
-      "reviewedAt": "2026-08-09",
-      "reviewedBy": "Earthworm-jk/Codex",
-      "reason": {
-        "ko": "김신이 중천의 들판을 걷는 장면에 등장합니다.",
-        "en": "It appears in the grassland scene where Kim Shin walks through the afterlife."
-      }
-    },
-    {
-      "workId": "work-goblin",
-      "placeId": "place-seoullo-7017",
-      "score": 0.29836,
-      "reviewed": false
-    },
-    {
-      "workId": "work-goblin",
-      "placeId": "place-skybay-hotel-gyeongpo",
-      "score": 0.286547,
-      "reviewed": false
-    },
-    {
-      "workId": "work-goblin",
-      "placeId": "place-woljeongsa-fir-forest",
-      "score": 0.46184,
-      "reviewed": true,
-      "reviewedAt": "2026-08-09",
-      "reviewedBy": "Earthworm-jk/Codex",
-      "reason": {
-        "ko": "김신이 집을 나온 지은탁을 따라가던 숲길로 등장합니다.",
-        "en": "It is the forest trail where Kim Shin follows Ji Eun-tak after she leaves home."
-      }
-    },
-    {
-      "workId": "work-goblin",
-      "placeId": "place-woljeongsa-temple",
-      "score": 0.387347,
-      "reviewed": true,
-      "reviewedAt": "2026-08-09",
-      "reviewedBy": "Earthworm-jk/Codex",
-      "reason": {
-        "ko": "지은탁이 아르바이트를 마치고 집으로 가는 길로 등장합니다.",
-        "en": "It appears on Ji Eun-tak's route home after finishing her part-time job."
-      }
-    },
-    {
-      "workId": "work-goblin",
-      "placeId": "place-yeongjin-beach",
-      "score": 0.31126,
-      "reviewed": true,
-      "reviewedAt": "2026-08-09",
-      "reviewedBy": "Earthworm-jk/Codex",
-      "reason": {
-        "ko": "도깨비 방파제로 알려진 바닷가 촬영지입니다.",
-        "en": "It is the seaside filming location commonly known as the Goblin Breakwater."
-      }
-    },
-    {
-      "workId": "work-little-women",
-      "placeId": "place-balwangsan-cable-car",
-      "score": 0.260942,
-      "reviewed": false
-    },
-    {
-      "workId": "work-little-women",
-      "placeId": "place-deoksugung-stone-wall-road",
-      "score": 0.242275,
-      "reviewed": false
-    },
-    {
-      "workId": "work-little-women",
-      "placeId": "place-eomma-son-makguksu",
-      "score": 0.130688,
-      "reviewed": false
-    },
-    {
-      "workId": "work-little-women",
-      "placeId": "place-gyeonggijeon-shrine",
-      "score": 0.109182,
-      "reviewed": false
-    },
-    {
-      "workId": "work-little-women",
-      "placeId": "place-lala-muri",
-      "score": 0.2079,
-      "reviewed": false
-    },
-    {
-      "workId": "work-little-women",
-      "placeId": "place-oak-valley-resort",
-      "score": 0.293027,
-      "reviewed": true,
-      "reviewedAt": "2026-08-09",
-      "reviewedBy": "Earthworm-jk/Codex",
-      "reason": {
-        "ko": "오인혜의 친구 박효린의 집으로 등장합니다.",
-        "en": "It appears as the home of Oh In-hye's friend Park Hyo-rin."
-      }
-    },
-    {
-      "workId": "work-little-women",
-      "placeId": "place-samyang-ranch",
-      "score": 0.152438,
-      "reviewed": false
-    },
-    {
-      "workId": "work-little-women",
-      "placeId": "place-seoullo-7017",
-      "score": 0.259498,
-      "reviewed": true,
-      "reviewedAt": "2026-08-09",
-      "reviewedBy": "Earthworm-jk/Codex",
-      "reason": {
-        "ko": "오인주가 화영의 SNS 사진과 유서의 단서를 확인하는 장면에 등장합니다.",
-        "en": "It appears in the scene where Oh In-joo connects Hwa-young's social post with the note she left."
-      }
-    },
-    {
-      "workId": "work-little-women",
-      "placeId": "place-skybay-hotel-gyeongpo",
-      "score": 0.186396,
-      "reviewed": false
-    },
-    {
-      "workId": "work-little-women",
-      "placeId": "place-woljeongsa-fir-forest",
-      "score": 0.1659,
-      "reviewed": false
-    },
-    {
-      "workId": "work-little-women",
-      "placeId": "place-woljeongsa-temple",
-      "score": 0.23355,
-      "reviewed": false
-    },
-    {
-      "workId": "work-little-women",
-      "placeId": "place-yeongjin-beach",
-      "score": 0.104232,
-      "reviewed": false
-    },
-    {
-      "workId": "work-the-king",
-      "placeId": "place-balwangsan-cable-car",
-      "score": 0.122222,
-      "reviewed": false
-    },
-    {
-      "workId": "work-the-king",
-      "placeId": "place-deoksugung-stone-wall-road",
-      "score": 0.185677,
-      "reviewed": false
-    },
-    {
-      "workId": "work-the-king",
-      "placeId": "place-eomma-son-makguksu",
-      "score": 0.143868,
-      "reviewed": false
-    },
-    {
-      "workId": "work-the-king",
-      "placeId": "place-gyeonggijeon-shrine",
-      "score": 0.393907,
-      "reviewed": true,
-      "reviewedAt": "2026-08-09",
-      "reviewedBy": "Earthworm-jk/Codex",
-      "reason": {
-        "ko": "이곤이 박물관을 방문하는 장면에 등장합니다.",
-        "en": "It appears in the scene where Lee Gon visits the museum."
-      }
-    },
-    {
-      "workId": "work-the-king",
-      "placeId": "place-lala-muri",
-      "score": 0.173241,
-      "reviewed": false
-    },
-    {
-      "workId": "work-the-king",
-      "placeId": "place-oak-valley-resort",
-      "score": 0.196121,
-      "reviewed": false
-    },
-    {
-      "workId": "work-the-king",
-      "placeId": "place-samyang-ranch",
-      "score": 0.240096,
-      "reviewed": false
-    },
-    {
-      "workId": "work-the-king",
-      "placeId": "place-seoullo-7017",
-      "score": 0.243273,
-      "reviewed": false
-    },
-    {
-      "workId": "work-the-king",
-      "placeId": "place-skybay-hotel-gyeongpo",
-      "score": 0.138697,
-      "reviewed": false
-    },
-    {
-      "workId": "work-the-king",
-      "placeId": "place-woljeongsa-fir-forest",
-      "score": 0.167472,
-      "reviewed": false
-    },
-    {
-      "workId": "work-the-king",
-      "placeId": "place-woljeongsa-temple",
-      "score": 0.20504,
-      "reviewed": false
-    },
-    {
-      "workId": "work-the-king",
-      "placeId": "place-yeongjin-beach",
-      "score": 0.163115,
-      "reviewed": false
-    },
-    {
-      "workId": "work-yumi-cells",
-      "placeId": "place-balwangsan-cable-car",
-      "score": 0.212589,
-      "reviewed": false
-    },
-    {
-      "workId": "work-yumi-cells",
-      "placeId": "place-deoksugung-stone-wall-road",
-      "score": 0.183477,
-      "reviewed": false
-    },
-    {
-      "workId": "work-yumi-cells",
-      "placeId": "place-eomma-son-makguksu",
-      "score": 0.327651,
-      "reviewed": true,
-      "reviewedAt": "2026-08-09",
-      "reviewedBy": "Earthworm-jk/Codex",
-      "reason": {
-        "ko": "유미와 웅이 첫 주말 여행 중 식사한 장소입니다.",
-        "en": "It is the restaurant where Yumi and Woong eat during their first weekend trip."
-      }
-    },
-    {
-      "workId": "work-yumi-cells",
-      "placeId": "place-gyeonggijeon-shrine",
-      "score": 0.256486,
-      "reviewed": false
-    },
-    {
-      "workId": "work-yumi-cells",
-      "placeId": "place-lala-muri",
-      "score": 0.156624,
-      "reviewed": false
-    },
-    {
-      "workId": "work-yumi-cells",
-      "placeId": "place-oak-valley-resort",
-      "score": 0.195558,
-      "reviewed": false
-    },
-    {
-      "workId": "work-yumi-cells",
-      "placeId": "place-samyang-ranch",
-      "score": 0.283378,
-      "reviewed": false
-    },
-    {
-      "workId": "work-yumi-cells",
-      "placeId": "place-seoullo-7017",
-      "score": 0.276812,
-      "reviewed": false
-    },
-    {
-      "workId": "work-yumi-cells",
-      "placeId": "place-skybay-hotel-gyeongpo",
-      "score": 0.422303,
-      "reviewed": true,
-      "reviewedAt": "2026-08-09",
-      "reviewedBy": "Earthworm-jk/Codex",
-      "reason": {
-        "ko": "유미와 웅의 첫 커플 주말 여행 숙소로 등장합니다.",
-        "en": "It appears as the hotel for Yumi and Woong's first weekend trip as a couple."
-      }
-    },
-    {
-      "workId": "work-yumi-cells",
-      "placeId": "place-woljeongsa-fir-forest",
-      "score": 0.175448,
-      "reviewed": false
-    },
-    {
-      "workId": "work-yumi-cells",
-      "placeId": "place-woljeongsa-temple",
-      "score": 0.131865,
-      "reviewed": false
-    },
-    {
-      "workId": "work-yumi-cells",
-      "placeId": "place-yeongjin-beach",
-      "score": 0.136033,
-      "reviewed": false
-    }
-  ]
+  {
+   "workId": "work-goblin",
+   "placeId": "place-deoksugung-stone-wall-road",
+   "score": 0.422785,
+   "reviewed": true,
+   "reviewedAt": "2026-08-09",
+   "reviewedBy": "Earthworm-jk/Codex",
+   "reason": {
+    "ko": "김신이 돌담길을 지나며 대화하는 장면으로 등장합니다.",
+    "en": "It appears in scenes where Kim Shin walks along the stonewall road while talking."
+   }
+  },
+  {
+   "workId": "work-goblin",
+   "placeId": "place-eomma-son-makguksu",
+   "score": 0.27466,
+   "reviewed": false
+  },
+  {
+   "workId": "work-goblin",
+   "placeId": "place-gyeonggijeon-shrine",
+   "score": 0.213022,
+   "reviewed": false
+  },
+  {
+   "workId": "work-goblin",
+   "placeId": "place-lala-muri",
+   "score": 0.458038,
+   "reviewed": true,
+   "reviewedAt": "2026-08-09",
+   "reviewedBy": "Earthworm-jk/Codex",
+   "reason": {
+    "ko": "어린 지은탁이 살던 집으로 등장합니다.",
+    "en": "It appears as the home where young Ji Eun-tak lives."
+   }
+  },
+  {
+   "workId": "work-goblin",
+   "placeId": "place-oak-valley-resort",
+   "score": 0.257709,
+   "reviewed": false
+  },
+  {
+   "workId": "work-goblin",
+   "placeId": "place-samyang-ranch",
+   "score": 0.4026,
+   "reviewed": true,
+   "reviewedAt": "2026-08-09",
+   "reviewedBy": "Earthworm-jk/Codex",
+   "reason": {
+    "ko": "김신이 중천의 들판을 걷는 장면에 등장합니다.",
+    "en": "It appears in the grassland scene where Kim Shin walks through the afterlife."
+   }
+  },
+  {
+   "workId": "work-goblin",
+   "placeId": "place-seoullo-7017",
+   "score": 0.29836,
+   "reviewed": false
+  },
+  {
+   "workId": "work-goblin",
+   "placeId": "place-skybay-hotel-gyeongpo",
+   "score": 0.286547,
+   "reviewed": false
+  },
+  {
+   "workId": "work-goblin",
+   "placeId": "place-woljeongsa-fir-forest",
+   "score": 0.46184,
+   "reviewed": true,
+   "reviewedAt": "2026-08-09",
+   "reviewedBy": "Earthworm-jk/Codex",
+   "reason": {
+    "ko": "김신이 집을 나온 지은탁을 따라가던 숲길로 등장합니다.",
+    "en": "It is the forest trail where Kim Shin follows Ji Eun-tak after she leaves home."
+   }
+  },
+  {
+   "workId": "work-goblin",
+   "placeId": "place-woljeongsa-temple",
+   "score": 0.387347,
+   "reviewed": true,
+   "reviewedAt": "2026-08-09",
+   "reviewedBy": "Earthworm-jk/Codex",
+   "reason": {
+    "ko": "지은탁이 아르바이트를 마치고 집으로 가는 길로 등장합니다.",
+    "en": "It appears on Ji Eun-tak's route home after finishing her part-time job."
+   }
+  },
+  {
+   "workId": "work-goblin",
+   "placeId": "place-yeongjin-beach",
+   "score": 0.31126,
+   "reviewed": true,
+   "reviewedAt": "2026-08-09",
+   "reviewedBy": "Earthworm-jk/Codex",
+   "reason": {
+    "ko": "도깨비 방파제로 알려진 바닷가 촬영지입니다.",
+    "en": "It is the seaside filming location commonly known as the Goblin Breakwater."
+   }
+  },
+  {
+   "workId": "work-little-women",
+   "placeId": "place-balwangsan-cable-car",
+   "score": 0.260942,
+   "reviewed": false
+  },
+  {
+   "workId": "work-little-women",
+   "placeId": "place-deoksugung-stone-wall-road",
+   "score": 0.242275,
+   "reviewed": false
+  },
+  {
+   "workId": "work-little-women",
+   "placeId": "place-eomma-son-makguksu",
+   "score": 0.130688,
+   "reviewed": false
+  },
+  {
+   "workId": "work-little-women",
+   "placeId": "place-gyeonggijeon-shrine",
+   "score": 0.109182,
+   "reviewed": false
+  },
+  {
+   "workId": "work-little-women",
+   "placeId": "place-lala-muri",
+   "score": 0.2079,
+   "reviewed": false
+  },
+  {
+   "workId": "work-little-women",
+   "placeId": "place-oak-valley-resort",
+   "score": 0.293027,
+   "reviewed": true,
+   "reviewedAt": "2026-08-09",
+   "reviewedBy": "Earthworm-jk/Codex",
+   "reason": {
+    "ko": "오인혜의 친구 박효린의 집으로 등장합니다.",
+    "en": "It appears as the home of Oh In-hye's friend Park Hyo-rin."
+   }
+  },
+  {
+   "workId": "work-little-women",
+   "placeId": "place-samyang-ranch",
+   "score": 0.152438,
+   "reviewed": false
+  },
+  {
+   "workId": "work-little-women",
+   "placeId": "place-seoullo-7017",
+   "score": 0.259498,
+   "reviewed": true,
+   "reviewedAt": "2026-08-09",
+   "reviewedBy": "Earthworm-jk/Codex",
+   "reason": {
+    "ko": "오인주가 화영의 SNS 사진과 유서의 단서를 확인하는 장면에 등장합니다.",
+    "en": "It appears in the scene where Oh In-joo connects Hwa-young's social post with the note she left."
+   }
+  },
+  {
+   "workId": "work-little-women",
+   "placeId": "place-skybay-hotel-gyeongpo",
+   "score": 0.186396,
+   "reviewed": false
+  },
+  {
+   "workId": "work-little-women",
+   "placeId": "place-woljeongsa-fir-forest",
+   "score": 0.1659,
+   "reviewed": false
+  },
+  {
+   "workId": "work-little-women",
+   "placeId": "place-woljeongsa-temple",
+   "score": 0.23355,
+   "reviewed": false
+  },
+  {
+   "workId": "work-little-women",
+   "placeId": "place-yeongjin-beach",
+   "score": 0.104232,
+   "reviewed": false
+  },
+  {
+   "workId": "work-the-king",
+   "placeId": "place-balwangsan-cable-car",
+   "score": 0.122222,
+   "reviewed": false
+  },
+  {
+   "workId": "work-the-king",
+   "placeId": "place-deoksugung-stone-wall-road",
+   "score": 0.185677,
+   "reviewed": false
+  },
+  {
+   "workId": "work-the-king",
+   "placeId": "place-eomma-son-makguksu",
+   "score": 0.143868,
+   "reviewed": false
+  },
+  {
+   "workId": "work-the-king",
+   "placeId": "place-gyeonggijeon-shrine",
+   "score": 0.393907,
+   "reviewed": true,
+   "reviewedAt": "2026-08-09",
+   "reviewedBy": "Earthworm-jk/Codex",
+   "reason": {
+    "ko": "이곤이 박물관을 방문하는 장면에 등장합니다.",
+    "en": "It appears in the scene where Lee Gon visits the museum."
+   }
+  },
+  {
+   "workId": "work-the-king",
+   "placeId": "place-lala-muri",
+   "score": 0.173241,
+   "reviewed": false
+  },
+  {
+   "workId": "work-the-king",
+   "placeId": "place-oak-valley-resort",
+   "score": 0.196121,
+   "reviewed": false
+  },
+  {
+   "workId": "work-the-king",
+   "placeId": "place-samyang-ranch",
+   "score": 0.240096,
+   "reviewed": false
+  },
+  {
+   "workId": "work-the-king",
+   "placeId": "place-seoullo-7017",
+   "score": 0.243273,
+   "reviewed": false
+  },
+  {
+   "workId": "work-the-king",
+   "placeId": "place-skybay-hotel-gyeongpo",
+   "score": 0.138697,
+   "reviewed": false
+  },
+  {
+   "workId": "work-the-king",
+   "placeId": "place-woljeongsa-fir-forest",
+   "score": 0.167472,
+   "reviewed": false
+  },
+  {
+   "workId": "work-the-king",
+   "placeId": "place-woljeongsa-temple",
+   "score": 0.20504,
+   "reviewed": false
+  },
+  {
+   "workId": "work-the-king",
+   "placeId": "place-yeongjin-beach",
+   "score": 0.163115,
+   "reviewed": false
+  },
+  {
+   "workId": "work-yumi-cells",
+   "placeId": "place-balwangsan-cable-car",
+   "score": 0.212589,
+   "reviewed": false
+  },
+  {
+   "workId": "work-yumi-cells",
+   "placeId": "place-deoksugung-stone-wall-road",
+   "score": 0.183477,
+   "reviewed": false
+  },
+  {
+   "workId": "work-yumi-cells",
+   "placeId": "place-eomma-son-makguksu",
+   "score": 0.327651,
+   "reviewed": true,
+   "reviewedAt": "2026-08-09",
+   "reviewedBy": "Earthworm-jk/Codex",
+   "reason": {
+    "ko": "유미와 웅이 첫 주말 여행 중 식사한 장소입니다.",
+    "en": "It is the restaurant where Yumi and Woong eat during their first weekend trip."
+   }
+  },
+  {
+   "workId": "work-yumi-cells",
+   "placeId": "place-gyeonggijeon-shrine",
+   "score": 0.256486,
+   "reviewed": false
+  },
+  {
+   "workId": "work-yumi-cells",
+   "placeId": "place-lala-muri",
+   "score": 0.156624,
+   "reviewed": false
+  },
+  {
+   "workId": "work-yumi-cells",
+   "placeId": "place-oak-valley-resort",
+   "score": 0.195558,
+   "reviewed": false
+  },
+  {
+   "workId": "work-yumi-cells",
+   "placeId": "place-samyang-ranch",
+   "score": 0.283378,
+   "reviewed": false
+  },
+  {
+   "workId": "work-yumi-cells",
+   "placeId": "place-seoullo-7017",
+   "score": 0.276812,
+   "reviewed": false
+  },
+  {
+   "workId": "work-yumi-cells",
+   "placeId": "place-skybay-hotel-gyeongpo",
+   "score": 0.422303,
+   "reviewed": true,
+   "reviewedAt": "2026-08-09",
+   "reviewedBy": "Earthworm-jk/Codex",
+   "reason": {
+    "ko": "유미와 웅의 첫 커플 주말 여행 숙소로 등장합니다.",
+    "en": "It appears as the hotel for Yumi and Woong's first weekend trip as a couple."
+   }
+  },
+  {
+   "workId": "work-yumi-cells",
+   "placeId": "place-woljeongsa-fir-forest",
+   "score": 0.175448,
+   "reviewed": false
+  },
+  {
+   "workId": "work-yumi-cells",
+   "placeId": "place-woljeongsa-temple",
+   "score": 0.131865,
+   "reviewed": false
+  },
+  {
+   "workId": "work-yumi-cells",
+   "placeId": "place-yeongjin-beach",
+   "score": 0.136033,
+   "reviewed": false
+  },
+  {
+   "workId": "work-goblin",
+   "placeId": "place-bexco",
+   "score": 0.212545,
+   "reviewed": false
+  },
+  {
+   "workId": "work-goblin",
+   "placeId": "place-busan-cinema-center",
+   "score": 0.218213,
+   "reviewed": false
+  },
+  {
+   "workId": "work-yumi-cells",
+   "placeId": "place-bexco",
+   "score": 0.111861,
+   "reviewed": false
+  },
+  {
+   "workId": "work-yumi-cells",
+   "placeId": "place-busan-cinema-center",
+   "score": 0.166559,
+   "reviewed": false
+  },
+  {
+   "workId": "work-little-women",
+   "placeId": "place-bexco",
+   "score": 0.154928,
+   "reviewed": false
+  },
+  {
+   "workId": "work-little-women",
+   "placeId": "place-busan-cinema-center",
+   "score": 0.14508,
+   "reviewed": false
+  },
+  {
+   "workId": "work-the-king",
+   "placeId": "place-bexco",
+   "score": 0.310068,
+   "reviewed": true,
+   "reviewedAt": "2026-08-09",
+   "reviewedBy": "menteur-Ran/Claude",
+   "reason": {
+    "ko": "5화에서 태을이 코레아를 탐험하며 서울행 고속열차를 타러 향하는 '부산 CTX역'으로 등장한 장면 근거",
+    "en": "Scene basis: appears in episode 5 as 'Busan CTX Station' where Tae-eul heads to board a train to Seoul"
+   }
+  },
+  {
+   "workId": "work-the-king",
+   "placeId": "place-busan-cinema-center",
+   "score": 0.368012,
+   "reviewed": true,
+   "reviewedAt": "2026-08-09",
+   "reviewedBy": "menteur-Ran/Claude",
+   "reason": {
+    "ko": "이곤이 경호대와 함께 이림의 부하들과 싸워 정태을을 구하는 장면 근거",
+    "en": "Scene basis: Lee Gon and his guards fight Lee Lim's men to rescue Jeong Tae-eul"
+   }
+  }
+ ]
 }
