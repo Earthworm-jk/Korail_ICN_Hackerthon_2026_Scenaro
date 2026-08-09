@@ -44,22 +44,20 @@ export function project(latitude: number, longitude: number): MapPosition {
 }
 
 /**
- * 시안이 런타임에 다시 지정하는 표시 영역 — 남한 권역 확대 crop.
- * 정적 SVG는 `0 0 360 430`으로 저장돼 있지만 시안 스크립트가 즉시 이 값으로 덮어쓴다.
- * 좌표계 자체는 360×430 그대로이고 보이는 창만 좁아진다.
+ * 표시 영역 — 남한 권역 확대 crop. 좌표계는 360×430 그대로이고 보이는 창만 좁아진다.
+ *
+ * 시안 스크립트는 `80 215 220 205`를 쓴다. 그 값은 시안이 쓰던 꼭짓점 19개짜리 경계에
+ * 맞춰 잡힌 것이라, 실제 해안선(lib/korea-outline.ts)을 올리면 왼쪽에 빈 바다가 47단위
+ * 남고 아래로 제주도가 잘린다. 실제 육지 범위(x 127.5-298.1, y 223.6-455.5)에 여백을
+ * 두어 다시 잡았다 — 잔차 표에 의도적 차이로 기록한다.
  */
-export const VIEW_BOX = "80 215 220 205";
+export const VIEW_BOX = "116 212 194 256";
 
-/**
- * 한반도 남부 경계 (Natural Earth) — 시안 정적 SVG의 `sc-map-land-south` path 원문.
- * 북부 path(`sc-map-land-north`)는 시안 CSS가 `display: none`으로 숨기고 위 crop 밖이라
- * 렌더 결과가 같으므로 옮기지 않는다.
- */
-export const LAND_PATH_SOUTH =
-  "M133.336,262.079L135.502,258.106L150.954,259.666L164.44,239.831L188.904,237.696" +
-  "L203.641,234.789L208.624,224.093L238.505,275.94L247.073,304.076L247.345,353.502" +
-  "L234.298,376.832L202.952,384.949L175.282,402.406L144.101,406L140.23,383.084" +
-  "L146.645,351.27L131.35,306.612L157.061,299.33Z";
+/** VIEW_BOX를 좌표로 푼 값 — 라벨 배치가 표시 영역을 알아야 한다 */
+export const VIEW_BOX_BOUNDS = (() => {
+  const [x, y, width, height] = VIEW_BOX.split(" ").map(Number);
+  return { left: x, top: y, right: x + width, bottom: y + height };
+})();
 
 /** 시안이 동선에 쓴 곡률 — d3.curveCatmullRom.alpha(.45) */
 export const ROUTE_CURVE_ALPHA = 0.45;

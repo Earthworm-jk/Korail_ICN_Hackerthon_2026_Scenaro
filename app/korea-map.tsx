@@ -16,12 +16,8 @@
  *   역 허브 모델(역 단위 체류)에 맞춰 권역 라벨로 바꿨다 — PR 본문 잔차 표에 기록.
  */
 import type { ReactNode } from "react";
-import {
-  catmullRomPath,
-  LAND_PATH_SOUTH,
-  project,
-  VIEW_BOX,
-} from "@/lib/korea-map-projection";
+import { catmullRomPath, project, VIEW_BOX } from "@/lib/korea-map-projection";
+import { KOREA_OUTLINE_PATH } from "@/lib/korea-outline";
 import { routeStationSequence } from "@/lib/map-route";
 import {
   LABEL_FONT_SIZE,
@@ -67,6 +63,17 @@ function MapLabels({ labels }: { labels: readonly PlacedLabel[] }) {
                 strokeWidth={0.8}
               />
             )}
+            {/* 알약 배경 — 해안선·동선 위에 글씨가 얹히면 읽히지 않는다 (발표자료 라벨 방식) */}
+            <rect
+              x={label.left - 3.5}
+              y={label.top}
+              width={label.right - label.left + 7}
+              height={label.bottom - label.top}
+              rx={4}
+              className="fill-sc-surface stroke-sc-line"
+              strokeWidth={0.6}
+              opacity={0.94}
+            />
             <text
               x={label.x}
               y={label.y}
@@ -108,6 +115,8 @@ export type KoreaMapPanelProps = {
   tr: (key: MessageKey) => string;
   /** 헤딩 우측 액션 슬롯 (3단계 "선택한 장소만 보기" 등) */
   headingAction?: ReactNode;
+  /** 긴 일정을 스크롤하는 동안 지도를 붙잡아 둔다 (4단계) */
+  sticky?: boolean;
   /**
    * 테마체험 권역 오버레이 자리 — 이 트랙 범위 밖(#78 P1, 별도 스레드).
    * SVG 좌표계 안에 그대로 렌더되므로 권역 원·라벨을 이 슬롯으로 넘기면 된다.
@@ -123,6 +132,7 @@ export function KoreaMapPanel({
   omittedCount = 0,
   tr,
   headingAction,
+  sticky = false,
   experienceOverlay,
 }: KoreaMapPanelProps) {
   const isRoute = kind === "route";
@@ -160,7 +170,9 @@ export function KoreaMapPanel({
   const hasPoints = placePoints.length > 0 || routeStations.length > 0;
 
   return (
-    <aside className="min-w-0 rounded-2xl border bg-sc-surface p-4 sm:p-[18px]">
+    <aside
+      className={`min-w-0 rounded-2xl border bg-sc-surface p-4 sm:p-[18px] ${sticky ? "md:sticky md:top-4" : ""}`}
+    >
       <div className="mb-2 flex flex-wrap items-center justify-between gap-x-2.5 gap-y-2">
         <h3 className="font-medium whitespace-nowrap">
           {tr(isRoute ? "map.routeTitle" : "map.placesTitle")}
@@ -176,13 +188,15 @@ export function KoreaMapPanel({
           viewBox={VIEW_BOX}
           role="img"
           aria-label={tr(isRoute ? "map.ariaRoute" : "map.ariaPlaces")}
-          className="block max-h-[430px] w-full"
+          className="block w-full"
         >
           <desc>{tr(isRoute ? "map.descRoute" : "map.descPlaces")}</desc>
           <path
-            d={LAND_PATH_SOUTH}
+            d={KOREA_OUTLINE_PATH}
+            fillRule="evenodd"
             className="fill-sc-blue-soft stroke-sc-line"
-            strokeWidth={1.4}
+            strokeWidth={0.8}
+            strokeLinejoin="round"
           />
 
           {/* 테마체험 권역 슬롯 — 경계 위, 점 아래 (시안 순서와 동일) */}
@@ -299,6 +313,7 @@ export function ItineraryRouteMap({
   stations,
   tr,
   headingAction,
+  sticky,
   experienceOverlay,
 }: {
   days: readonly ItineraryDayLike[];
@@ -307,6 +322,7 @@ export function ItineraryRouteMap({
   stations: readonly MapStation[];
   tr: (key: MessageKey) => string;
   headingAction?: ReactNode;
+  sticky?: boolean;
   experienceOverlay?: ReactNode;
 }) {
   const routeStationIds = routeStationSequence(days.flatMap((day) => day.rides));
@@ -324,6 +340,7 @@ export function ItineraryRouteMap({
       omittedCount={placedIds.size - placed.length}
       tr={tr}
       headingAction={headingAction}
+      sticky={sticky}
       experienceOverlay={experienceOverlay}
     />
   );

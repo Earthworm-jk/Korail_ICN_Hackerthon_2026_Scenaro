@@ -693,7 +693,7 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates }:
             </p>
           )}
           {/* #14 v0.6 sc-place-layout — 좌측 후보 목록 + 우측 지도 (md 미만은 세로 적층) */}
-          <div className="mt-3 grid gap-[18px] md:grid-cols-[minmax(0,1.25fr)_minmax(260px,0.75fr)]">
+          <div className="mt-3 grid gap-[18px] md:grid-cols-[minmax(0,1.05fr)_minmax(300px,0.95fr)]">
           <div className="min-w-0">
           <ul className="space-y-2">
             {/* #43 확정: 미확인 후보도 같은 목록에서 선택 가능 — 카드에 경고 배지 */}
@@ -784,7 +784,7 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates }:
 
           {displayedDays && (
             // #14 v0.6 sc-result-grid — 좌측 일정 타임라인 + 우측 지도·경고·실행 지원
-            <div className="mt-4 grid gap-[18px] md:grid-cols-[minmax(0,1.15fr)_minmax(320px,0.85fr)]">
+            <div className="mt-4 grid gap-[18px] md:grid-cols-[minmax(0,1fr)_minmax(360px,1fr)] md:items-start">
               <div className="min-w-0 space-y-4">
               {displayedDays.map((day) => {
                 const baseDay = baseDays?.find((d) => d.date === day.date);
@@ -842,6 +842,7 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates }:
                 places={mappablePlaces}
                 stations={mapStations}
                 tr={tr}
+                sticky
                 /* 테마체험 권역 오버레이·토글은 #78 P1 별도 스레드 몫 —
                    experienceOverlay·headingAction 슬롯이 그 자리다 */
               />

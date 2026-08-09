@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { catmullRomPath, LAND_PATH_SOUTH, project, VIEW_BOX } from "../korea-map-projection";
+import { catmullRomPath, project, VIEW_BOX } from "../korea-map-projection";
 import { loadRepositories } from "../repositories/json";
 
 /**
@@ -59,8 +59,25 @@ describe("한반도 지도 투영", () => {
     }
   });
 
-  it("경계 path는 시안 원문을 그대로 쓴다", () => {
-    expect(LAND_PATH_SOUTH.startsWith("M133.336,262.079")).toBe(true);
-    expect(LAND_PATH_SOUTH.endsWith("Z")).toBe(true);
+});
+
+describe("생성된 해안선", () => {
+  it("표시 영역을 덮는 좌표계로 구워져 있다", async () => {
+    const { KOREA_OUTLINE_PATH } = await import("../korea-outline");
+    const numbers = KOREA_OUTLINE_PATH.match(/-?\d+\.?\d*/g)!.map(Number);
+    const xs = numbers.filter((_, i) => i % 2 === 0);
+    const ys = numbers.filter((_, i) => i % 2 === 1);
+    const [minX, minY, width, height] = VIEW_BOX.split(" ").map(Number);
+    // 남한 해안선이 표시 창을 가로·세로로 채워야 한다 — 투영 상수가 어긋나면 여기서 깨진다
+    expect(Math.min(...xs)).toBeLessThan(minX + width * 0.35);
+    expect(Math.max(...xs)).toBeGreaterThan(minX + width * 0.6);
+    expect(Math.min(...ys)).toBeLessThan(minY + height * 0.3);
+    expect(Math.max(...ys)).toBeGreaterThan(minY + height * 0.8);
+  });
+
+  it("시안의 19각형보다 해상도가 높다", async () => {
+    const { KOREA_OUTLINE_PATH } = await import("../korea-outline");
+    const vertices = (KOREA_OUTLINE_PATH.match(/[ML]/g) ?? []).length;
+    expect(vertices).toBeGreaterThan(200);
   });
 });

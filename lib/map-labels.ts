@@ -10,6 +10,7 @@
  *
  * 컴포넌트에서 분리해 둔 이유: 겹침 여부는 눈이 아니라 테스트로 확인해야 하는 값이다.
  */
+import { VIEW_BOX_BOUNDS } from "./korea-map-projection";
 
 /**
  * 라벨 글자 크기 (viewBox 단위).
@@ -23,10 +24,13 @@ const MAX_LINES = 2;
 const LABEL_OFFSET_X = 9;
 /** 라벨 사이 최소 여백 */
 const LABEL_PADDING = 1.5;
-/** 표시 영역 경계 (VIEW_BOX "80 215 220 205") */
-const LABEL_BOUNDS = { left: 80, right: 300, top: 215, bottom: 420 };
-/** 자리를 찾을 때 시도하는 세로 이동량 — 제자리부터, 위아래 번갈아 */
-const LABEL_DY_CANDIDATES = [0, -13, 13, -26, 26, -39, 39];
+/** 표시 영역 경계 — VIEW_BOX에서 파생한다. 따로 적어 두면 창을 옮길 때 어긋난다 */
+const LABEL_BOUNDS = VIEW_BOX_BOUNDS;
+/**
+ * 자리를 찾을 때 시도하는 세로 이동량 — 제자리부터, 위아래 번갈아.
+ * 두 줄 라벨(긴 영문 역명)은 상자가 높아 가까운 자리가 잘 막히므로 멀리까지 훑는다.
+ */
+const LABEL_DY_CANDIDATES = [0, -13, 13, -26, 26, -39, 39, -52, 52, -65, 65];
 
 /** 한글·한자·가나는 전각(1em), 라틴 문자는 평균 0.55em로 잡는다 */
 const WIDE_CHAR = /[ᄀ-ᇿ぀-ヿ㄰-㆏一-鿿가-힯]/;

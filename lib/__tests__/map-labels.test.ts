@@ -103,14 +103,19 @@ describe("지도 라벨 배치", () => {
     expect(label.lines.join("")).toBe(long);
   });
 
-  it("라벨은 자기 지점에서 멀리 떠나지 않는다", () => {
+  it.each(["ko", "en"] as const)("라벨은 자기 지점에서 멀리 떠나지 않는다 (%s)", (locale) => {
     const seeds: LabelSeed[] = stations.map((station) => {
       const at = project(station.latitude, station.longitude);
-      return { key: station.stationId, text: nameById.get(station.stationId)!.ko, x: at.x, y: at.y };
+      return {
+        key: station.stationId,
+        text: nameById.get(station.stationId)![locale],
+        x: at.x,
+        y: at.y,
+      };
     });
     for (const label of layoutLabels(seeds)) {
-      // 39는 후보 목록의 최대 이동량 — 이보다 멀면 어느 점의 이름인지 알 수 없다
-      expect(Math.abs(label.y - label.from.y), label.text).toBeLessThanOrEqual(39);
+      // 65는 후보 목록의 최대 이동량 — 이보다 멀면 어느 점의 이름인지 알 수 없다
+      expect(Math.abs(label.y - label.from.y), label.text).toBeLessThanOrEqual(65);
     }
   });
 });
