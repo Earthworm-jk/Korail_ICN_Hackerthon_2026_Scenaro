@@ -178,16 +178,8 @@ export const messages = {
     "summary.placesCount": "{n}곳 선택",
     "search.actor.placeholder": "배우 이름으로 검색",
     "search.work.placeholder": "드라마·영화 제목으로 검색",
-    "support.title": "실행 지원",
-    "support.subtitle": "공항–철도 이동과 짐 보관, 일정에 포함된 역의 시설을 안내합니다. 좌석·보관 공간의 현재 이용 가능 여부는 보장하지 않습니다.",
-    "support.arrivalTitle": "공항 진입 — 인천공항 T1 → 서울역",
-    "support.arrivalStep1": "제1터미널 교통센터에서 공항철도 직통열차에 탑승합니다.",
-    "support.arrivalStep2": "서울역까지 직통 43분입니다 (중간 정차 없음).",
-    "support.arrivalStep3": "서울역 KTX 맞이방으로 이동해 일정의 열차로 환승합니다.",
-    "support.returnTitle": "귀국 이동 — 서울역 → 인천공항 T1",
-    "support.returnStep1": "일정의 마지막 열차로 서울역에 도착합니다.",
-    "support.returnStep2": "공항철도 직통열차로 환승해 제1터미널까지 43분입니다.",
-    "support.returnStep3": "이 일정은 입력한 공항 도착 마감 시각 이전에 도착하도록 계산돼 있습니다.",
+    "support.title": "역 시설·짐 보관",
+    "support.subtitle": "일정에 포함된 역의 시설과 짐 보관을 안내합니다. 좌석·보관 공간의 현재 이용 가능 여부는 보장하지 않습니다.",
     "support.arexSource": "출처: 공항철도 공식 시간표 · 2026-08-08 확인",
     "support.luggageTitle": "짐 보관",
     "support.luggageInTrain": "KTX 객실에는 공용 휴대물품보관소가 있습니다. 잠금식 보관함이 아니며, 탑승 호차에서 가까운 곳을 이용합니다.",
@@ -257,6 +249,14 @@ export const messages = {
     // 이 묶음이 어느 언어인지 — 지도 오버레이가 데이터(권역명 등)의 언어를 고를 때 읽는다.
     // 화면에 그대로 나오지 않는 유일한 값이다.
     "app.locale": "ko",
+
+    // 열차 구간 팝업 (인수인계 G) — 카드의 중복 정보(출처)는 이 구간으로 옮기고
+    // 탑승 위치·3단계 상세 안내는 제거했다. 서울역 환승 동선만 #101이 담당한다.
+    // 시각·소요시간은 일정의 열차 줄이 표시하므로 팝업 전용 문구가 없다.
+    "leg.arexNote": "인천공항 T1과 서울역을 잇는 공항철도 직통열차입니다. 중간에 서지 않습니다.",
+    // 확인일이 하나가 아니다 — 강릉 축은 2026-08-08, 경부·전라선과 진부·만종은 2026-08-09에
+    // 호출했다(SOURCES.md 철도 절). 한 날짜로 적으면 강릉 구간에 거짓이 되므로 범위로 쓴다.
+    "leg.railSource": "출처: 한국철도공사 열차운행정보 · 2026-08-08 - 08-09 확인",
   },
   en: {
     "app.title": "SCENARO",
@@ -429,16 +429,8 @@ export const messages = {
     "summary.placesCount": "{n} selected",
     "search.actor.placeholder": "Search by actor name",
     "search.work.placeholder": "Search by drama or film title",
-    "support.title": "Trip execution support",
-    "support.subtitle": "Airport–rail transfers, luggage tips, and facilities at the stations on your itinerary. Real-time availability of seats or storage is not guaranteed.",
-    "support.arrivalTitle": "Airport entry — Incheon T1 → Seoul Station",
-    "support.arrivalStep1": "Board the AREX Express train at the Terminal 1 Transportation Center.",
-    "support.arrivalStep2": "It runs nonstop to Seoul Station in 43 minutes.",
-    "support.arrivalStep3": "At Seoul Station, move to the KTX concourse and transfer to your scheduled train.",
-    "support.returnTitle": "Return trip — Seoul Station → Incheon T1",
-    "support.returnStep1": "Arrive at Seoul Station on the last train of your itinerary.",
-    "support.returnStep2": "Transfer to the AREX Express train — 43 minutes to Terminal 1.",
-    "support.returnStep3": "This itinerary is calculated to arrive before the airport deadline you entered.",
+    "support.title": "Station facilities & luggage",
+    "support.subtitle": "Facilities and luggage guidance for the stations on your itinerary. Real-time availability of seats or storage is not guaranteed.",
     "support.arexSource": "Source: AREX official timetable · verified 2026-08-08",
     "support.luggageTitle": "Luggage",
     "support.luggageInTrain": "KTX cars have shared luggage racks, not lockable lockers — use the one nearest your car.",
@@ -505,6 +497,14 @@ export const messages = {
 
     // Which locale this bundle is — read by map overlays to pick the language of data names.
     "app.locale": "en",
+
+    // Train leg modal (handover G) — the duplicated source line moved here from the card;
+    // boarding location and the step-by-step guidance were removed. Seoul Station transfer
+    // guidance is handled in #101. Times and duration live on the itinerary line, so the
+    // modal has no copy of its own.
+    "leg.arexNote": "AREX Express between Incheon T1 and Seoul Station, with no intermediate stops.",
+    // See the ko block: the Gangneung axis was fetched 2026-08-08, the rest 2026-08-09.
+    "leg.railSource": "Source: Korail train operation data · verified 2026-08-08 - 08-09",
   },
 } as const;
 
