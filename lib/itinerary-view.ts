@@ -13,6 +13,7 @@
 import type { DayPlan, GatewayAlternative, ItineraryResult } from "./engine/types";
 import type { MockAlternative } from "./alternatives-mock";
 import type { SavedItineraryStub } from "./saved-itineraries-stub";
+import { summarizeSelectionCapacity } from "./selection-capacity";
 
 export type ItineraryView = {
   planning: boolean;
@@ -78,6 +79,19 @@ export function displayedDays(view: ItineraryView): DayPlan[] | null {
   if (view.reopened) return view.reopened.days;
   if (view.selectedAlt) return view.selectedAlt.days;
   return recommendedDays(view);
+}
+
+/**
+ * #84 과선택 수치는 추천 원본이 아니라 현재 화면의 전체 교체 일정 기준이다.
+ * empty에는 미리볼 일정이 없고, 재열람은 이미 저장된 레코드라 현재 확정 차단에서 제외한다.
+ */
+export function displayedSelectionCapacity(
+  view: ItineraryView,
+  selectedPlaceIds: Iterable<string>,
+) {
+  if (view.reopened) return null;
+  const days = displayedDays(view);
+  return days ? summarizeSelectionCapacity(selectedPlaceIds, days) : null;
 }
 
 /** empty 패널 — 재열람·로딩 중에는 노출하지 않는다 */

@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   banner,
   displayedDays,
+  displayedSelectionCapacity,
   initialItineraryView,
   itineraryWarnings,
   reduceItineraryView,
@@ -88,6 +89,63 @@ describe("경고 보존 (#43 경고 누락 0건 — PR #44 리뷰 2)", () => {
 });
 
 describe("결과 화면 상태 전이", () => {
+  it("과선택 수치와 저장 판정은 추천 원본이 아니라 화면의 전체 교체 대안을 따른다", () => {
+    const selected = ["p1", "p2"];
+    const recommendedDay = {
+      ...dayA,
+      items: [{
+        placeId: "p1",
+        arriveAt: "2026-08-12T01:00:00.000Z",
+        departAt: "2026-08-12T02:00:00.000Z",
+        accessMinutes: 10,
+      }],
+    };
+    const alternativeDay = {
+      ...dayB,
+      items: [
+        ...recommendedDay.items,
+        {
+          placeId: "p2",
+          arriveAt: "2026-08-13T03:00:00.000Z",
+          departAt: "2026-08-13T04:00:00.000Z",
+          accessMinutes: 10,
+        },
+      ],
+    };
+    const recommended = run([{
+      type: "PLAN_SUCCESS",
+      result: { ...plannedA, days: [recommendedDay] },
+    }]);
+    expect(displayedSelectionCapacity(recommended, selected)).toMatchObject({
+      schedulableCount: 1,
+      requiresAdjustment: true,
+    });
+
+    const withAlternative = reduceItineraryView(recommended, {
+      type: "SELECT_ALT",
+      alt: {
+        kind: "mock",
+        id: "mock-capacity",
+        date: "2026-08-13",
+        shiftMinutes: 0,
+        days: [alternativeDay],
+        effects: { localUseDeltaMinutes: 0, excludedPlaceIds: [] },
+      },
+    });
+    expect(displayedSelectionCapacity(withAlternative, selected)).toMatchObject({
+      schedulableCount: 2,
+      requiresAdjustment: false,
+    });
+  });
+
+  it("empty와 재열람에는 과선택 미리보기 수치를 표시하지 않는다", () => {
+    const emptied = run([{ type: "PLAN_SUCCESS", result: empty }]);
+    expect(displayedSelectionCapacity(emptied, ["p1"])).toBeNull();
+
+    const reopened = reduceItineraryView(initialItineraryView, { type: "REOPEN", record: recordA });
+    expect(displayedSelectionCapacity(reopened, ["p1"])).toBeNull();
+  });
+
   it("공항버스 대안 후속 응답은 기존 추천을 유지한 채 additive로 붙는다", () => {
     const afterPlan = run([{ type: "PLAN_SUCCESS", result: plannedA }]);
     const enriched = reduceItineraryView(afterPlan, {
