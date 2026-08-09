@@ -9,16 +9,23 @@
  * 원칙:
  * - 모든 점은 실좌표 투영이다. 좌표가 없는 장소는 임의 위치로 대체하지 않고 표시에서 뺀다 (A3).
  *   대신 몇 곳이 빠졌는지 화면에 밝힌다 — 조용히 사라지면 사용자는 누락을 알 수 없다.
- * - 동선은 권역이 이어지는 순서를 보여주는 보조 시각화다 (#14 §6). 실제 도로·경로처럼
+ * - 철도 구간은 실제 선로 선형으로 그린다(OSM 스냅샷). 팀 결정: #14 §6이 막은 것은 우리가
+ *   서비스하지 않는 버스·택시·도보 경로를 계산한 것처럼 보이게 하는 표현이다.
+ * - 그 밖의 구간(공항버스 등)은 권역이 이어지는 순서를 보여주는 보조 곡선이다. 실제 도로·경로처럼
  *   보이지 않도록 역 지점만 잇고, 지도 옆에 그 사실을 항상 문구로 붙인다.
  * - 라벨은 역(권역) 단위다. 시안은 데모용 2-4개를 손으로 배치했지만 실제 시드는 촬영지가
  *   서로 1px 미만까지 겹친다(월정사-전나무 숲길 0.25px). 장소마다 라벨을 달면 읽을 수 없어
  *   역 허브 모델(역 단위 체류)에 맞춰 권역 라벨로 바꿨다 — PR 본문 잔차 표에 기록.
  */
 import type { ReactNode } from "react";
-import { catmullRomPath, project, VIEW_BOX } from "@/lib/korea-map-projection";
+import { catmullRomPath, polylinePath, project, VIEW_BOX } from "@/lib/korea-map-projection";
 import { KOREA_OUTLINE_PATH } from "@/lib/korea-outline";
-import { routeStationSequence } from "@/lib/map-route";
+import {
+  railRouteSegments,
+  routePairKey,
+  routeStationSequence,
+  type RailLineGeometry,
+} from "@/lib/map-route";
 import {
   LABEL_FONT_SIZE,
   LABEL_LINE_HEIGHT,
@@ -110,6 +117,10 @@ export type KoreaMapPanelProps = {
   stations: readonly MapStation[];
   /** kind="route" — 일정 rides에서 편 역 순서 (routeStationSequence) */
   routeStationIds?: readonly string[];
+  /** 실제 선로 선형 축 (data/rail-geometry.json). 비면 동선 전체가 기존 곡선으로 그려진다 */
+  railLines?: readonly RailLineGeometry[];
+  /** 도로 수단으로 이동하는 구간 키 (routePairKey) — 축에 있어도 선로로 그리지 않는다 */
+  roadPairKeys?: ReadonlySet<string>;
   /** 좌표가 없어 표시에서 제외한 장소 수 — 0이면 문구를 숨긴다 */
   omittedCount?: number;
   tr: (key: MessageKey) => string;
@@ -133,6 +144,8 @@ export function KoreaMapPanel({
   places,
   stations,
   routeStationIds = [],
+  railLines = [],
+  roadPairKeys,
   omittedCount = 0,
   tr,
   headingAction,
@@ -153,7 +166,26 @@ export function KoreaMapPanel({
   const routeStations = isRoute
     ? routeStationIds.map((id) => stationById.get(id)).filter((s): s is MapStation => s !== undefined)
     : [];
-  const routePath = catmullRomPath(routeStations.map((s) => project(s.latitude, s.longitude)));
+  // 철도 구간은 실선형, 나머지는 기존 곡선. 축을 못 찾아도 선이 사라지지 않게 폴백이 남는다
+  const routeSegments = railRouteSegments(
+    routeStations.map((station) => station.id),
+    railLines,
+    roadPairKeys,
+  );
+  const routePaths = routeSegments.map((segment, index) => ({
+    key: `${segment.kind}-${index}`,
+    d:
+      segment.kind === "rail"
+        ? polylinePath(segment.points)
+        : catmullRomPath(
+            segment.stationIds
+              .map((id) => stationById.get(id))
+              .filter((station): station is MapStation => station !== undefined)
+              .map((station) => project(station.latitude, station.longitude)),
+          ),
+  }));
+  // ODbL 1.0 — OSM 선형을 실제로 그린 화면에서만 출처를 띄운다
+  const hasRailGeometry = routeSegments.some((segment) => segment.kind === "rail");
 
   // 라벨: route는 역 이름, places는 권역(가까운 역) 이름 한 번씩
   const labelSeeds: LabelSeed[] = isRoute
@@ -208,16 +240,20 @@ export function KoreaMapPanel({
           {/* 테마체험 권역 슬롯 — 경계 위, 점 아래 (시안 순서와 동일) */}
           {experienceOverlay}
 
-          {isRoute && routePath && (
-            <path
-              d={routePath}
-              fill="none"
-              className="stroke-sc-orange"
-              strokeWidth={3}
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          )}
+          {isRoute &&
+            routePaths.map(({ key, d }) =>
+              d ? (
+                <path
+                  key={key}
+                  d={d}
+                  fill="none"
+                  className="stroke-sc-orange"
+                  strokeWidth={3}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              ) : null,
+            )}
 
           {placePoints.map(({ place, at }) => (
             <circle
@@ -286,8 +322,13 @@ export function KoreaMapPanel({
         )}
       </div>
 
-      {/* #14 §6 — 실제 경로 계산으로 읽히지 않도록 동선 지도에는 항상 붙인다 */}
-      {isRoute && <p className="mt-2 text-xs text-sc-muted">{tr("map.routeNotice")}</p>}
+      {/* #14 §6 — 실제 경로 계산으로 읽히지 않도록 동선 지도에는 항상 붙인다.
+          선로를 실제로 그린 화면에서는 어디까지가 실선형인지도 함께 밝힌다 */}
+      {isRoute && (
+        <p className="mt-2 text-xs text-sc-muted">
+          {tr(hasRailGeometry ? "map.routeNoticeRail" : "map.routeNotice")}
+        </p>
+      )}
       {experienceNotice}
 
       {omittedCount > 0 && (
@@ -296,7 +337,23 @@ export function KoreaMapPanel({
         </p>
       )}
 
-      <p className="mt-2 text-xs text-sc-muted">{tr("map.source")}</p>
+      <p className="mt-2 text-xs text-sc-muted">
+        {tr("map.source")}
+        {/* ODbL 1.0 의무 표기 — 라이선스 링크까지 함께 (OSM 저작권 안내 규정) */}
+        {hasRailGeometry && (
+          <>
+            {" · "}
+            <a
+              href="https://www.openstreetmap.org/copyright"
+              target="_blank"
+              rel="noreferrer"
+              className="underline underline-offset-2 hover:text-sc-blue"
+            >
+              {tr("map.sourceRail")}
+            </a>
+          </>
+        )}
+      </p>
     </aside>
   );
 }
@@ -320,6 +377,7 @@ export function ItineraryRouteMap({
   days,
   places,
   stations,
+  railLines,
   tr,
   headingAction,
   sticky,
@@ -331,6 +389,8 @@ export function ItineraryRouteMap({
   /** 좌표가 확인된 후보 장소 전체 — 이 안에서 일정 배치분만 걸러 쓴다 */
   places: readonly MapPlace[];
   stations: readonly MapStation[];
+  /** 실제 선로 선형 축 — 없으면 동선 전체가 기존 곡선으로 그려진다 */
+  railLines?: readonly RailLineGeometry[];
   tr: (key: MessageKey) => string;
   headingAction?: ReactNode;
   sticky?: boolean;
@@ -344,6 +404,13 @@ export function ItineraryRouteMap({
     ...(day.gatewayLegs ?? []),
     ...day.rides,
   ].sort((a, b) => Date.parse(a.departAt) - Date.parse(b.departAt))));
+  // GatewayLeg는 공항버스 — 도로 수단이다. 같은 OD를 지나는 선로 축이 생기더라도
+  // 버스 이동을 선로 위에 얹지 않는다 (#14 §6은 도로 수단에 그대로 적용된다)
+  const roadPairKeys = new Set(
+    days.flatMap((day) =>
+      (day.gatewayLegs ?? []).map((leg) => routePairKey(leg.fromStationId, leg.toStationId)),
+    ),
+  );
   const placedIds = new Set(days.flatMap((day) => day.items.map((item) => item.placeId)));
   const placed = places
     .filter((place) => placedIds.has(place.id))
@@ -355,6 +422,8 @@ export function ItineraryRouteMap({
       places={placed}
       stations={stations}
       routeStationIds={routeStationIds}
+      railLines={railLines}
+      roadPairKeys={roadPairKeys}
       omittedCount={placedIds.size - placed.length}
       tr={tr}
       headingAction={headingAction}

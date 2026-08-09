@@ -230,6 +230,10 @@ export const messages = {
     "support.facilitiesUnavailable": "없음",
     "support.luggageCommonNotice": "짐 보관은 이 역의 보관함 현황이 아니라 여행 전체에 공통으로 적용되는 안내입니다.",
     "support.close": "닫기",
+
+    // 실제 철로 선형 (OSM) — 선로를 실제로 그린 화면에서만 쓴다
+    "map.routeNoticeRail": "철도 구간은 실제 선로 선형을 따라 그렸습니다. 그 밖의 구간은 권역이 이어지는 순서를 보여주는 보조 표시이며, 실제 도로나 이동 경로가 아닙니다.",
+    "map.sourceRail": "철도 선형: © OpenStreetMap 기여자 (ODbL 1.0)",
   },
   en: {
     "app.title": "SCENARO",
@@ -455,6 +459,10 @@ export const messages = {
     "support.facilitiesUnavailable": "None",
     "support.luggageCommonNotice": "Luggage guidance applies to your whole trip. It is not this station's locker availability.",
     "support.close": "Close",
+
+    // Real rail alignment (OSM) — shown only where track geometry is actually drawn
+    "map.routeNoticeRail": "Rail sections follow the actual track alignment. Other sections are a simplified view of the order your regions connect in, not an actual road or transit route.",
+    "map.sourceRail": "Rail alignment: © OpenStreetMap contributors (ODbL 1.0)",
   },
 } as const;
 
