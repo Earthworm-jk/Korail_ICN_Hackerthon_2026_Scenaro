@@ -9,6 +9,12 @@
  * - 계산 실패(invalid/unexpected)는 기존 결과·재열람 화면을 유지한다 (REQ-EDIT-005)
  * - 재계산 성공 = 추천 기준 복귀 (대안 선택·재열람 해제)
  * - 재열람은 저장 시점 일정 그대로 — 대안·empty·오류와 동시 노출 금지
+ * - **계산 중에도 직전 화면을 그대로 유지한다** (#85). 장소를 하나 끌 때마다 일정과 지도가
+ *   사라졌다 나타나면 무엇이 어떻게 달라졌는지 비교할 수 없다. `planning`은 "지금 갱신
+ *   중"이라는 표시일 뿐이고, 무엇을 보여줄지는 마지막으로 확정된 상태가 정한다.
+ *   경고·제외 사유·배너도 같이 유지한다 — 일정만 남고 경고가 사라지면 더 위험하다.
+ * - 선택이 0곳이 되면 직전 일정을 남기지 않는다 (SELECTION_CLEARED). 고를 게 없는데
+ *   이전 선택의 결과가 남아 있으면 그걸 저장할 수 있게 된다.
  */
 import type { DayPlan, GatewayAlternative, ItineraryResult } from "./engine/types";
 import type { MockAlternative } from "./alternatives-mock";
@@ -40,7 +46,8 @@ export type ItineraryViewEvent =
   | { type: "PLAN_INVALID" }
   | { type: "PLAN_FAILED" }
   | { type: "SELECT_ALT"; alt: SelectableAlternative | null }
-  | { type: "REOPEN"; record: SavedItineraryStub };
+  | { type: "REOPEN"; record: SavedItineraryStub }
+  | { type: "SELECTION_CLEARED" };
 
 export function reduceItineraryView(view: ItineraryView, event: ItineraryViewEvent): ItineraryView {
   switch (event.type) {
@@ -65,6 +72,9 @@ export function reduceItineraryView(view: ItineraryView, event: ItineraryViewEve
       return { ...view, selectedAlt: event.alt, reopened: null };
     case "REOPEN":
       return { ...view, reopened: event.record, selectedAlt: null, planError: null, planning: false };
+    case "SELECTION_CLEARED":
+      // 진행 중이던 계산까지 함께 내린다 — 응답은 호출부의 sequence 검사에서 버려진다
+      return initialItineraryView;
   }
 }
 
@@ -73,9 +83,11 @@ export function recommendedDays(view: ItineraryView): DayPlan[] | null {
   return view.result?.status === "planned" ? view.result.days : null;
 }
 
-/** 화면에 보이는 일정 — 재열람 > 대안 선택 > 추천 */
+/**
+ * 화면에 보이는 일정 — 재열람 > 대안 선택 > 추천.
+ * 계산 중에도 직전 일정을 그대로 돌려준다 (#85) — 갱신 표시는 렌더가 따로 얹는다.
+ */
 export function displayedDays(view: ItineraryView): DayPlan[] | null {
-  if (view.planning) return null;
   if (view.reopened) return view.reopened.days;
   if (view.selectedAlt) return view.selectedAlt.days;
   return recommendedDays(view);
@@ -94,21 +106,21 @@ export function displayedSelectionCapacity(
   return days ? summarizeSelectionCapacity(selectedPlaceIds, days) : null;
 }
 
-/** empty 패널 — 재열람·로딩 중에는 노출하지 않는다 */
+/** empty 패널 — 재열람 중에는 노출하지 않는다. 재계산 중에는 직전 판정을 그대로 남긴다 */
 export function showEmpty(view: ItineraryView): boolean {
-  return !view.planning && !view.reopened && view.result?.status === "empty";
+  return !view.reopened && view.result?.status === "empty";
 }
 
-/** 배치 제외 사유 목록 — 추천 결과 화면에서만 */
+/** 배치 제외 사유 목록 — 추천 결과 화면에서만. 일정을 유지하면 사유도 같이 유지한다 */
 export function rejectedPlaces(view: ItineraryView) {
-  if (view.planning || view.reopened || view.result?.status !== "planned") return [];
+  if (view.reopened || view.result?.status !== "planned") return [];
   if (view.selectedAlt?.kind === "gateway_bus") return view.selectedAlt.rejectedPlaces;
   return view.result.rejectedPlaces;
 }
 
 /** 운영시간 경고 목록 (#43 결정 1) — 재열람 시에도 저장된 경고를 복원한다 (경고 누락 0건, PR #44 리뷰 2) */
 export function itineraryWarnings(view: ItineraryView) {
-  if (view.planning) return [];
+  // 계산 중에도 유지한다 — 일정만 남고 경고가 사라지면 없는 안전성을 보여주는 셈이다
   if (view.reopened) return view.reopened.warnings ?? [];
   if (view.result?.status !== "planned") return [];
   if (view.selectedAlt?.kind === "gateway_bus") return view.selectedAlt.warnings;
@@ -116,7 +128,6 @@ export function itineraryWarnings(view: ItineraryView) {
 }
 
 export function banner(view: ItineraryView): "reopened" | "swapped" | "gateway" | null {
-  if (view.planning) return null;
   if (view.reopened) return "reopened";
   if (view.selectedAlt?.kind === "gateway_bus") return "gateway";
   if (view.selectedAlt) return "swapped";

@@ -42,6 +42,7 @@ import {
   showEmpty,
   type SelectableAlternative,
 } from "@/lib/itinerary-view";
+import { autoPlanDecision } from "@/lib/auto-plan";
 import { fromKstLocalInput as fromLocalInput, toKstLocalInput as toLocalInput } from "@/lib/kst-datetime";
 import { formatFlightStatus } from "@/lib/flight-status";
 import { formatEpisodeLabel } from "@/lib/episode-label";
@@ -433,8 +434,23 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates }:
   useEffect(() => { planRef.current = plan; }, [plan]);
   const reopened = view.reopened;
   useEffect(() => {
-    if (step !== 3 || !candidateData || reopened) return;
-    if (selectedPlaceIds.size === 0) return;
+    const decision = autoPlanDecision({
+      onPlacesStep: step === 3,
+      hasCandidates: candidateData !== null,
+      reopened: reopened !== null,
+      selectedCount: selectedPlaceIds.size,
+    });
+    if (decision === "skip") return;
+
+    // PR #99 리뷰 3 — 선택이 바뀐 "즉시" 진행 중 요청을 무효화한다. planSequence를 plan()
+    // 안에서만 올리면, 디바운스가 끝나기 전에 도착한 이전 응답이 이미 바뀐 선택 옆에
+    // 실린다. 그 순간 화면은 사용자가 고른 것과 다른 일정을 근거처럼 보여주게 된다.
+    planSequence.current += 1;
+
+    if (decision === "clear") {
+      dispatchView({ type: "SELECTION_CLEARED" });
+      return;
+    }
     const timer = window.setTimeout(() => { void planRef.current(); }, AUTO_PLAN_DEBOUNCE_MS);
     return () => window.clearTimeout(timer);
   }, [selectedPlaceIds, step, candidateData, reopened]);
@@ -445,6 +461,8 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates }:
     [baseDays],
   );
   const displayedDays = deriveDisplayedDays(view);
+  // 고른 장소가 없는 상태 — 결과 열은 "선택 필요"만 보여주고 저장도 막는다 (PR #99 리뷰 2)
+  const needsSelection = candidateData !== null && selectedPlaceIds.size === 0 && !view.reopened;
   const viewBanner = banner(view);
   const viewRejected = deriveRejectedPlaces(view);
   const viewWarnings = deriveWarnings(view);
@@ -912,11 +930,29 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates }:
           </div>
 
           {/* 우측 열 — 계산 결과. 장소를 켜고 끄면 여기서 바로 갱신된다 */}
-          <div className="min-w-0">
-          <h3 className="text-base font-semibold">{tr("step4.title")}</h3>
+          <div className="min-w-0" aria-busy={view.planning}>
+          <div className="flex flex-wrap items-center gap-2">
+            <h3 className="text-base font-semibold">{tr("step4.title")}</h3>
+            {/* #85 리뷰 1 — 갱신 중에도 직전 일정을 지우지 않는다. 표시만 겹쳐 얹는다 */}
+            {view.planning && displayedDays && (
+              <span role="status" className="rounded-full bg-sc-blue-soft px-2 py-0.5 text-xs text-sc-blue">
+                {tr("step4.updating")}
+              </span>
+            )}
+          </div>
           <p className="text-sm text-sc-muted">{tr("step4.subtitle")}</p>
 
-          {view.planning && <p className="mt-6 text-center text-sm text-sc-muted">{tr("step4.generating")}</p>}
+          {/* 아직 보여줄 일정 자체가 없을 때만 자리를 차지하는 안내로 바꾼다 */}
+          {view.planning && !displayedDays && (
+            <p className="mt-6 text-center text-sm text-sc-muted">{tr("step4.generating")}</p>
+          )}
+
+          {/* #85 리뷰 2 — 0곳이면 직전 선택의 일정을 남기지 않는다. 저장도 함께 막힌다 */}
+          {needsSelection && (
+            <p className="mt-6 rounded-lg border bg-sc-subtle px-3 py-6 text-center text-sm text-sc-muted">
+              {tr("step4.needSelection")}
+            </p>
+          )}
 
           {!view.planning && view.planError && (
             <div className="mt-4 rounded-lg border border-sc-red/30 bg-sc-red/5 p-4 text-sm text-sc-red">
@@ -955,7 +991,8 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates }:
           )}
 
           {displayedDays && (
-            <div className="mt-4 space-y-4">
+            // 갱신 중에는 살짝 흐리게 — 지금 보이는 게 직전 결과라는 걸 알 수 있어야 한다
+            <div className={`mt-4 space-y-4 ${view.planning ? "opacity-60 transition-opacity" : ""}`}>
               {!view.reopened && view.result?.status === "planned" && (
                 <GatewayAlternatives
                   alternatives={view.result.gatewayAlternatives ?? []}
@@ -1160,7 +1197,7 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates }:
               </span>
               <button
                 className="rounded bg-sc-blue px-4 py-2 text-sm text-white disabled:opacity-40"
-                disabled={!displayedDays || selectionCapacity?.requiresAdjustment}
+                disabled={!displayedDays || needsSelection || selectionCapacity?.requiresAdjustment}
                 onClick={() => {
                   const entry = savedEntry();
                   if (entry) saveStub.requestSave(entry);

@@ -227,6 +227,10 @@ export const messages = {
     "support.facilitiesUnavailable": "없음",
     "support.luggageCommonNotice": "짐 보관은 이 역의 보관함 현황이 아니라 여행 전체에 공통으로 적용되는 안내입니다.",
     "support.close": "닫기",
+
+    // #85 즉시 재계산 — 갱신 중 표시와 "선택 필요" 상태
+    "step4.updating": "갱신 중",
+    "step4.needSelection": "촬영지를 한 곳 이상 선택하면 일정이 여기에 나타납니다.",
   },
   en: {
     "app.title": "SCENARO",
@@ -449,6 +453,10 @@ export const messages = {
     "support.facilitiesUnavailable": "None",
     "support.luggageCommonNotice": "Luggage guidance applies to your whole trip. It is not this station's locker availability.",
     "support.close": "Close",
+
+    // #85 instant recalculation - updating badge and the "needs selection" state
+    "step4.updating": "Updating",
+    "step4.needSelection": "Select at least one filming location and your itinerary appears here.",
   },
 } as const;
 

@@ -201,3 +201,62 @@ describe("결과 화면 상태 전이", () => {
     expect(banner(recalced)).toBeNull();
   });
 });
+
+// PR #99 리뷰 — #85 즉시 재계산의 상태 전이 3건
+describe("즉시 재계산 상태 전이 (#85)", () => {
+  it("재계산 중에도 직전 일정이 그대로 보인다 — 화면이 비지 않는다", () => {
+    const planning = run([{ type: "PLAN_SUCCESS", result: plannedA }, { type: "PLAN_START" }]);
+    expect(planning.planning).toBe(true);
+    expect(displayedDays(planning)).toEqual([dayA]);
+  });
+
+  it("재계산 중에 경고·제외 사유·배너도 함께 유지된다 — 일정만 남고 경고가 사라지지 않는다", () => {
+    const withWarning: ItineraryResult = {
+      ...plannedA,
+      warnings: [
+        { code: "ACTIVITY_WINDOW_MISMATCH", placeId: "p1", detail: "CONSERVATIVE_BUFFER_MISMATCH" },
+      ],
+      rejectedPlaces: [{ code: "TRAIN_UNAVAILABLE", placeId: "p2" }],
+    };
+    const planning = run([{ type: "PLAN_SUCCESS", result: withWarning }, { type: "PLAN_START" }]);
+    expect(itineraryWarnings(planning)).toHaveLength(1);
+    expect(rejectedPlaces(planning)).toHaveLength(1);
+
+    const reopenedThenPlanning = run([{ type: "REOPEN", record: recordA }, { type: "PLAN_START" }]);
+    expect(displayedDays(reopenedThenPlanning)).toEqual([dayA]);
+    expect(banner(reopenedThenPlanning)).toBe("reopened");
+  });
+
+  it("재계산 중에도 empty 판정을 유지한다 — 직전 결론이 조용히 사라지지 않는다", () => {
+    const planning = run([{ type: "PLAN_SUCCESS", result: empty }, { type: "PLAN_START" }]);
+    expect(showEmpty(planning)).toBe(true);
+  });
+
+  it("1곳 → 0곳: 직전 일정을 남기지 않는다 — 남으면 그대로 저장된다", () => {
+    const planned = run([{ type: "PLAN_SUCCESS", result: plannedA }]);
+    expect(displayedDays(planned)).toEqual([dayA]);
+
+    const cleared = reduceItineraryView(planned, { type: "SELECTION_CLEARED" });
+    expect(displayedDays(cleared)).toBeNull();
+    expect(showEmpty(cleared)).toBe(false);
+    expect(rejectedPlaces(cleared)).toEqual([]);
+    expect(itineraryWarnings(cleared)).toEqual([]);
+    expect(banner(cleared)).toBeNull();
+  });
+
+  it("계산 중에 0곳이 되면 진행 표시까지 내린다 — 응답은 호출부가 버린다", () => {
+    const cleared = run([
+      { type: "PLAN_SUCCESS", result: plannedA },
+      { type: "PLAN_START" },
+      { type: "SELECTION_CLEARED" },
+    ]);
+    expect(cleared.planning).toBe(false);
+    expect(cleared.result).toBeNull();
+    expect(displayedDays(cleared)).toBeNull();
+  });
+
+  it("0곳 상태에서는 저장 대상 일정이 없다", () => {
+    const cleared = run([{ type: "PLAN_SUCCESS", result: plannedA }, { type: "SELECTION_CLEARED" }]);
+    expect(displayedSelectionCapacity(cleared, ["place-x"])).toBeNull();
+  });
+});
