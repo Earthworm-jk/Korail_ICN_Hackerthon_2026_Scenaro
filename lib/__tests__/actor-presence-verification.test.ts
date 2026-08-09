@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
+import evidenceSeed from "../../data/actor-presence-evidence.json";
+import relationsSeed from "../../data/work-place-relations.json";
 import {
+  ActorPresenceEvidenceRecordSchema,
   decideActorPresence,
   type ActorPresenceEvidence,
 } from "../actor-presence-verification";
@@ -7,6 +10,7 @@ import {
 const evidence = (patch: Partial<ActorPresenceEvidence> = {}): ActorPresenceEvidence => ({
   sourceUrl: "https://english.visitkorea.or.kr/yeongjin",
   sourceTier: "official",
+  excerpt: "Eun-tak (played by Kim Go-eun) appears at Yeongjin Beach.",
   placeMatched: true,
   workMatched: true,
   claim: "present",
@@ -63,5 +67,38 @@ describe("배우–장면 자동 검증 판정", () => {
       evidence(),
       evidence({ sourceUrl: "https://another.example/scene", claim: "absent" }),
     ]).status).toBe("conflict");
+  });
+});
+
+describe("저장된 자동 검증 입력 재현", () => {
+  const records = evidenceSeed.map((record) => ActorPresenceEvidenceRecordSchema.parse(record));
+
+  it("커밋된 근거 레코드로 기대 판정을 다시 계산한다", () => {
+    for (const record of records) {
+      expect(decideActorPresence(record.evidence), record.id).toEqual(record.expectedDecision);
+    }
+  });
+
+  it("판정에 기여한 URL만 관계 provenance에 기록한다", () => {
+    for (const record of records) {
+      const relation = relationsSeed.find((item) =>
+        item.workId === record.workId && item.placeId === record.placeId,
+      );
+      expect(relation, record.id).toBeDefined();
+      expect(relation?.featuredActorIds, record.id).toContain(record.actorId);
+      expect(relation?.actorPresenceVerification, record.id).toMatchObject({
+        decision: record.expectedDecision.status,
+        ...("grade" in record.expectedDecision ? { grade: record.expectedDecision.grade } : {}),
+        evidenceSourceUrls: record.expectedDecision.sourceUrls,
+      });
+    }
+  });
+
+  it("장면 맥락 출처와 자동 판정 적격 출처를 구분한다", () => {
+    const [yeongjin] = records;
+    const [contextOnly, eligible] = yeongjin.evidence;
+    expect(contextOnly.characterActorLinked).toBe(false);
+    expect(eligible.characterActorLinked).toBe(true);
+    expect(yeongjin.expectedDecision.sourceUrls).toEqual([eligible.sourceUrl]);
   });
 });

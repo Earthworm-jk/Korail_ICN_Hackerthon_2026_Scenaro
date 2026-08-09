@@ -1,23 +1,53 @@
 /**
  * 배우–장면 관계 자동 검증의 결정적 판정기.
  *
- * OpenAI는 웹 검색 결과에서 아래 근거 레코드를 구조화할 수 있지만, 확정 여부를
- * 직접 결정하지 않는다. 출처 등급·명시성·독립 출처 수를 이 함수가 동일하게 판정한다.
+ * OpenAI는 웹 검색 결과에서 아래 근거 레코드를 구조화한다. 장소·작품 일치와 명시성도
+ * 모델 추출값이므로 판단이 완전히 제거되지는 않는다. 이 함수는 그 판단의 결합 방식을
+ * 출처 등급·명시성·독립 출처 수 규칙으로 제한하고 동일 입력을 결정적으로 재생한다.
  */
+import { z } from "zod";
+
 export type EvidenceSourceTier = "official" | "editorial" | "community";
 export type ActorPresenceClaim = "present" | "absent";
 
-export type ActorPresenceEvidence = {
-  sourceUrl: string;
-  sourceTier: EvidenceSourceTier;
-  placeMatched: boolean;
-  workMatched: boolean;
-  claim: ActorPresenceClaim;
+export const ActorPresenceEvidenceSchema = z.object({
+  sourceUrl: z.url(),
+  sourceTier: z.enum(["official", "editorial", "community"]),
+  /** 원문에서 판정 필드를 다시 감사할 수 있는 짧은 근거 문장. */
+  excerpt: z.string().min(1),
+  placeMatched: z.boolean(),
+  workMatched: z.boolean(),
+  claim: z.enum(["present", "absent"]),
   /** 출처 문장에 배우명이 직접 등장한다. */
-  actorExplicit: boolean;
-  /** 출처 문장에 검증된 배역–배우 연결(예: 은탁(김고은))이 등장한다. */
-  characterActorLinked: boolean;
-};
+  actorExplicit: z.boolean(),
+  /** 출처 문장에 배역–배우 연결(예: 은탁(김고은))이 등장한다. */
+  characterActorLinked: z.boolean(),
+});
+
+export type ActorPresenceEvidence = z.infer<typeof ActorPresenceEvidenceSchema>;
+
+export const ActorPresenceEvidenceRecordSchema = z.object({
+  id: z.string().min(1),
+  workId: z.string().min(1),
+  placeId: z.string().min(1),
+  actorId: z.string().min(1),
+  extractedAt: z.iso.date(),
+  extractionMethod: z.literal("model_assisted"),
+  evidence: z.array(ActorPresenceEvidenceSchema).min(1),
+  expectedDecision: z.discriminatedUnion("status", [
+    z.object({
+      status: z.enum(["confirmed", "absent"]),
+      grade: z.enum(["A", "B"]),
+      sourceUrls: z.array(z.url()).min(1),
+    }),
+    z.object({
+      status: z.enum(["unverified", "conflict"]),
+      sourceUrls: z.array(z.url()),
+    }),
+  ]),
+});
+
+export type ActorPresenceEvidenceRecord = z.infer<typeof ActorPresenceEvidenceRecordSchema>;
 
 export type ActorPresenceDecision =
   | { status: "confirmed" | "absent"; grade: "A" | "B"; sourceUrls: string[] }

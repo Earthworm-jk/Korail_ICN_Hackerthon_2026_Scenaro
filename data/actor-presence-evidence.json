@@ -1,0 +1,39 @@
+[
+  {
+    "id": "work-goblin--place-yeongjin-beach--actor-kim-go-eun",
+    "workId": "work-goblin",
+    "placeId": "place-yeongjin-beach",
+    "actorId": "actor-kim-go-eun",
+    "extractedAt": "2026-08-09",
+    "extractionMethod": "model_assisted",
+    "evidence": [
+      {
+        "sourceUrl": "https://english.visitkorea.or.kr/svc/whereToGo/locIntrdn/rgnContentsView.do?vcontsId=112532",
+        "sourceTier": "official",
+        "excerpt": "This is the place where Eun-tak blows out the candles for her nineteenth birthday and meets Kim Shin.",
+        "placeMatched": true,
+        "workMatched": true,
+        "claim": "present",
+        "actorExplicit": false,
+        "characterActorLinked": false
+      },
+      {
+        "sourceUrl": "https://english.visitkorea.or.kr/svc/sp/HallyuNew/contentsView.do?dataSetId=70&vcontsId=216921",
+        "sourceTier": "official",
+        "excerpt": "Eun-tak (played by Kim Go-eun) blows out the candles on her birthday cake alone.",
+        "placeMatched": true,
+        "workMatched": true,
+        "claim": "present",
+        "actorExplicit": true,
+        "characterActorLinked": true
+      }
+    ],
+    "expectedDecision": {
+      "status": "confirmed",
+      "grade": "A",
+      "sourceUrls": [
+        "https://english.visitkorea.or.kr/svc/sp/HallyuNew/contentsView.do?dataSetId=70&vcontsId=216921"
+      ]
+    }
+  }
+]

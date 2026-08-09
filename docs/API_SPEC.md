@@ -50,11 +50,11 @@
 - **AI 촬영지 랭킹**: `data/place-rankings.json` 스냅샷만 사용
   (생성: `scripts/build_place_rankings.py` — OpenAI 호출은 이 오프라인 스크립트에서만).
   미탑재·미검토·하한 미달은 "점수 없음"으로 결정적 폴백 (#48, PLACE_RANKING.md)
-- **배우–장면 근거 검증**: 사용자 검색마다 웹을 조회하지 않는다. OpenAI Web Search와
-  Structured Outputs는 오프라인·비동기 수집 단계에서 근거 후보만 만들고,
-  `lib/actor-presence-verification.ts`가 출처 등급·명시성·독립 출처 수로 자동 확정 여부를
-  결정한다. A/B만 시드·DB로 승격하며 미확정·충돌은 배우 후보에서 제외한다
-  (`ACTOR_PRESENCE_VERIFICATION.md`).
+- **배우–장면 근거 검증**: 사용자 검색마다 웹을 조회하지 않는다. 현재 구현은 커밋된
+  `actor-presence-evidence.json`의 모델 보조 추출값을 `lib/actor-presence-verification.ts`가
+  출처 등급·명시성·독립 출처 수로 결합해 A/B만 승격하는 판정·재현 경계다. Web Search,
+  Structured Outputs, 비동기 수집 큐와 Supabase 적재는 후속 구현이며, 미확정·충돌은 배우
+  후보에서 제외한다 (`ACTOR_PRESENCE_VERIFICATION.md`).
 - **TourAPI·레일포털 등**: 오프라인 데이터 파이프라인(Python, 시드 생성 단계)에서만 사용.
   앱 런타임 호출 없음
 - 위 항목이 바뀌면(런타임 실호출 추가) 이 문서를 먼저 갱신한다 — "실호출만 수록" 원칙
