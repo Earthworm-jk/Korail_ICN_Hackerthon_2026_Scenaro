@@ -116,6 +116,52 @@ export function buildRegionWindows(params: {
   return windows;
 }
 
+/**
+ * 창의 성격 (#101)
+ *
+ * `availableMinutes`는 "역 경계 안에서 확보된 분"일 뿐 **쓸 수 있는 시간이라는 뜻이 아니다.**
+ * 열차와 열차 사이의 빈 창은 환승 대기이고, 화면이 이걸 "약 54분 활용 가능"이라고만 하면
+ * 사용자는 그 시간에 서울을 돌아볼 수 있다고 읽는다. 실제로는 접근시간 왕복과 엔진 버퍼
+ * 때문에 아무것도 배치되지 않는다.
+ */
+export type RegionWindowKind =
+  /** 열차 사이의 빈 창 — 환승 대기. 사용자가 확보한 시간이 아니다 */
+  | "transfer_wait"
+  /** 방문이 배치된 창 — 실제로 쓰고 있는 시간 */
+  | "stay";
+
+type VisitSpan = { arriveAt: string; departAt: string };
+
+/**
+ * 창 하나의 성격을 판정한다.
+ *
+ * 판정은 두 조건이 **모두** 맞을 때만 환승 대기다.
+ * 1. 열차·공항 진입편 도착으로 시작해 열차 출발로 끝난다 (경계)
+ * 2. 그 구간에 배치된 방문이 없다 (실측)
+ *
+ * 경계만 보면 안 된다 — 열차 사이라도 방문이 들어간 창은 쓰고 있는 시간이다.
+ * 방문 유무만 봐도 안 된다 — 여행 시작·마감 경계의 빈 창은 환승이 아니다.
+ *
+ * #103이 도입할 "사용자가 의도적으로 확보한 자유시간"은 여기서 판정하지 않는다.
+ * 그건 사용자의 편집 이력이지 창의 모양으로 알 수 있는 것이 아니다.
+ */
+export function classifyRegionWindow(
+  window: Pick<RegionWindow, "startAt" | "endAt" | "startBoundary" | "endBoundary">,
+  visits: readonly VisitSpan[],
+): RegionWindowKind {
+  const betweenTrains =
+    (window.startBoundary === "TRAIN_ARRIVAL" || window.startBoundary === "GATEWAY_ARRIVAL")
+    && window.endBoundary === "TRAIN_DEPARTURE";
+  if (!betweenTrains) return "stay";
+
+  const start = Date.parse(window.startAt);
+  const end = Date.parse(window.endAt);
+  const hasVisit = visits.some(
+    (visit) => Date.parse(visit.arriveAt) < end && Date.parse(visit.departAt) > start,
+  );
+  return hasVisit ? "stay" : "transfer_wait";
+}
+
 /** 창과 그 날짜의 활동 가능 시간대(09:00-21:00 KST)의 겹침 — 산식 단일 지점 */
 function activityOverlapMinutes(start: number, end: number): number {
   const date = koreaDate(start);
