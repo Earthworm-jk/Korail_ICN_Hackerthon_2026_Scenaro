@@ -99,6 +99,31 @@ export const Work = z.object({
   year: z.number().optional(),
 });
 
+// #84 P0-4 — 공식 관람시간이 없는 동안 사용하는 서비스 기본 보수 체류시간.
+// 의미가 다른 유형은 기본 분 수가 같아도 분리해, 이후 공식 근거를 유형별로 보강할 수 있게 한다.
+export const STAY_CATEGORY_DEFAULT_MINUTES = {
+  brief_exterior: 45,
+  nature_walk: 60,
+  food_cafe: 60,
+  heritage_culture: 60,
+  resort_visit: 90,
+  large_experience: 120,
+} as const;
+
+export const StayCategory = z.enum([
+  "brief_exterior",
+  "nature_walk",
+  "food_cafe",
+  "heritage_culture",
+  "resort_visit",
+  "large_experience",
+]);
+
+export const StayMetadata = z.object({
+  category: StayCategory,
+  basis: z.literal("category_default"),
+});
+
 export const Place = z.object({
   id: NonEmptyId,
   name: LocalizedText, // #4: 데모 시드는 en 필수
@@ -107,6 +132,8 @@ export const Place = z.object({
   accessEstimate: AccessEstimate, // #5: 역→장소 접근시간 추정(왕복 동일 적용 — 역 허브 모델)
   openingHours: OpeningHours,
   stayMinutes: z.number().int().positive(), // 양의 정수 (#20)
+  // #84 P0-4 additive: 엔진 입력은 stayMinutes 그대로이며, 공식 출처가 아닌 산정 근거만 기록한다.
+  stayMetadata: StayMetadata.optional(),
   verificationLevel: z.enum(["원본확인", "교차확인", "TourAPI대조"]),
   officialSourceCount: z.number().int().nonnegative(), // UI 정렬 전용 — 엔진 점수와 분리 (#3)
   reasonText: LocalizedText, // 사전 작성 추천 사유 (REQ-DATA-005)
@@ -123,6 +150,16 @@ export const Place = z.object({
       code: "custom",
       path: [place.latitude === undefined ? "latitude" : "longitude"],
       message: "latitude·longitude는 함께 있어야 합니다 (좌표 쌍)",
+    });
+  }
+  if (
+    place.stayMetadata?.basis === "category_default"
+    && place.stayMinutes !== STAY_CATEGORY_DEFAULT_MINUTES[place.stayMetadata.category]
+  ) {
+    ctx.addIssue({
+      code: "custom",
+      path: ["stayMinutes"],
+      message: `stayMetadata.category 기본값(${STAY_CATEGORY_DEFAULT_MINUTES[place.stayMetadata.category]}분)과 일치해야 합니다`,
     });
   }
 });
@@ -277,6 +314,7 @@ export const Flight = z.object({
 export type ActorT = z.infer<typeof Actor>;
 export type WorkT = z.infer<typeof Work>;
 export type PlaceT = z.infer<typeof Place>;
+export type StayCategoryT = z.infer<typeof StayCategory>;
 export type StationT = z.infer<typeof Station>;
 export type TrainLegT = z.infer<typeof TrainLeg>;
 export type GatewayLegT = z.infer<typeof GatewayLeg>;

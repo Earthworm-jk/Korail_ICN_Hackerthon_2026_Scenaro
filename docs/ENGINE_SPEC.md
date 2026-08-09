@@ -97,7 +97,14 @@ const Place = z.object({
   nearestStationId: z.string(),
   accessEstimate: AccessEstimate,      // 역→장소 추정 (#5)
   openingHours: OpeningHours,
-  stayMinutes: z.number(),
+  stayMinutes: z.number(),          // 엔진이 소비하는 단일 보수 체류시간
+  stayMetadata: z.object({          // #84 additive — 공식 관람시간이 아닌 서비스 기본값 근거
+    category: z.enum([
+      "brief_exterior", "nature_walk", "food_cafe", "heritage_culture",
+      "resort_visit", "large_experience",
+    ]),
+    basis: z.literal("category_default"),
+  }).optional(),
   verificationLevel: z.enum(["원본확인", "교차확인", "TourAPI대조"]),
   officialSourceCount: z.number(),     // UI 정렬 전용 — 엔진 점수와 분리 (#3)
   reasonText: z.object({ ko: z.string(), en: z.string() }), // 사전 작성 추천 사유
@@ -218,6 +225,30 @@ visitEnd         = visitStart + stayMinutes
 판정: visitEnd <= close
 복귀: visitEnd + accessEstimate.minutes + buffer  → 다음 열차·출국 역산의 기준 시각
 ```
+
+장소 하나의 총 시간예산은 다음 서비스 추정식으로 계산한다. 이는 실제 체류·도로 상황을
+보장하는 값이나 공식 권장 관람시간이 아니라, 일정 가능성을 보수적으로 판정하기 위한 MVP 기본값이다.
+
+```text
+buffer = max(20분, ceil(accessEstimate.minutes × 0.5))
+편도 접근예산 = accessEstimate.minutes + buffer
+장소별 총 시간예산 = 편도 접근예산 × 2 + stayMinutes
+```
+
+`stayMinutes`는 엔진 입력으로 그대로 유지하고 `stayMetadata`는 산정 근거만 additive로 기록한다.
+`basis: category_default`이면 아래 유형 기본값과 `stayMinutes`가 반드시 일치해야 한다.
+
+| category | 적용 범위 | 기본 체류시간 |
+|---|---|---:|
+| `brief_exterior` | 외관·도심 촬영지 중심의 짧은 확인 | 45분 |
+| `nature_walk` | 해변·숲길 등 자연 공간과 산책 | 60분 |
+| `food_cafe` | 식당·카페 방문 | 60분 |
+| `heritage_culture` | 사찰·유적·전시·공연 복합공간 | 60분 |
+| `resort_visit` | 리조트 외부·공용공간 방문 | 90분 |
+| `large_experience` | 목장·케이블카 등 이동을 포함한 대형 체험 | 120분 |
+
+공식 `source`·`verifiedAt`은 조사 전에는 만들지 않는다. 공식 권장 관람시간 조사와 유형별
+재산정, 근거 메타 필수 검증은 #84 P1에서 수행한다.
 
 - `always_open`(출처 확인)은 판정을 통과 처리하되 복귀시간 모델은 동일 적용. (#5)
 - 운영시간 판정 결과는 배치 선호와 경고에 사용한다. 장소가 철거 또는 접근 불가가 아니라면
