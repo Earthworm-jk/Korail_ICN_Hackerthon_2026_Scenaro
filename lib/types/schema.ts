@@ -141,6 +141,43 @@ export const StayMetadata = z.discriminatedUnion("basis", [
   OfficialSourceStayMetadata,
 ]);
 
+/**
+ * 장소의 종류 (#83 §F 썸네일 대체 표기).
+ *
+ * `stayMetadata.category`와 다른 축이다. 그쪽은 **얼마나 머무는가**(체류시간 산정)이고
+ * 이쪽은 **무엇인가**(카드 아이콘)다. 실제로 두 축은 겹치지 않는다 — `brief_exterior`
+ * 하나에 호텔·고가 보행로·궁 담장길이 함께 들어 있고, `culture_venue` 하나에 사찰·전각·
+ * 전시컨벤션·영화관이 들어 있다. 체류시간 기준으로 아이콘을 고르면 호텔과 돌담길이 같은
+ * 그림이 된다.
+ *
+ * 원천 CSV(`장소타입`)도 그대로 쓸 수 없다. 어휘가 restaurant/cafe/stay/playground 중심이라
+ * playground 하나가 해변·사찰·숲길·목장·케이블카·보행로를 전부 삼킨다.
+ *
+ * 30-50곳 확장(#72)에서 재사용되도록 장소 1:1 라벨이 아니라 종류로 끊었다.
+ */
+export const PlaceType = z.enum([
+  "beach",
+  "trail",
+  "heritage", // 사찰·전각 등 문화유산 시설
+  "walkway",
+  "ranch",
+  "cable_car",
+  "cafe",
+  "restaurant",
+  "stay", // 호텔·리조트
+  "convention",
+  "cinema",
+  "port",
+  "workshop",
+  "square",
+  "library",
+  "bookstore",
+  "transit",
+  "park",
+  "cultural_center",
+  "filming_set",
+]);
+
 export const Place = z.object({
   id: NonEmptyId,
   name: LocalizedText, // #4: 데모 시드는 en 필수
@@ -151,6 +188,10 @@ export const Place = z.object({
   stayMinutes: z.number().int().positive(), // 양의 정수 (#20)
   // #84 additive: 엔진 입력은 stayMinutes 그대로다. 시드 로더는 P1부터 메타 존재를 필수 검증한다.
   stayMetadata: StayMetadata.optional(),
+  // #83 §F additive — 후보 카드 아이콘용. optional인 이유는 "유형을 확인하지 못한 장소"의
+  // 자리를 남기기 위해서다(화면은 기본 아이콘으로 떨어진다). 다만 현재 시드 전수 분류는
+  // 테스트가 강제하므로, 빠뜨린 채 조용히 들어오는 것은 막힌다.
+  placeType: PlaceType.optional(),
   verificationLevel: z.enum(["원본확인", "교차확인", "TourAPI대조"]),
   officialSourceCount: z.number().int().nonnegative(), // UI 정렬 전용 — 엔진 점수와 분리 (#3)
   reasonText: LocalizedText, // 사전 작성 추천 사유 (REQ-DATA-005)
@@ -342,6 +383,7 @@ export type ActorT = z.infer<typeof Actor>;
 export type WorkT = z.infer<typeof Work>;
 export type PlaceT = z.infer<typeof Place>;
 export type StayCategoryT = z.infer<typeof StayCategory>;
+export type PlaceTypeT = z.infer<typeof PlaceType>;
 export type StationT = z.infer<typeof Station>;
 export type TrainLegT = z.infer<typeof TrainLeg>;
 export type GatewayLegT = z.infer<typeof GatewayLeg>;

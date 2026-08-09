@@ -47,6 +47,7 @@ import { fromKstLocalInput as fromLocalInput, toKstLocalInput as toLocalInput } 
 import { formatFlightStatus } from "@/lib/flight-status";
 import { formatEpisodeLabel } from "@/lib/episode-label";
 import { splitSourceLink } from "@/lib/source-link";
+import { placeTypeIcon } from "@/lib/place-type-icon";
 import { gatewayPlanningBaselineOf } from "@/lib/engine/gateway-baseline";
 import { AlternativeTimetables } from "./alternative-timetables";
 import { AuthModal, TripsModal, useSaveStub, type SaveStatus } from "./save-stub";
@@ -1315,7 +1316,16 @@ function PlaceCard({ candidate, locale, tr, selected, onToggle, stationName, wor
   return (
     <li className={`rounded-lg border p-3 ${selected ? "border-sc-blue bg-sc-blue-soft/60" : ""}`}>
       <div className="flex items-start justify-between gap-2">
-        <div className="min-w-0 text-sm">
+        {/* #83 §F 썸네일 — 시안의 48×48 그라데이션 박스. 사진 대신 유형 아이콘을 넣는다.
+            heritage는 아이콘이 비어 박스만 남는다(의도 — place-type-icon.ts 참고).
+            유형은 이름·역·접근시간에 없는 정보를 더하지 않는 장식이라 스크린리더에서 감춘다 */}
+        <div
+          aria-hidden="true"
+          className="grid size-12 shrink-0 place-items-center rounded-[9px] bg-gradient-to-br from-sc-blue-soft to-sc-airport-soft text-xl"
+        >
+          {placeTypeIcon(candidate.placeType)}
+        </div>
+        <div className="min-w-0 flex-1 text-sm">
           <p className="font-medium">
             {candidate.name[locale]}
             {candidate.selectionGroups.map((group) => (

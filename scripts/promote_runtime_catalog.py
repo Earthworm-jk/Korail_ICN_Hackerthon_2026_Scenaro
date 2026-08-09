@@ -49,6 +49,29 @@ STAY_MINUTES = {
     "large_experience": 120,
 }
 
+PLACE_TYPES = {
+    "beach",
+    "trail",
+    "heritage",
+    "walkway",
+    "ranch",
+    "cable_car",
+    "cafe",
+    "restaurant",
+    "stay",
+    "convention",
+    "cinema",
+    "port",
+    "workshop",
+    "square",
+    "library",
+    "bookstore",
+    "transit",
+    "park",
+    "cultural_center",
+    "filming_set",
+}
+
 
 class PromotionError(RuntimeError):
     pass
@@ -237,6 +260,8 @@ def build() -> tuple[list[dict], list[dict], dict, list[dict]]:
             checked_stations.add(station_id)
         if item["stayCategory"] not in STAY_MINUTES:
             raise PromotionError(f"체류 유형 오류: {item['stayCategory']}")
+        if item["placeType"] not in PLACE_TYPES:
+            raise PromotionError(f"장소 유형 오류: {item['placeType']}")
         if not catalog_place.get("address") or catalog_place.get("latitude") is None or catalog_place.get("longitude") is None:
             raise PromotionError(f"주소·좌표 누락: {catalog_place['name']['ko']}")
 
@@ -274,6 +299,7 @@ def build() -> tuple[list[dict], list[dict], dict, list[dict]]:
                 "openingHours": {"type": "unverified"},
                 "stayMinutes": STAY_MINUTES[stay_category],
                 "stayMetadata": {"category": stay_category, "basis": "category_default"},
+                "placeType": item["placeType"],
                 "verificationLevel": "원본확인",
                 "officialSourceCount": 1,
                 "reasonText": {
