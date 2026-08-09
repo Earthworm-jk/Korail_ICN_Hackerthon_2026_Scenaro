@@ -116,6 +116,92 @@ export function buildRegionWindows(params: {
   return windows;
 }
 
+/**
+ * 창의 성격 (#101)
+ *
+ * `availableMinutes`는 "역 경계 안에서 확보된 분"일 뿐 **쓸 수 있는 시간이라는 뜻이 아니다.**
+ * 열차와 열차 사이의 빈 창은 환승 대기이고, 화면이 이걸 "약 54분 활용 가능"이라고만 하면
+ * 사용자는 그 시간에 서울을 돌아볼 수 있다고 읽는다. 실제로는 접근시간 왕복과 엔진 버퍼
+ * 때문에 아무것도 배치되지 않는다.
+ */
+export type RegionWindowKind =
+  /** 다른 열차로 갈아타는 사이의 빈 창 — 환승 대기. 사용자가 확보한 시간이 아니다 */
+  | "transfer_wait"
+  /**
+   * **같은 열차**의 중간역 정차 — 내리지 않는다. 화면에 "환승"이라 쓰면 내렸다 다시 타야
+   * 한다는 오해가 되고, "활용 가능"이라 쓰면 그 시간에 열차 밖에서 뭘 할 수 있다는
+   * 오해가 된다. 둘 다 아니므로 별도 값으로 둔다 (PR #107 리뷰).
+   */
+  | "through_stop"
+  /** 방문이 배치됐거나 여행 시작·마감 경계인 창 — 환승도 통과 정차도 아니다 */
+  | "stay";
+
+type VisitSpan = { arriveAt: string; departAt: string };
+
+/** 판정에 필요한 최소 정보 — 창 앞뒤에 어떤 편이 붙는지 찾기 위한 것 */
+type RideSpan = {
+  trainNo: string;
+  fromStationId: string;
+  toStationId: string;
+  departAt: string;
+  arriveAt: string;
+};
+
+/**
+ * 창 하나의 성격을 판정한다.
+ *
+ * 세 가지를 모두 봐야 한다. 하나라도 빼면 거짓 설명이 나온다.
+ * 1. **경계** — 열차·공항 진입편 도착으로 시작해 열차 출발로 끝나는가
+ * 2. **방문** — 그 구간에 배치된 방문이 없는가
+ * 3. **편성** — 앞뒤가 서로 다른 열차인가
+ *
+ * 경계만 보면 열차 사이에 방문이 든 창까지 대기가 된다.
+ * 방문만 보면 여행 시작·마감 경계의 빈 창이 환승이 된다.
+ * 편성을 안 보면 **같은 열차의 중간역 정차**가 환승이 된다 — 스냅샷에 중간역 구간이
+ * 있으면 한 번 탑승이 두 leg로 표현되기 때문이다(#97에서 다룬 형태). 직접 구간이 있으면
+ * `compareRoutePaths`가 단일 leg를 고르지만, 직접 구간이 없는 데이터에서는 쪼개진
+ * 경로가 그대로 남는다 (PR #107 리뷰).
+ *
+ * 앞뒤 편성을 찾지 못하면 `stay`로 둔다 — 판정할 수 없으면 주장하지 않는다.
+ *
+ * #103이 도입할 "사용자가 의도적으로 확보한 자유시간"은 여기서 판정하지 않는다.
+ * 그건 사용자의 편집 이력이지 창의 모양으로 알 수 있는 것이 아니다.
+ */
+export function classifyRegionWindow(
+  window: Pick<RegionWindow, "stationId" | "startAt" | "endAt" | "startBoundary" | "endBoundary">,
+  visits: readonly VisitSpan[],
+  rides: readonly RideSpan[],
+): RegionWindowKind {
+  const betweenTrains =
+    (window.startBoundary === "TRAIN_ARRIVAL" || window.startBoundary === "GATEWAY_ARRIVAL")
+    && window.endBoundary === "TRAIN_DEPARTURE";
+  if (!betweenTrains) return "stay";
+
+  const start = Date.parse(window.startAt);
+  const end = Date.parse(window.endAt);
+  const hasVisit = visits.some(
+    (visit) => Date.parse(visit.arriveAt) < end && Date.parse(visit.departAt) > start,
+  );
+  if (hasVisit) return "stay";
+
+  // 공항 진입편(공항철도·검증 공항버스)에서 열차로 갈아타는 것은 언제나 실제 환승이다.
+  // 그 편은 rides(열차)에 없으므로 편성 비교 대상이 아니다.
+  if (window.startBoundary === "GATEWAY_ARRIVAL") return "transfer_wait";
+
+  // 시각은 반드시 파싱해 비교한다. 창은 toISOString()의 UTC 표기(...Z)이고 열차는
+  // 스냅샷 원값(+09:00)이라 같은 순간이어도 문자열이 다르다.
+  const arriving = rides.find(
+    (ride) => ride.toStationId === window.stationId
+      && Date.parse(ride.arriveAt) === start,
+  );
+  const departing = rides.find(
+    (ride) => ride.fromStationId === window.stationId
+      && Date.parse(ride.departAt) === end,
+  );
+  if (!arriving || !departing) return "stay";
+  return arriving.trainNo === departing.trainNo ? "through_stop" : "transfer_wait";
+}
+
 /** 창과 그 날짜의 활동 가능 시간대(09:00-21:00 KST)의 겹침 — 산식 단일 지점 */
 function activityOverlapMinutes(start: number, end: number): number {
   const date = koreaDate(start);
