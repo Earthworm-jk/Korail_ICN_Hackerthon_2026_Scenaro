@@ -83,9 +83,10 @@ searchEntities(query: string): Promise<{
 getCandidatePlaces(selection: {
   selectedActorIds: string[];
   selectedWorkIds: string[];
-}): Promise<PlaceCandidate[]>;
+}): Promise<{ candidates: PlaceCandidate[]; stations: StationSummary[]; works: WorkSummary[] }>;
 // PlaceCandidate = PlaceT + {
-//   relation: "selected_work" | "actor_other_work",  // §2 파생(상호 배타)
+//   relation: "selected_work" | "actor_other_work",  // 기존 표시·랭킹 호환 필드
+//   selectionGroups: ("actor" | "work")[],           // #3·#51 실제 집합 소속(둘 다 가능)
 //   relationDetails: RelationDetail[],               // #51 — 작품별 회차·장면·장면 배우(검증값 그대로)
 //   aiRank?: number,                                 // #48 — 서버 파생 순위(선택 관련 작품 범위, 1=최고)
 //   aiReason?: { ko, en },                           // #48 — 검토된 관련 이유. 원시 점수·검토 메타는 서버 전용
@@ -93,11 +94,11 @@ getCandidatePlaces(selection: {
 //         | "UNVERIFIED_HOURS"                       // 운영시간 확인 필요
 // }  // ActivityWindowDetail과 동일 열거값 — 화면 배지 2종(WIREFRAMES S3)과 1:1
 // RelationDetail = WorkPlaceRelation의 workId·episodeLabel?·sceneNote?·featuredActorIds?·actorPresenceReviewed?
-//   — 선택 작품 ∪ 선택 배우 출연작 관계만 포함 (무관 작품 관계 미노출, PR #65 리뷰 1)
+//   — 선택 작품 검토 관계 ∪ 선택 배우 장면 등장 확정 관계만 포함
 // REQ-SRCH-005·006·007. 정렬은 UI에서 (관련성 / officialSourceCount 토글).
-// #51 배우 선택 필터는 표시 레벨(lib/candidates.ts splitByActorPresence) — 판정 순서
-//   confirmed → unreviewed → absent. 배우 모드의 미등장·미확인 후보는 최초 로드에서
-//   초기 미선택(initialSelectedIds, PR #65 리뷰 2)이며 재열람 복원은 excluded 목록 기준(#35)
+// #51 최종 계약: 배우 후보는 actorPresenceReviewed:true + featuredActorIds 포함 관계만,
+// 작품 후보는 사람이 검토한 선택 작품 관계 전체, 복합 선택은 두 집합의 합집합이다.
+// 미등장·미검토 관계는 배우 후보의 별도 선택 영역에도 노출하지 않는다.
 
 // lib/actions/itinerary.ts
 planItinerary(request: PlanRequest): Promise<PlanActionResult>;
@@ -124,8 +125,8 @@ type PlanRequest = {
 // Action의 ok는 "요청이 유효했는가"이며, 엔진 ItineraryResult에는 ok가 없다 —
 // 계산 결과는 ENGINE_SPEC §7의 status 2분기(#14 ver.0.4 — 필수·고정일 제거로 실패 분기 소멸):
 // #43: 운영시간 밖·미확인 배치는 자동 제외하지 않고 warnings에 담는다.
-//   { status: "planned", days, rejectedPlaces, warnings, comparisonKeys, metrics }
-//   { status: "empty",   days: [], rejectedPlaces, warnings }
+//   { status: "planned", days, rejectedPlaces, warnings, selectionGroups, comparisonKeys, metrics }
+//   { status: "empty",   days: [], rejectedPlaces, warnings, selectionGroups }
 // empty는 정상 응답이며 comparisonKeys·metrics를 포함하지 않는다(허위 값 금지)
 
 // #58 공항버스 대안은 핵심 추천의 2초 응답을 막지 않는 후속 보강 Action이다.
