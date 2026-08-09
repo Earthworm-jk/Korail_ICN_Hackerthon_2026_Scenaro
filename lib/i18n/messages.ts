@@ -250,10 +250,9 @@ export const messages = {
     // 화면에 그대로 나오지 않는 유일한 값이다.
     "app.locale": "ko",
 
-    // 열차 구간 팝업 (인수인계 G) — 카드의 중복 정보(소요시간·출처)는 이 구간으로 옮기고
-    // 탑승 위치·3단계 상세 안내는 제거했다. 서울역 환승 동선만 #101이 담당한다
-    "leg.time": "시각",
-    "leg.duration": "소요",
+    // 열차 구간 팝업 (인수인계 G) — 카드의 중복 정보(출처)는 이 구간으로 옮기고
+    // 탑승 위치·3단계 상세 안내는 제거했다. 서울역 환승 동선만 #101이 담당한다.
+    // 시각·소요시간은 일정의 열차 줄이 표시하므로 팝업 전용 문구가 없다.
     "leg.arexNote": "인천공항 T1과 서울역을 잇는 공항철도 직통열차입니다. 중간에 서지 않습니다.",
     "leg.railSource": "출처: 한국철도공사 열차운행정보 · 2026-08-09 확인",
   },
@@ -497,11 +496,10 @@ export const messages = {
     // Which locale this bundle is — read by map overlays to pick the language of data names.
     "app.locale": "en",
 
-    // Train leg modal (handover G) — duplicated details (duration, source) moved here from the
-    // card; boarding location and the step-by-step guidance were removed. Seoul Station
-    // transfer guidance is handled in #101
-    "leg.time": "Time",
-    "leg.duration": "Duration",
+    // Train leg modal (handover G) — the duplicated source line moved here from the card;
+    // boarding location and the step-by-step guidance were removed. Seoul Station transfer
+    // guidance is handled in #101. Times and duration live on the itinerary line, so the
+    // modal has no copy of its own.
     "leg.arexNote": "AREX Express between Incheon T1 and Seoul Station, with no intermediate stops.",
     "leg.railSource": "Source: Korail train operation data · verified 2026-08-09",
   },

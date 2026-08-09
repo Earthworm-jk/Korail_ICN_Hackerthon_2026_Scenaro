@@ -55,7 +55,7 @@ import { ExecutionSupport } from "./execution-support";
 import { GatewayAlternatives } from "./gateway-alternatives";
 import { ItineraryRouteMap, KoreaMapPanel, type MapPlace, type MapStation } from "./korea-map";
 import { ThemeExperienceCard, ThemeExperienceMapOverlay } from "./theme-experience";
-import { TrainLegModal, type TrainLegDetail } from "./train-leg-modal";
+import { TrainLegModal, legDurationLabel, type TrainLegDetail } from "./train-leg-modal";
 import { getThemeExperience, type ThemeExperienceResult } from "@/lib/actions/theme-experience";
 import type { StationFacilitiesSnapshotT } from "@/lib/station-facilities";
 import type { StationCoordinatesSnapshotT } from "@/lib/station-coordinates";
@@ -1054,8 +1054,8 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
                           <span className="ml-2 text-xs text-sc-muted/70">{leg.serviceName[locale]} · {leg.operator[locale]}</span>
                         </li>
                       ))}
-                      {/* 열차 줄은 누르면 그 구간의 시각·소요시간·출처가 팝업으로 열린다 (인수인계 G).
-                          점선 밑줄이 눌린다는 표시다 — 안내 문구를 따로 두지 않는다. */}
+                      {/* 시간 정보는 전부 이 줄에 있다 — 소요시간까지 여기서 읽는다 (인수인계 G).
+                          누르면 그 구간의 안내·출처가 팝업으로 열린다. 점선 밑줄이 눌린다는 표시. */}
                       {day.rides.map((ride) => (
                         <li key={`${ride.trainNo}-${ride.departAt}`}>
                           <button
@@ -1070,6 +1070,7 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
                             })}
                           >
                             🚆 {fmtTime(ride.departAt)} {stationName(ride.fromStationId)} → {fmtTime(ride.arriveAt)} {stationName(ride.toStationId)}
+                            {" · "}{legDurationLabel(ride.departAt, ride.arriveAt, tr)}
                             <span className="ml-2 text-xs text-sc-muted/70 underline decoration-dotted underline-offset-2">
                               {tr("step4.train")} {ride.trainNo}
                             </span>

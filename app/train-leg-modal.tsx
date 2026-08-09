@@ -35,10 +35,8 @@ function fmtTime(iso: string): string {
 }
 
 /** 소요시간(분) — 엔진 값이 아니라 표시된 출발·도착 시각의 차다. 새 데이터를 만들지 않는다 */
-export function legDurationMinutes(
-  leg: Pick<TrainLegDetail, "departAt" | "arriveAt">,
-): number {
-  return Math.round((Date.parse(leg.arriveAt) - Date.parse(leg.departAt)) / 60_000);
+export function legDurationMinutes(departAt: string, arriveAt: string): number {
+  return Math.round((Date.parse(arriveAt) - Date.parse(departAt)) / 60_000);
 }
 
 /** 출처는 구간 종류로만 나눈다 — 구간별 계획/실적 등급 구분은 여기서 만들지 않는다 */
@@ -46,8 +44,16 @@ export function legSourceKey(leg: Pick<TrainLegDetail, "trainNo">): MessageKey {
   return isAirportRailLeg(leg.trainNo) ? "support.arexSource" : "leg.railSource";
 }
 
-function durationLabel(leg: TrainLegDetail, tr: (key: MessageKey) => string): string {
-  const minutes = legDurationMinutes(leg);
+/**
+ * 표시 자리는 팝업이 아니라 일정의 열차 줄이다. 시간 정보를 한 자리에서 다 읽게 하는 것이
+ * 이 작업의 목적이므로, 소요시간만 팝업 안으로 들어가면 같은 문제가 다시 생긴다.
+ */
+export function legDurationLabel(
+  departAt: string,
+  arriveAt: string,
+  tr: (key: MessageKey) => string,
+): string {
+  const minutes = legDurationMinutes(departAt, arriveAt);
   const hours = Math.floor(minutes / 60);
   const rest = minutes % 60;
   if (hours === 0) return `${rest}${tr("region.minutes")}`;
@@ -64,13 +70,6 @@ export function TrainLegModal({ leg, onClose, tr }: {
   useModalDismiss(dialogRef, onClose);
 
   const isAirportRail = isAirportRailLeg(leg.trainNo);
-
-  const row = (label: string, value: string) => (
-    <div className="flex items-baseline justify-between gap-3 border-b border-sc-line/60 py-2 last:border-b-0">
-      <span className="text-sm text-sc-muted">{label}</span>
-      <span className="text-sm font-medium text-sc-text">{value}</span>
-    </div>
-  );
 
   return (
     <div
@@ -98,11 +97,11 @@ export function TrainLegModal({ leg, onClose, tr }: {
           </button>
         </div>
 
-        <div className="mt-3">
-          {row(tr("leg.time"), `${fmtTime(leg.departAt)} → ${fmtTime(leg.arriveAt)}`)}
-          {row(tr("leg.duration"), durationLabel(leg, tr))}
-          {row(tr("step4.train"), leg.trainNo)}
-        </div>
+        {/* 팝업이 어느 줄에서 열렸는지만 알려주는 확인용 한 줄 — 시각·소요시간의 표시 자리는
+            일정의 열차 줄이다. 여기서 시간 정보를 다시 나열하지 않는다. */}
+        <p className="mt-1 text-xs text-sc-muted">
+          {fmtTime(leg.departAt)} → {fmtTime(leg.arriveAt)} · {tr("step4.train")} {leg.trainNo}
+        </p>
 
         {isAirportRail && (
           <p className="mt-3 rounded border border-sc-line bg-sc-subtle/60 p-2.5 text-sm text-sc-text/80">

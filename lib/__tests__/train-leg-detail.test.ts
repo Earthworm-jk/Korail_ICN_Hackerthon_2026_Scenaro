@@ -50,23 +50,23 @@ describe("공항철도 구간 판별", () => {
 
 describe("소요시간 — 표시된 시각의 차이지 새 데이터가 아니다", () => {
   it("출발·도착 시각의 차를 분으로 준다", () => {
-    expect(legDurationMinutes(arex)).toBe(43);
-    expect(legDurationMinutes(leg())).toBe(119);
+    expect(legDurationMinutes(arex.departAt, arex.arriveAt)).toBe(43);
+    expect(legDurationMinutes(leg().departAt, leg().arriveAt)).toBe(119);
   });
 
   it("표기가 달라도 같은 순간이면 같은 값이다", () => {
     // 스냅샷은 +09:00, 엔진 출력은 UTC(Z) — 문자열이 아니라 시각으로 계산한다
-    expect(legDurationMinutes({
-      departAt: "2026-08-12T12:18:00+09:00",
-      arriveAt: "2026-08-12T04:01:00.000Z",
-    })).toBe(43);
+    expect(legDurationMinutes(
+      "2026-08-12T12:18:00+09:00",
+      "2026-08-12T04:01:00.000Z",
+    )).toBe(43);
   });
 
   it("자정을 넘겨도 음수가 되지 않는다", () => {
-    expect(legDurationMinutes({
-      departAt: "2026-08-12T23:30:00+09:00",
-      arriveAt: "2026-08-13T00:20:00+09:00",
-    })).toBe(50);
+    expect(legDurationMinutes(
+      "2026-08-12T23:30:00+09:00",
+      "2026-08-13T00:20:00+09:00",
+    )).toBe(50);
   });
 });
 
@@ -81,8 +81,6 @@ describe("출처 표기 — 옮기되 지우지 않는다", () => {
       expect(messages[locale]["support.arexSource"]).toBeTruthy();
       expect(messages[locale]["leg.railSource"]).toBeTruthy();
       expect(messages[locale]["leg.arexNote"]).toBeTruthy();
-      expect(messages[locale]["leg.time"]).toBeTruthy();
-      expect(messages[locale]["leg.duration"]).toBeTruthy();
     }
   });
 });
