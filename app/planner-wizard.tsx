@@ -5,7 +5,7 @@
  * - 편집 = 촬영지 재선택·항공 시각 변경 후 전체 재계산 (무상태)
  * - 대안 시간표는 mock(#14 ⑨ 선행), 저장·내 일정은 in-memory 스텁(#25 선행) — 엔진·Supabase 연결 시 교체
  */
-import { useCallback, useMemo, useReducer, useState } from "react";
+import { useCallback, useEffect, useMemo, useReducer, useState } from "react";
 import { searchEntities, type ActorSummary, type WorkSummary } from "@/lib/actions/search";
 import {
   getCandidatePlaces,
@@ -263,12 +263,28 @@ export default function PlannerWizard({ stationFacilities }: {
     }
   }, [arrival, departure, setArrivalAtInput, setDepartureAtInput]);
 
-  const runSearch = useCallback(async (value: string) => {
-    setQuery(value);
-    if (!value.trim()) { setResults({ actors: [], works: [] }); setSearched(false); return; }
-    setResults(await searchEntities(value));
-    setSearched(true);
-  }, []);
+  // #78 P1 — LLM 보조는 결정적 검색 0건일 때 서버에서만 실행된다.
+  // 타이핑 중 중간 문자열마다 외부 호출하지 않도록 300ms 디바운스하고, 취소된 요청의 응답은 버린다.
+  useEffect(() => {
+    const value = query.trim();
+    if (!value) return;
+    let active = true;
+    const timer = window.setTimeout(() => {
+      void searchEntities(value).then((next) => {
+        if (!active) return;
+        setResults(next);
+        setSearched(true);
+      }).catch(() => {
+        if (!active) return;
+        setResults({ actors: [], works: [] });
+        setSearched(true);
+      });
+    }, 300);
+    return () => {
+      active = false;
+      window.clearTimeout(timer);
+    };
+  }, [query]);
 
   const loadCandidates = useCallback(async () => {
     const data = await getCandidatePlaces({
@@ -560,7 +576,12 @@ export default function PlannerWizard({ stationFacilities }: {
             className="mt-4 w-full rounded border px-3 py-2"
             placeholder={tr("step2.placeholder")}
             value={query}
-            onChange={(e) => runSearch(e.target.value)}
+            onChange={(e) => {
+              const nextQuery = e.target.value;
+              setQuery(nextQuery);
+              setSearched(false);
+              if (!nextQuery.trim()) setResults({ actors: [], works: [] });
+            }}
           />
           {searched && results.actors.length === 0 && results.works.length === 0 && (
             <p className="mt-3 rounded border border-sc-orange/30 bg-sc-orange-soft p-3 text-sm text-sc-orange-text">

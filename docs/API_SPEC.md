@@ -11,10 +11,10 @@
     → lib/engine  (순수 함수, ENGINE_SPEC)
     → lib/repositories (JSON 시드, 기동 시 Zod 검증)
     → lib/adapters
-      → (계층 1) 외부 공공 API — 유일한 런타임 실호출
+      → (계층 1) 외부 API — 런타임 실호출
 ```
 
-## 2. 계층 1 — 외부 공공 API (서버 전용)
+## 2. 계층 1 — 외부 API (서버 전용)
 
 ### 2.1 실호출 1건: 인천공항 여객편 운항 현황 (REQ-DATA-003, P1)
 
@@ -27,7 +27,19 @@
 | 호출 특성 | `searchday`(조회일 기준 D-3~D+6)·`flight_id` 필터로 해당 편만 수신. 편명·날짜별 5분 캐시(일 500건 쿼터 보호). 단일 발급 키는 원형 우선·인증 오류 시 반대 인코딩형 1회 재시도. live 200+편명 없음은 오류 폴백과 구분해 미검색 처리 (#46, `lib/adapters/flights-live.ts`) |
 | 호출 시점 | 데모 중 입국편 확인 1회. 오프라인 모드에서는 호출하지 않음(NFR-DEMO-001) |
 
-### 2.2 런타임에 호출하지 않는 것 (명시)
+### 2.2 실호출 2건: OpenAI 검색 입력 해석 (#78 P1)
+
+| 항목 | 값 |
+|---|---|
+| 엔드포인트 | `POST https://api.openai.com/v1/responses` — strict JSON Schema 구조화 출력 |
+| 인증 | `OPENAI_API_KEY` (`.env.local`/배포 서버 환경변수, 커밋·클라이언트 노출 금지) |
+| 호출 조건 | 기존 배우·작품 ko/en 결정적 검색이 0건이고 정규화 질의가 3–80자일 때만 |
+| 역할 | 외국어 표기·대표 별칭·명백한 오탈자를 서버가 제공한 배우·작품 ID allowlist로 해석 |
+| 타임아웃·폴백 | 5초 초과·키 없음·HTTP/응답/스키마 오류·낮은 확신은 기존 빈 검색 결과 유지 |
+| 안전 경계 | 장소·장면·인물 관계 추론 금지, allowlist 밖 ID 폐기, 원시 응답·키 클라이언트 미전달 |
+| 비용 방어 | UI 300ms 디바운스, 결정적 검색 우선, 최대 출력 120토큰, 응답 저장 비활성화 |
+
+### 2.3 런타임에 호출하지 않는 것 (명시)
 
 - **KTX 시간표**: `data/train-snapshot.json` 스냅샷만 사용. 실시간 조회 없음
 - **역 편의시설**: `data/station-facilities.json` 스냅샷만 사용
@@ -60,7 +72,8 @@ searchEntities(query: string): Promise<{
   actors: ActorSummary[];   // id, name(ko/en)
   works: WorkSummary[];
 }>;
-// REQ-SRCH-003·004. 결과 0건이어도 예외가 아니라 빈 배열 (REQ-SRCH-008은 UI 처리)
+// REQ-SRCH-003·004. ko/en 결정적 검색 우선. 0건일 때만 #78 LLM 보조를 시도하며,
+// 키 없음·오류·낮은 확신은 빈 배열 (REQ-SRCH-008은 UI 처리)
 
 // lib/actions/places.ts
 getCandidatePlaces(selection: {
