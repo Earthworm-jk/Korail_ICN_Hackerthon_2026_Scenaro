@@ -103,7 +103,21 @@ def haversine_m(a: tuple[float, float], b: tuple[float, float]) -> float:
     return 2 * 6_371_000 * math.asin(math.sqrt(h))
 
 
-def overpass(query: str, attempts: int = 3) -> dict:
+CACHE_DIR = REPO_ROOT / "data" / "raw"
+
+
+def overpass(query: str, attempts: int = 3, cache_key: str | None = None) -> dict:
+    """Overpass 호출. cache_key를 주면 원천 응답을 data/raw에 두고 재실행 시 재사용한다.
+
+    공개 인스턴스에 같은 대용량 질의를 반복해 던지지 않기 위해서다. 캐시 파일은
+    커밋하지 않는다(.gitignore). 새로 받으려면 해당 파일을 지우면 된다.
+    """
+    if cache_key:
+        cached = CACHE_DIR / f"osm-{cache_key}.json"
+        if cached.exists():
+            print(f"    캐시 사용: {cached.relative_to(REPO_ROOT)}")
+            return json.loads(cached.read_text(encoding="utf-8"))
+
     last: str | None = None
     for attempt in range(attempts):
         for base in OVERPASS_MIRRORS:
@@ -113,8 +127,14 @@ def overpass(query: str, attempts: int = 3) -> dict:
                 headers={"User-Agent": USER_AGENT},
             )
             try:
-                with urllib.request.urlopen(request, timeout=180) as response:
-                    return json.loads(response.read().decode("utf-8"))
+                with urllib.request.urlopen(request, timeout=300) as response:
+                    payload = json.loads(response.read().decode("utf-8"))
+                if cache_key:
+                    CACHE_DIR.mkdir(parents=True, exist_ok=True)
+                    (CACHE_DIR / f"osm-{cache_key}.json").write_text(
+                        json.dumps(payload), encoding="utf-8"
+                    )
+                return payload
             except (urllib.error.HTTPError, urllib.error.URLError, TimeoutError) as error:
                 last = f"{base.split('/')[2]}: {error}"
                 print(f"    미러 실패 — {last}")
@@ -255,13 +275,17 @@ def axis_line(spec: dict, seed_by_id: dict) -> list[tuple[float, float]]:
     """축 하나의 (lat, lon) 선형을 얻는다."""
     if spec["mode"] == "relation":
         print(f"    route 관계 rel/{spec['relationId']} 사용")
-        payload = overpass(f"[out:json][timeout:180];rel({spec['relationId']});out geom;")
+        payload = overpass(
+            f"[out:json][timeout:180];rel({spec['relationId']});out geom;",
+            cache_key=f"rel-{spec['relationId']}",
+        )
         return stitch(payload["elements"][0]["members"])
 
     south, west, north, east = spec["bbox"]
     print(f"    회랑 railway=rail 전체 수신 ({south},{west},{north},{east})")
     payload = overpass(
-        f'[out:json][timeout:300];way["railway"="rail"]({south},{west},{north},{east});out geom;'
+        f'[out:json][timeout:300];way["railway"="rail"]({south},{west},{north},{east});out geom;',
+        cache_key=f"rail-{spec['id']}",
     )
     adjacency = build_graph(payload["elements"])
     component = largest_component(adjacency)
@@ -307,17 +331,21 @@ def build() -> dict:
         first, last = on_line[0][1], on_line[-1][1]
         trimmed = raw[first : last + 1]
         projected = [project(lat, lon) for lat, lon in trimmed]
-        reduced = simplify(projected, SIMPLIFY_TOLERANCE)
 
-        # 단순화로 점이 사라지므로 역 인덱스를 남은 점 기준으로 다시 잡는다
+        # 역 앵커를 지우지 않도록 역과 역 사이를 따로 단순화해 이어 붙인다.
+        # 전체를 한 번에 줄이면 직선 구간의 점이 사라지면서 역 근처 점도 함께 없어져,
+        # 앵커가 실제 역에서 수 km 떨어진다(만종 2.7km·진부 3.7km 실측). 그러면
+        # 구간을 자를 때 엉뚱한 곳에서 잘린다.
+        cuts = [index - first for _, index in on_line]
+        reduced: list[tuple[float, float]] = []
         stations_out = []
-        for station_id, index in on_line:
-            anchor = project(*trimmed[index - first])
-            nearest = min(
-                range(len(reduced)),
-                key=lambda i: (reduced[i][0] - anchor[0]) ** 2 + (reduced[i][1] - anchor[1]) ** 2,
-            )
-            stations_out.append({"stationId": station_id, "index": nearest})
+        for order, (station_id, _) in enumerate(on_line):
+            stations_out.append({"stationId": station_id, "index": len(reduced)})
+            if order == len(on_line) - 1:
+                reduced.append(projected[cuts[order]])
+                break
+            segment = simplify(projected[cuts[order] : cuts[order + 1] + 1], SIMPLIFY_TOLERANCE)
+            reduced.extend(segment[:-1])  # 끝점은 다음 구간의 시작점으로 이어진다
 
         print(f"    {len(trimmed)}점 → 단순화 {len(reduced)}점, 역 {len(stations_out)}개\n")
         lines_out.append(

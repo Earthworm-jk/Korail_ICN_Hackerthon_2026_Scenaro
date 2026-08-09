@@ -51,3 +51,6 @@ data/*.json.bak
 
 # 지도 해안선 생성용 원천 (scripts/build_korea_outline.py가 필요 시 내려받는다)
 data/raw/ne_*.geojson
+
+# 철로 선형 파이프라인 원천 캐시 (scripts/build_rail_geometry.py)
+data/raw/osm-*.json
