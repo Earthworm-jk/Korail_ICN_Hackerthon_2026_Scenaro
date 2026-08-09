@@ -1,17 +1,16 @@
 @import "tailwindcss";
 
-/* #14 v0.6 와이어프레임 디자인 토큰 (wireframes/scenaro-wireframe-v0.6.html — 계약 기준 시안)
-   데모 안정성을 위해 라이트 값으로 고정한다. 다크 값은 와이어프레임의 light-dark() 정의를
-   후속에서 그대로 옮긴다 — 지금 켜면 하드코딩된 밝은 배경과 섞여 깨진다. */
+/* SCENARO desktop design tokens
+   MVP target: notebook/desktop first. Mobile-specific interaction stays post-MVP. */
 :root {
   --sc-blue: #005bac;
   --sc-blue-soft: #eaf3ff;
   --sc-airport: #008f98;
   --sc-airport-soft: #e8f8f8;
-  --sc-airport-text: #006d73; /* PR #77 리뷰 — soft 배경 위 텍스트 전용 (5.59:1, AA) */
+  --sc-airport-text: #006d73;
   --sc-orange: #d97706;
   --sc-orange-soft: #fff4df;
-  --sc-orange-text: #9a4d00; /* PR #77 리뷰 — soft 배경 위 텍스트 전용 (5.61:1, AA) */
+  --sc-orange-text: #9a4d00;
   --sc-green: #198754;
   --sc-red: #c0392b;
   --sc-text: #17212b;
@@ -20,6 +19,8 @@
   --sc-surface: #ffffff;
   --sc-subtle: #f5f8fb;
   --sc-shadow: rgba(18, 44, 70, 0.12);
+  --sc-shadow-soft: rgba(18, 44, 70, 0.07);
+  --sc-focus: rgba(0, 91, 172, 0.22);
 }
 
 @theme inline {
@@ -39,15 +40,156 @@
   --color-sc-surface: var(--sc-surface);
   --color-sc-subtle: var(--sc-subtle);
   --font-sans: Pretendard, "Noto Sans KR", var(--font-geist-sans), system-ui, sans-serif;
+
+  /* The planner now puts selection + calculated itinerary side by side in step 3.
+     1152px made both columns feel like admin-table panes; keep the same utility name
+     while giving the desktop shell enough room for the integrated planner. */
+  --container-6xl: 82.5rem;
 }
 
 @layer base {
   * {
-    border-color: var(--sc-line); /* v0.6 라인 컬러를 기본 보더로 — 색 지정 클래스는 그대로 우선 */
+    border-color: var(--sc-line);
   }
+
+  html {
+    text-rendering: optimizeLegibility;
+  }
+
   body {
-    background: var(--sc-subtle);
+    background:
+      radial-gradient(circle at 12% 0%, rgba(0, 143, 152, 0.045), transparent 32rem),
+      radial-gradient(circle at 88% 8%, rgba(0, 91, 172, 0.05), transparent 34rem),
+      var(--sc-subtle);
     color: var(--sc-text);
     font-family: Pretendard, "Noto Sans KR", system-ui, sans-serif;
+    line-height: 1.55;
+  }
+
+  button,
+  input,
+  select {
+    font: inherit;
+  }
+
+  button,
+  a,
+  input,
+  select,
+  summary {
+    outline: none;
+  }
+
+  button:focus-visible,
+  a:focus-visible,
+  input:focus-visible,
+  select:focus-visible,
+  summary:focus-visible {
+    box-shadow: 0 0 0 3px var(--sc-focus);
+  }
+
+  button:not(:disabled),
+  summary {
+    cursor: pointer;
+  }
+
+  input,
+  select {
+    background: var(--sc-surface);
+  }
+
+  input:hover,
+  select:hover {
+    border-color: color-mix(in srgb, var(--sc-blue) 40%, var(--sc-line));
+  }
+
+  input:focus,
+  select:focus {
+    border-color: var(--sc-blue);
+  }
+}
+
+@layer components {
+  /* Common interactive surfaces: stronger affordance without adding visual noise. */
+  button.rounded,
+  button[class*="rounded-"] {
+    transition-property: border-color, background-color, color, box-shadow, opacity, transform;
+    transition-duration: 150ms;
+    transition-timing-function: ease;
+  }
+
+  button.rounded:active:not(:disabled),
+  button[class*="rounded-"]:active:not(:disabled) {
+    transform: translateY(1px);
+  }
+
+  /* Step 3 is the product's decision workspace. Give its selectable place cards a
+     clearer hierarchy while preserving all existing state classes and semantics. */
+  #place-picker > ul > li {
+    border-radius: 12px;
+    padding: 14px;
+    box-shadow: 0 1px 0 var(--sc-shadow-soft);
+    transition: border-color 150ms ease, background-color 150ms ease, box-shadow 150ms ease;
+  }
+
+  #place-picker > ul > li:hover {
+    border-color: color-mix(in srgb, var(--sc-blue) 34%, var(--sc-line));
+    box-shadow: 0 7px 18px var(--sc-shadow-soft);
+  }
+
+  #place-picker > details {
+    overflow: hidden;
+    border-radius: 12px;
+    background: var(--sc-surface);
+  }
+
+  #place-picker > details > summary {
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    padding-inline: 14px;
+    list-style-position: inside;
+    background: color-mix(in srgb, var(--sc-subtle) 72%, white);
+  }
+
+  #place-picker > details[open] > summary {
+    color: var(--sc-blue);
+    background: var(--sc-blue-soft);
+  }
+
+  /* Native controls are important in step 1; keep dates/times easy to hit on notebook screens. */
+  input[type="date"],
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  select {
+    min-height: 36px;
+  }
+
+  /* Numeric travel information should scan vertically without digit jitter. */
+  time,
+  [class*="tabular-nums"] {
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+@media (min-width: 1024px) {
+  @layer components {
+    /* Integrated step-3 columns need breathing room; the application shell remains centered. */
+    body > main > div.mx-auto {
+      padding-inline: 24px;
+    }
+
+    #place-picker {
+      padding-right: 2px;
+    }
+  }
+}
+
+@media (min-width: 1280px) {
+  @layer components {
+    body > main > div.mx-auto {
+      padding-inline: 28px;
+    }
   }
 }
