@@ -13,7 +13,7 @@ import {
   type PlaceCandidate,
 } from "@/lib/actions/places";
 import { planItinerary } from "@/lib/actions/itinerary";
-import { excludedPlaceIdsFrom, initialCandidateIds } from "@/lib/candidates";
+import { excludedPlaceIdsFrom, initialCandidateIds, initialSelectedIds, splitByActorPresence } from "@/lib/candidates";
 import { sortCandidatePlaces } from "@/lib/place-ranking";
 import { getFlightInfo } from "@/lib/actions/flights";
 import { t, type Locale, type MessageKey } from "@/lib/i18n/messages";
@@ -37,6 +37,7 @@ import {
 } from "@/lib/itinerary-view";
 import { fromKstLocalInput as fromLocalInput, toKstLocalInput as toLocalInput } from "@/lib/kst-datetime";
 import { formatFlightStatus } from "@/lib/flight-status";
+import { formatEpisodeLabel } from "@/lib/episode-label";
 import { AlternativeTimetables } from "./alternative-timetables";
 import { AuthModal, TripsModal, useSaveStub, type SaveStatus } from "./save-stub";
 import { ExecutionSupport } from "./execution-support";
@@ -166,6 +167,8 @@ export default function PlannerWizard({ stationFacilities }: {
     });
     setCandidateData(data);
     const excluded = new Set(c.excludedPlaceIds);
+    // 재열람에는 배우 필터 초기 미선택(#65 리뷰 2)을 적용하지 않는다 — 저장 당시 선택
+    // (excluded의 여집합)이 단일 기준이라, 사용자가 직접 담았던 별도 구분 후보를 잃지 않는다
     setSelectedPlaceIds(new Set(initialCandidateIds(data.candidates).filter((id) => !excluded.has(id))));
     dispatchView({ type: "REOPEN", record });
     setStep(4);
@@ -204,8 +207,11 @@ export default function PlannerWizard({ stationFacilities }: {
       selectedWorkIds: selectedWorks.map((w) => w.id),
     });
     setCandidateData(data);
-    // #43 확정: 미확인 후보도 선택 가능 — 초기 선택은 전체 후보, 엔진이 경고와 함께 배치
-    setSelectedPlaceIds(new Set(initialCandidateIds(data.candidates)));
+    // #43(운영시간 미확인 포함 전체 선택)은 유지하되, 배우 선택 모드의 미등장·미확인 장면
+    // 후보(#51 별도 구분)는 초기 미선택 — 사용자가 별도 영역에서 직접 선택 (PR #65 리뷰 2)
+    setSelectedPlaceIds(new Set(
+      initialSelectedIds(data.candidates, new Set(selectedActors.map((a) => a.id))),
+    ));
     setStep(3);
   }, [selectedActors, selectedWorks]);
 
@@ -285,6 +291,12 @@ export default function PlannerWizard({ stationFacilities }: {
     // #48: 스냅샷 연결 전에는 기존 관계·출처·ID 순서로 결정적 폴백한다.
     return sortCandidatePlaces(candidateData.candidates, sortBy === "relevance" ? "relevance" : "official_sources");
   }, [candidateData, sortBy]);
+
+  // #51 배우 선택 필터 — 등장 확정·작품 유래는 기본 목록, 미등장·미확인은 별도 구분(선택은 가능)
+  const candidateGroups = useMemo(
+    () => splitByActorPresence(sortedCandidates, new Set(selectedActors.map((a) => a.id))),
+    [sortedCandidates, selectedActors],
+  );
 
   // #33 — availableMinutes 포맷 전용 (재계산 금지)
   const availableLabel = (minutes: number) => {
@@ -548,7 +560,7 @@ export default function PlannerWizard({ stationFacilities }: {
           )}
           <ul className="mt-3 space-y-2">
             {/* #43 확정: 미확인 후보도 같은 목록에서 선택 가능 — 카드에 경고 배지 */}
-            {sortedCandidates.map((c) => (
+            {candidateGroups.primary.map((c) => (
               <PlaceCard key={c.id} candidate={c} locale={locale} tr={tr}
                 selected={selectedPlaceIds.has(c.id)}
                 stationName={stationName} workTitles={workTitles}
@@ -560,6 +572,26 @@ export default function PlannerWizard({ stationFacilities }: {
               />
             ))}
           </ul>
+          {/* #51 합의 3 — 배우 선택 모드: 미등장 확정·미확인은 별도 구분 영역, 선택은 동일하게 가능 */}
+          {candidateGroups.separated.length > 0 && (
+            <div className="mt-4">
+              <h3 className="text-sm font-medium text-gray-600">{tr("step3.actorSeparatedTitle")}</h3>
+              <ul className="mt-2 space-y-2">
+                {candidateGroups.separated.map(({ candidate: c, status }) => (
+                  <PlaceCard key={c.id} candidate={c} locale={locale} tr={tr}
+                    selected={selectedPlaceIds.has(c.id)}
+                    stationName={stationName} workTitles={workTitles}
+                    presence={status}
+                    onToggle={() => {
+                      const next = new Set(selectedPlaceIds);
+                      if (next.has(c.id)) next.delete(c.id); else next.add(c.id);
+                      setSelectedPlaceIds(next);
+                    }}
+                  />
+                ))}
+              </ul>
+            </div>
+          )}
           <div className="mt-4 flex justify-between">
             <button className="rounded border px-4 py-2 text-sm" onClick={() => setStep(2)}>{tr("common.back")}</button>
             <button
@@ -748,7 +780,7 @@ export default function PlannerWizard({ stationFacilities }: {
   );
 }
 
-function PlaceCard({ candidate, locale, tr, selected, onToggle, stationName, workTitles }: {
+function PlaceCard({ candidate, locale, tr, selected, onToggle, stationName, workTitles, presence }: {
   candidate: PlaceCandidate;
   locale: Locale;
   tr: (key: MessageKey) => string;
@@ -756,6 +788,7 @@ function PlaceCard({ candidate, locale, tr, selected, onToggle, stationName, wor
   onToggle: () => void; // #43: 미확인 후보도 선택 가능 — 표시 전용 카드 없음
   stationName: (id: string) => string;
   workTitles: (ids: string[]) => string;
+  presence?: "absent" | "unreviewed"; // #51 — 별도 구분 영역 카드의 사유 배지
 }) {
   const oh = candidate.openingHours;
   const hoursLabel =
@@ -779,10 +812,33 @@ function PlaceCard({ candidate, locale, tr, selected, onToggle, stationName, wor
             <span className="ml-2 rounded bg-gray-100 px-1.5 py-0.5 text-xs text-gray-600">
               {tr(candidate.relation === "selected_work" ? "step3.relationSelected" : "step3.relationActor")}
             </span>
+            {presence && (
+              <span className="ml-1 rounded bg-gray-200 px-1.5 py-0.5 text-xs text-gray-700">
+                {tr(presence === "absent" ? "step3.actorAbsent" : "step3.actorUnreviewed")}
+              </span>
+            )}
           </p>
           <p className="mt-1 text-xs text-gray-500">
-            {workTitles(candidate.workIds)} · {stationName(candidate.nearestStationId)} · {tr("step3.accessAbout")} {candidate.accessEstimate.minutes}{tr("step3.accessEstimate")}
+            {stationName(candidate.nearestStationId)} · {tr("step3.accessAbout")} {candidate.accessEstimate.minutes}{tr("step3.accessEstimate")}
           </p>
+          {/* #51 계약 5·6·7 — 작품별 `작품명 · 회차` + 검증된 장면 설명, 회차 미확인은 작품명만.
+              회차는 locale 포맷(영문 Ep. N) — 숫자 패턴이 아니면 영어에서 숨김 */}
+          {candidate.relationDetails.length > 0 ? (
+            candidate.relationDetails.map((detail) => {
+              const episode = formatEpisodeLabel(locale, detail.episodeLabel);
+              return (
+                <p key={detail.workId} className="mt-0.5 text-xs text-gray-600">
+                  <span className="font-medium">
+                    {workTitles([detail.workId])}
+                    {episode ? ` · ${episode}` : ""}
+                  </span>
+                  {detail.sceneNote ? ` — ${detail.sceneNote[locale]}` : ""}
+                </p>
+              );
+            })
+          ) : (
+            <p className="mt-0.5 text-xs text-gray-600">{workTitles(candidate.workIds)}</p>
+          )}
           <p className="mt-0.5 text-xs text-gray-500">
             {hoursLabel ?? (
               <span className="rounded bg-amber-100 px-1.5 py-0.5 text-amber-800">

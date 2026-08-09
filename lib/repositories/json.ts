@@ -186,10 +186,31 @@ function validate(
   // #51 — 관계 파일은 작품·장소 양쪽 구조 통과 시에만 참조 검사 (연쇄 노이즈 스킵 규칙 동일)
   if (!failed.has("workPlaceRelations")) {
     const workIds = failed.has("works") ? null : idsOf("works");
+    const actorById = failed.has("actors")
+      ? null
+      : new Map(parsed.actors!.map((actor) => [actor.id, actor]));
     const placeById = failed.has("places")
       ? null
       : new Map(parsed.places!.map((place) => [place.id, place]));
     parsed.workPlaceRelations!.forEach((relation, index) => {
+      // #51 장면 배우 — 검증된 배우만 참조하고, 그 배우의 출연작에 관계의 작품이 있어야 한다
+      // (PR #63 리뷰 비차단 — 다른 작품 배우 오연결을 시드 단계에서 차단)
+      if (actorById && relation.featuredActorIds) {
+        for (const actorId of relation.featuredActorIds) {
+          const actor = actorById.get(actorId);
+          if (!actor) {
+            issues.push(formatIssue(
+              "workPlaceRelations", relation, index, "featuredActorIds",
+              `존재하지 않는 배우 참조: ${actorId}`,
+            ));
+          } else if (!actor.workIds.includes(relation.workId)) {
+            issues.push(formatIssue(
+              "workPlaceRelations", relation, index, "featuredActorIds",
+              `배우 ${actorId}의 출연작(workIds)에 없는 작품: ${relation.workId}`,
+            ));
+          }
+        }
+      }
       const workExists = workIds?.has(relation.workId) ?? false;
       if (workIds && !workExists) {
         issues.push(formatIssue("workPlaceRelations", relation, index, "workId", `존재하지 않는 작품 참조: ${relation.workId}`));
