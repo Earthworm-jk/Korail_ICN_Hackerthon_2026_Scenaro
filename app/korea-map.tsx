@@ -122,8 +122,10 @@ export type KoreaMapPanelProps = {
    * SVG 좌표계 안에 그대로 렌더되므로 권역 원·라벨을 이 슬롯으로 넘기면 된다.
    */
   experienceOverlay?: ReactNode;
-  /** 테마체험 권역이 지도에 표시 중일 때만 붙는 범례 항목 */
+  /** 테마체험 대표 지점이 지도에 표시 중일 때만 붙는 범례 항목 */
   experienceLegend?: ReactNode;
+  /** 대표 지점 표시 중일 때 지도 아래 붙는 안내 — 원을 권역 경계로 읽지 않도록 */
+  experienceNotice?: ReactNode;
 };
 
 export function KoreaMapPanel({
@@ -137,6 +139,7 @@ export function KoreaMapPanel({
   sticky = false,
   experienceOverlay,
   experienceLegend,
+  experienceNotice,
 }: KoreaMapPanelProps) {
   const isRoute = kind === "route";
   const stationById = new Map(stations.map((station) => [station.id, station]));
@@ -285,6 +288,7 @@ export function KoreaMapPanel({
 
       {/* #14 §6 — 실제 경로 계산으로 읽히지 않도록 동선 지도에는 항상 붙인다 */}
       {isRoute && <p className="mt-2 text-xs text-sc-muted">{tr("map.routeNotice")}</p>}
+      {experienceNotice}
 
       {omittedCount > 0 && (
         <p className="mt-2 text-xs text-sc-orange-text">
@@ -320,6 +324,7 @@ export function ItineraryRouteMap({
   sticky,
   experienceOverlay,
   experienceLegend,
+  experienceNotice,
 }: {
   days: readonly ItineraryDayLike[];
   /** 좌표가 확인된 후보 장소 전체 — 이 안에서 일정 배치분만 걸러 쓴다 */
@@ -330,6 +335,7 @@ export function ItineraryRouteMap({
   sticky?: boolean;
   experienceOverlay?: ReactNode;
   experienceLegend?: ReactNode;
+  experienceNotice?: ReactNode;
 }) {
   const routeStationIds = routeStationSequence(days.flatMap((day) => day.rides));
   const placedIds = new Set(days.flatMap((day) => day.items.map((item) => item.placeId)));
@@ -349,6 +355,7 @@ export function ItineraryRouteMap({
       sticky={sticky}
       experienceOverlay={experienceOverlay}
       experienceLegend={experienceLegend}
+      experienceNotice={experienceNotice}
     />
   );
 }

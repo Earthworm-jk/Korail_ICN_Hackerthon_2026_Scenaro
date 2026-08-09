@@ -986,6 +986,12 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates }:
                     </span>
                   ) : undefined
                 }
+                // A3 — 원이 검증된 권역 경계로 읽히지 않도록 표시 중에는 항상 붙인다 (PR #88 리뷰)
+                experienceNotice={
+                  themeMapVisible && themeExperience?.status === "ok" && themeExperience.point ? (
+                    <p className="mt-2 text-xs text-sc-muted">{tr("theme.mapPointNotice")}</p>
+                  ) : undefined
+                }
               />
               {viewWarnings.length > 0 && (
                 // #43 수용 기준: 경고 누락 0건 — 배치는 유지하되 방문 전 확인을 안내
