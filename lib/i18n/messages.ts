@@ -11,7 +11,6 @@ export const messages = {
     "nav.step1": "여행 조건",
     "nav.step2": "K-콘텐츠",
     "nav.step3": "촬영지",
-    "nav.step4": "일정 결과",
     "common.next": "다음",
     "common.back": "이전",
     "common.loading": "불러오는 중…",
@@ -62,7 +61,6 @@ export const messages = {
     "step3.hideDetail": "접기",
     "step3.showMore": "더보기 ({n}곳)",
     "step3.sourceLink": "출처 보기",
-    "step3.generate": "일정 만들기",
     "step4.title": "추천 일정",
     "step4.subtitle": "열차·역 단위 시각으로 안내합니다. 장소별 시각은 지역 이동을 계산하지 않아 표시하지 않습니다.",
     "step4.generating": "일정을 계산하고 있습니다…",
@@ -79,7 +77,6 @@ export const messages = {
     "step4.overselectionDesc": "어떤 장소를 뺄지는 직접 선택해 주세요. 선택을 줄인 뒤 다시 계산합니다.",
     "step4.overselectionPreview": "아래 일정은 제외 판단을 돕는 미리보기이며 최종 일정으로 저장할 수 없습니다.",
     "step4.adjustPlaces": "제외할 장소 선택",
-    "step4.editPlaces": "촬영지 다시 선택",
     "step4.editFlights": "항공편 시각 변경",
     "step4.recalculate": "다시 계산",
     "step4.save": "일정 저장",
@@ -234,6 +231,10 @@ export const messages = {
     // 실제 철로 선형 (OSM) — 선로를 실제로 그린 화면에서만 쓴다
     "map.routeNoticeRail": "철도 구간은 실제 선로 선형을 따라 그렸습니다. 그 밖의 구간은 권역이 이어지는 순서를 보여주는 보조 표시이며, 실제 도로나 이동 경로가 아닙니다.",
     "map.sourceRail": "철도 선형: © OpenStreetMap 기여자 (ODbL 1.0)",
+
+    // #85 즉시 재계산 — 갱신 중 표시와 "선택 필요" 상태
+    "step4.updating": "갱신 중",
+    "step4.needSelection": "촬영지를 한 곳 이상 선택하면 일정이 여기에 나타납니다.",
   },
   en: {
     "app.title": "SCENARO",
@@ -242,7 +243,6 @@ export const messages = {
     "nav.step1": "Trip window",
     "nav.step2": "K-content",
     "nav.step3": "Filming spots",
-    "nav.step4": "Itinerary",
     "common.next": "Next",
     "common.back": "Back",
     "common.loading": "Loading…",
@@ -291,7 +291,6 @@ export const messages = {
     "step3.hideDetail": "Hide",
     "step3.showMore": "Show more ({n})",
     "step3.sourceLink": "View source",
-    "step3.generate": "Build itinerary",
     "step4.title": "Recommended itinerary",
     "step4.subtitle": "Times are shown per train and station. Per-place clock times are not shown because local transit is not calculated.",
     "step4.generating": "Calculating your itinerary…",
@@ -308,7 +307,6 @@ export const messages = {
     "step4.overselectionDesc": "Choose which places to remove, then recalculate with the smaller selection.",
     "step4.overselectionPreview": "The itinerary below is only a preview to help you decide what to remove and cannot be saved as final.",
     "step4.adjustPlaces": "Choose places to remove",
-    "step4.editPlaces": "Reselect places",
     "step4.editFlights": "Change flight times",
     "step4.recalculate": "Recalculate",
     "step4.save": "Save itinerary",
@@ -463,6 +461,10 @@ export const messages = {
     // Real rail alignment (OSM) — shown only where track geometry is actually drawn
     "map.routeNoticeRail": "Rail sections follow the actual track alignment. Other sections are a simplified view of the order your regions connect in, not an actual road or transit route.",
     "map.sourceRail": "Rail alignment: © OpenStreetMap contributors (ODbL 1.0)",
+
+    // #85 instant recalculation - updating badge and the "needs selection" state
+    "step4.updating": "Updating",
+    "step4.needSelection": "Select at least one filming location and your itinerary appears here.",
   },
 } as const;
 
