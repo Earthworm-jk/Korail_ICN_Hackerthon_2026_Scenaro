@@ -32,6 +32,7 @@ import {
 } from "@/lib/saved-itineraries-stub";
 import {
   banner,
+  displayedSelectionCapacity,
   displayedDays as deriveDisplayedDays,
   initialItineraryView,
   itineraryWarnings as deriveWarnings,
@@ -56,7 +57,6 @@ import { getThemeExperience, type ThemeExperienceResult } from "@/lib/actions/th
 import type { StationFacilitiesSnapshotT } from "@/lib/station-facilities";
 import type { StationCoordinatesSnapshotT } from "@/lib/station-coordinates";
 import type { DayPlan } from "@/lib/engine/types";
-import { summarizeSelectionCapacity } from "@/lib/selection-capacity";
 
 const KST = "Asia/Seoul";
 
@@ -422,13 +422,12 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates }:
   const viewRejected = deriveRejectedPlaces(view);
   const viewWarnings = deriveWarnings(view);
   const uncoveredSelectionGroups = view.result?.selectionGroups.uncovered ?? [];
-  // #84: 추천 결과가 선택 전부를 담지 못하면 아래 일정은 제외 판단용 미리보기다.
-  // 재열람은 이미 저장된 과거 레코드이므로 현재 계산의 과선택 차단을 적용하지 않는다.
-  const selectionCapacity = useMemo(() => (
-    view.planning || view.reopened || !view.result
-      ? null
-      : summarizeSelectionCapacity(selectedPlaceIds, view.result.days)
-  ), [selectedPlaceIds, view.planning, view.reopened, view.result]);
+  // #84: 추천안 또는 선택한 전체 교체 대안 중 현재 화면에 보이는 일정으로만 판정한다.
+  // empty와 재열람은 displayedSelectionCapacity에서 과선택 패널 대상에서 제외한다.
+  const selectionCapacity = useMemo(
+    () => displayedSelectionCapacity(view, selectedPlaceIds),
+    [selectedPlaceIds, view],
+  );
 
   const chooseAlternative = useCallback((alt: SelectableAlternative | null) => {
     dispatchView({ type: "SELECT_ALT", alt });
@@ -911,7 +910,7 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates }:
           {selectionCapacity?.requiresAdjustment && (
             <div
               className="mt-4 rounded-lg border border-sc-orange/40 bg-sc-orange-soft p-4"
-              role="alert"
+              role="status"
             >
               <h3 className="font-medium text-sc-orange-text">{tr("step4.overselectionTitle")}</h3>
               <p className="mt-2 font-medium text-sc-orange-text">
