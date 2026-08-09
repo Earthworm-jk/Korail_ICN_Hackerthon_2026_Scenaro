@@ -235,6 +235,18 @@ export const messages = {
     // #85 즉시 재계산 — 갱신 중 표시와 "선택 필요" 상태
     "step4.updating": "갱신 중",
     "step4.needSelection": "촬영지를 한 곳 이상 선택하면 일정이 여기에 나타납니다.",
+
+    // #83 §F 시안 sc-data-notice·validation-copy — 결과 열 상단과 일정 아래에 각각 붙인다.
+    // 검증 문구는 시안 문장을 그대로 쓰지 않는다. 시안은 "열차·선택 장소·공항 복귀 조건을
+    // 통과했습니다"였는데, #43이 운영시간을 경고 모델로 바꾸고 #84가 과선택을 정상 흐름으로
+    // 만든 뒤로는 거짓이 될 수 있다. 엔진이 실제로 지키는 것은 검증 시간표와 공항 도착
+    // 마감뿐이고, 선택 장소 전부 배치는 보장하지 않는다(CandidateRejection 3종).
+    "step4.dataNoticeTitle": "데이터 기준",
+    "step4.dataNotice": "열차·공항 진입편·촬영지 정보는 검증 스냅샷 기준입니다. 항공편을 조회할 수 없으면 저장된 정보나 직접 입력한 시각을 사용합니다. 예약 전에 운송사 편성을 다시 확인해 주세요.",
+    // PR #106 리뷰 비차단 — 경고는 UNVERIFIED_HOURS 하나가 아니다. OUTSIDE_VERIFIED_HOURS
+    // (확인된 운영시간 밖)와 CONSERVATIVE_BUFFER_MISMATCH(보수 버퍼 적용 시 불가)도 같은
+    // 경고로 나온다. "확인되지 않은"만 쓰면 앞의 둘을 반대로 설명하게 되므로 셋을 포괄한다.
+    "step4.validation": "표시된 일정은 검증 시간표(열차·공항 진입편)와 공항 도착 마감을 지켜 계산했습니다. 운영시간이 확인되지 않았거나 방문 가능 시간과 맞지 않을 수 있는 장소도 배치하되 경고로 표시하고, 넣지 못한 장소는 사유와 함께 따로 보여줍니다.",
   },
   en: {
     "app.title": "SCENARO",
@@ -465,6 +477,15 @@ export const messages = {
     // #85 instant recalculation - updating badge and the "needs selection" state
     "step4.updating": "Updating",
     "step4.needSelection": "Select at least one filming location and your itinerary appears here.",
+
+    // #83 §F wireframe sc-data-notice / validation-copy. The validation line is deliberately
+    // not the wireframe's sentence — see the ko block for why. The data notice had no English
+    // in the wireframe at all, so it is written here for the first time.
+    "step4.dataNoticeTitle": "Data basis",
+    "step4.dataNotice": "Train, airport-access and filming location details come from verified snapshots. If a flight lookup is unavailable, saved details or the times you enter are used. Re-check the operator's schedule before booking.",
+    // PR #106 review, non-blocking — see the ko block: the warning covers three details,
+    // not just unverified hours.
+    "step4.validation": "This itinerary is calculated to respect verified timetables (rail and airport access) and your airport arrival deadline. Places whose opening hours are unverified or may not line up with the visit time are still scheduled and flagged as warnings, and any places that could not fit are listed separately with the reason.",
   },
 } as const;
 

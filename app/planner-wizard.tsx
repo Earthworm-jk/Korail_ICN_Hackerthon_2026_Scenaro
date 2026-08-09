@@ -967,6 +967,14 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
           </div>
           <p className="text-sm text-sc-muted">{tr("step4.subtitle")}</p>
 
+          {/* #83 §F sc-data-notice — 이 열의 숫자가 어디서 왔는지. 결과 유무와 무관하게 항상 둔다.
+              헤더의 "데모 스냅샷" 배지는 제품 전체 라벨이고, 이쪽은 이 결과의 데이터 근거와
+              예약 전 재확인 안내라 역할이 다르다 */}
+          <p className="mt-3 rounded-lg border bg-sc-subtle px-3 py-2 text-xs text-sc-muted">
+            <strong className="font-medium text-sc-text">{tr("step4.dataNoticeTitle")}</strong>{" "}
+            {tr("step4.dataNotice")}
+          </p>
+
           {/* 아직 보여줄 일정 자체가 없을 때만 자리를 차지하는 안내로 바꾼다 */}
           {updating && !displayedDays && !needsSelection && (
             <p className="mt-6 text-center text-sm text-sc-muted">{tr("step4.generating")}</p>
@@ -1125,6 +1133,12 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
                   ) : undefined
                 }
               />
+              {/* #83 §F validation-copy — 이 일정이 무엇을 지켰는지. 지도 아래, 경고·미배치 목록
+                  바로 위에 둬서 "지킨 것 → 다만 이런 예외가 있다" 순서로 읽히게 한다.
+                  displayedDays가 있을 때만 렌더되므로 empty·선택 0곳에서는 나오지 않는다 */}
+              <p className="rounded-lg border bg-sc-subtle px-3 py-2 text-xs text-sc-muted">
+                {tr("step4.validation")}
+              </p>
               {viewWarnings.length > 0 && (
                 // #43 수용 기준: 경고 누락 0건 — 배치는 유지하되 방문 전 확인을 안내
                 <div className="rounded-lg border border-sc-orange/30 bg-sc-orange-soft p-4">
