@@ -26,6 +26,8 @@ export type PlanRequest = {
   excludedPlaceIds: string[];
   // #139 — 방문일 소프트 선호. placeId → YYYY-MM-DD(KST). 없으면 지금까지와 동일한 경로다.
   preferredVisitDates?: Record<string, string>;
+  /** `[먼저, 나중]` 순서 선호 쌍 (#145) */
+  preferredOrder?: ReadonlyArray<readonly [string, string]>;
 };
 
 const DEFAULT_MAX_PLACES_PER_DAY = 3;
@@ -70,6 +72,7 @@ function constraintsFromRequest(request: PlanRequest): TripConstraints {
     dailySlackMinutes: DEFAULT_DAILY_SLACK_MINUTES,
     airportArrivalDeadline: request.airportArrivalDeadline,
     ...(request.preferredVisitDates ? { preferredVisitDates: request.preferredVisitDates } : {}),
+    ...(request.preferredOrder ? { preferredOrder: request.preferredOrder } : {}),
   };
 }
 

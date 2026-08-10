@@ -35,7 +35,43 @@ export const TripConstraintsSchema = z.object({
     z.string().min(1),
     z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "preferredVisitDates must be YYYY-MM-DD"),
   ).optional(),
+  /**
+   * `[먼저, 나중]` 쌍 배열 (#145). 아래 superRefine이 **모순된 입력을 여기서 막는다** —
+   * 엔진 안에서 조용히 무시하면 사용자는 요청이 사라진 이유를 알 수 없다.
+   */
+  preferredOrder: z.array(
+    z.tuple([z.string().min(1), z.string().min(1)]),
+  ).optional(),
 }).superRefine((constraints, context) => {
+  const pairs = constraints.preferredOrder ?? [];
+  const seen = new Set<string>();
+  pairs.forEach(([first, second], index) => {
+    if (first === second) {
+      context.addIssue({
+        code: "custom",
+        path: ["preferredOrder", index],
+        message: "preferredOrder pair must reference two different places",
+      });
+      return;
+    }
+    const key = `${first}|${second}`;
+    if (seen.has(key)) {
+      context.addIssue({
+        code: "custom",
+        path: ["preferredOrder", index],
+        message: `duplicate preferredOrder pair: ${key}`,
+      });
+    }
+    seen.add(key);
+    // (A,B)와 (B,A)가 함께 오면 어느 쪽도 지킬 수 없다. 조용히 하나를 버리지 않고 거부한다
+    if (seen.has(`${second}|${first}`)) {
+      context.addIssue({
+        code: "custom",
+        path: ["preferredOrder", index],
+        message: `contradictory preferredOrder pair: ${second}|${first} already requested`,
+      });
+    }
+  });
   if (Date.parse(constraints.arrivalAt) >= Date.parse(constraints.departureAt)) {
     context.addIssue({
       code: "custom",

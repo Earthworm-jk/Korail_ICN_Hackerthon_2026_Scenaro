@@ -36,6 +36,7 @@ type TripConstraints = {
   dailySlackMinutes: number;    // 일반 여유(소프트), 기본 120
   airportArrivalDeadline: string; // ISO, 공항 도착 마감 시각(하드) — 절대 시각 입력 (#14 차단 2)
   preferredVisitDates?: Record<string, string>; // placeId → YYYY-MM-DD(KST) — 소프트 선호 (#139)
+  preferredOrder?: [string, string][];           // [먼저, 나중] precedence 쌍 — 소프트 선호 (#145)
 };
 
 // 단일 진입점 (REQ-EDIT-001·002·006 공통, #2 결정)
@@ -67,6 +68,35 @@ preferredDateOutcomes?: {
 
 입력 검증: 여행 기간 밖 날짜와 현재 엄격 후보가 아닌 장소 ID는 거부하고,
 제외한 장소에 선호가 함께 오면 **제외가 우선**이라 그 선호는 무시한다.
+
+### 방문 순서 소프트 선호 (#145)
+
+같은 날 앞뒤를 사용자가 조율할 수 있게 하되, 방문일과 같은 **소프트 선호**로만 받는다
+(`preferredOrder`). 8/8에 폐기한 하드 순서 강제를 되살리지 않는다.
+
+입력은 `[먼저, 나중]` **precedence 쌍**이다. 드래그 한 번과 1:1로 대응하고, 그 날 장소
+집합이 바뀌어도 남은 쌍이 유효하다. 날짜별 전체 배열이나 시간대 선호는 채택하지 않았다
+(#145 4절 B·C안).
+
+판정은 **전체 방문 순서** 기준이다. 두 장소가 다른 날에 배치돼도 앞뒤가 맞으면 지킨 것으로
+센다 — 어느 날에 두느냐는 `preferredVisitDates`가 맡는 축이라 겹쳐 판정하지 않는다.
+
+```ts
+preferredOrderOutcomes?: {
+  firstPlaceId: string;
+  secondPlaceId: string;
+  outcome: "honored" | "adjusted" | "unplaced";
+}[]
+```
+
+입력 검증: 같은 장소를 두 번 적은 쌍, 중복 쌍, 서로 모순되는 쌍(`(A,B)`와 `(B,A)`)은
+**거부한다** — 엔진 안에서 조용히 버리면 사용자가 요청이 사라진 이유를 알 수 없다.
+현재 엄격 후보가 아닌 장소 ID도 거부하고, 제외한 장소가 낀 쌍은 방문일과 같이 **제외가
+우선**이라 버린다.
+
+성립률은 구현 전에 측정했다 (#145 실험, 시행 47건) — `honored` 85.1%, `unplaced` 0%,
+장소 수가 준 시행 0건. 같은 권역 안은 100%, 권역이 섞인 날은 63%다. 못 지키면 원래
+순서로 남을 뿐 일정이 망가지지 않는다.
 
 **`adjusted`를 호출부가 조용히 확정하지 않는다** (#141 결정). 엔진이 돌려준 일정은
 이 경우 확정본이 아니라 **미리보기**다 — 현재 일정을 유지한 채 대안으로 보여주고
@@ -338,9 +368,11 @@ type ComparisonKeys = {
   selectedUnionPlaceCount: number;     // 2) 엄격 합집합의 고유 방문 장소 수
   activityWarningCount: number;        // 3) 낮을수록 우선 (#43)
   preferredDateMismatchCount: number;  // 4) 낮을수록 우선 — 못 지킨 방문일 선호 수 (#139)
-  totalTravelMinutes: number;          // 5) 열차 + 역–장소 왕복 추정(문전간), 낮을수록 우선
-  transferCount: number;               // 6) 낮을수록 우선
-  slackSatisfied: boolean;             // 7) 충족 우선 (미달만 불이익, 초과 가점 없음)
+  preferredOrderMismatchCount: number; // 5) 낮을수록 우선 — 못 지킨 순서 쌍 수 (#145)
+                                       //    방문일과 합치지 않는다 — 서로 맞바꿀 수 있게 되면 안 된다
+  totalTravelMinutes: number;          // 6) 열차 + 역–장소 왕복 추정(문전간), 낮을수록 우선
+  transferCount: number;               // 7) 낮을수록 우선
+  slackSatisfied: boolean;             // 8) 충족 우선 (미달만 불이익, 초과 가점 없음)
 };
 ```
 

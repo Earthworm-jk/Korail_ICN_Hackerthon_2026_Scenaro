@@ -23,6 +23,7 @@ const planned = (placeIds: string[]): ItineraryResult => ({
     selectedUnionPlaceCount: placeIds.length,
     activityWarningCount: 0,
     preferredDateMismatchCount: 0,
+    preferredOrderMismatchCount: 0,
     totalTravelMinutes: 0,
     transferCount: 0,
     slackSatisfied: true,

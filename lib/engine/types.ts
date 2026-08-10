@@ -20,6 +20,19 @@ export type TripConstraints = {
   // 하드 의미의 pinnedDates(6d308d0에서 제거)를 되살리지 않는다 — 못 지켜도 일정은 나오고
   // 비교 순위만 밀린다. 실패 코드(USER_CONSTRAINT_INFEASIBLE)를 추가하지 않는 이유다.
   preferredVisitDates?: Record<string, string>;
+  /**
+   * 방문 순서 선호 — `[먼저, 나중]` precedence 쌍 (#145 A안).
+   *
+   * 방문일과 같은 **소프트 선호**다. 못 지켜도 일정은 나오고 비교 순위만 밀린다. 8/8에 폐기한
+   * 하드 순서 강제(D안)를 되살리지 않는다 — 실패 경로를 늘리지 않는 것이 #139에서 이미 정한 축이다.
+   *
+   * 쌍으로 받는 이유는 드래그 한 번과 1:1로 대응하기 때문이다. 날짜별 전체 배열(B안)은 그 날
+   * 장소 집합이 바뀌면 요청이 부분적으로 무의미해지고, 시간대(C안)는 `A 다음에 B`를 표현하지 못한다.
+   *
+   * 판정은 **전체 방문 순서** 기준이다. 두 장소가 다른 날에 배치돼도 앞뒤가 맞으면 지킨 것으로 센다 —
+   * 어느 날에 두느냐는 `preferredVisitDates`가 맡는 축이라 여기서 겹쳐 판정하지 않는다.
+   */
+  preferredOrder?: ReadonlyArray<readonly [string, string]>;
 };
 
 // #43 결정 1: 운영시간은 하드 제약이 아니다 — 판정식(#5) 결과는 제외가 아니라
@@ -53,6 +66,9 @@ export type ComparisonKeys = {
   // 4) 낮을수록 우선 — 선호 날짜를 못 지킨 수 (#139). 경고 뒤·이동시간 앞:
   //    운영시간 신뢰를 깎으면서까지 선호를 강제하지는 않되, 단순 이동시간보다는 사용자 의사를 앞에 둔다.
   preferredDateMismatchCount: number;
+  // 5) 낮을수록 우선 — 못 지킨 순서 쌍 수 (#145). **방문일과 합치지 않는다**: 하나로 합치면
+  //    엔진이 방문일 하나를 어기고 순서 하나를 지키는 식으로 맞바꿀 수 있는데 둘은 같은 무게가 아니다.
+  preferredOrderMismatchCount: number;
   totalTravelMinutes: number; // 5) 열차 + 역–장소 왕복 추정(문전간), 낮을수록 우선
   transferCount: number; // 6) 낮을수록 우선
   slackSatisfied: boolean; // 7) 충족 우선 (미달만 불이익, 초과 가점 없음)
@@ -158,6 +174,18 @@ export type GatewayAlternative = {
  * 원인을 증명할 수 없으면 단정하지 않는다. UI 문구는 "요청한 날짜를 반영하지 못해
  * 가능한 일정으로 조정했어요" 수준으로만 쓴다 (#139 4절).
  */
+/**
+ * 순서 선호 하나의 반영 결과 (#145).
+ *
+ * `adjusted`는 둘 다 배치됐지만 요청한 앞뒤가 아닌 경우다. 실험에서 이 비율이 14.9%였고
+ * 그때도 장소가 줄거나 이동시간이 크게 늘지는 않았다 — 못 지키면 원래 순서로 남을 뿐이다.
+ */
+export type PreferredOrderOutcome = {
+  firstPlaceId: string;
+  secondPlaceId: string;
+  outcome: "honored" | "adjusted" | "unplaced";
+};
+
 export type PreferredDateOutcome = {
   placeId: string;
   requestedDate: string; // YYYY-MM-DD (KST)
@@ -180,6 +208,8 @@ export type ItineraryResult =
       gatewayAlternatives?: GatewayAlternative[]; // #58 검증 직행버스 전체 일정 대안
       // #139 — 선호 입력이 있을 때만. 요청한 placeId 사전순. 선호가 없으면 필드 자체가 없다
       preferredDateOutcomes?: PreferredDateOutcome[];
+      // #145 — 순서 선호가 있을 때만. `[먼저, 나중]` 사전순
+      preferredOrderOutcomes?: PreferredOrderOutcome[];
     }
   | {
       status: "empty"; // 정상 처리됐지만 조건을 만족하는 일정 없음 — 허위 metrics 금지 (PR #16 리뷰)
