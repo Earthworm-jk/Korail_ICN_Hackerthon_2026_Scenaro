@@ -140,6 +140,57 @@ describe("깨진 저장소에서 죽지 않는다", () => {
     expect(list[0].id).toBe(good[0].id);
   });
 
+  /**
+   * PR #123 리뷰 2 — 겉모양만 보면 통과하지만 **실제 소비 지점에서 깨지는** 레코드들.
+   *
+   * 목록은 `Intl.DateTimeFormat(...).format(new Date(savedAt))`을 부르고, 재열람은
+   * `tripInputsFromConstraints(constraints)`와 `record.context.actors/works`를 그대로 쓴다.
+   * 여기서 걸러내지 못하면 저장 목록을 여는 순간 또는 다시 열기에서 앱이 죽는다.
+   */
+  it("겉모양은 성해도 소비 지점에서 깨질 레코드를 걸러낸다", () => {
+    const [ok] = (() => {
+      const storage = memoryStorage();
+      saveLocalItinerary(entry, storage);
+      return listLocalItineraries(storage);
+    })();
+
+    const broken: Record<string, unknown>[] = [
+      { ...ok, id: "bad-savedAt", savedAt: "not-a-date" },
+      { ...ok, id: "no-context", context: undefined },
+      { ...ok, id: "context-not-array", context: { actors: "김고은", works: [] } },
+      { ...ok, id: "empty-constraints", constraints: {} },
+      { ...ok, id: "bad-instant", constraints: { ...ok.constraints, arrivalAt: "언제" } },
+      {
+        ...ok,
+        id: "ids-not-strings",
+        constraints: { ...ok.constraints, selectedActorIds: [1, 2] },
+      },
+      { ...ok, id: "old-schema", schemaVersion: 1 },
+      { ...ok, id: "no-snapshot", snapshotVersion: undefined },
+      { ...ok, id: "days-not-days", days: [{ date: "2026-08-12" }] },
+      { ...ok, id: "warnings-not-array", warnings: "경고" },
+    ];
+
+    for (const record of broken) {
+      const raw = JSON.stringify({ version: LOCAL_STORAGE_VERSION, data: [record, ok] });
+      const list = listLocalItineraries(memoryStorage({ [SAVED_KEY]: raw }));
+      expect(list.map((r) => r.id), String(record.id)).toEqual([ok.id]);
+    }
+  });
+
+  it("걸러낸 뒤 남은 레코드는 목록 포맷과 재열람이 실제로 쓸 수 있다", () => {
+    const storage = memoryStorage();
+    saveLocalItinerary(entry, storage);
+    const [record] = listLocalItineraries(storage);
+    // 목록이 부르는 그 식 — 잘못된 값이면 RangeError를 던진다
+    expect(() =>
+      new Intl.DateTimeFormat("ko-KR", { timeZone: "Asia/Seoul" }).format(new Date(record.savedAt)),
+    ).not.toThrow();
+    // 재열람이 참조하는 지점들
+    expect(Array.isArray(record.context.actors)).toBe(true);
+    expect(Number.isNaN(new Date(record.constraints.airportArrivalDeadline).getTime())).toBe(false);
+  });
+
   it("저장소 자체가 없어도(서버 렌더) 무해하다", () => {
     expect(listLocalItineraries(null)).toEqual([]);
     expect(saveLocalItinerary(entry, null).ok).toBe(false);

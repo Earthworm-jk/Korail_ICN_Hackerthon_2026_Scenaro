@@ -19,7 +19,7 @@
  * 안 되므로 모든 진입점이 실패를 값으로 돌려주거나 조용히 무시한다. 읽기 실패는 "없음"과
  * 같게 다룬다 — 손상된 데이터로 화면을 그리는 것보다 빈 목록이 낫다.
  */
-import type { SavedItineraryStub } from "./saved-itineraries-stub";
+import { SAVED_SCHEMA_VERSION, type SavedItineraryStub } from "./saved-itineraries-stub";
 
 /**
  * 저장 형식 버전.
@@ -87,24 +87,75 @@ function writeEnvelope<T>(key: string, data: T, storage: Storage | null): boolea
   }
 }
 
+function isStringArray(value: unknown): value is string[] {
+  return Array.isArray(value) && value.every((item) => typeof item === "string");
+}
+
+/** 문자열이면서 Date로 읽을 수 있는가 — 목록의 Intl 포맷과 재열람의 시각 복원이 둘 다 요구한다 */
+function isUsableInstant(value: unknown): value is string {
+  return typeof value === "string" && !Number.isNaN(new Date(value).getTime());
+}
+
+/**
+ * 저장 당시 계산 입력이 재열람에서 실제로 쓸 수 있는 모양인지.
+ *
+ * `reopenRecord`(planner-wizard)가 네 시각을 `tripInputsFromConstraints`로 되살리고
+ * 세 id 배열을 후보 재조회에 그대로 넘긴다. 하나라도 어긋나면 재열람이 깨진다.
+ */
+function isUsableConstraints(value: unknown): boolean {
+  if (typeof value !== "object" || value === null) return false;
+  const c = value as Record<string, unknown>;
+  return (
+    isUsableInstant(c.arrivalAt)
+    && isUsableInstant(c.departureAt)
+    && isUsableInstant(c.airportReadyAt)
+    && isUsableInstant(c.airportArrivalDeadline)
+    && isStringArray(c.selectedActorIds)
+    && isStringArray(c.selectedWorkIds)
+    && isStringArray(c.excludedPlaceIds)
+  );
+}
+
+/** 일정 하루치 — 렌더가 배열 세 개를 그대로 순회한다 */
+function isUsableDay(value: unknown): boolean {
+  if (typeof value !== "object" || value === null) return false;
+  const day = value as Record<string, unknown>;
+  return (
+    typeof day.date === "string"
+    && Array.isArray(day.items)
+    && Array.isArray(day.rides)
+    && Array.isArray(day.regionWindows)
+  );
+}
+
 /**
  * 레코드 한 건이 화면에 쓸 만한 모양인지.
  *
- * 전체 스키마를 다시 검증하지는 않는다. 여기서 막으려는 것은 다른 앱이 같은 키를 쓰거나
- * 손으로 고친 값이 들어와 렌더 중에 터지는 경우다 — 목록·재열람이 참조하는 최소 필드만 본다.
+ * PR #123 리뷰 — 겉모양만 보면 안 된다. `id/title/days/constraints`가 있어도
+ * `savedAt`이 날짜가 아니면 목록의 `Intl.DateTimeFormat(...).format(new Date(savedAt))`이
+ * `RangeError`를 던지고, `context`가 없거나 constraints가 비면 재열람이 깨진다.
+ * 그래서 **실제 소비 지점이 요구하는 것**을 기준으로 본다.
+ *
+ * 전체 Zod 스키마를 다시 돌리지 않는 이유는 그 스키마가 서버 시드용이고, 여기서 막으려는
+ * 것은 손으로 고친 값·다른 앱의 같은 키·구버전 잔재이기 때문이다.
  */
 function isUsableRecord(value: unknown): value is SavedItineraryStub {
   if (typeof value !== "object" || value === null) return false;
-  const record = value as Partial<SavedItineraryStub>;
-  return (
-    typeof record.id === "string"
-    && record.id.length > 0
-    && typeof record.title === "string"
-    && typeof record.savedAt === "string"
-    && Array.isArray(record.days)
-    && typeof record.constraints === "object"
-    && record.constraints !== null
-  );
+  const record = value as Record<string, unknown>;
+  if (typeof record.id !== "string" || record.id.length === 0) return false;
+  if (typeof record.title !== "string") return false;
+  if (!isUsableInstant(record.savedAt)) return false;
+  // constraints 직렬화 계약이 다르면 되살린 시각이 조용히 어긋난다 — 버리는 편이 낫다
+  if (record.schemaVersion !== SAVED_SCHEMA_VERSION) return false;
+  if (typeof record.snapshotVersion !== "string") return false;
+  if (!isUsableConstraints(record.constraints)) return false;
+  if (!Array.isArray(record.days) || !record.days.every(isUsableDay)) return false;
+  const context = record.context as Record<string, unknown> | undefined;
+  if (typeof context !== "object" || context === null) return false;
+  if (!Array.isArray(context.actors) || !Array.isArray(context.works)) return false;
+  // warnings는 optional(#43, PR #44 리뷰 2) — 있으면 배열이어야 한다
+  if (record.warnings !== undefined && !Array.isArray(record.warnings)) return false;
+  return true;
 }
 
 /** 저장 목록 — 최신순. 손상분은 조용히 걸러낸다 */
