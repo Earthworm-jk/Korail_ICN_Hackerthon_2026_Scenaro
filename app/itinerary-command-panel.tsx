@@ -36,6 +36,7 @@ type Props = {
   value: string;
   pending: boolean;
   disabled: boolean;
+  disabledMessage?: MessageKey;
   feedback: CommandFeedback | null;
   lastDiff: ItineraryDiff | null;
   onChange: (value: string) => void;
@@ -117,6 +118,7 @@ export function ItineraryCommandPanel({
   value,
   pending,
   disabled,
+  disabledMessage = "ai.disabled",
   feedback,
   lastDiff,
   onChange,
@@ -195,7 +197,13 @@ export function ItineraryCommandPanel({
         ))}
       </div>
 
-      {disabled && <p className="mt-2 text-xs text-sc-muted">{tr("ai.disabled")}</p>}
+      {pending && (
+        <p className="mt-2 text-xs text-sc-blue" role="status" aria-live="polite">
+          {tr("ai.pendingDetail")}
+        </p>
+      )}
+
+      {disabled && <p className="mt-2 text-xs text-sc-muted">{tr(disabledMessage)}</p>}
 
       {feedback && (
         <div className="mt-3 rounded-lg border border-sc-blue/15 bg-sc-surface/90 p-3 text-sm" role="status" aria-live="polite">
@@ -222,7 +230,9 @@ export function ItineraryCommandPanel({
           {feedback.kind === "recommendations" && (
             <p className="mt-1 text-sc-text">
               {feedback.outcome.recommendations.length > 0
-                ? withValues(tr("ai.recommendReady"), {
+                ? withValues(tr(`ai.recommendReady.${
+                  feedback.outcome.recommendations.length === 1 ? "one" : "other"
+                }` as MessageKey), {
                   count: feedback.outcome.recommendations.length,
                   date: feedback.outcome.targetDate,
                 })

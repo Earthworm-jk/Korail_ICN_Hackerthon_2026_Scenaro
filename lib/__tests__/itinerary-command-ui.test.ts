@@ -1,11 +1,29 @@
 import { describe, expect, it } from "vitest";
 import {
+  commandPanelUnavailable,
   commandResponseIsCurrent,
   selectionAfterCommand,
   stateAfterRouteRecommendation,
 } from "../itinerary-command-ui";
 
 describe("자연어 명령 응답 적용 경계 (#144 리뷰)", () => {
+  it("과선택 조정이 필요하면 추가 추천을 포함한 AI 명령 패널을 잠근다", () => {
+    expect(commandPanelUnavailable({
+      hasCandidates: true,
+      hasPlannedResult: true,
+      reopened: false,
+      alternativeSelected: false,
+      requiresSelectionAdjustment: true,
+    })).toBe(true);
+    expect(commandPanelUnavailable({
+      hasCandidates: true,
+      hasPlannedResult: true,
+      reopened: false,
+      alternativeSelected: false,
+      requiresSelectionAdjustment: false,
+    })).toBe(false);
+  });
+
   it("제출 뒤 선택 시퀀스가 바뀌면 늦은 응답을 폐기한다", () => {
     expect(commandResponseIsCurrent(7, 7)).toBe(true);
     expect(commandResponseIsCurrent(7, 8)).toBe(false);

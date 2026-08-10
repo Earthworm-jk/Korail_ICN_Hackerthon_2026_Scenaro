@@ -35,6 +35,11 @@ const ROUTE_RECOMMEND_PATTERNS = [
   /recommend.*(?:along|near).*(?:route|way)/i,
   /(?:place|filming location).*(?:along|near).*(?:route|way)/i,
 ];
+const DAY_PLACE_RECOMMEND_PATTERNS = [
+  /(?:갈|가볼|들를)\s*만한.*(?:촬영지|장소).*(?:추천|알려)/,
+  /(?:다른\s*)?(?:촬영지|장소).*(?:추천|알려)/,
+  /recommend.*(?:filming location|place)/i,
+];
 const EXPLAIN_PATTERNS = [
   /(뭐|무엇|무슨).*(달라|바뀌|변경)/,
   /(변경|바뀐).*(내용|점|것).*(설명|알려|뭐)/,
@@ -103,8 +108,10 @@ export function parseCommand(input: string): RawItineraryCommand {
     return { intent: "explain_changes" };
   }
 
-  if (ROUTE_RECOMMEND_PATTERNS.some((pattern) => pattern.test(text))) {
-    const dayIndex = parseDayIndex(text);
+  const dayIndex = parseDayIndex(text);
+  if (ROUTE_RECOMMEND_PATTERNS.some((pattern) => pattern.test(text))
+    || (dayIndex !== undefined
+      && DAY_PLACE_RECOMMEND_PATTERNS.some((pattern) => pattern.test(text)))) {
     return dayIndex === undefined
       ? unknown("DAY_MISSING")
       : { intent: "recommend_along_route", dayIndex };
@@ -115,19 +122,19 @@ export function parseCommand(input: string): RawItineraryCommand {
   if (!wantsMove && !wantsAdd) return unknown("UNSUPPORTED_INTENT");
 
   const placeName = parsePlaceName(text);
-  const dayIndex = parseDayIndex(text);
+  const visitDayIndex = dayIndex;
 
   // 동사만 걸리고 장소도 일차도 없으면 애초에 이동·추가 요청이 아니다.
   // `여유롭게 바꿔줘`가 `바꿔` 하나로 이동으로 읽히는데, 여기서 "어떤 장소인가요?"로
   // 되물으면 지원하지도 않는 기능으로 사용자를 끌고 간다 — 못 알아들었다고 말하는 게 맞다.
-  if (placeName === undefined && dayIndex === undefined) return unknown("UNSUPPORTED_INTENT");
+  if (placeName === undefined && visitDayIndex === undefined) return unknown("UNSUPPORTED_INTENT");
   if (placeName === undefined) return unknown("PLACE_MISSING");
   // 장소는 읽었으므로 되물을 때 되쓸 수 있게 함께 넘긴다 — 문장은 messages.ts가 만든다
-  if (dayIndex === undefined) return unknown("DAY_MISSING", placeName);
+  if (visitDayIndex === undefined) return unknown("DAY_MISSING", placeName);
 
   // 이동과 추가가 함께 읽히면 이동으로 본다 — resolver가 일정에 없으면 되묻는다
   const intent = wantsMove ? "move_place" : "add_place";
-  const parsed = RawItineraryCommandSchema.safeParse({ intent, placeName, dayIndex });
+  const parsed = RawItineraryCommandSchema.safeParse({ intent, placeName, dayIndex: visitDayIndex });
   return parsed.success ? parsed.data : unknown("PLACE_MISSING");
 }
 

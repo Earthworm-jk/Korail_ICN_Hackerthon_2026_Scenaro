@@ -26,6 +26,7 @@ import {
 import { excludedPlaceIdsFrom, initialCandidateIds } from "@/lib/candidates";
 import { initialPlaceIdsFromItinerary } from "@/lib/initial-place-selection";
 import {
+  commandPanelUnavailable,
   commandResponseIsCurrent,
   selectionAfterCommand,
   stateAfterRouteRecommendation,
@@ -908,6 +909,13 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
     () => displayedSelectionCapacity(view, selectedPlaceIds),
     [selectedPlaceIds, view],
   );
+  const aiCommandDisabled = commandPanelUnavailable({
+    hasCandidates: candidateData !== null,
+    hasPlannedResult: view.result?.status === "planned",
+    reopened: view.reopened !== null,
+    alternativeSelected: view.selectedAlt !== null,
+    requiresSelectionAdjustment: selectionCapacity?.requiresAdjustment === true,
+  });
 
   const chooseAlternative = useCallback((alt: SelectableAlternative | null) => {
     setLastItineraryDiff(null);
@@ -1525,12 +1533,10 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
           <ItineraryCommandPanel
             value={aiSentence}
             pending={aiPending}
-            disabled={
-              candidateData === null ||
-              view.result?.status !== "planned" ||
-              view.reopened !== null ||
-              view.selectedAlt !== null
-            }
+            disabled={aiCommandDisabled}
+            disabledMessage={selectionCapacity?.requiresAdjustment
+              ? "ai.disabledOverselection"
+              : "ai.disabled"}
             feedback={aiFeedback}
             lastDiff={lastItineraryDiff}
             onChange={setAiSentence}
@@ -1941,11 +1947,11 @@ function RouteRecommendationCard({
               {tr("ai.recommendDisplaces").replace("{place}", placeName(placeId))}
             </p>
           ))}
-          {recommendation.movedPlaceIds.length > 0 && (
-            <p className="mt-1 text-xs text-sc-orange-text">
-              {tr("ai.recommendMoves").replace("{n}", String(recommendation.movedPlaceIds.length))}
+          {recommendation.movedPlaceIds.map((placeId) => (
+            <p key={`move-${placeId}`} className="mt-1 text-xs text-sc-orange-text">
+              {tr("ai.recommendMoves").replace("{place}", placeName(placeId))}
             </p>
-          )}
+          ))}
         </div>
         <button
           type="button"

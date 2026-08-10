@@ -9,6 +9,20 @@ export function commandResponseIsCurrent(submitted: number, current: number): bo
   return submitted === current;
 }
 
+export function commandPanelUnavailable(input: {
+  hasCandidates: boolean;
+  hasPlannedResult: boolean;
+  reopened: boolean;
+  alternativeSelected: boolean;
+  requiresSelectionAdjustment: boolean;
+}): boolean {
+  return !input.hasCandidates
+    || !input.hasPlannedResult
+    || input.reopened
+    || input.alternativeSelected
+    || input.requiresSelectionAdjustment;
+}
+
 export function selectionAfterCommand(input: {
   candidatePlaceIds: readonly string[];
   currentSelectedPlaceIds: ReadonlySet<string>;

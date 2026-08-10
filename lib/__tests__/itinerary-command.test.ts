@@ -110,6 +110,14 @@ describe("#141 결정적 폴백 파서 — LLM 없이 대표 명령을 읽는다
       intent: "recommend_along_route",
       dayIndex: 2,
     });
+    expect(parseCommand("둘째 날에 갈 만한 다른 촬영지 추천해줘")).toEqual({
+      intent: "recommend_along_route",
+      dayIndex: 2,
+    });
+    expect(parseCommand("Recommend another filming location for day 2")).toEqual({
+      intent: "recommend_along_route",
+      dayIndex: 2,
+    });
   });
 
   // P0 밖 명령은 추측하지 않는다 — 잘못 해석해 일정을 바꾸는 것이 못 알아듣는 것보다 나쁘다
