@@ -228,12 +228,24 @@ function isGatewayRide(value: unknown): boolean {
  * 바로 읽기 때문에 `null`이나 한쪽 언어만 있는 값이 들어오면 그 자리에서 죽는다.
  */
 function isDisplayNameSnapshot(value: unknown): boolean {
-  if (!isObject(value)) return false;
+  if (!isObject(value) || Array.isArray(value)) return false;
   const groups = [value.places, value.stations];
   return groups.every((group) => {
-    if (!isObject(group)) return false;
-    return Object.values(group).every(isLocalizedText);
+    // 배열도 object라 `places: []`가 Record처럼 통과한다 — 명시적으로 막는다 (PR #133 리뷰)
+    if (!isObject(group) || Array.isArray(group)) return false;
+    return Object.values(group).every(isNonEmptyLocalizedText);
   });
+}
+
+/** 이름은 화면에 그대로 찍힌다 — 공백만 있는 값은 ID만큼이나 쓸모가 없다 */
+function isNonEmptyLocalizedText(value: unknown): boolean {
+  return (
+    isObject(value)
+    && typeof value.ko === "string"
+    && value.ko.trim().length > 0
+    && typeof value.en === "string"
+    && value.en.trim().length > 0
+  );
 }
 
 /** `CandidateWarning` — 경고 목록이 `placeId`와 `detail`을 문구 키로 쓴다 */
@@ -275,32 +287,58 @@ function isUsableDay(value: unknown): boolean {
  * 전체 Zod 스키마를 다시 돌리지 않는 이유는 그 스키마가 서버 시드용이고, 여기서 막으려는
  * 것은 손으로 고친 값·다른 앱의 같은 키·구버전 잔재이기 때문이다.
  */
-function isUsableRecord(value: unknown): value is SavedItineraryStub {
-  if (typeof value !== "object" || value === null) return false;
+/**
+ * 레코드 한 건을 화면이 쓸 수 있는 모양으로 정규화한다. 못 쓰면 `null`.
+ *
+ * PR #123 리뷰 — 겉모양만 보면 안 된다. `id/title/days/constraints`가 있어도
+ * `savedAt`이 날짜가 아니면 목록의 `Intl.DateTimeFormat(...).format(new Date(savedAt))`이
+ * `RangeError`를 던지고, `context`가 없거나 constraints가 비면 재열람이 깨진다.
+ * 그래서 **실제 소비 지점이 요구하는 것**을 기준으로 본다.
+ *
+ * PR #133 리뷰 — **보조 필드 하나 때문에 일정 전체를 버리지 않는다.** `displayNames`는
+ * 없어도 화면이 대체 문구로 돌아가는 optional 메타데이터인데, 그것이 깨졌다고 레코드를
+ * 걸러내면 성한 `days`·`constraints`·`context`까지 잃는다. 게다가 걸러진 레코드는 다음
+ * 저장 때 목록을 다시 쓰면서 **저장소에서 영구히 사라진다**(`saveLocalItinerary`가
+ * `listLocalItineraries` 결과 위에 쓴다). 그래서 그 필드만 떼고 일정은 남긴다.
+ *
+ * 전체 Zod 스키마를 다시 돌리지 않는 이유는 그 스키마가 서버 시드용이고, 여기서 막으려는
+ * 것은 손으로 고친 값·다른 앱의 같은 키·구버전 잔재이기 때문이다.
+ */
+function normalizeUsableRecord(value: unknown): SavedItineraryStub | null {
+  if (!isObject(value)) return null;
   const record = value as Record<string, unknown>;
-  if (typeof record.id !== "string" || record.id.length === 0) return false;
-  if (typeof record.title !== "string") return false;
-  if (!isUsableInstant(record.savedAt)) return false;
+  if (typeof record.id !== "string" || record.id.length === 0) return null;
+  if (typeof record.title !== "string") return null;
+  if (!isUsableInstant(record.savedAt)) return null;
   // constraints 직렬화 계약이 다르면 되살린 시각이 조용히 어긋난다 — 버리는 편이 낫다
-  if (record.schemaVersion !== SAVED_SCHEMA_VERSION) return false;
-  if (typeof record.snapshotVersion !== "string") return false;
-  if (!isUsableConstraints(record.constraints)) return false;
-  if (!isArrayOf(record.days, isUsableDay)) return false;
-  if (!isObject(record.context)) return false;
-  if (!isArrayOf(record.context.actors, isActorSummary)) return false;
-  if (!isArrayOf(record.context.works, isWorkSummary)) return false;
+  if (record.schemaVersion !== SAVED_SCHEMA_VERSION) return null;
+  if (typeof record.snapshotVersion !== "string") return null;
+  if (!isUsableConstraints(record.constraints)) return null;
+  if (!isArrayOf(record.days, isUsableDay)) return null;
+  if (!isObject(record.context)) return null;
+  if (!isArrayOf(record.context.actors, isActorSummary)) return null;
+  if (!isArrayOf(record.context.works, isWorkSummary)) return null;
   // warnings는 optional(#43, PR #44 리뷰 2) — 있으면 원소까지 성해야 한다
-  if (record.warnings !== undefined && !isArrayOf(record.warnings, isCandidateWarning)) return false;
-  // displayNames도 optional(#130) — 없으면 화면이 대체 문구로 떨어진다
-  if (record.displayNames !== undefined && !isDisplayNameSnapshot(record.displayNames)) return false;
-  return true;
+  if (record.warnings !== undefined && !isArrayOf(record.warnings, isCandidateWarning)) return null;
+
+  const usable = record as unknown as SavedItineraryStub;
+  // displayNames도 optional(#130). 깨졌으면 그 필드만 떼고 일정은 살린다 (PR #133 리뷰)
+  if (usable.displayNames !== undefined && !isDisplayNameSnapshot(usable.displayNames)) {
+    const rest = { ...usable };
+    delete rest.displayNames;
+    return rest;
+  }
+  return usable;
 }
 
 /** 저장 목록 — 최신순. 손상분은 조용히 걸러낸다 */
 export function listLocalItineraries(storage: Storage | null = defaultStorage()): SavedItineraryStub[] {
   const data = readEnvelope<unknown>(SAVED_KEY, storage);
   if (!Array.isArray(data)) return [];
-  return data.filter(isUsableRecord);
+  return data.flatMap((value) => {
+    const record = normalizeUsableRecord(value);
+    return record === null ? [] : [record];
+  });
 }
 
 /** 브라우저 randomUUID가 없으면(구형·비보안 컨텍스트) 시각 기반으로 떨어진다 */

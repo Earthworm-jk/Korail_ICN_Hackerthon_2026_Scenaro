@@ -32,6 +32,11 @@ export type SavedItineraryStub = {
    * 자리라, 이름을 조회와 무관하게 복원할 수 있도록 저장 시점 값을 함께 담는다.
    *
    * 기존 레코드 호환을 위해 optional이다. 없으면 화면이 현지화된 대체 문구로 떨어진다.
+   *
+   * **클라우드 경로(`?cloud=1`)에서는 보존되지 않는다.** `saved-itineraries-codec.ts`의
+   * `entryToRow`가 `days`·`context`·`warnings`만 담고 이 필드는 넣지 않아, 계정에 저장한 뒤
+   * 다시 받으면 사라진다. #130이 로컬 경로의 P0라 이번 범위에서 다루지 않았고, 클라우드를
+   * 계속 유지한다면 후속으로 채워야 한다 (PR #133 리뷰).
    */
   displayNames?: DisplayNameSnapshot;
 };
