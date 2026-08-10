@@ -121,6 +121,7 @@ type PlanRequest = {
   selectedActorIds: string[];
   selectedWorkIds: string[];
   excludedPlaceIds: string[];
+  preferredVisitDates?: Record<string, string>; // placeId → YYYY-MM-DD(KST) 소프트 선호 (#139)
 };
 // 경계 순서 계약: arrivalAt <= airportReadyAt < airportArrivalDeadline <= departureAt
 //   위반 시 INVALID_REQUEST + fieldErrors(필드 경로별 첫 오류 메시지)
@@ -131,7 +132,8 @@ type PlanRequest = {
 // Action의 ok는 "요청이 유효했는가"이며, 엔진 ItineraryResult에는 ok가 없다 —
 // 계산 결과는 ENGINE_SPEC §7의 status 2분기(#14 ver.0.4 — 필수·고정일 제거로 실패 분기 소멸):
 // #43: 운영시간 밖·미확인 배치는 자동 제외하지 않고 warnings에 담는다.
-//   { status: "planned", days, rejectedPlaces, warnings, selectionGroups, comparisonKeys, metrics }
+//   { status: "planned", days, rejectedPlaces, warnings, selectionGroups, comparisonKeys, metrics,
+//     preferredDateOutcomes? }  // #139 — 선호 입력이 있을 때만. honored / adjusted / unplaced
 //   { status: "empty",   days: [], rejectedPlaces, warnings, selectionGroups }
 // empty는 정상 응답이며 comparisonKeys·metrics를 포함하지 않는다(허위 값 금지)
 
@@ -182,7 +184,9 @@ getFlightInfo(flightNo: string, direction: "arrival" | "departure", date?: strin
 
 - 일정 계산에 실패 응답은 없다 — 후보가 전멸하면 `status: "empty"` 정상 응답이며
   최초 생성에서는 빈 상태를 표시하고 편집 재계산 중에는 기존 일정을 유지한다.
-- 방문일 고정과 필수 방문 입력이 없으므로 `USER_CONSTRAINT_INFEASIBLE` 오류 계약은 사용하지 않는다.
+- 방문일 **하드 고정**과 필수 방문 입력이 없으므로 `USER_CONSTRAINT_INFEASIBLE` 오류 계약은
+  사용하지 않는다. #139의 소프트 선호(`preferredVisitDates`)도 실패 분기를 만들지 않고
+  `preferredDateOutcomes`로만 보고한다. 다만 기간 밖 날짜·비후보 장소 ID는 `INVALID_REQUEST`다.
 - 입력 스키마 위반은 예외가 아니다 — Action이 safeParse 후 `INVALID_REQUEST`로 반환하고
   UI는 1단계 검증 화면으로 안내한다(1단계 검증을 우회한 요청에서만 발생해야 정상).
   입출국 순서·공항 경계 순서(3.2의 경계 순서 계약) 위반도 같은 경로로 필드별 오류를 담는다

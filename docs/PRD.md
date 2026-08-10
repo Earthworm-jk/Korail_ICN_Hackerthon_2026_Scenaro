@@ -221,8 +221,10 @@ saved_itineraries
 - `DEPARTURE_DEADLINE_EXCEEDED`: 출국 역산 마감 초과
 - `ACTIVITY_WINDOW_MISMATCH`: 운영시간 또는 보수적 접근시간 기준 경고
 
-재계산 결과가 `empty`이면 기존 일정을 유지하고 바꿔볼 조건을 표시한다. 방문일 고정과 필수 방문이
-없으므로 `PINNED_DATE`, `REQUIRED_PLACE`, `USER_CONSTRAINT_INFEASIBLE` 계약은 사용하지 않는다.
+재계산 결과가 `empty`이면 기존 일정을 유지하고 바꿔볼 조건을 표시한다. 방문일 **하드 고정**과
+필수 방문이 없으므로 `PINNED_DATE`, `REQUIRED_PLACE`, `USER_CONSTRAINT_INFEASIBLE` 계약은
+사용하지 않는다. #139의 방문일 소프트 선호도 이 계약을 늘리지 않는다 — 못 지킨 선호는 오류가
+아니라 `preferredDateOutcomes`의 `adjusted`·`unplaced`로 보고한다.
 
 ## 8. 언어
 
@@ -295,7 +297,8 @@ saved_itineraries
 
 ## 12. 최종 MVP 제외 범위
 
-- 방문일 변경·고정
+- 방문일 변경 화면과 방문일 **하드 고정**
+  (하드 고정은 폐기 유지. 방문일 **소프트 선호**는 #139로 P1이며 엔진 계약만 있고 화면은 없다)
 - 편집 전후 차이 전용 요약 화면
 - Rail&Air 조건·발권 채널 전용 안내
 - 실제 버스·택시·도보 경로·요금 계산

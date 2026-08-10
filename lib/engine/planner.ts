@@ -14,6 +14,7 @@ import type {
   DayPlan,
   ItineraryItem,
   ItineraryResult,
+  PreferredDateOutcome,
   RegionWindow,
   SelectionGroupSummary,
   TrainRide,
@@ -50,6 +51,10 @@ type DerivedState = {
   stableKey: string; // 완성된 안정 타이브레이커 — 비교자에서 재조립하지 않도록 전이 시 확정
   dateCountsKey: string; // 날짜별 배치 수 서명 — pruneStates 서명용
   warningCount: number;
+  // #139 — 선호 날짜에 배치된 방문 수. 여기에 담는 것은 '지킨 수'이고 비교 키는 '못 지킨 수'다.
+  // 한 실행 안에서 총 선호 수가 상수라 (mismatch 오름차순) ≡ (honored 내림차순)이고,
+  // beam 단계에서는 총량 없이 이 값만으로 최종 비교와 같은 방향을 만들 수 있다.
+  preferredHonoredCount: number;
   actorGroupCovered: boolean;
   workGroupCovered: boolean;
 };
@@ -107,6 +112,10 @@ type PlanContext = {
   dayStartOf: (date: string) => number;
   /** 장소 id → 실행 단위 서수 (id 사전순) — 서명 키 축약용. 단사라 그룹핑 동등성 보존 */
   placeOrdinalOf: (placeId: string) => number;
+  /** #139 — 장소 id → 선호 방문일(KST). 제외된 장소·비후보는 이미 걸러진 상태로 들어온다 */
+  preferredDateOf: (placeId: string) => string | undefined;
+  /** 유효한 선호 입력 수. mismatch = preferredCount - 지킨 수 (총량이 상수라 단조 관계) */
+  preferredCount: number;
 };
 
 const DAY_MS = 24 * 60 * MINUTE_MS;
@@ -116,6 +125,7 @@ function buildPlanContext(
   places: readonly PlaceT[],
   availableAt: number,
   deadline: number,
+  preferredVisitDates: ReadonlyMap<string, string>,
 ): PlanContext {
   const dayCache = new Map<number, string>();
   const timeCache = new Map<string, number>();
@@ -157,6 +167,8 @@ function buildPlanContext(
     activityEndOf: (date) => ctx.timeOf(date, DAY_ACTIVITY_END),
     dayStartOf: (date) => ctx.timeOf(date, "00:00"),
     placeOrdinalOf: () => -1,
+    preferredDateOf: (placeId) => preferredVisitDates.get(placeId),
+    preferredCount: preferredVisitDates.size,
   };
   const placeOrdinals = new Map(
     [...places].map(({ id }) => id).sort().map((id, ordinal) => [id, ordinal] as const),
@@ -189,7 +201,7 @@ function buildPlanContext(
     }
     return value;
   };
-  const tripDates = enumerateDates(ctx, koreaDate(availableAt), koreaDate(deadline));
+  const tripDates = tripDatesOf(availableAt, deadline);
   ctx.tripDates = tripDates;
   ctx.dateIndex = new Map(tripDates.map((date, index) => [date, index]));
   return ctx;
@@ -204,6 +216,7 @@ function initialDerived(ctx: PlanContext): DerivedState {
     stableKey: "",
     dateCountsKey: dateCountsKeyOf(ctx.tripDates.map(() => 0)),
     warningCount: 0,
+    preferredHonoredCount: 0,
     actorGroupCovered: false,
     workGroupCovered: false,
   };
@@ -227,6 +240,7 @@ function appendDerived(
   warning: ActivityWindowDetail | null,
   route: TrainLegT[],
   dateCounts: readonly number[],
+  honorsPreference: boolean,
 ): DerivedState {
   const ordinal = ctx.placeOrdinalOf(placeId);
   const sortedVisitOrdinals = [...parent.sortedVisitOrdinals];
@@ -245,6 +259,7 @@ function appendDerived(
     stableKey: stableKeyOf(visitPath, ridePath),
     dateCountsKey: dateCountsKeyOf(dateCounts),
     warningCount: parent.warningCount + (warning !== null ? 1 : 0),
+    preferredHonoredCount: parent.preferredHonoredCount + (honorsPreference ? 1 : 0),
     actorGroupCovered: parent.actorGroupCovered || selectionGroups.includes("actor"),
     workGroupCovered: parent.workGroupCovered || selectionGroups.includes("work"),
   };
@@ -266,6 +281,9 @@ function recomputeDerived(state: PlannerState, ctx: PlanContext): DerivedState {
     dateCountsKey: dateCountsKeyOf(ctx.tripDates.map((date) =>
       state.visits.filter(({ visitStart }) => koreaDate(visitStart) === date).length)),
     warningCount: state.visits.filter(({ warning }) => warning !== null).length,
+    // 원본 재계산: 방문 기록의 visitStart 날짜와 선호 입력을 직접 대조한다 (증분 값 신뢰 안 함)
+    preferredHonoredCount: state.visits.filter(({ place, visitStart }) =>
+      ctx.preferredDateOf(place.id) === koreaDate(visitStart)).length,
     actorGroupCovered: state.visits.some(({ selectionGroups }) => selectionGroups.includes("actor")),
     workGroupCovered: state.visits.some(({ selectionGroups }) => selectionGroups.includes("work")),
   };
@@ -281,6 +299,7 @@ function assertDerivedIntegrity(states: PlannerState[], ctx: PlanContext): void 
       || actual.stableKey !== expected.stableKey
       || actual.dateCountsKey !== expected.dateCountsKey
       || actual.warningCount !== expected.warningCount
+      || actual.preferredHonoredCount !== expected.preferredHonoredCount
       || actual.actorGroupCovered !== expected.actorGroupCovered
       || actual.workGroupCovered !== expected.workGroupCovered) {
       throw new Error(
@@ -345,7 +364,11 @@ export function planItinerary(
   const availableAt = Date.parse(constraints.airportReadyAt);
   const departureAt = Date.parse(constraints.departureAt);
   const deadline = Date.parse(constraints.airportArrivalDeadline);
-  const ctx = buildPlanContext(repos.trainLegs, repos.places, availableAt, deadline);
+  const preferredVisitDates = preferredDateIndex(constraints, candidates, excludedPlaceIds);
+  const ctx = buildPlanContext(
+    repos.trainLegs, repos.places, availableAt, deadline, preferredVisitDates,
+  );
+  assertPreferredDatesInRange(preferredVisitDates, ctx);
   const initial: PlannerState = {
     stationId: endpointStationId,
     readyAt: availableAt,
@@ -374,8 +397,25 @@ export function planItinerary(
           ctx,
           deadline,
         );
-        if (!transition.ok) continue;
-        next.push(transition.state);
+        if (transition.ok) next.push(transition.state);
+
+        // #139 6-1: 기본 정책은 가장 이른 가능 날짜에서 멈춘다. 선호 날짜 후보를 따로
+        // 만들지 않으면 비교할 상태 자체가 없다. 추가 전이는 선호가 지정된 장소에서만 생긴다.
+        const preferredDate = ctx.preferredDateOf(candidate.place.id);
+        if (preferredDate === undefined) continue;
+        // 기본 전이가 이미 선호 날짜에 놓였으면 같은 상태다 — 중복 생성하지 않는다
+        if (transition.ok
+          && ctx.dateOf(transition.state.visits[transition.state.visits.length - 1].visitStart)
+            === preferredDate) continue;
+        const preferredTransition = appendVisit(
+          state,
+          candidate,
+          constraints,
+          ctx,
+          deadline,
+          preferredDate,
+        );
+        if (preferredTransition.ok) next.push(preferredTransition.state);
       }
     }
 
@@ -472,6 +512,13 @@ export function planItinerary(
       uniqueReasons(rejectedPlaces),
     ),
     comparisonKeys: best.keys,
+    ...(preferredVisitDates.size > 0
+      ? {
+        preferredDateOutcomes: preferredDateOutcomesOf(
+          preferredVisitDates, best.state.visits, ctx,
+        ),
+      }
+      : {}),
     metrics: {
       totalTravelMinutes:
         totalRailMinutes + best.state.localTravelMinutes,
@@ -509,12 +556,19 @@ function rejectionCause(
   return withoutDailyCap ? "DAILY_CAPACITY_EXCEEDED" : "DEPARTURE_DEADLINE_EXCEEDED";
 }
 
+/**
+ * 한 장소를 상태에 이어 붙인다.
+ *
+ * `onlyDate`를 주면 그 날짜의 창만 시도한다 (#139 6-1). 선호가 지정된 장소에 한해
+ * 기본 전이와 선호 날짜 전이를 각각 만들기 위한 것으로, 배치 조건은 완화하지 않는다.
+ */
 function appendVisit(
   state: PlannerState,
   candidate: CandidatePlace,
   constraints: TripConstraints,
   ctx: PlanContext,
   deadline: number,
+  onlyDate?: string,
 ): Transition {
   const place = candidate.place;
   const route = findEarliestRoute(
@@ -540,12 +594,20 @@ function appendVisit(
   // 경고로 강등해 배치는 유지한다 — 하드 제약은 열차·출국 마감뿐
   let window = place.openingHours.type === "unverified"
     ? null
-    : findVisitWindow(ctx, place, stationArrival, true, deadline, dateAvailable, "verified");
+    : findVisitWindow(ctx, place, stationArrival, true, deadline, dateAvailable, "verified", onlyDate);
   let warning: ActivityWindowDetail | null = null;
   if (!window) {
-    warning = activityWarningDetail(ctx, place, stationArrival, deadline, dateAvailable);
-    window = findVisitWindow(ctx, place, stationArrival, true, deadline, dateAvailable, "ignore-hours");
+    warning = activityWarningDetail(ctx, place, stationArrival, deadline, dateAvailable, onlyDate);
+    window = findVisitWindow(
+      ctx, place, stationArrival, true, deadline, dateAvailable, "ignore-hours", onlyDate,
+    );
     if (!window) {
+      // 선호 날짜 전이는 '그 날짜에 못 넣는다'가 전부다 — 사유는 기본 전이가 이미 말한다.
+      // 여기서 rejectionCause를 또 돌리면 선호 장소마다 상태 × 후보만큼 헛도는 조회가 붙는다.
+      // 어느 쪽이든 이 reason은 탐색 루프에서 버려지고 rejectedPlaces는 completionFailure가 만든다.
+      if (onlyDate !== undefined) {
+        return { ok: false, reason: { code: "DAILY_CAPACITY_EXCEEDED", placeId: place.id } };
+      }
       // 남은 기간 안에 배치 자체가 불가능 — 운영시간 사유가 아니다 (#43).
       // 다만 원인이 두 가지다: 하루 장소 수 상한이 날짜를 막았거나, 여행 마감 자체가 부족하거나.
       // dateAvailable이 findVisitWindow 안으로 들어가 있어 여기서는 구분되지 않으므로,
@@ -598,6 +660,9 @@ function appendVisit(
         warning,
         route,
         dateCounts,
+        // 선호를 지켰는지는 요청한 날짜와 실제 배치 날짜만으로 판정한다 —
+        // onlyDate 전이가 아니어도 기본 배치가 우연히 선호 날짜면 지킨 것이다 (#139 6-1 중복 제거)
+        ctx.preferredDateOf(place.id) === date,
       ),
     },
   };
@@ -611,6 +676,9 @@ function findVisitWindow(
   deadline: number,
   dateAvailable: (date: string) => boolean,
   mode: "verified" | "ignore-hours",
+  // #139 6-1: 지정하면 그 날짜의 창만 본다. 기본 정책(가장 이른 날)과 별개의 전이를 만들기
+  // 위한 것으로, 조건 자체는 완화하지 않는다 — 그 날짜가 불가능하면 그대로 null이다.
+  onlyDate?: string,
 ): { visitStart: number; visitEnd: number; stationReadyAt: number; accessAndBufferMinutes: number } | null {
   const buffer = includeBuffer ? accessBufferMinutes(place.accessEstimate.minutes) : 0;
   const accessAndBufferMinutes = place.accessEstimate.minutes + buffer;
@@ -618,7 +686,10 @@ function findVisitWindow(
   const startDate = ctx.dateOf(earliestPlaceArrival);
   // 시작일은 항상 여행 날짜 범위 안(도착 이후)이고, 범위 밖(마감 이후)이면 후보 날짜가 없다
   const startIndex = ctx.dateIndex.get(startDate);
-  const dates = startIndex === undefined ? [] : ctx.tripDates.slice(startIndex);
+  const scanned = startIndex === undefined ? [] : ctx.tripDates.slice(startIndex);
+  const dates = onlyDate === undefined
+    ? scanned
+    : scanned.filter((date) => date === onlyDate); // 이미 지난 날짜면 빈 목록
 
   for (const date of dates) {
     if (!dateAvailable(date)) continue;
@@ -661,9 +732,12 @@ function activityWarningDetail(
   stationArrival: number,
   deadline: number,
   dateAvailable: (date: string) => boolean,
+  onlyDate?: string, // #139 — 선호 날짜 전이의 경고는 그 날짜 기준으로 판정한다
 ): ActivityWindowDetail {
   if (place.openingHours.type === "unverified") return "UNVERIFIED_HOURS";
-  return findVisitWindow(ctx, place, stationArrival, false, deadline, dateAvailable, "verified")
+  return findVisitWindow(
+    ctx, place, stationArrival, false, deadline, dateAvailable, "verified", onlyDate,
+  )
     ? "CONSERVATIVE_BUFFER_MISMATCH"
     : "OUTSIDE_VERIFIED_HOURS";
 }
@@ -702,6 +776,8 @@ function completeSchedule(
       selectionGroupCoverageCount,
       selectedUnionPlaceCount: state.visits.length,
       activityWarningCount: activityWarningCountOf(state), // #43 결정 3 — 방문 수와 이동시간 사이
+      // #139: 일정에 못 들어간 선호도 불일치 1로 센다 — 총 선호 수에서 지킨 수를 뺀다
+      preferredDateMismatchCount: ctx.preferredCount - state.derived.preferredHonoredCount,
       totalTravelMinutes: totalRailMinutes + state.localTravelMinutes,
       transferCount: totalTransfers,
       slackSatisfied: hasDailySlack(
@@ -815,6 +891,108 @@ function findEarliestRoute(
   return result;
 }
 
+/**
+ * 선호 입력을 실제로 쓸 수 있는 형태로 좁힌다 (#139 7절).
+ *
+ * - 제외한 장소의 선호는 버린다 — **제외가 선호보다 우선**이다
+ * - 현재 엄격 후보가 아닌 장소 ID는 거부한다(RangeError)
+ *
+ * 제외로 버려진 선호는 mismatch에도 결과 목록에도 넣지 않는다. 사용자가 스스로 뺀 장소를
+ * "요청을 못 지켰다"고 되돌려 주면 안 된다.
+ */
+function preferredDateIndex(
+  constraints: TripConstraints,
+  candidates: readonly CandidatePlace[],
+  excludedPlaceIds: ReadonlySet<string>,
+): ReadonlyMap<string, string> {
+  const entries = Object.entries(constraints.preferredVisitDates ?? {});
+  if (entries.length === 0) return new Map();
+  const candidateIds = new Set(candidates.map(({ place }) => place.id));
+  const index = new Map<string, string>();
+  for (const [placeId, date] of entries.sort(([a], [b]) => a.localeCompare(b, "en"))) {
+    if (excludedPlaceIds.has(placeId)) continue;
+    if (!candidateIds.has(placeId)) {
+      throw new RangeError(`preferred visit date for a non-candidate place: ${placeId}`);
+    }
+    index.set(placeId, date);
+  }
+  return index;
+}
+
+/**
+ * 공개 Action 경계용 사전 검사 (PR #30 리뷰 ③과 같은 이유).
+ *
+ * 엔진은 내부 호출의 빠른 실패(RangeError)를 유지하고, 공개 Action은 이 함수로 필드 오류를
+ * 만든다. 판정 기준은 엔진과 같은 코드다 — 후보 집합은 `deriveStrictSelectionMemberships`,
+ * 날짜 집합은 `tripDatesOf`로 한 군데서만 나온다.
+ */
+export function preferredVisitDateErrors(
+  constraints: TripConstraints,
+  repos: Repositories,
+): Record<string, string> {
+  const entries = Object.entries(constraints.preferredVisitDates ?? {})
+    .sort(([a], [b]) => a.localeCompare(b, "en"));
+  if (entries.length === 0) return {};
+  const actorIds = new Set([
+    ...(constraints.selectedActorIds ?? []),
+    ...(constraints.selectedActorId ? [constraints.selectedActorId] : []),
+  ]);
+  const memberships = deriveStrictSelectionMemberships(
+    repos.workPlaceRelations,
+    actorIds,
+    new Set(constraints.selectedWorkIds),
+  );
+  const knownPlaceIds = new Set(repos.places.map(({ id }) => id));
+  const excluded = new Set(constraints.excludedPlaceIds);
+  const tripDates = new Set(tripDatesOf(
+    Date.parse(constraints.airportReadyAt),
+    Date.parse(constraints.airportArrivalDeadline),
+  ));
+  for (const [placeId, date] of entries) {
+    if (excluded.has(placeId)) continue; // 제외가 선호보다 우선 — 오류가 아니라 무시다
+    if (!knownPlaceIds.has(placeId) || !memberships.has(placeId)) {
+      return { preferredVisitDates: `not a candidate place id: ${placeId}` };
+    }
+    if (!tripDates.has(date)) {
+      return { preferredVisitDates: `date out of trip range: ${placeId} ${date}` };
+    }
+  }
+  return {};
+}
+
+/** 여행 기간 밖 날짜는 거부한다 (#139 7절) — tripDates가 정해진 뒤에만 판정할 수 있다 */
+function assertPreferredDatesInRange(
+  preferredVisitDates: ReadonlyMap<string, string>,
+  ctx: PlanContext,
+): void {
+  for (const [placeId, date] of preferredVisitDates) {
+    if (!ctx.dateIndex.has(date)) {
+      throw new RangeError(`preferred visit date out of trip range: ${placeId} ${date}`);
+    }
+  }
+}
+
+/**
+ * 선호 하나하나의 반영 결과 (#139 4절). 실패 분기를 만들지 않고 이 목록으로만 알린다.
+ * 요청한 placeId 사전순 — preferredDateIndex가 이미 정렬해 담는다.
+ */
+function preferredDateOutcomesOf(
+  preferredVisitDates: ReadonlyMap<string, string>,
+  visits: readonly ScheduledVisit[],
+  ctx: PlanContext,
+): PreferredDateOutcome[] {
+  const scheduledDates = new Map(
+    visits.map(({ place, visitStart }) => [place.id, ctx.dateOf(visitStart)] as const),
+  );
+  return [...preferredVisitDates].map(([placeId, requestedDate]) => {
+    const scheduledDate = scheduledDates.get(placeId);
+    if (scheduledDate === undefined) return { placeId, requestedDate, status: "unplaced" as const };
+    return scheduledDate === requestedDate
+      ? { placeId, requestedDate, status: "honored" as const }
+      : { placeId, requestedDate, status: "adjusted" as const, scheduledDate };
+  });
+}
+
 function assertReferences(
   constraints: TripConstraints,
   repos: Repositories,
@@ -874,30 +1052,65 @@ function pruneStates(states: PlannerState[], ctx: PlanContext): PlannerState[] {
   if (process.env.PLANNER_VERIFY_DERIVED === "1") {
     assertDerivedIntegrity(states, ctx); // 모든 전이가 pruneStates 입력을 지난다 (수용 기준 4)
   }
+  // #139 6-2: 서명에는 날짜도 선호 일치 여부도 넣지 않는다. 장소별 날짜를 담으면 병합이
+  // 거의 사라져 상태 수가 폭증한다. 대신 같은 서명의 대표를 고를 때 선호를 함께 본다.
   const bestBySignature = new Map<string, PlannerState>();
   for (const state of states) {
     const signature =
       `${state.stationId}|${state.derived.sortedVisitKey}|${state.readyAt}|${state.derived.dateCountsKey}`;
     const previous = bestBySignature.get(signature);
-    if (!previous
-      || activityWarningCountOf(state) < activityWarningCountOf(previous)
-      || (activityWarningCountOf(state) === activityWarningCountOf(previous)
-        && (state.readyAt < previous.readyAt
-          || (state.readyAt === previous.readyAt && state.railMinutes < previous.railMinutes)))) {
+    if (!previous || comparePruned(state, previous) < 0) {
       bestBySignature.set(signature, state);
     }
   }
-  return [...bestBySignature.values()]
-    .sort((a, b) => {
-      const aCoverage = Number(a.derived.actorGroupCovered) + Number(a.derived.workGroupCovered);
-      const bCoverage = Number(b.derived.actorGroupCovered) + Number(b.derived.workGroupCovered);
-      // 경고 수는 최종 비교 키(#43)와 같은 방향으로 beam에서도 우선한다
-      return bCoverage - aCoverage
-        || activityWarningCountOf(a) - activityWarningCountOf(b)
-        || a.readyAt - b.readyAt
-        || a.derived.stableKey.localeCompare(b.derived.stableKey, "en");
-    })
-    .slice(0, MAX_BEAM_SIZE);
+  const merged = [...bestBySignature.values()];
+  const byExistingOrder = [...merged].sort(compareBeam).slice(0, MAX_BEAM_SIZE);
+  if (ctx.preferredCount === 0) return byExistingOrder;
+
+  // #139 6-2: 선호를 지킨 상태는 최종 비교에 닿기 전에 잘리면 안 된다. 그렇다고 기존 자리를
+  // 밀어내서도 안 된다 — 밀려난 상태가 더 깊은 탐색으로 이어지던 경우 **방문 장소 수가 준다.**
+  // 장소 수는 비교 키 2번으로 선호(4번)보다 위라, 선호를 지키려다 장소를 잃으면 계약 위반이다.
+  // 실측: 선호 하나를 넣자 9곳 → 8곳으로 줄었고, beam만 늘리면 9곳이 그대로 돌아왔다.
+  //
+  // 그래서 뺏지 않고 더한다 — 기존 순서의 상위 N에 선호 순서의 상위 N을 합집합으로 얹는다.
+  // 선호가 없으면 위에서 이미 돌아가 한 톨도 달라지지 않고, 있어도 상한은 2N이다.
+  const byPreferredOrder = [...merged].sort(compareBeamPreferred).slice(0, MAX_BEAM_SIZE);
+  const kept = new Set(byExistingOrder);
+  return [...byExistingOrder, ...byPreferredOrder.filter((state) => !kept.has(state))];
+}
+
+function coverageOf(state: PlannerState): number {
+  return Number(state.derived.actorGroupCovered) + Number(state.derived.workGroupCovered);
+}
+
+/** beam 정렬 — 경고 수는 최종 비교 키(#43)와 같은 방향으로 beam에서도 우선한다 */
+function compareBeam(a: PlannerState, b: PlannerState): number {
+  return coverageOf(b) - coverageOf(a)
+    || activityWarningCountOf(a) - activityWarningCountOf(b)
+    || a.readyAt - b.readyAt
+    || a.derived.stableKey.localeCompare(b.derived.stableKey, "en");
+}
+
+/** 같은 정렬에 선호 불일치를 최종 비교와 같은 자리(경고 뒤)에 끼운 것 (#139) */
+function compareBeamPreferred(a: PlannerState, b: PlannerState): number {
+  return coverageOf(b) - coverageOf(a)
+    || activityWarningCountOf(a) - activityWarningCountOf(b)
+    || b.derived.preferredHonoredCount - a.derived.preferredHonoredCount
+    || a.readyAt - b.readyAt
+    || a.derived.stableKey.localeCompare(b.derived.stableKey, "en");
+}
+
+/**
+ * 같은 서명 안에서 남길 대표 상태 (#139 6-2 앞 단계).
+ *
+ * 정렬만 고치면 여기서 이미 탈락한다 — 선호를 지킨 상태와 아닌 상태는 방문 집합·날짜별
+ * 배치 수·역·준비 시각이 모두 같을 수 있어 같은 서명으로 묶이기 때문이다.
+ */
+function comparePruned(a: PlannerState, b: PlannerState): number {
+  return activityWarningCountOf(a) - activityWarningCountOf(b)
+    || b.derived.preferredHonoredCount - a.derived.preferredHonoredCount
+    || a.readyAt - b.readyAt
+    || a.railMinutes - b.railMinutes;
 }
 
 function buildDays(
@@ -960,6 +1173,23 @@ function isClosedDay(ctx: PlanContext, place: PlaceT, date: string): boolean {
   const weekday = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"][day] as
     "sun" | "mon" | "tue" | "wed" | "thu" | "fri" | "sat";
   return place.openingHours.closedDays.includes(weekday);
+}
+
+/**
+ * 여행 가능 날짜(KST) — 공항 준비일부터 마감일까지.
+ *
+ * ctx 없이 계산한다. Action 경계의 사전 검사(`preferredVisitDateErrors`)가 ctx를 만들지 않고도
+ * 엔진과 같은 날짜 집합을 봐야 하기 때문이다. 두 곳이 갈라지면 검사와 판정이 어긋난다.
+ */
+function tripDatesOf(availableAt: number, deadline: number): string[] {
+  const dates: string[] = [];
+  let cursor = koreaDateTime(koreaDate(availableAt), "00:00");
+  const last = koreaDateTime(koreaDate(deadline), "00:00");
+  while (cursor <= last) {
+    dates.push(koreaDate(cursor));
+    cursor += DAY_MS;
+  }
+  return dates;
 }
 
 function koreaDate(epoch: number): string {

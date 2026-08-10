@@ -7,13 +7,15 @@
  */
 import type { Repositories } from "../repositories/json";
 import type { ItineraryResult, TripConstraints } from "./types";
-import { planItinerary } from "./planner";
+import { planItinerary, preferredVisitDateErrors } from "./planner";
 import { buildGatewayAlternatives } from "./gateway-alternatives";
 import { gatewayPlanningBaselineOf, type GatewayPlanningBaseline } from "./gateway-baseline";
 import { z } from "zod";
 
 // PR #30 리뷰 ③: Server Action 경계가 같은 계약을 safeParse해 잘못된 요청을
 // throw 없이 INVALID_REQUEST로 반환할 수 있도록 내보낸다
+export { preferredVisitDateErrors };
+
 export const TripConstraintsSchema = z.object({
   arrivalAt: z.iso.datetime({ offset: true }),
   departureAt: z.iso.datetime({ offset: true }),
@@ -27,6 +29,12 @@ export const TripConstraintsSchema = z.object({
   maxPlacesPerDay: z.number().int().positive(),
   dailySlackMinutes: z.number().int().nonnegative(),
   airportArrivalDeadline: z.iso.datetime({ offset: true }),
+  // #139 방문일 소프트 선호 — placeId → YYYY-MM-DD(KST). 하드 고정(pinnedDates)이 아니다.
+  // 날짜가 여행 기간 안인지·장소가 후보인지는 엔진이 판정한다(기간·후보 집합을 알아야 한다).
+  preferredVisitDates: z.record(
+    z.string().min(1),
+    z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "preferredVisitDates must be YYYY-MM-DD"),
+  ).optional(),
 }).superRefine((constraints, context) => {
   if (Date.parse(constraints.arrivalAt) >= Date.parse(constraints.departureAt)) {
     context.addIssue({

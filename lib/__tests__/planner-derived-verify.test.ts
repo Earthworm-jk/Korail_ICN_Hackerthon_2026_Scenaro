@@ -37,6 +37,29 @@ describe("파생 캐시 무결성 (#56 A+B 수용 기준 4)", () => {
     expect(runs).toBe(60);
   }, 120000);
 
+  // #139: 선호 일치 수도 파생 캐시에 들어갔다. 증분값과 원본 재계산이 갈라지면
+  // beam이 잘못된 상태를 남기고 선호 계약이 조용히 깨진다 — 같은 플래그로 함께 잠근다.
+  it("방문일 선호가 붙어도 파생 캐시가 원본과 일치한다 (#139)", () => {
+    const repos = loadRepositories();
+    const preferences: Array<Record<string, string>> = [
+      { "place-gwanghwamun-gate": "2026-08-14" },
+      { "place-seoullo-7017": "2026-08-13", "place-sowol-ro": "2026-08-14" },
+    ];
+    for (const preferredVisitDates of preferences) {
+      for (const { constraints } of constraintVariants(repos).slice(0, 6)) {
+        // 변형에 따라 선호 장소가 후보에서 빠지거나 기간 밖이면 엔진이 거부한다 — 그건 계약이다
+        let result;
+        try {
+          result = generateItinerary({ ...constraints, preferredVisitDates }, repos);
+        } catch (error) {
+          expect(error).toBeInstanceOf(RangeError);
+          continue;
+        }
+        expect(["planned", "empty"]).toContain(result.status);
+      }
+    }
+  }, 120000);
+
   it("30·50곳 확대 fixture에서도 파생 캐시가 원본과 일치한다", () => {
     const repos = loadRepositories();
     for (const n of [30, 50]) {
