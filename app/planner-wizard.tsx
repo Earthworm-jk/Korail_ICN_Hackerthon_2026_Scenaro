@@ -45,6 +45,7 @@ import {
   type SelectableAlternative,
 } from "@/lib/itinerary-view";
 import { autoPlanDecision } from "@/lib/auto-plan";
+import { collectDisplayNames, resolveDisplayName } from "@/lib/display-names";
 import { useLocalDraft } from "./local-draft";
 import { fromKstLocalInput as fromLocalInput, toKstLocalInput as toLocalInput } from "@/lib/kst-datetime";
 import { formatFlightStatus } from "@/lib/flight-status";
@@ -713,6 +714,37 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
     saveStub.markDirty();
   }, [saveStub]);
 
+  /** 저장 시점 표시 이름 수집 — 규칙은 `lib/display-names.ts`에 있다 (#130) */
+  const collectNames = useCallback((days: DayPlan[]) => collectDisplayNames(days, {
+    place: (id) => candidateData?.candidates.find((c) => c.id === id)?.name,
+    station: (id) => candidateData?.stations.find((station) => station.id === id)?.name,
+  }), [candidateData]);
+
+  /**
+   * 후보 재조회만 다시 시도한다 (#130).
+   *
+   * 저장된 일정은 이미 화면에 있으므로 `다시 열기`를 처음부터 반복할 이유가 없다.
+   * 성공하면 이름이 현재 데이터로 바뀌고 장소 선택이 복원된다.
+   */
+  const retryReopenCandidates = useCallback(async () => {
+    const record = view.reopened;
+    if (!record) return;
+    const c = record.constraints;
+    setReopenCandidateStatus("loading");
+    try {
+      const data = await getCandidatePlaces({
+        selectedActorIds: c.selectedActorIds,
+        selectedWorkIds: c.selectedWorkIds,
+      });
+      setCandidateData(data);
+      const excluded = new Set(c.excludedPlaceIds);
+      setSelectedPlaceIds(new Set(initialCandidateIds(data.candidates).filter((id) => !excluded.has(id))));
+      setReopenCandidateStatus(null);
+    } catch {
+      setReopenCandidateStatus("failed");
+    }
+  }, [view.reopened]);
+
   const savedEntry = useCallback((): Omit<SavedItineraryStub, "id" | "savedAt"> | null => {
     if (!displayedDays || selectionCapacity?.requiresAdjustment) return null;
     // 재열람 중 재저장은 저장 당시 조건을 그대로 보존한다
@@ -731,8 +763,11 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
       snapshotVersion: "unversioned", // 시드 기준일 필드(#6 8/9 작업) 합류 시 교체
       context,
       warnings,
+      // #130 — 재열람이 후보를 다시 받지 못해도 이름을 보여줄 수 있게 저장 시점 값을 담는다.
+      // 재저장 시에는 저장 당시 스냅샷을 우선 보존한다(재열람 보존 규칙과 동일).
+      displayNames: view.reopened?.displayNames ?? collectNames(displayedDays),
     };
-  }, [displayedDays, selectionCapacity, view.reopened, viewWarnings, currentConstraints, selectedActors, selectedWorks, locale]);
+  }, [displayedDays, selectionCapacity, view.reopened, viewWarnings, currentConstraints, selectedActors, selectedWorks, locale, collectNames]);
 
   const SAVE_STATUS_KEY: Record<SaveStatus, MessageKey> = {
     none: "save.statusNone",
@@ -817,10 +852,28 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
     return tr(`reason.${reason.code}` as MessageKey);
   };
 
-  const stationName = (id: string) =>
-    candidateData?.stations.find((s) => s.id === id)?.name[locale] ?? id;
-  const placeName = (id: string) =>
-    candidateData?.candidates.find((c) => c.id === id)?.name[locale] ?? id;
+  /**
+   * 표시 이름 조회 (#130).
+   *
+   * 순서는 `현재 candidateData` → `저장 당시 스냅샷` → `현지화된 대체 문구`다.
+   * 예전에는 마지막이 `?? id`였는데, 후보 재조회가 실패하면 화면이 `place-seoullo-7017`
+   * 같은 내부 ID를 그대로 보여 줬다. 발표장 네트워크가 끊기면 그대로 노출되는 자리다.
+   *
+   * 온라인 재조회가 성공하면 현재 데이터가 먼저다 — 저장 이후 이름이 바뀌었을 수 있다.
+   */
+  const savedNames = view.reopened?.displayNames;
+  const stationName = (id: string) => resolveDisplayName({
+    locale,
+    current: candidateData?.stations.find((s) => s.id === id)?.name,
+    saved: savedNames?.stations[id],
+    fallback: tr("common.nameUnavailable"),
+  });
+  const placeName = (id: string) => resolveDisplayName({
+    locale,
+    current: candidateData?.candidates.find((c) => c.id === id)?.name,
+    saved: savedNames?.places[id],
+    fallback: tr("common.nameUnavailable"),
+  });
   const workTitles = (ids: string[]) =>
     ids.map((id) => candidateData?.works.find((w) => w.id === id)?.title[locale] ?? id).join(" · ");
 
@@ -1167,6 +1220,16 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
           ) : (
             <li className="rounded border border-sc-orange/30 bg-sc-orange-soft p-3 text-sm text-sc-orange-text" role="status">
               {tr(reopenCandidateStatus === "failed" ? "trips.reopenCandidatesFailed" : "common.loading")}
+              {/* #130 — 실패는 대개 일시적이다. 다시 열기를 처음부터 하지 않고 후보만 다시 받는다 */}
+              {reopenCandidateStatus === "failed" && (
+                <button
+                  type="button"
+                  className="ml-2 rounded border border-sc-orange/50 bg-sc-surface px-2 py-1 text-xs font-medium"
+                  onClick={() => void retryReopenCandidates()}
+                >
+                  {tr("trips.reopenCandidatesRetry")}
+                </button>
+              )}
             </li>
           )}
           </PlaceRecommendationSheet>
