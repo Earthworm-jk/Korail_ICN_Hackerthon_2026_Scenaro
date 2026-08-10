@@ -15,6 +15,7 @@
  * | `honored` | 없음 | `ready` |
  * | `honored` | 다른 장소가 빠짐 | `needs_confirmation` (`places_displaced`) |
  * | `honored` | 다른 장소의 날짜가 바뀜 | `needs_confirmation` (`places_moved`) |
+ * | `honored` | 이동시간·환승·출국 여유가 나빠짐 | `needs_confirmation` (아래 3종) |
  * | `adjusted` | 무관 | `needs_confirmation` (`date_adjusted`) |
  * | `unplaced` | 무관 | `impossible` |
  *
@@ -42,7 +43,27 @@ export type MovedPlace = {
   toDate: string;
 };
 
-export type ProposalReason = "date_adjusted" | "places_displaced" | "places_moved";
+export type ProposalReason =
+  | "date_adjusted"
+  | "places_displaced"
+  | "places_moved"
+  | "travel_time_increased"
+  | "transfers_increased"
+  | "departure_slack_reduced";
+
+/**
+ * 요청 밖에서 나빠진 정도. `before`가 `empty`(첫 생성)면 비교 대상이 없어 싣지 않는다.
+ *
+ * 화면이 `이동시간이 40분 늘어납니다`처럼 실제 숫자로 말할 수 있게 델타를 그대로 준다 —
+ * 엔진·diff에 있는 값만 쓰고 우리가 만들어 내지 않는다.
+ */
+export type ProposalImpact = {
+  /** 양수면 증가 */
+  travelMinutesDelta: number;
+  transferCountDelta: number;
+  /** 음수면 출국 전 여유가 줄었다 */
+  departureSlackMinutesDelta: number;
+};
 
 export type CommandProposal = {
   decision: "ready" | "needs_confirmation" | "impossible";
@@ -55,9 +76,21 @@ export type CommandProposal = {
   displaced: DisplacedPlace[];
   /** 명령 대상을 제외한, 날짜가 바뀌는 장소들 */
   moved: MovedPlace[];
+  impact?: ProposalImpact;
   /** `impossible`일 때 엔진이 준 사유 (`rejectedPlaces`에서 그대로) */
   rejection?: CandidateRejection["code"];
 };
+
+/**
+ * 이동시간 증가를 `크게`로 볼 기준 — **절대와 비율을 함께** 넘겨야 한다.
+ *
+ * 절대만 쓰면 원래 10시간짜리 일정에서 30분 증가에도 확인을 받아 성가시고,
+ * 비율만 쓰면 짧은 일정의 20%(예: 12분)에도 확인을 받는다.
+ */
+const TRAVEL_INCREASE_MINUTES = 30;
+const TRAVEL_INCREASE_RATIO = 0.2;
+/** 출국 전 여유가 이만큼 줄면 알린다 — 공항 마감은 되돌리기 어려운 축이다 */
+const SLACK_DROP_MINUTES = 30;
 
 /**
  * 명령을 요청 패치로 옮긴다. **엔진 입력은 `preferredVisitDates` 하나다** —
@@ -127,10 +160,21 @@ export function proposalFor(
   const displaced = diff.dropped.filter((entry) => entry.placeId !== command.placeId);
   const moved = diff.moved.filter((entry) => entry.placeId !== command.placeId);
 
+  const impact = impactOf(before, after);
+
   const reasons: ProposalReason[] = [];
   if (outcome === "adjusted") reasons.push("date_adjusted");
   if (displaced.length > 0) reasons.push("places_displaced");
   if (moved.length > 0) reasons.push("places_moved");
+  if (impact) {
+    if (isLargeTravelIncrease(impact.travelMinutesDelta, before)) {
+      reasons.push("travel_time_increased");
+    }
+    if (impact.transferCountDelta > 0) reasons.push("transfers_increased");
+    if (impact.departureSlackMinutesDelta <= -SLACK_DROP_MINUTES) {
+      reasons.push("departure_slack_reduced");
+    }
+  }
 
   return {
     ...base,
@@ -139,7 +183,34 @@ export function proposalFor(
     reasons,
     displaced,
     moved,
+    ...(impact ? { impact } : {}),
   };
+}
+
+/**
+ * 요청 밖 악화를 재는 재료 (#145 보충 코멘트).
+ *
+ * **`열차가 바뀌었다`를 그대로 신호로 쓰지 않는다.** 장소를 옮기면 그 사이 열차가 바뀌는 것은
+ * 당연한 결과라 사용자가 놀랄 일이 아니고, 매번 확인을 받으면 직접 조작의 즉시성이 무너진다.
+ * 놀랄 일은 `바뀌었다`가 아니라 **`바뀌어서 나빠졌다`** 이므로 이동시간·환승·출국 여유로 잰다.
+ */
+function impactOf(before: ItineraryResult, after: ItineraryResult): ProposalImpact | undefined {
+  // 첫 생성(before가 empty)은 비교 대상이 없다 — 없는 악화를 지어내지 않는다
+  if (before.status !== "planned" || after.status !== "planned") return undefined;
+  return {
+    travelMinutesDelta: after.metrics.totalTravelMinutes - before.metrics.totalTravelMinutes,
+    transferCountDelta: after.metrics.transferCount - before.metrics.transferCount,
+    departureSlackMinutesDelta:
+      after.metrics.departureSlackMinutes - before.metrics.departureSlackMinutes,
+  };
+}
+
+function isLargeTravelIncrease(delta: number, before: ItineraryResult): boolean {
+  if (delta < TRAVEL_INCREASE_MINUTES) return false;
+  if (before.status !== "planned") return false;
+  const baseline = before.metrics.totalTravelMinutes;
+  // 원래 이동이 0에 가까우면 비율이 의미를 잃는다 — 절대 기준만으로 판정한다
+  return baseline <= 0 || delta >= baseline * TRAVEL_INCREASE_RATIO;
 }
 
 /**

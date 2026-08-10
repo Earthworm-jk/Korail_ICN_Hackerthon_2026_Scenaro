@@ -434,6 +434,124 @@ describe("#141 실행기 판정 — 적용하지 않고 제안한다", () => {
     });
   });
 
+  // #145 보충 코멘트 — `요청하지 않은 부작용이 함께 생겼는가`가 기준이다.
+  // 열차가 바뀌었다는 사실 자체가 아니라 **바뀌어서 나빠졌는지**를 잰다.
+  describe("요청 밖 악화", () => {
+    const metrics = (over: Partial<{
+      totalTravelMinutes: number; transferCount: number; departureSlackMinutes: number;
+    }>) => ({
+      metrics: {
+        totalTravelMinutes: 0, totalRailMinutes: 0, transferCount: 0, departureSlackMinutes: 0,
+        ...over,
+      },
+    });
+    const honored = {
+      preferredDateOutcomes: [
+        { placeId: "p1", requestedDate: "2026-08-13", outcome: "honored" as const },
+      ],
+    };
+
+    it("이동시간이 30분·20%를 함께 넘으면 확인을 받는다", () => {
+      const before = result({ days: [day("2026-08-12", ["p2"])], ...metrics({ totalTravelMinutes: 200 }) });
+      const after = result({
+        days: [day("2026-08-12", ["p2"]), day("2026-08-13", ["p1"])],
+        ...honored, ...metrics({ totalTravelMinutes: 260 }),
+      });
+      const proposal = proposalFor(command, before, after);
+      expect(proposal.decision).toBe("needs_confirmation");
+      expect(proposal.reasons).toContain("travel_time_increased");
+      expect(proposal.impact?.travelMinutesDelta).toBe(60);
+    });
+
+    // 두 기준을 함께 걸어야 짧은 일정에서 과민하거나 긴 일정에서 무뎌지지 않는다
+    it("절대 기준만 넘고 비율이 낮으면 그대로 적용한다", () => {
+      const before = result({ days: [day("2026-08-12", ["p2"])], ...metrics({ totalTravelMinutes: 600 }) });
+      const after = result({
+        days: [day("2026-08-12", ["p2"]), day("2026-08-13", ["p1"])],
+        ...honored, ...metrics({ totalTravelMinutes: 640 }),
+      });
+      expect(proposalFor(command, before, after).decision).toBe("ready");
+    });
+
+    it("비율만 넘고 절대 증가가 작으면 그대로 적용한다", () => {
+      const before = result({ days: [day("2026-08-12", ["p2"])], ...metrics({ totalTravelMinutes: 50 }) });
+      const after = result({
+        days: [day("2026-08-12", ["p2"]), day("2026-08-13", ["p1"])],
+        ...honored, ...metrics({ totalTravelMinutes: 70 }),
+      });
+      expect(proposalFor(command, before, after).decision).toBe("ready");
+    });
+
+    it("환승이 늘면 확인을 받는다", () => {
+      const before = result({ days: [day("2026-08-12", ["p2"])], ...metrics({ transferCount: 1 }) });
+      const after = result({
+        days: [day("2026-08-12", ["p2"]), day("2026-08-13", ["p1"])],
+        ...honored, ...metrics({ transferCount: 2 }),
+      });
+      const proposal = proposalFor(command, before, after);
+      expect(proposal.reasons).toContain("transfers_increased");
+      expect(proposal.impact?.transferCountDelta).toBe(1);
+    });
+
+    it("출국 전 여유가 30분 이상 줄면 확인을 받는다", () => {
+      const before = result({ days: [day("2026-08-12", ["p2"])], ...metrics({ departureSlackMinutes: 120 }) });
+      const after = result({
+        days: [day("2026-08-12", ["p2"]), day("2026-08-13", ["p1"])],
+        ...honored, ...metrics({ departureSlackMinutes: 80 }),
+      });
+      const proposal = proposalFor(command, before, after);
+      expect(proposal.reasons).toContain("departure_slack_reduced");
+      expect(proposal.impact?.departureSlackMinutesDelta).toBe(-40);
+    });
+
+    it("여유가 늘거나 조금만 줄면 그대로 적용한다", () => {
+      const before = result({ days: [day("2026-08-12", ["p2"])], ...metrics({ departureSlackMinutes: 120 }) });
+      const after = result({
+        days: [day("2026-08-12", ["p2"]), day("2026-08-13", ["p1"])],
+        ...honored, ...metrics({ departureSlackMinutes: 100 }),
+      });
+      expect(proposalFor(command, before, after).decision).toBe("ready");
+    });
+
+    // 장소를 옮기면 열차가 바뀌는 건 당연한 결과다 — 그것만으로 확인을 받지 않는다
+    it("열차 편이 바뀌어도 나빠지지 않았으면 그대로 적용한다", () => {
+      const ride = (trainNo: string) => ({
+        trainNo, fromStationId: "s1", toStationId: "s2",
+        departAt: "2026-08-12T01:00:00.000Z", arriveAt: "2026-08-12T02:00:00.000Z",
+      });
+      const before = result({
+        days: [{ ...day("2026-08-12", ["p2"]), rides: [ride("A1")] }],
+        ...metrics({ totalTravelMinutes: 200, transferCount: 1, departureSlackMinutes: 120 }),
+      });
+      const after = result({
+        days: [
+          { ...day("2026-08-12", ["p2"]), rides: [ride("B2")] },
+          day("2026-08-13", ["p1"]),
+        ],
+        ...honored,
+        ...metrics({ totalTravelMinutes: 210, transferCount: 1, departureSlackMinutes: 118 }),
+      });
+      expect(proposalFor(command, before, after).decision).toBe("ready");
+    });
+
+    it("첫 생성이면 비교 대상이 없어 악화를 지어내지 않는다", () => {
+      const before = {
+        status: "empty" as const,
+        days: [] as [],
+        rejectedPlaces: [],
+        warnings: [],
+        selectionGroups: { requested: [], covered: [], uncovered: [] },
+      };
+      const after = result({
+        days: [day("2026-08-13", ["p1"])],
+        ...honored, ...metrics({ totalTravelMinutes: 900 }),
+      });
+      const proposal = proposalFor(command, before, after);
+      expect(proposal.decision).toBe("ready");
+      expect(proposal.impact).toBeUndefined();
+    });
+  });
+
   it("명령한 장소 자신은 빠지는 장소로 세지 않는다", () => {
     const before = result({ days: [day("2026-08-12", ["p1"])] });
     const after = result({
