@@ -1,5 +1,6 @@
 name: Validate stage v2
 
+# One-shot full validation for the nested design PR.
 on:
   push:
     branches:
