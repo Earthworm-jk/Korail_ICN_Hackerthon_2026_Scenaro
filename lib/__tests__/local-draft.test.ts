@@ -188,6 +188,31 @@ describe("바뀐 것으로 볼지", () => {
   });
 });
 
+/**
+ * PR #129 리뷰 — 최종 저장 뒤 초안이 되살아나던 경쟁 조건.
+ *
+ * 키만 지우면 훅의 비교 기준(`lastWritten`)은 예전 상태로 남아 있어, 지운 직후 현재
+ * 화면이 "바뀐 것"으로 보여 다시 쓰인다. `finalizeDraft`는 지금 화면을 기준으로 삼아
+ * 그 즉시 재저장을 막는다 — 아래가 그 성질이다.
+ */
+describe("종료 시 비교 기준 갱신", () => {
+  it("지금 화면을 기준으로 삼으면 곧바로 다시 쓰이지 않는다", () => {
+    const baseline = draftFromInput(input, at("2026-08-10T12:00:00.000Z"));
+    expect(draftContentEquals(baseline, input)).toBe(true);
+    expect(
+      draftDecision({ enabled: true, restorePending: false, changed: !draftContentEquals(baseline, input) }),
+    ).toBe("skip");
+  });
+
+  it("그 뒤 사용자가 실제로 바꾸면 다시 열린다", () => {
+    const baseline = draftFromInput(input, at("2026-08-10T12:00:00.000Z"));
+    const changed: DraftInput = { ...input, selectedPlaceIds: ["place-yeongjin-beach"] };
+    expect(
+      draftDecision({ enabled: true, restorePending: false, changed: !draftContentEquals(baseline, changed) }),
+    ).toBe("save");
+  });
+});
+
 describe("저장 형태", () => {
   it("쓰는 시점의 시각을 붙이고 선택은 그대로 담는다", () => {
     const when = at("2026-08-10T12:34:56.000Z");

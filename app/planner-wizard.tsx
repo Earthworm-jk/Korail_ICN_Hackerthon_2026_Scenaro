@@ -45,6 +45,7 @@ import {
   type SelectableAlternative,
 } from "@/lib/itinerary-view";
 import { autoPlanDecision } from "@/lib/auto-plan";
+import { useLocalDraft } from "./local-draft";
 import { fromKstLocalInput as fromLocalInput, toKstLocalInput as toLocalInput } from "@/lib/kst-datetime";
 import { formatFlightStatus } from "@/lib/flight-status";
 import { formatEpisodeLabel } from "@/lib/episode-label";
@@ -616,6 +617,65 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
     view.result,
     view.planning,
   ]);
+
+  // 조율 중 초안 자동 저장·복구 (#118 P0-3 · PR #123 어댑터 · PR #127 훅).
+  // 판단·디바운스·저장은 훅이 갖고 있고, 여기서는 무엇을 담고 무엇을 되살릴지만 정한다.
+  const { finalizeDraft } = useLocalDraft({
+    trip: {
+      arrivalAt: arrival.at,
+      departureAt: departure.at,
+      airportReadyAt: airportReady.at,
+      airportArrivalDeadline: airportDeadline.at,
+      // 시각만 담으면 파생 여부가 사라진다 — 자동으로 따라오던 값이 굳거나 수동 수정이 덮인다
+      airportReadyTouched: airportReady.touched,
+      airportDeadlineTouched: airportDeadline.touched,
+    },
+    // 배우 요약은 후보 응답에 없어 ID로는 되살릴 수 없다 — 저장 레코드의 context와 같은 이유
+    context: { actors: selectedActors, works: selectedWorks },
+    selectedPlaceIds: [...selectedPlaceIds],
+    // 재열람 중에는 저장된 일정을 보여주는 중이라 초안을 덮지 않는다
+    enabled: reopened === null,
+    onRestore: async (draft) => {
+      setArrival((f) => ({ ...f, at: draft.trip.arrivalAt }));
+      setDeparture((f) => ({ ...f, at: draft.trip.departureAt }));
+      setAirportReady({ at: draft.trip.airportReadyAt, touched: draft.trip.airportReadyTouched });
+      setAirportDeadline({ at: draft.trip.airportArrivalDeadline, touched: draft.trip.airportDeadlineTouched });
+      setSelectedActors(draft.context.actors);
+      setSelectedWorks(draft.context.works);
+      if (draft.context.actors.length === 0 && draft.context.works.length === 0) return;
+
+      // 장소 선택은 후보를 다시 받아야 되살릴 수 있다. 여기서 던지면 훅이 자동 저장을
+      // 잠근 채로 둬서 원본 초안이 보존된다(오프라인에서 초안을 잃지 않는다).
+      const data = await getCandidatePlaces({
+        selectedActorIds: draft.context.actors.map((a) => a.id),
+        selectedWorkIds: draft.context.works.map((w) => w.id),
+      });
+      setCandidateData(data);
+      const restorable = new Set(initialCandidateIds(data.candidates));
+      const places = draft.selectedPlaceIds.filter((id) => restorable.has(id));
+      setSelectedPlaceIds(new Set(places));
+      // 초안에 단계는 담지 않는다 — 무엇이 되살아났는지로 정한다. 후보 조회가 성공한
+      // 경우에만 3단계로 보내므로, 실패하면 빈 후보 목록 앞에 서는 일이 없다.
+      setStep(places.length > 0 ? 3 : 2);
+    },
+  });
+
+  // 최종 저장이 끝나면 초안을 비운다. 남겨 두면 다음 방문에서 이미 저장까지 마친 일정이
+  // 초안으로 되살아나 사용자가 끝낸 작업을 다시 보게 된다.
+  //
+  // 키만 지우지 않고 훅의 finalizeDraft를 부른다 — 예약된 저장 타이머와 비교 기준까지
+  // 함께 정리해야 지운 직후 같은 내용이 다시 쓰이지 않는다 (PR #129 리뷰).
+  //
+  // 재열람은 제외한다 — `reopen`도 저장 상태를 saved로 바꾸는데, 그때 지우면 사용자가
+  // 만들던 초안이 저장 일정을 열었다는 이유로 사라진다.
+  const prevSaveStatus = useRef(saveStub.saveStatus);
+  useEffect(() => {
+    const previous = prevSaveStatus.current;
+    prevSaveStatus.current = saveStub.saveStatus;
+    if (previous !== "saved" && saveStub.saveStatus === "saved" && reopened === null) {
+      finalizeDraft();
+    }
+  }, [saveStub.saveStatus, reopened, finalizeDraft]);
 
   const baseDays = recommendedDays(view);
   const mockAlternatives = useMemo(
