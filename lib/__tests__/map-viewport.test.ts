@@ -117,15 +117,26 @@ describe("지도 표시 창", () => {
       expect(scaleOf(fitTo([seoul, near]))).toBeLessThan(MAX_SCALE);
     });
 
-    it("사용자는 자동 배치보다 훨씬 크게 당길 수 있다", () => {
-      expect(scaleOf(focusOn(seoul, MAX_SCALE))).toBeGreaterThan(FOCUS_SCALE * 10);
+    // PR #122 리뷰 비차단 — 비율(10배)까지 못 박지 않는다. 그 숫자는 근거가 아니라 현재 값에서
+    // 우연히 성립하는 관계라, MAX_SCALE을 낮추면 이유 없이 걸린다. 여기서는 역할 분리만 고정하고,
+    // 정작 의미 있는 계약(겹친 두 점이 화면에서 떨어져 보이는가)은 아래 `화면상 크기` 절의
+    // onScreen(MAX_SCALE) > 15가 잡는다.
+    it("사용자는 자동 배치보다 크게 당길 수 있다", () => {
+      expect(scaleOf(focusOn(seoul, MAX_SCALE))).toBeGreaterThan(FOCUS_SCALE);
     });
 
-    it("자동 배치 상한을 넘겨 요청하면 그 요청은 존중한다 — 상한은 MAX_SCALE이다", () => {
-      // fitTo의 maxScale은 인자다. 자동 경로의 기본값이 FOCUS_SCALE일 뿐 잠금이 아니다.
-      const wide = fitTo([seoul], MAX_SCALE);
-      expect(scaleOf(wide)).toBeGreaterThan(FOCUS_SCALE);
-      expect(scaleOf(wide)).toBeLessThanOrEqual(MAX_SCALE);
+    /**
+     * PR #122 리뷰 필수 — 두 경계를 각각 검증한다.
+     *
+     * 이전에는 `fitTo([seoul], MAX_SCALE)` 하나로 봤는데, 점이 하나면 byWidth·byHeight가
+     * Infinity라 요청값이 그대로 결과가 된다. 요청값과 전역 상한이 같은 값이어서 fitTo 안의
+     * MAX_SCALE 클램프를 통째로 지워도 통과했다 — 계약의 후반부가 고정되지 않았다.
+     */
+    it("사용자 지정 상한은 존중하되 전역 상한은 MAX_SCALE이다", () => {
+      // 기본값(FOCUS_SCALE)보다 큰 요청은 그대로 존중한다
+      expect(scaleOf(fitTo([seoul], COASTLINE_DETAIL_SCALE))).toBeCloseTo(COASTLINE_DETAIL_SCALE, 6);
+      // 전역 상한을 넘겨 요청하면 MAX_SCALE에서 잘린다
+      expect(scaleOf(fitTo([seoul], MAX_SCALE * 2))).toBeCloseTo(MAX_SCALE, 6);
     });
   });
 
