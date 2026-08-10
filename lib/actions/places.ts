@@ -31,8 +31,8 @@ export type PlaceCandidate = PlaceT & {
   selectionGroups: SelectionGroup[];
   relationDetails: RelationDetail[];
   // #48 서버 파생(PR #70 리뷰) — 원시 점수·검토 메타는 응답에 싣지 않는다
-  aiRank?: number; // 선택 관련 작품 범위의 검토·배지 통과 점수 순위 (1=최고)
-  aiReason?: { ko: string; en: string }; // 검토된 관련 이유
+  aiRank?: number; // 선택 관련 작품 범위의 활성 점수 순위 (1=최고, 배지 하한과 무관)
+  aiReason?: { ko: string; en: string }; // 검증된 장면 근거
 };
 
 export type CandidateResponse = {

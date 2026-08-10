@@ -15,4 +15,9 @@ describe("번역 키 패리티 (#4 — 핵심 데모 경로 누락 0건)", () =>
       }
     }
   });
+
+  it("자동·수동 검토를 사람 검토로 뭉뚱그리지 않고 장면 근거로 표시한다 (#120 리뷰)", () => {
+    expect(messages.ko["step3.aiReasonLabel"]).toBe("검증된 장면 근거");
+    expect(messages.en["step3.aiReasonLabel"]).toBe("Verified scene evidence");
+  });
 });
