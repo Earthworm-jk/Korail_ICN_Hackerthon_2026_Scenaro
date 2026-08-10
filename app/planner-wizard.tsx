@@ -49,11 +49,13 @@ import { formatFlightStatus } from "@/lib/flight-status";
 import { formatEpisodeLabel } from "@/lib/episode-label";
 import { splitSourceLink } from "@/lib/source-link";
 import { placeTypeIcon } from "@/lib/place-type-icon";
+import { diffItineraries, type ItineraryDiff } from "@/lib/itinerary-diff";
 import { gatewayPlanningBaselineOf } from "@/lib/engine/gateway-baseline";
 import { AlternativeTimetables } from "./alternative-timetables";
 import { AuthModal, TripsModal, useSaveStub, type SaveStatus } from "./save-stub";
 import { ExecutionSupport } from "./execution-support";
 import { GatewayAlternatives } from "./gateway-alternatives";
+import { ItineraryChangeSummary } from "./itinerary-change-summary";
 import { ItineraryRouteMap, KoreaMapPanel, type MapPlace, type MapStation } from "./korea-map";
 import { ThemeExperienceCard, ThemeExperienceMapOverlay } from "./theme-experience";
 import { TrainLegModal, legDurationLabel, type TrainLegDetail } from "./train-leg-modal";
@@ -273,12 +275,15 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
   // step 3 — 후보·선택
   const [candidateData, setCandidateData] = useState<CandidateResponse | null>(null);
   const [selectedPlaceIds, setSelectedPlaceIds] = useState<Set<string>>(new Set());
+  const [reopenCandidateStatus, setReopenCandidateStatus] = useState<"loading" | "failed" | null>(null);
   const [sortBy, setSortBy] = useState<"relevance" | "official">("relevance");
   // 후보 목록은 5곳씩 — 한 화면에 다 쏟으면 무엇을 고를지가 안 보인다. 표시 개수만 늘린다
   const [visibleCount, setVisibleCount] = useState(PLACES_PAGE_SIZE);
 
   // step 4 — 결과. 전이 규칙·파생은 lib/itinerary-view 순수 함수로 고정 (PR #35 리뷰 3)
   const [view, dispatchView] = useReducer(reduceItineraryView, initialItineraryView);
+  // 직전 확정 결과와 최신 성공 결과의 차이. 엔진 상태와 분리된 발표용 표현 상태다 (#118 P0-2).
+  const [lastItineraryDiff, setLastItineraryDiff] = useState<ItineraryDiff | null>(null);
   const planSequence = useRef(0); // 늦게 도착한 이전 요청의 공항버스 대안이 새 결과를 덮지 않게 한다.
   // 계산이 끝난(성공·무효·실패 모두) 마지막 선택. 지금 선택과 다르면 화면은 아직 옛 결론이다.
   // 대기 플래그를 따로 두지 않고 여기서 파생한다 — effect에서 setState를 하지 않기 위해서다.
@@ -313,6 +318,7 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
   // 재열람 = 화면 교체가 아니라 저장 당시 조건의 복원 (PR #35 리뷰 3)
   // 입력·선택·후보 컨텍스트를 constraints에서 되살려, 이후 재계산이 저장 당시 조건으로 돈다
   const reopenRecord = useCallback(async (record: SavedItineraryStub) => {
+    setLastItineraryDiff(null);
     const c = record.constraints;
     const inputs = tripInputsFromConstraints(c);
     setArrival((f) => ({ ...f, at: inputs.arrivalAt }));
@@ -322,17 +328,31 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
     setAirportDeadline({ at: inputs.airportArrivalDeadline, touched: true });
     setSelectedActors(record.context.actors);
     setSelectedWorks(record.context.works);
-    const data = await getCandidatePlaces({
-      selectedActorIds: c.selectedActorIds,
-      selectedWorkIds: c.selectedWorkIds,
-    });
-    setCandidateData(data);
-    const excluded = new Set(c.excludedPlaceIds);
-    // 재열람은 현재 엄격 후보 중 저장 당시 excluded의 여집합을 복원한다.
-    setSelectedPlaceIds(new Set(initialCandidateIds(data.candidates).filter((id) => !excluded.has(id))));
+
+    // 저장 레코드의 일정은 후보 재조회와 무관하게 먼저 연다. 발표장 네트워크가 끊겨도
+    // 저장된 days와 조건만으로 결과를 복원할 수 있으며, 자동 재계산도 reopened에서 멈춘다.
+    setCandidateData(null);
+    setSelectedPlaceIds(new Set());
+    setReopenCandidateStatus("loading");
     dispatchView({ type: "REOPEN", record });
-    void refreshThemeExperience(record.days, c.selectedWorkIds);
     setStep(3); // #85 — 결과는 3단계 우측 열에서 보여준다
+
+    try {
+      const data = await getCandidatePlaces({
+        selectedActorIds: c.selectedActorIds,
+        selectedWorkIds: c.selectedWorkIds,
+      });
+      setCandidateData(data);
+      const excluded = new Set(c.excludedPlaceIds);
+      // 재열람은 현재 엄격 후보 중 저장 당시 excluded의 여집합을 복원한다.
+      setSelectedPlaceIds(new Set(initialCandidateIds(data.candidates).filter((id) => !excluded.has(id))));
+      setReopenCandidateStatus(null);
+    } catch {
+      // 후보 편집만 비활성화하고, 먼저 연 저장 일정과 조건은 그대로 유지한다 (#118 P0-4).
+      setReopenCandidateStatus("failed");
+    }
+
+    void refreshThemeExperience(record.days, c.selectedWorkIds);
   }, [refreshThemeExperience]);
 
   const saveStub = useSaveStub((record) => {
@@ -411,6 +431,7 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
     };
 
     dispatchView({ type: "PLAN_START" });
+    setLastItineraryDiff(null);
     setThemeExperience(null);
 
     let selectedIds = allCandidateIds;
@@ -499,7 +520,11 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
     if (!constraints) return;
     const sequence = ++planSequence.current;
     const requestedSelectionKey = selectionKey;
+    // 계산 중에도 view.result는 직전 확정 결과를 유지한다. 다만 대안을 보고 있었다면 화면과
+    // view.result(추천안)의 기준이 다르므로 부정확한 변화량을 만들지 않는다.
+    const previousResult = view.selectedAlt === null ? view.result : null;
     dispatchView({ type: "PLAN_START" });
+    setLastItineraryDiff(null);
     setThemeExperience(null);
     try {
       const res = await planItinerary(constraints);
@@ -509,6 +534,7 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
       // 성공이든 무효든 "이 선택으로는 끝났다" — 실패에도 기록해야 갱신 표시가 남지 않는다
       setSettledSelectionKey(requestedSelectionKey);
       if (res.ok) {
+        setLastItineraryDiff(previousResult ? diffItineraries(previousResult, res.result) : null);
         dispatchView({ type: "PLAN_SUCCESS", result: res.result });
         saveStub.markDirty();
         if (res.result.status === "planned") {
@@ -530,7 +556,7 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
       setSettledSelectionKey(requestedSelectionKey);
       dispatchView({ type: "PLAN_FAILED" }); // 네트워크·서버 장애 — 기존 결과 유지
     }
-  }, [currentConstraints, selectionKey, saveStub, refreshThemeExperience]);
+  }, [currentConstraints, selectionKey, saveStub, refreshThemeExperience, view.result, view.selectedAlt]);
 
   // #85 기술항목 2 — 장소를 켜고 끄면 자동 재계산한다. 연속 토글은 마지막 것만 계산하고,
   // 항공편 시각은 확정대로 자동 감지하지 않는다(사용자가 조회·변경 후 "다시 계산").
@@ -615,6 +641,7 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
   );
 
   const chooseAlternative = useCallback((alt: SelectableAlternative | null) => {
+    setLastItineraryDiff(null);
     dispatchView({ type: "SELECT_ALT", alt });
     saveStub.markDirty();
   }, [saveStub]);
@@ -988,7 +1015,7 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
         </section>
       )}
 
-      {step === 3 && candidateData && (
+      {step === 3 && (candidateData || view.reopened) && (
         <section>
           <h2 className="text-lg font-semibold">{tr("step3.title")}</h2>
           <p className="text-sm text-sc-muted">{tr("step3.subtitle")}</p>
@@ -998,6 +1025,8 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
           {/* #85 — 좌: 후보 선택 / 우: 계산 결과. 왕복 없이 같은 화면에서 판단한다 */}
           <div className="mt-3 grid gap-[18px] lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
           <div className="min-w-0" id="place-picker">
+          {candidateData ? (
+          <>
           <div className="flex gap-2 text-sm">
             {(["relevance", "official"] as const).map((mode) => (
               <button
@@ -1024,6 +1053,7 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
                 onToggle={() => {
                   const next = new Set(selectedPlaceIds);
                   if (next.has(c.id)) next.delete(c.id); else next.add(c.id);
+                  if (next.size === 0) setLastItineraryDiff(null);
                   setSelectedPlaceIds(next);
                 }}
               />
@@ -1067,6 +1097,12 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
           <div className="mt-4">
             <button className="rounded border px-4 py-2 text-sm" onClick={() => setStep(2)}>{tr("common.back")}</button>
           </div>
+          </>
+          ) : (
+            <p className="rounded border border-sc-orange/30 bg-sc-orange-soft p-3 text-sm text-sc-orange-text" role="status">
+              {tr(reopenCandidateStatus === "failed" ? "trips.reopenCandidatesFailed" : "common.loading")}
+            </p>
+          )}
           </div>
 
           {/* 우측 열 — 계산 결과. 장소를 켜고 끄면 여기서 바로 갱신된다 */}
@@ -1113,6 +1149,15 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
             <div className="mt-4 rounded-lg border border-sc-airport/30 bg-sc-airport-soft p-3 text-sm text-sc-airport-text">
               {tr(viewBanner === "reopened" ? "trips.reopened" : viewBanner === "gateway" ? "gateway.swapped" : "alt.swapped")}
             </div>
+          )}
+
+          {lastItineraryDiff && !updating && !view.reopened && (
+            <ItineraryChangeSummary
+              diff={lastItineraryDiff}
+              placeName={placeName}
+              reasonLabel={(reason) => tr(`reason.${reason}` as MessageKey)}
+              tr={tr}
+            />
           )}
 
           {selectionCapacity?.requiresAdjustment && (

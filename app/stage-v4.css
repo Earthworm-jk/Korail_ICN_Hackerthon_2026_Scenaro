@@ -180,6 +180,7 @@
     min-width: 0;
   }
 
+  #stage-utility-dock [data-stage-utility="change"] { order: 0; }
   #stage-utility-dock [data-stage-utility="gateway"] { order: 1; }
   #stage-utility-dock [data-stage-utility="theme"] { order: 2; }
   #stage-utility-dock [data-stage-utility="support"] { order: 3; }
@@ -223,6 +224,7 @@
   }
 
   #stage-utility-dock [data-stage-utility="gateway"][open] > div { left: 0; }
+  #stage-utility-dock [data-stage-utility="change"][open] > div { left: 0; }
   #stage-utility-dock [data-stage-utility="theme"][open] > div {
     left: 50%;
     transform: translateX(-50%);
