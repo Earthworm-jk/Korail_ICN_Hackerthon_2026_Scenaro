@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 import { runVisitDateEdit } from "../actions/itinerary-command";
 import { planItinerary, type PlanRequest } from "../actions/itinerary";
 import { canEditVisitDate } from "../itinerary-command-ui";
+import { UNDO_POINT_KEYS, undoPointOf } from "../itinerary-undo";
+import type { ItineraryResult } from "../engine/types";
 
 /**
  * #109 날짜 선택 버튼·드래그 — 서버 액션과 편집 가능 조건
@@ -116,5 +118,46 @@ describe("#109 편집 가능 조건 — 화면과 입력이 어긋나면 막는�
     ["과선택 조정 필요", { requiresAdjustment: true }],
   ])("%s이면 막는다", (_label, override) => {
     expect(canEditVisitDate({ ...ok, ...override })).toBe(false);
+  });
+});
+describe("#109 되돌리기 지점 — 빠뜨린 필드는 조용히 안 돌아온다", () => {
+  const base = {
+    selectedPlaceIds: new Set(["a", "b"]),
+    preferredVisitDates: { a: "2026-08-13" } as Record<string, string>,
+    result: { status: "empty", days: [], rejectedPlaces: [], warnings: [],
+      selectionGroups: { requested: [], covered: [], uncovered: [] } } as ItineraryResult,
+    selectedAlt: null,
+    diff: null,
+    settledSelectionKey: "a|b",
+    saveStatus: "saved" as const,
+    themeExperience: { status: "unavailable" },
+    themeMapVisible: true,
+  };
+
+  it("복원해야 하는 필드를 하나도 빠뜨리지 않는다", () => {
+    const point = undoPointOf(base);
+    expect(point).not.toBeNull();
+    // 저장 상태를 빠뜨렸던 것이 PR #150 리뷰에서 잡힌 자리다
+    expect(Object.keys(point!).sort()).toEqual([...UNDO_POINT_KEYS].sort());
+  });
+
+  it("저장 상태와 테마 표시를 함께 담는다", () => {
+    const point = undoPointOf(base)!;
+    expect(point.saveStatus).toBe("saved");
+    expect(point.themeMapVisible).toBe(true);
+    expect(point.themeExperience).toEqual({ status: "unavailable" });
+  });
+
+  // 참조를 그대로 들면 이후 편집이 스냅샷까지 바꿔 되돌리기가 현재 상태를 복원한다
+  it("선택과 선호를 복사해 담는다", () => {
+    const point = undoPointOf(base)!;
+    base.selectedPlaceIds.add("c");
+    base.preferredVisitDates.b = "2026-08-14";
+    expect(point.selectedPlaceIds.has("c")).toBe(false);
+    expect(point.preferredVisitDates.b).toBeUndefined();
+  });
+
+  it("아직 일정이 없으면 되돌릴 지점도 없다", () => {
+    expect(undoPointOf({ ...base, result: null })).toBeNull();
   });
 });

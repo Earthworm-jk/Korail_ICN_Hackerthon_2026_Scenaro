@@ -94,3 +94,38 @@ describe("AI 일정 조율 패널 리뷰 회귀", () => {
     expect(markup).not.toContain("Create an itinerary first.");
   });
 });
+
+describe("#109 실행 취소 버튼", () => {
+  const applied: CommandFeedback = {
+    kind: "proposal",
+    outcome: {
+      kind: "proposal",
+      proposal: {
+        decision: "ready", placeId: "p1", requestedDate: "2026-08-13",
+        scheduledDate: "2026-08-13", reasons: [], displaced: [], moved: [],
+      },
+      nextRequest: {} as never,
+      nextResult: {} as never,
+      diff: {} as never,
+      summary: {} as never,
+    },
+    applied: true,
+    submittedSequence: 1,
+  };
+
+  it("적용된 뒤 되돌릴 지점이 있으면 버튼이 보인다", () => {
+    expect(render({ feedback: applied, canUndo: true })).toContain("ai.undo");
+  });
+
+  // 되돌릴 지점이 없으면 눌러도 아무 일이 없다 — 버튼 자체를 두지 않는다
+  it("되돌릴 지점이 없으면 버튼이 없다", () => {
+    expect(render({ feedback: applied, canUndo: false })).not.toContain("ai.undo");
+  });
+
+  it("아직 확인 대기 중이면 실행 취소가 아니라 적용·취소를 묻는다", () => {
+    const pending: CommandFeedback = { ...applied, applied: false };
+    const html = render({ feedback: pending, canUndo: true });
+    expect(html).not.toContain("ai.undo");
+    expect(html).toContain("ai.apply");
+  });
+});

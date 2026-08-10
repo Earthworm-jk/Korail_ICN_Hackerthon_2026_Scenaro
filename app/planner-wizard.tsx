@@ -87,7 +87,8 @@ import { getThemeExperience, type ThemeExperienceResult } from "@/lib/actions/th
 import type { StationFacilitiesSnapshotT } from "@/lib/station-facilities";
 import type { StationCoordinatesSnapshotT } from "@/lib/station-coordinates";
 import type { RailGeometrySnapshotT } from "@/lib/rail-geometry";
-import type { DayPlan, ItineraryResult } from "@/lib/engine/types";
+import type { DayPlan } from "@/lib/engine/types";
+import { undoPointOf, type UndoPoint } from "@/lib/itinerary-undo";
 
 const KST = "Asia/Seoul";
 
@@ -364,14 +365,9 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
    * 역방향 명령이 원래 일정과 같은 결과를 보장하지 않는다. **명령 직전 상태를 통째로**
    * 들고 있다가 복원한다.
    */
-  const [undoPoint, setUndoPoint] = useState<{
-    selectedPlaceIds: Set<string>;
-    preferredVisitDates: Record<string, string>;
-    result: ItineraryResult;
-    selectedAlt: ItineraryView["selectedAlt"];
-    diff: ItineraryDiff | null;
-    settledSelectionKey: string | null;
-  } | null>(null);
+  const [undoPoint, setUndoPoint] = useState<
+    UndoPoint<ItineraryView["selectedAlt"], typeof saveStub.saveStatus> | null
+  >(null);
   const [aiPending, startAiTransition] = useTransition();
   const planSequence = useRef(0); // 늦게 도착한 이전 요청의 공항버스 대안이 새 결과를 덮지 않게 한다.
   // 계산이 끝난(성공·무효·실패 모두) 마지막 선택. 지금 선택과 다르면 화면은 아직 옛 결론이다.
@@ -619,15 +615,18 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
       setAiFeedback({ kind: "cancelled" });
       return;
     }
-    // 되돌리기 지점은 화면을 바꾸기 **전에** 잡는다
-    setUndoPoint(view.result ? {
-      selectedPlaceIds: new Set(selectedPlaceIds),
-      preferredVisitDates: { ...preferredVisitDates },
+    // 되돌리기 지점은 화면을 바꾸기 **전에** 잡는다. 담는 필드는 lib에 모아 뒀다
+    setUndoPoint(undoPointOf({
+      selectedPlaceIds,
+      preferredVisitDates,
       result: view.result,
       selectedAlt: view.selectedAlt,
       diff: lastItineraryDiff,
       settledSelectionKey,
-    } : null);
+      saveStatus: saveStub.saveStatus,
+      themeExperience,
+      themeMapVisible,
+    }));
     const sequence = ++planSequence.current;
     const scheduledPlaceIds = new Set(
       outcome.nextResult.status === "planned"
@@ -679,6 +678,7 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
     candidateData, selectedPlaceIds, saveStub, refreshThemeExperience,
     // 되돌리기 지점이 오래된 값을 잡지 않도록 스냅샷이 읽는 상태를 모두 넣는다
     view.result, view.selectedAlt, preferredVisitDates, lastItineraryDiff, settledSelectionKey,
+    themeExperience, themeMapVisible,
   ]);
 
   /** 동선 추천은 카드를 누른 뒤에만 선택·방문일 선호로 반영한다. */
@@ -989,13 +989,18 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
   const undoLastCommand = useCallback(() => {
     if (!undoPoint) return;
     ++planSequence.current;
+    // 적용 때 시작한 테마 조회가 늦게 끝나 되돌린 일정 위에 덮이지 않게 무효화한다
+    ++themeRequestRef.current;
     setSelectedPlaceIds(undoPoint.selectedPlaceIds);
     setPreferredVisitDates(undoPoint.preferredVisitDates);
     setSettledSelectionKey(undoPoint.settledSelectionKey);
     setLastItineraryDiff(undoPoint.diff);
+    setThemeExperience(undoPoint.themeExperience as ThemeExperienceResult | null);
+    setThemeMapVisible(undoPoint.themeMapVisible);
     dispatchView({ type: "PLAN_SUCCESS", result: undoPoint.result });
     dispatchView({ type: "SELECT_ALT", alt: undoPoint.selectedAlt });
-    saveStub.markDirty();
+    // markDirty로는 못 되돌린다 — 저장된 일정을 바꿨다 취소하면 dirty로 남는다
+    saveStub.restoreSaveStatus(undoPoint.saveStatus);
     setUndoPoint(null);
     setAiFeedback({ kind: "undone" });
   }, [undoPoint, saveStub]);
@@ -1027,6 +1032,11 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
           applyCommandOutcome(result.outcome, submittedSequence);
         }
       } catch {
+        // 늦게 도착한 실패가 현재 화면에 옛 오류를 띄우지 않게 한다
+        if (!commandResponseIsCurrent(submittedSequence, planSequence.current)) {
+          setAiFeedback({ kind: "cancelled" });
+          return;
+        }
         setAiFeedback({ kind: "error" });
       }
     });

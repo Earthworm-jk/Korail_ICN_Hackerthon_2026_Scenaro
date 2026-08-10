@@ -257,8 +257,16 @@ export function useSaveStub(onReopen: (saved: SavedItineraryStub) => void) {
     setSaveStatus((status) => (status === "none" ? "none" : "dirty"));
   }, []);
 
+  /**
+   * 실행 취소 — 명령 직전 저장 상태로 되돌린다 (#109 · PR #150 리뷰).
+   *
+   * `markDirty`만으로는 못 되돌린다. 이미 저장된 일정을 바꿨다가 즉시 취소해도
+   * `dirty`로 남아, 바뀐 것이 없는데 미저장 변경으로 보인다.
+   */
+  const restoreSaveStatus = useCallback((status: SaveStatus) => setSaveStatus(status), []);
+
   return {
-    mode, authenticated, authIntent, authPending, authFailed,
+    mode, authenticated, authIntent, authPending, authFailed, restoreSaveStatus,
     tripsOpen, tripsLoadFailed, saveStatus, saved, selectedTripId,
     requestSave, requestTrips, submitAuth, logout, reopen, markDirty,
     closeAuth: () => { setAuthIntent(null); setAuthFailed(false); },
