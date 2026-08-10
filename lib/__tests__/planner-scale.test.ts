@@ -61,52 +61,45 @@ describe("확대 후보 결정성·성능 (#56 A+B)", () => {
       }],
     ];
 
+    // 확대 fixture와 기준 결과는 한 번만 만든다. 케이스마다 다시 만들면 플래너 실행이
+    // 두 배로 늘고, 워커가 그동안 리포터 RPC에 응답하지 못해 CI가 통째로 실패한다
+    // (실제로 `Timeout calling "onTaskUpdate"`로 한 번 깨졌다 — 테스트는 전건 통과였다).
+    const expanded = expandedRepositories(50);
+    let cachedBaseline: ReturnType<typeof generateItinerary> | null = null;
+    const baseline = () => (cachedBaseline ??= generateItinerary(BASE_CONSTRAINTS, expanded));
+
     it("선호 0개는 선호 필드를 주지 않은 것과 완전히 같은 결과다", () => {
-      const expanded = expandedRepositories(50);
-      const withoutField = generateItinerary(BASE_CONSTRAINTS, expanded);
       const withEmpty = generateItinerary(
         { ...BASE_CONSTRAINTS, preferredVisitDates: {} },
         expanded,
       );
-      expect(JSON.stringify(withEmpty)).toBe(JSON.stringify(withoutField));
+      expect(JSON.stringify(withEmpty)).toBe(JSON.stringify(baseline()));
     }, 120000);
 
-    it.each(PREFERENCES)("%s — NFR-PERF-001 2초 안에 완료된다", (_label, preferredVisitDates) => {
-      const expanded = expandedRepositories(50);
+    // 세 계약을 한 번의 실행 묶음으로 함께 잰다 — 같은 입력을 세 번 돌리므로
+    // 성능(최소값)·결정성(출력 동일)·장소 수 보존을 따로 돌릴 이유가 없다
+    it.each(PREFERENCES)("%s — 2초·결정성·장소 수 보존", (_label, preferredVisitDates) => {
       const constraints = { ...BASE_CONSTRAINTS, preferredVisitDates };
+      const outputs: string[] = [];
       let best = Number.POSITIVE_INFINITY;
       for (let run = 0; run < 3; run += 1) {
         const startedAt = performance.now();
         const result = generateItinerary(constraints, expanded);
         best = Math.min(best, performance.now() - startedAt);
-        expect(result.status).toBe("planned");
+        outputs.push(JSON.stringify(result));
       }
-      expect(best).toBeLessThan(2000);
-    }, 180000);
+      expect(best).toBeLessThan(2000); // NFR-PERF-001
+      expect(outputs[1]).toBe(outputs[0]); // 결정성
+      expect(outputs[2]).toBe(outputs[0]);
 
-    it.each(PREFERENCES)("%s — 반복 실행에서 완전히 같은 결과를 낸다", (_label, preferredVisitDates) => {
-      const constraints = { ...BASE_CONSTRAINTS, preferredVisitDates };
-      const first = generateItinerary(constraints, expandedRepositories(30));
-      const second = generateItinerary(constraints, expandedRepositories(30));
-      expect(first.status).toBe("planned");
-      expect(JSON.stringify(second)).toBe(JSON.stringify(first));
-    }, 180000);
-
-    it("선호를 넣어도 방문 장소 수가 줄지 않는다 (beam 자리 보존)", () => {
-      const expanded = expandedRepositories(50);
-      const base = generateItinerary(BASE_CONSTRAINTS, expanded);
+      const result = JSON.parse(outputs[0]);
+      const base = baseline();
+      expect(result.status).toBe("planned");
       expect(base.status).toBe("planned");
       if (base.status !== "planned") return;
-      for (const [, preferredVisitDates] of PREFERENCES) {
-        const result = generateItinerary(
-          { ...BASE_CONSTRAINTS, preferredVisitDates },
-          expanded,
-        );
-        expect(result.status).toBe("planned");
-        if (result.status !== "planned") continue;
-        expect(result.comparisonKeys.selectedUnionPlaceCount)
-          .toBeGreaterThanOrEqual(base.comparisonKeys.selectedUnionPlaceCount);
-      }
+      // 선호가 beam 자리를 뺏으면 장소 수(비교 키 2번)가 준다 — 선호(4번)보다 위 키다
+      expect(result.comparisonKeys.selectedUnionPlaceCount)
+        .toBeGreaterThanOrEqual(base.comparisonKeys.selectedUnionPlaceCount);
     }, 180000);
   });
 

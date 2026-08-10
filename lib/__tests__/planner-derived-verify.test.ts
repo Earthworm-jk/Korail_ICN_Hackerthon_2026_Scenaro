@@ -45,8 +45,11 @@ describe("파생 캐시 무결성 (#56 A+B 수용 기준 4)", () => {
       { "place-gwanghwamun-gate": "2026-08-14" },
       { "place-seoullo-7017": "2026-08-13", "place-sowol-ro": "2026-08-14" },
     ];
+    // 검증 플래그가 켜져 있으면 pruneStates가 상태마다 파생을 재계산한다 — 변형을 3개로
+    // 줄여도 모든 전이가 이 경로를 지나므로 계약 강도는 같고, 워커가 리포터 RPC에
+    // 응답하지 못할 만큼 한 파일이 길어지는 것을 막는다
     for (const preferredVisitDates of preferences) {
-      for (const { constraints } of constraintVariants(repos).slice(0, 6)) {
+      for (const { constraints } of constraintVariants(repos).slice(0, 3)) {
         // 변형에 따라 선호 장소가 후보에서 빠지거나 기간 밖이면 엔진이 거부한다 — 그건 계약이다
         let result;
         try {
