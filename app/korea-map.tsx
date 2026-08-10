@@ -23,6 +23,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useId,
   useRef,
   useState,
   useSyncExternalStore,
@@ -184,6 +185,98 @@ function readReducedMotion(): boolean {
 function usePrefersReducedMotion(): boolean {
   // 서버 스냅샷은 false — 설정을 읽을 수 없는 곳에서 움직임을 가정하지 않는다
   return useSyncExternalStore(subscribeReducedMotion, readReducedMotion, () => false);
+}
+
+/**
+ * 그려 넣기 mask가 덮는 영역 — 시안 좌표계(360×430) 전체에 여유를 둔 상자.
+ *
+ * mask 기본 영역은 대상의 bounding box 기준이라, 거의 직선인 구간에서는 상자가 얇아
+ * 굵은 mask 획이 잘린다. 좌표계 전체를 쓰면 어떤 구간이 와도 잘리지 않는다.
+ */
+const MASK_REGION = { x: -20, y: -20, width: 440, height: 510 } as const;
+
+/**
+ * 동선 한 구간.
+ *
+ * **철도 구간은 실선이다.** OSM way의 꼭짓점을 그대로 그린 실제 선로이고, `화면의 선이 실제
+ * 선로다`가 이 표시의 근거다(`korea-map-projection.ts`의 `polylinePath` 주석). 점선은 보통
+ * `대략적`으로 읽히므로 실선형에 쓰면 정확도를 실제보다 낮게 전달한다.
+ *
+ * **폴백 곡선은 점선이다.** 철도 축을 못 찾았을 때 역과 역을 잇기만 하는 보조선이라 실제
+ * 경로가 아니고(#14 6절), 점선이 그 성격에 맞다.
+ *
+ * 점선을 그려 넣는 방법 — `stroke-dasharray`는 점선 무늬에 이미 쓰이므로 같은 속성으로
+ * 길이를 드러낼 수 없다. 그래서 같은 모양을 굵은 실선으로 그린 mask를 씌우고 그 mask를
+ * `stroke-dashoffset`으로 연다. 점선 무늬는 그대로 둔 채 시작점부터 드러난다.
+ */
+function RoutePath({
+  d,
+  kind,
+  unit,
+  animate,
+  maskId,
+}: {
+  d: string;
+  kind: "rail" | "curve";
+  unit: number;
+  animate: boolean;
+  maskId: string;
+}) {
+  const common = {
+    d,
+    fill: "none" as const,
+    className: "stroke-sc-orange",
+    strokeWidth: 3 * unit,
+    strokeLinecap: "round" as const,
+    strokeLinejoin: "round" as const,
+  };
+  /* pathLength로 길이를 1로 정규화한다 — 구간마다 실제 길이가 달라도 같은 시간에 그려지고,
+     DOM을 재서 길이를 알아낼 필요가 없다 */
+  const reveal = (
+    <animate
+      attributeName="stroke-dashoffset"
+      from="1"
+      to="0"
+      dur={`${ROUTE_DRAW_SECONDS}s`}
+      fill="freeze"
+      calcMode="spline"
+      keyTimes="0;1"
+      keySplines="0.2 0.7 0.2 1"
+    />
+  );
+
+  if (kind === "rail") {
+    if (!animate) return <path {...common} />;
+    return (
+      <path {...common} pathLength={1} strokeDasharray={1} strokeDashoffset={1}>
+        {reveal}
+      </path>
+    );
+  }
+
+  // 점선 무늬는 화면에서 같은 간격으로 보여야 하므로 unit을 곱한다 — 길이 정규화를 쓰지 않는다
+  const dash = `${4 * unit} ${4 * unit}`;
+  if (!animate) return <path {...common} strokeDasharray={dash} />;
+  return (
+    <>
+      <mask id={maskId} maskUnits="userSpaceOnUse" {...MASK_REGION}>
+        <path
+          d={d}
+          fill="none"
+          stroke="white"
+          strokeWidth={6 * unit}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          pathLength={1}
+          strokeDasharray={1}
+          strokeDashoffset={1}
+        >
+          {reveal}
+        </path>
+      </mask>
+      <path {...common} strokeDasharray={dash} mask={`url(#${maskId})`} />
+    </>
+  );
 }
 
 function LegendSwatch({ className }: { className: string }) {
@@ -416,6 +509,8 @@ export function KoreaMapPanel({
    */
   const prefersReducedMotion = usePrefersReducedMotion();
   const drawRoute = isRoute && !prefersReducedMotion;
+  // mask id는 문서에서 유일해야 한다 — 한 화면에 지도가 둘 이상 뜬다
+  const maskBaseId = useId();
 
   /**
    * 오버레이(테마체험 필터) 항목 등록부.
@@ -682,35 +777,16 @@ export function KoreaMapPanel({
           />
 
           {isRoute &&
-            routePaths.map(({ key, d }) =>
+            routePaths.map(({ key, d, kind }, index) =>
               d ? (
-                <path
+                <RoutePath
                   key={key}
                   d={d}
-                  fill="none"
-                  className="stroke-sc-orange"
-                  strokeWidth={3 * unit}
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  /* pathLength로 길이를 1로 정규화한다 — 구간마다 실제 길이가 달라도
-                     같은 시간에 그려지고, DOM을 재서 길이를 알아낼 필요가 없다 */
-                  pathLength={drawRoute ? 1 : undefined}
-                  strokeDasharray={drawRoute ? 1 : undefined}
-                  strokeDashoffset={drawRoute ? 1 : undefined}
-                >
-                  {drawRoute && (
-                    <animate
-                      attributeName="stroke-dashoffset"
-                      from="1"
-                      to="0"
-                      dur={`${ROUTE_DRAW_SECONDS}s`}
-                      fill="freeze"
-                      calcMode="spline"
-                      keyTimes="0;1"
-                      keySplines="0.2 0.7 0.2 1"
-                    />
-                  )}
-                </path>
+                  kind={kind}
+                  unit={unit}
+                  animate={drawRoute}
+                  maskId={`${maskBaseId}-route-${index}`}
+                />
               ) : null,
             )}
 
