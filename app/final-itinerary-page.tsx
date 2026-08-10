@@ -1,5 +1,5 @@
 import type { CSSProperties } from "react";
-import type { DayPlan } from "@/lib/engine/types";
+import type { CandidateWarning, DayPlan } from "@/lib/engine/types";
 import type { Locale, MessageKey } from "@/lib/i18n/messages";
 import type { SaveStatus } from "./save-stub";
 import styles from "./final-itinerary-page.module.css";
@@ -65,6 +65,8 @@ export function FinalItineraryPage({
   locale,
   placeName,
   stationName,
+  warnings,
+  warningLabel,
   saveStatus,
   saveStatusLabel,
   onBackToAdjust,
@@ -75,6 +77,8 @@ export function FinalItineraryPage({
   locale: Locale;
   placeName: (id: string) => string;
   stationName: (id: string) => string;
+  warnings: CandidateWarning[];
+  warningLabel: (detail: CandidateWarning["detail"]) => string;
   saveStatus: SaveStatus;
   saveStatusLabel: string;
   onBackToAdjust: () => void;
@@ -119,6 +123,8 @@ export function FinalItineraryPage({
           const legs = dayLegs(day, locale, stationName);
           const firstLeg = legs[0];
           const lastLeg = legs.at(-1);
+          const dayPlaceIds = new Set(day.items.map((item) => item.placeId));
+          const dayWarnings = warnings.filter((warning) => dayPlaceIds.has(warning.placeId));
           return (
             <article
               key={day.date}
@@ -170,6 +176,28 @@ export function FinalItineraryPage({
                   ))}
                 </ol>
               </div>
+
+              {dayWarnings.length > 0 && (
+                <details
+                  className="mt-4 rounded-lg border border-sc-orange bg-sc-orange-soft/50"
+                  data-final-warning
+                >
+                  <summary className="flex min-h-10 list-none items-center justify-between gap-2 px-3 py-2 text-sm font-medium text-sc-orange-text">
+                    <span>{tr("step4.warningsTitle")}</span>
+                    <span className="text-xs">
+                      {tr("final.warningCount").replace("{n}", String(dayWarnings.length))}
+                    </span>
+                  </summary>
+                  <ul className="space-y-2 border-t border-sc-orange px-3 py-3 text-xs leading-relaxed text-sc-orange-text">
+                    {dayWarnings.map((warning) => (
+                      <li key={`${warning.placeId}-${warning.detail}`}>
+                        <span className="font-semibold">{placeName(warning.placeId)}</span>
+                        {" — "}{warningLabel(warning.detail)}
+                      </li>
+                    ))}
+                  </ul>
+                </details>
+              )}
 
               {legs.length > 0 && (
                 <details className="mt-4 rounded-lg border bg-sc-subtle/60">

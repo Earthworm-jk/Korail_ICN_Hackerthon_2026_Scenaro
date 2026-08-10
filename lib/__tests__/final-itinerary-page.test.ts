@@ -19,8 +19,10 @@ const copy: Partial<Record<MessageKey, string>> = {
   "final.placesTitle": "방문 순서",
   "final.transportDetails": "교통 상세",
   "final.legCount": "{n}구간",
+  "final.warningCount": "{n}건",
   "final.backToAdjust": "일정 조율로 돌아가기",
   "final.save": "최종 일정 저장",
+  "step4.warningsTitle": "방문 전 확인이 필요한 배치",
 };
 
 const tr = (key: MessageKey) => copy[key] ?? key;
@@ -61,6 +63,8 @@ describe("최종 일정 한눈에 보기", () => {
         gwanghwamun: "광화문 광장",
       })[id] ?? id,
       stationName: (id: string) => ({ seoul: "서울역", gangneung: "강릉역" })[id] ?? id,
+      warnings: [],
+      warningLabel: (detail) => detail,
       saveStatus: "none",
       saveStatusLabel: "저장되지 않은 일정",
       onBackToAdjust: () => undefined,
@@ -85,6 +89,8 @@ describe("최종 일정 한눈에 보기", () => {
       locale: "ko",
       placeName: () => "서울로7017",
       stationName: (id: string) => id === "seoul" ? "서울역" : "강릉역",
+      warnings: [],
+      warningLabel: (detail) => detail,
       saveStatus: "saved",
       saveStatusLabel: "내 일정에 저장됨",
       onBackToAdjust: () => undefined,
@@ -97,5 +103,34 @@ describe("최종 일정 한눈에 보기", () => {
     expect(markup).toContain("KTX-1");
     expect(markup).toContain("최종 일정 저장");
     expect(markup).toContain("내 일정에 저장됨");
+  });
+
+  it("방문 전 확인 경고를 해당 장소가 있는 날짜 카드에 접어서 표시한다", () => {
+    const markup = renderToStaticMarkup(createElement(FinalItineraryPage, {
+      days: [
+        day("2026-08-12", "seoullo"),
+        day("2026-08-13", "woljeongsa"),
+      ],
+      locale: "ko",
+      placeName: (id: string) => id === "seoullo" ? "서울로7017" : "월정사 전나무 숲길",
+      stationName: (id: string) => id,
+      warnings: [{
+        code: "ACTIVITY_WINDOW_MISMATCH",
+        placeId: "woljeongsa",
+        detail: "UNVERIFIED_HOURS",
+      }],
+      warningLabel: () => "운영시간이 확인되지 않았습니다",
+      saveStatus: "none",
+      saveStatusLabel: "저장되지 않은 일정",
+      onBackToAdjust: () => undefined,
+      onSave: () => undefined,
+      tr,
+    }));
+
+    expect(markup.match(/data-final-warning/g)).toHaveLength(1);
+    expect(markup).toContain("방문 전 확인이 필요한 배치");
+    expect(markup).toContain("1건");
+    expect(markup).toContain("월정사 전나무 숲길");
+    expect(markup).toContain("운영시간이 확인되지 않았습니다");
   });
 });

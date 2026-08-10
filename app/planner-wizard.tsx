@@ -847,6 +847,8 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
           locale={locale}
           placeName={placeName}
           stationName={stationName}
+          warnings={viewWarnings}
+          warningLabel={(detail) => tr(`reason.${detail}` as MessageKey)}
           saveStatus={saveStub.saveStatus}
           saveStatusLabel={tr(SAVE_STATUS_KEY[saveStub.saveStatus])}
           onBackToAdjust={() => setShowFinalItinerary(false)}
