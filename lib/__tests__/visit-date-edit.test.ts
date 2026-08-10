@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { runVisitDateEdit } from "../actions/itinerary-command";
 import { planItinerary, type PlanRequest } from "../actions/itinerary";
-import { canEditVisitDate } from "../itinerary-command-ui";
+import { canEditVisitDate, panelDismissable } from "../itinerary-command-ui";
 import { UNDO_POINT_KEYS, undoPointOf } from "../itinerary-undo";
 import type { ItineraryResult } from "../engine/types";
 
@@ -120,6 +120,21 @@ describe("#109 편집 가능 조건 — 화면과 입력이 어긋나면 막는�
     expect(canEditVisitDate({ ...ok, ...override })).toBe(false);
   });
 });
+
+describe("#151 조율 패널 닫기 조건", () => {
+  // 확인을 기다리는 제안이 떠 있으면 닫지 않는다 — 닫는 순간 무엇을 승인하려던 것인지 사라진다
+  it.each([
+    ["피드백 없음", null, true],
+    ["적용 완료", { kind: "proposal", applied: true }, true],
+    ["확인 대기", { kind: "proposal", applied: false }, false],
+    ["추천 목록", { kind: "recommendations" }, false],
+    ["재질문", { kind: "clarify" }, true],
+    ["오류", { kind: "error" }, true],
+  ])("%s → %s", (_label, feedback, expected) => {
+    expect(panelDismissable(feedback as never)).toBe(expected);
+  });
+});
+
 describe("#109 되돌리기 지점 — 빠뜨린 필드는 조용히 안 돌아온다", () => {
   const base = {
     selectedPlaceIds: new Set(["a", "b"]),

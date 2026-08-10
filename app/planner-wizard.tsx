@@ -29,6 +29,7 @@ import { initialPlaceIdsFromItinerary } from "@/lib/initial-place-selection";
 import {
   commandPanelUnavailable,
   canEditVisitDate,
+  panelDismissable,
   commandResponseIsCurrent,
   selectionAfterCommand,
   stateAfterRouteRecommendation,
@@ -365,6 +366,11 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
    * 역방향 명령이 원래 일정과 같은 결과를 보장하지 않는다. **명령 직전 상태를 통째로**
    * 들고 있다가 복원한다.
    */
+  /** #151 — 조율 패널은 기본적으로 접혀 있고 아이콘으로 연다 */
+  const [aiPanelOpen, setAiPanelOpen] = useState(false);
+  /** 발견성 보완 라벨. 한 번 열면 다시 보여 주지 않는다 */
+  const [aiHintDismissed, setAiHintDismissed] = useState(false);
+  const aiTriggerRef = useRef<HTMLButtonElement>(null);
   const [undoPoint, setUndoPoint] = useState<
     UndoPoint<ItineraryView["selectedAlt"], typeof saveStub.saveStatus> | null
   >(null);
@@ -985,6 +991,21 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
    * `ready`면 바로 반영하고, 요청 밖 부작용이 있으면 확인 창을 띄운다 — 규칙이 갈리면
    * 같은 변경인데 조작 방법에 따라 다르게 확정되는 일이 생긴다.
    */
+  /** 확인 대기 중에는 닫히지 않는다 — 닫으면 무엇을 승인하려던 것인지 사라진다 (#151) */
+  const closeAiPanel = useCallback(() => {
+    if (!panelDismissable(aiFeedback)) return;
+    setAiPanelOpen(false);
+    setAiFeedback(null);
+    aiTriggerRef.current?.focus();
+  }, [aiFeedback]);
+
+  useEffect(() => {
+    if (!aiPanelOpen) return;
+    const onKey = (event: KeyboardEvent) => { if (event.key === "Escape") closeAiPanel(); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [aiPanelOpen, closeAiPanel]);
+
   /** 즉시 적용을 한 번에 되돌린다 — 역방향 명령이 아니라 상태 복원이다 (#145) */
   const undoLastCommand = useCallback(() => {
     if (!undoPoint) return;
@@ -1619,6 +1640,33 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
             >
               <Info aria-hidden="true" className="size-4" />
             </button>
+            {/* #151 — 상시 노출 대신 진입점만 둔다. 말풍선이 아니라 반짝임 아이콘이라
+                맛집·날씨까지 묻는 범용 상담 기대를 만들지 않는다 */}
+            <button
+              ref={aiTriggerRef}
+              type="button"
+              disabled={aiCommandDisabled}
+              aria-expanded={aiPanelOpen}
+              aria-controls="itinerary-ai-panel"
+              aria-label={tr("ai.entryLabel")}
+              onClick={() => {
+                setAiHintDismissed(true);
+                if (aiPanelOpen) closeAiPanel();
+                else setAiPanelOpen(true);
+              }}
+              className={`flex size-8 items-center justify-center rounded-full border ${
+                aiPanelOpen
+                  ? "border-sc-blue bg-sc-blue text-white"
+                  : "border-sc-blue/40 text-sc-blue hover:bg-sc-blue-soft"
+              } disabled:opacity-40`}
+            >
+              <Sparkles aria-hidden="true" className="size-4" />
+            </button>
+            {!aiPanelOpen && !aiHintDismissed && (
+              <span className="rounded-full bg-sc-blue-soft px-2 py-0.5 text-xs text-sc-blue">
+                {tr("ai.entryHint")}
+              </span>
+            )}
             <div
               id="itinerary-info-popover"
               popover="auto"
@@ -1655,6 +1703,7 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
             )}
           </div>
 
+          {aiPanelOpen && (
           <ItineraryCommandPanel
             value={aiSentence}
             pending={aiPending}
@@ -1673,7 +1722,10 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
             onDismiss={() => setAiFeedback(null)}
             placeName={placeName}
             tr={tr}
+            onClose={closeAiPanel}
+            closeDisabled={!panelDismissable(aiFeedback)}
           />
+          )}
 
           {/* 아직 보여줄 일정 자체가 없을 때만 자리를 차지하는 안내로 바꾼다 */}
           {updating && !displayedDays && !needsSelection && (

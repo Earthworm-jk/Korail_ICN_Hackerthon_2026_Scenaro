@@ -33,6 +33,7 @@ function render(options: {
   disabledMessage?: MessageKey;
   feedback?: CommandFeedback | null;
   canUndo?: boolean;
+  closeDisabled?: boolean;
 } = {}) {
   return renderToStaticMarkup(createElement(ItineraryCommandPanel, {
     value: "",
@@ -40,6 +41,8 @@ function render(options: {
     disabled: options.disabled ?? false,
     disabledMessage: options.disabledMessage,
     onUndo: () => {},
+    onClose: () => {},
+    closeDisabled: options.closeDisabled ?? false,
     canUndo: options.canUndo ?? false,
     feedback: options.feedback ?? null,
     lastDiff: null,

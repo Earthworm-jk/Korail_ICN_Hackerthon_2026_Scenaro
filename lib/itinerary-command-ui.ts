@@ -84,3 +84,15 @@ export function canEditVisitDate(input: {
     && !input.needsSelection
     && !input.requiresAdjustment;
 }
+
+/**
+ * 조율 패널을 닫아도 되는가 (#151).
+ *
+ * 확인을 기다리는 제안이 떠 있으면 닫지 않는다 — 닫는 순간 사용자가 무엇을 승인하려던
+ * 것인지 사라지고, 적용도 취소도 아닌 상태로 남는다.
+ */
+export function panelDismissable(feedback: { kind: string; applied?: boolean } | null): boolean {
+  if (!feedback) return true;
+  if (feedback.kind === "recommendations") return false;
+  return !(feedback.kind === "proposal" && feedback.applied === false);
+}
