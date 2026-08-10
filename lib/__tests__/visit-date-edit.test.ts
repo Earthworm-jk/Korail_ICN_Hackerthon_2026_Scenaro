@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { runVisitDateEdit } from "../actions/itinerary-command";
 import { planItinerary, type PlanRequest } from "../actions/itinerary";
-import { canEditVisitDate } from "../itinerary-command-ui";
+import { canEditVisitDate, panelDismissable } from "../itinerary-command-ui";
 import { UNDO_POINT_KEYS, undoPointOf } from "../itinerary-undo";
 import type { ItineraryResult } from "../engine/types";
 
@@ -120,6 +120,38 @@ describe("#109 편집 가능 조건 — 화면과 입력이 어긋나면 막는�
     expect(canEditVisitDate({ ...ok, ...override })).toBe(false);
   });
 });
+
+describe("#151 조율 패널 닫기 조건", () => {
+  it.each([
+    ["피드백 없음", null, true],
+    ["적용 완료", { kind: "proposal", applied: true }, true],
+    ["확인 대기", { kind: "proposal", applied: false }, false],
+    ["추천 목록", { kind: "recommendations" }, false],
+    ["재질문", { kind: "clarify" }, true],
+    ["오류", { kind: "error" }, true],
+  ])("%s → %s", (_label, feedback, expected) => {
+    expect(panelDismissable(feedback as never)).toBe(expected);
+  });
+
+  /**
+   * PR #152 리뷰 1번 — 요청 직후에는 `aiFeedback`이 아직 `null`이라 닫혔다.
+   * 닫아도 요청은 살아 있어, 늦게 `ready`가 오면 **닫힌 패널 뒤에서** 일정이 바뀌고
+   * 설명도 실행 취소도 안 보인다.
+   */
+  it.each([
+    ["피드백 없음", null],
+    ["적용 완료", { kind: "proposal", applied: true }],
+    ["재질문", { kind: "clarify" }],
+    ["오류", { kind: "error" }],
+  ])("요청 처리 중에는 닫지 않는다 (%s)", (_label, feedback) => {
+    expect(panelDismissable(feedback as never, true)).toBe(false);
+  });
+
+  it("처리가 끝나면 같은 상태에서 다시 닫을 수 있다", () => {
+    expect(panelDismissable(null, false)).toBe(true);
+  });
+});
+
 describe("#109 되돌리기 지점 — 빠뜨린 필드는 조용히 안 돌아온다", () => {
   const base = {
     selectedPlaceIds: new Set(["a", "b"]),

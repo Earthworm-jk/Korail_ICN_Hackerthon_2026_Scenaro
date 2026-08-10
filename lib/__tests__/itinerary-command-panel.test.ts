@@ -33,6 +33,7 @@ function render(options: {
   disabledMessage?: MessageKey;
   feedback?: CommandFeedback | null;
   canUndo?: boolean;
+  closeDisabled?: boolean;
 } = {}) {
   return renderToStaticMarkup(createElement(ItineraryCommandPanel, {
     value: "",
@@ -40,6 +41,8 @@ function render(options: {
     disabled: options.disabled ?? false,
     disabledMessage: options.disabledMessage,
     onUndo: () => {},
+    onClose: () => {},
+    closeDisabled: options.closeDisabled ?? false,
     canUndo: options.canUndo ?? false,
     feedback: options.feedback ?? null,
     lastDiff: null,
@@ -127,5 +130,22 @@ describe("#109 실행 취소 버튼", () => {
     const html = render({ feedback: pending, canUndo: true });
     expect(html).not.toContain("ai.undo");
     expect(html).toContain("ai.apply");
+  });
+});
+
+describe("#152 갇히지 않는 패널", () => {
+  const recommendations: CommandFeedback = {
+    kind: "recommendations",
+    outcome: { kind: "recommendations", targetDate: "2026-08-13", recommendations: [] },
+    submittedSequence: 1,
+  } as never;
+
+  // 닫기가 모두 막힌 상태에서 취소 경로마저 없으면 사용자가 갇힌다
+  it("추천 상태에도 명시적 취소가 있다", () => {
+    expect(render({ feedback: recommendations })).toContain("ai.cancel");
+  });
+
+  it("합의한 임시 패널 폭 상한을 지킨다", () => {
+    expect(render()).toContain("max-w-[400px]");
   });
 });
