@@ -60,6 +60,25 @@ function dayLegs(
   ].sort((a, b) => a.departAt.localeCompare(b.departAt));
 }
 
+/**
+ * 개수 문구 (#131).
+ *
+ * 영어는 1일 때만 단수형을 쓴다. 한국어는 수에 따라 형태가 바뀌지 않으므로 항상 `other`를
+ * 쓰고, 키는 두 언어에 같은 이름으로 존재한다(ko/en 키 대칭).
+ *
+ * **분기는 여기 한 곳에만 둔다.** 호출부마다 `n === 1`을 적으면 새 개수 문구가 생길 때
+ * 한 곳을 빠뜨리고, 그게 정확히 `1 places`가 나오던 경로였다.
+ */
+function countLabel(
+  tr: (key: MessageKey) => string,
+  locale: Locale,
+  key: "final.dayPlaceCount" | "final.dayLegCount" | "final.legCount" | "final.warningCount",
+  n: number,
+): string {
+  const form = locale === "en" && n === 1 ? "one" : "other";
+  return tr(`${key}.${form}` as MessageKey).replace("{n}", String(n));
+}
+
 export function FinalItineraryPage({
   days,
   locale,
@@ -139,9 +158,9 @@ export function FinalItineraryPage({
                   <h3 className="mt-0.5 text-lg font-semibold">{fmtDate(day.date, locale)}</h3>
                 </div>
                 <span className="rounded-full bg-sc-blue-soft px-2.5 py-1 text-xs font-medium text-sc-blue">
-                  {tr("final.daySummary")
-                    .replace("{places}", String(day.items.length))
-                    .replace("{legs}", String(legs.length))}
+                  {countLabel(tr, locale, "final.dayPlaceCount", day.items.length)}
+                  {" · "}
+                  {countLabel(tr, locale, "final.dayLegCount", legs.length)}
                 </span>
               </div>
 
@@ -185,7 +204,7 @@ export function FinalItineraryPage({
                   <summary className="flex min-h-10 list-none items-center justify-between gap-2 px-3 py-2 text-sm font-medium text-sc-orange-text">
                     <span>{tr("step4.warningsTitle")}</span>
                     <span className="text-xs">
-                      {tr("final.warningCount").replace("{n}", String(dayWarnings.length))}
+                      {countLabel(tr, locale, "final.warningCount", dayWarnings.length)}
                     </span>
                   </summary>
                   <ul className="space-y-2 border-t border-sc-orange px-3 py-3 text-xs leading-relaxed text-sc-orange-text">
@@ -204,7 +223,7 @@ export function FinalItineraryPage({
                   <summary className="flex min-h-10 list-none items-center justify-between gap-2 px-3 py-2 text-sm font-medium">
                     <span>{tr("final.transportDetails")}</span>
                     <span className="text-xs text-sc-muted">
-                      {tr("final.legCount").replace("{n}", String(legs.length))}
+                      {countLabel(tr, locale, "final.legCount", legs.length)}
                     </span>
                   </summary>
                   <ol className="space-y-2 border-t px-3 py-3 text-xs text-sc-muted">

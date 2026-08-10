@@ -2,7 +2,7 @@ import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { FinalItineraryPage } from "../../app/final-itinerary-page";
-import type { DayPlan } from "../engine/types";
+import type { CandidateWarning, DayPlan } from "../engine/types";
 import type { MessageKey } from "../i18n/messages";
 
 const copy: Partial<Record<MessageKey, string>> = {
@@ -13,13 +13,18 @@ const copy: Partial<Record<MessageKey, string>> = {
   "final.places": "방문 장소",
   "final.legs": "이동 구간",
   "final.dayNumber": "DAY {n}",
-  "final.daySummary": "장소 {places} · 이동 {legs}",
+  "final.dayPlaceCount.one": "장소 {n}",
+  "final.dayPlaceCount.other": "장소 {n}",
+  "final.dayLegCount.one": "이동 {n}",
+  "final.dayLegCount.other": "이동 {n}",
   "final.movementWindow": "핵심 이동 범위",
   "final.noMovement": "당일 장거리 이동 없음",
   "final.placesTitle": "방문 순서",
   "final.transportDetails": "교통 상세",
-  "final.legCount": "{n}구간",
-  "final.warningCount": "{n}건",
+  "final.legCount.one": "{n}구간",
+  "final.legCount.other": "{n}구간",
+  "final.warningCount.one": "{n}건",
+  "final.warningCount.other": "{n}건",
   "final.backToAdjust": "일정 조율로 돌아가기",
   "final.save": "최종 일정 저장",
   "step4.warningsTitle": "방문 전 확인이 필요한 배치",
@@ -132,5 +137,110 @@ describe("최종 일정 한눈에 보기", () => {
     expect(markup).toContain("1건");
     expect(markup).toContain("월정사 전나무 숲길");
     expect(markup).toContain("운영시간이 확인되지 않았습니다");
+  });
+});
+
+/**
+ * 영어 단복수 (#131)
+ *
+ * `1 places`는 최종 화면에서 크게 보이는 자리다. 분기를 호출부마다 적으면 새 개수 문구가
+ * 생길 때 한 곳을 빠뜨리므로, 헬퍼 한 곳에 두고 여기서 실제 렌더로 고정한다.
+ */
+describe("영어 개수 표기", () => {
+  const en: Partial<Record<MessageKey, string>> = {
+    ...copy,
+    "final.dayPlaceCount.one": "{n} place",
+    "final.dayPlaceCount.other": "{n} places",
+    "final.dayLegCount.one": "{n} leg",
+    "final.dayLegCount.other": "{n} legs",
+    "final.legCount.one": "{n} leg",
+    "final.legCount.other": "{n} legs",
+    "final.warningCount.one": "{n} warning",
+    "final.warningCount.other": "{n} warnings",
+    "final.transportDetails": "Transport details",
+    "step4.warningsTitle": "Placements to check",
+  };
+  const trEn = (key: MessageKey) => en[key] ?? key;
+
+  function render(days: DayPlan[], warnings: CandidateWarning[] = [], locale: "ko" | "en" = "en") {
+    return renderToStaticMarkup(createElement(FinalItineraryPage, {
+      days,
+      locale,
+      placeName: (id: string) => id,
+      stationName: (id: string) => id,
+      warnings,
+      warningLabel: (detail) => detail,
+      saveStatus: "none",
+      saveStatusLabel: "Itinerary not saved",
+      onBackToAdjust: () => undefined,
+      onSave: () => undefined,
+      tr: locale === "en" ? trEn : tr,
+    }));
+  }
+
+  function withPlaces(date: string, count: number, trainNos: string[] = []): DayPlan {
+    return {
+      date,
+      items: Array.from({ length: count }, (_, i) => ({
+        placeId: `p${i}`,
+        arriveAt: `${date}T03:00:00.000Z`,
+        departAt: `${date}T04:00:00.000Z`,
+        accessMinutes: 10,
+      })),
+      rides: trainNos.map((trainNo) => ({
+        trainNo,
+        fromStationId: "seoul",
+        toStationId: "gangneung",
+        departAt: `${date}T00:00:00.000Z`,
+        arriveAt: `${date}T02:00:00.000Z`,
+      })),
+      regionWindows: [],
+    };
+  }
+
+  it("장소 0·1·2에서 place/places가 정확하다", () => {
+    expect(render([withPlaces("2026-08-12", 0)])).toContain("0 places");
+    expect(render([withPlaces("2026-08-12", 1)])).toContain("1 place ");
+    expect(render([withPlaces("2026-08-12", 1)])).not.toContain("1 places");
+    expect(render([withPlaces("2026-08-12", 2)])).toContain("2 places");
+  });
+
+  it("이동 0·1·2에서 leg/legs가 정확하다", () => {
+    expect(render([withPlaces("2026-08-12", 1)])).toContain("0 legs");
+    expect(render([withPlaces("2026-08-12", 1, ["KTX-1"])])).toContain("1 leg");
+    expect(render([withPlaces("2026-08-12", 1, ["KTX-1"])])).not.toContain("1 legs");
+    expect(render([withPlaces("2026-08-12", 1, ["KTX-1", "KTX-2"])])).toContain("2 legs");
+  });
+
+  it("경고 1건과 2건에서 warning/warnings가 정확하다", () => {
+    const day1 = withPlaces("2026-08-12", 2);
+    const one: CandidateWarning[] = [
+      { code: "ACTIVITY_WINDOW_MISMATCH", placeId: "p0", detail: "UNVERIFIED_HOURS" },
+    ];
+    const two: CandidateWarning[] = [
+      ...one,
+      { code: "ACTIVITY_WINDOW_MISMATCH", placeId: "p1", detail: "UNVERIFIED_HOURS" },
+    ];
+    expect(render([day1], one)).toContain("1 warning");
+    expect(render([day1], one)).not.toContain("1 warnings");
+    expect(render([day1], two)).toContain("2 warnings");
+  });
+
+  it("괄호 표기가 화면에 남지 않는다", () => {
+    const markup = render([withPlaces("2026-08-12", 1, ["KTX-1"])], [
+      { code: "ACTIVITY_WINDOW_MISMATCH", placeId: "p0", detail: "UNVERIFIED_HOURS" },
+    ]);
+    expect(markup).not.toContain("place(s)");
+    expect(markup).not.toContain("leg(s)");
+    expect(markup).not.toContain("warning(s)");
+  });
+
+  it("한국어는 수에 따라 바뀌지 않는다", () => {
+    const one = render([withPlaces("2026-08-12", 1, ["KTX-1"])], [], "ko");
+    const many = render([withPlaces("2026-08-12", 3, ["KTX-1", "KTX-2"])], [], "ko");
+    expect(one).toContain("장소 1");
+    expect(one).toContain("이동 1");
+    expect(many).toContain("장소 3");
+    expect(many).toContain("이동 2");
   });
 });
