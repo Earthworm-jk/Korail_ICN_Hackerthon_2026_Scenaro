@@ -47,6 +47,62 @@ describe("확대 후보 결정성·성능 (#56 A+B)", () => {
     expect(best).toBeLessThan(5000);
   }, 120000);
 
+  // #139 6-3: 선호 날짜 창을 따로 만들면 탐색 분기가 늘어난다. "탐색 공간 불변"은 철회했고
+  // 선호 0·1·다수로 나눠 다시 잰다. 선호 0이면 지금까지와 완전히 같은 경로여야 한다.
+  describe("방문일 선호가 붙은 확대 fixture (#139 6-3)", () => {
+    const PREFERENCES: Array<[string, Record<string, string>]> = [
+      ["선호 0개", {}],
+      ["선호 1개", { "place-gwanghwamun-gate": "2026-08-14" }],
+      ["선호 다수", {
+        "place-gwanghwamun-gate": "2026-08-14",
+        "place-seoullo-7017": "2026-08-13",
+        "place-sowol-ro": "2026-08-12",
+        "place-gwanghwamun-square": "2026-08-13",
+      }],
+    ];
+
+    // 확대 fixture와 기준 결과는 한 번만 만든다. 케이스마다 다시 만들면 플래너 실행이
+    // 두 배로 늘고, 워커가 그동안 리포터 RPC에 응답하지 못해 CI가 통째로 실패한다
+    // (실제로 `Timeout calling "onTaskUpdate"`로 한 번 깨졌다 — 테스트는 전건 통과였다).
+    const expanded = expandedRepositories(50);
+    let cachedBaseline: ReturnType<typeof generateItinerary> | null = null;
+    const baseline = () => (cachedBaseline ??= generateItinerary(BASE_CONSTRAINTS, expanded));
+
+    it("선호 0개는 선호 필드를 주지 않은 것과 완전히 같은 결과다", () => {
+      const withEmpty = generateItinerary(
+        { ...BASE_CONSTRAINTS, preferredVisitDates: {} },
+        expanded,
+      );
+      expect(JSON.stringify(withEmpty)).toBe(JSON.stringify(baseline()));
+    }, 120000);
+
+    // 세 계약을 한 번의 실행 묶음으로 함께 잰다 — 같은 입력을 세 번 돌리므로
+    // 성능(최소값)·결정성(출력 동일)·장소 수 보존을 따로 돌릴 이유가 없다
+    it.each(PREFERENCES)("%s — 2초·결정성·장소 수 보존", (_label, preferredVisitDates) => {
+      const constraints = { ...BASE_CONSTRAINTS, preferredVisitDates };
+      const outputs: string[] = [];
+      let best = Number.POSITIVE_INFINITY;
+      for (let run = 0; run < 3; run += 1) {
+        const startedAt = performance.now();
+        const result = generateItinerary(constraints, expanded);
+        best = Math.min(best, performance.now() - startedAt);
+        outputs.push(JSON.stringify(result));
+      }
+      expect(best).toBeLessThan(2000); // NFR-PERF-001
+      expect(outputs[1]).toBe(outputs[0]); // 결정성
+      expect(outputs[2]).toBe(outputs[0]);
+
+      const result = JSON.parse(outputs[0]);
+      const base = baseline();
+      expect(result.status).toBe("planned");
+      expect(base.status).toBe("planned");
+      if (base.status !== "planned") return;
+      // 선호가 beam 자리를 뺏으면 장소 수(비교 키 2번)가 준다 — 선호(4번)보다 위 키다
+      expect(result.comparisonKeys.selectedUnionPlaceCount)
+        .toBeGreaterThanOrEqual(base.comparisonKeys.selectedUnionPlaceCount);
+    }, 180000);
+  });
+
   it("실시드 전체 요청 결과가 최적화 전과 동일한 회귀 기준을 유지한다", () => {
     // 안전망: 파생 캐시·시간 메모가 실시드 대표 요청의 산출 구조를 바꾸지 않는다
     const result = generateItinerary(BASE_CONSTRAINTS, loadRepositories());

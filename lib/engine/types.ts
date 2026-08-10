@@ -16,6 +16,10 @@ export type TripConstraints = {
   maxPlacesPerDay: number;
   dailySlackMinutes: number; // 일반 여유(소프트), 기본 120
   airportArrivalDeadline: string; // ISO — 공항 도착 마감 시각(하드). offset 역산 대신 절대 시각 (#14 차단 2)
+  // #139: 방문일 소프트 선호. placeId → YYYY-MM-DD(KST).
+  // 하드 의미의 pinnedDates(6d308d0에서 제거)를 되살리지 않는다 — 못 지켜도 일정은 나오고
+  // 비교 순위만 밀린다. 실패 코드(USER_CONSTRAINT_INFEASIBLE)를 추가하지 않는 이유다.
+  preferredVisitDates?: Record<string, string>;
 };
 
 // #43 결정 1: 운영시간은 하드 제약이 아니다 — 판정식(#5) 결과는 제외가 아니라
@@ -46,9 +50,12 @@ export type ComparisonKeys = {
   selectionGroupCoverageCount: number; // 1) 배우·작품 요청 그룹 중 실제 방문에 반영된 수(최대 2)
   selectedUnionPlaceCount: number; // 2) 두 엄격 후보 집합 합집합의 고유 방문 장소 수
   activityWarningCount: number; // 3) 낮을수록 우선 — 운영시간 경고 수 (#43 결정 3, #3 개정)
-  totalTravelMinutes: number; // 4) 열차 + 역–장소 왕복 추정(문전간), 낮을수록 우선
-  transferCount: number; // 5) 낮을수록 우선
-  slackSatisfied: boolean; // 6) 충족 우선 (미달만 불이익, 초과 가점 없음)
+  // 4) 낮을수록 우선 — 선호 날짜를 못 지킨 수 (#139). 경고 뒤·이동시간 앞:
+  //    운영시간 신뢰를 깎으면서까지 선호를 강제하지는 않되, 단순 이동시간보다는 사용자 의사를 앞에 둔다.
+  preferredDateMismatchCount: number;
+  totalTravelMinutes: number; // 5) 열차 + 역–장소 왕복 추정(문전간), 낮을수록 우선
+  transferCount: number; // 6) 낮을수록 우선
+  slackSatisfied: boolean; // 7) 충족 우선 (미달만 불이익, 초과 가점 없음)
 };
 
 export type SelectionGroupUncoveredReason =
@@ -141,8 +148,26 @@ export type GatewayAlternative = {
   };
 };
 
+/**
+ * #139 — 선호 날짜 하나하나의 반영 결과. 실패 분기 대신 이 목록으로 알린다.
+ *
+ * - `honored`   요청한 날짜에 배치됨
+ * - `adjusted`  일정에는 들어갔지만 다른 날짜로 조정됨 (`scheduledDate`)
+ * - `unplaced`  일정에 포함되지 못함 — 사유는 rejectedPlaces가 따로 말한다
+ *
+ * 원인을 증명할 수 없으면 단정하지 않는다. UI 문구는 "요청한 날짜를 반영하지 못해
+ * 가능한 일정으로 조정했어요" 수준으로만 쓴다 (#139 4절).
+ */
+export type PreferredDateOutcome = {
+  placeId: string;
+  requestedDate: string; // YYYY-MM-DD (KST)
+  outcome: "honored" | "adjusted" | "unplaced";
+  scheduledDate?: string; // adjusted에서만 — 실제 배치된 날짜
+};
+
 // #14 ver.0.4 확정: 필수 방문·방문일 고정 입력이 없어 사용자 제약 실패(ok:false) 분기가
 // 소멸했다. 결과는 planned/empty 2분기이며 status가 유일한 판별자다.
+// #139의 소프트 선호도 이 2분기를 바꾸지 않는다 — 선호는 preferredDateOutcomes로만 보고된다.
 export type ItineraryResult =
   | {
       status: "planned"; // 선택된 일정이 있는 정상 상태
@@ -153,6 +178,8 @@ export type ItineraryResult =
       comparisonKeys: ComparisonKeys; // '왜 이 일정인가' 표시 재사용 (#3)
       metrics: ItineraryMetrics; // 편집 전후 비교(diff)는 앱 계층이 metrics로 계산 (PR #9 리뷰)
       gatewayAlternatives?: GatewayAlternative[]; // #58 검증 직행버스 전체 일정 대안
+      // #139 — 선호 입력이 있을 때만. 요청한 placeId 사전순. 선호가 없으면 필드 자체가 없다
+      preferredDateOutcomes?: PreferredDateOutcome[];
     }
   | {
       status: "empty"; // 정상 처리됐지만 조건을 만족하는 일정 없음 — 허위 metrics 금지 (PR #16 리뷰)

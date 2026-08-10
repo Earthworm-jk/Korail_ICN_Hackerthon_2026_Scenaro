@@ -8,6 +8,7 @@
 import {
   generateGatewayAlternatives,
   generateItinerary,
+  preferredVisitDateErrors,
   TripConstraintsSchema,
 } from "../engine";
 import type { GatewayAlternative, ItineraryResult, TripConstraints } from "../engine/types";
@@ -23,6 +24,8 @@ export type PlanRequest = {
   selectedActorIds: string[];
   selectedWorkIds: string[];
   excludedPlaceIds: string[];
+  // #139 — 방문일 소프트 선호. placeId → YYYY-MM-DD(KST). 없으면 지금까지와 동일한 경로다.
+  preferredVisitDates?: Record<string, string>;
 };
 
 const DEFAULT_MAX_PLACES_PER_DAY = 3;
@@ -66,6 +69,7 @@ function constraintsFromRequest(request: PlanRequest): TripConstraints {
     maxPlacesPerDay: DEFAULT_MAX_PLACES_PER_DAY,
     dailySlackMinutes: DEFAULT_DAILY_SLACK_MINUTES,
     airportArrivalDeadline: request.airportArrivalDeadline,
+    ...(request.preferredVisitDates ? { preferredVisitDates: request.preferredVisitDates } : {}),
   };
 }
 
@@ -102,7 +106,8 @@ function referenceErrorsOf(
   if (unknownActor) errors.selectedActorIds = `unknown actor id: ${unknownActor}`;
   if (unknownWork) errors.selectedWorkIds = `unknown work id: ${unknownWork}`;
   if (unknownPlace) errors.excludedPlaceIds = `unknown place id: ${unknownPlace}`;
-  return errors;
+  // #139 — 선호 날짜의 후보·기간 검사도 엔진 RangeError가 아니라 필드 오류로 나가야 한다
+  return { ...errors, ...preferredVisitDateErrors(constraints, repos) };
 }
 
 function validateGatewayBaseline(

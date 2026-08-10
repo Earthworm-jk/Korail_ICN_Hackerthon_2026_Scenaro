@@ -40,6 +40,7 @@ const planned = (days: DayPlan[], rejected: ItineraryResult["rejectedPlaces"] = 
     selectionGroupCoverageCount: 0,
     selectedUnionPlaceCount: 0,
     activityWarningCount: 0,
+    preferredDateMismatchCount: 0,
     totalTravelMinutes: 0,
     transferCount: 0,
     slackSatisfied: true,

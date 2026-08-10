@@ -7,6 +7,7 @@ function cand(partial: Partial<Candidate> & { stableId: string }): Candidate {
       selectionGroupCoverageCount: 2,
       selectedUnionPlaceCount: 3,
       activityWarningCount: 0,
+      preferredDateMismatchCount: 0,
       totalTravelMinutes: 120,
       transferCount: 1,
       slackSatisfied: true,

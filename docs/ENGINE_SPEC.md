@@ -35,6 +35,7 @@ type TripConstraints = {
   maxPlacesPerDay: number;      // 내부 기본값 3 — 사용자 설정 UI 없음 (#14 ver.0.4)
   dailySlackMinutes: number;    // 일반 여유(소프트), 기본 120
   airportArrivalDeadline: string; // ISO, 공항 도착 마감 시각(하드) — 절대 시각 입력 (#14 차단 2)
+  preferredVisitDates?: Record<string, string>; // placeId → YYYY-MM-DD(KST) — 소프트 선호 (#139)
 };
 
 // 단일 진입점 (REQ-EDIT-001·002·006 공통, #2 결정)
@@ -44,8 +45,33 @@ function generateItinerary(c: TripConstraints, repos: Repos): ItineraryResult;
 편집 2동작(촬영지 제외 / 항공편 시각 변경)은 모두 `TripConstraints`의
 해당 필드만 바꿔 같은 함수를 다시 호출한다. UI는 **성공 응답일 때만** 일정을 교체한다. (REQ-EDIT-005)
 
-방문일 변경·고정과 필수 방문 입력은 PRD v0.2에서 제거됐다. 엔진은 장소를 특정 날짜에
-강제하거나 반드시 포함시키는 계약을 제공하지 않는다.
+필수 방문 입력과 **방문일 하드 고정**(`pinnedDates`)은 PRD v0.2에서 제거됐고 되살리지 않는다.
+엔진은 장소를 특정 날짜에 강제하거나 반드시 포함시키는 계약을 제공하지 않는다.
+
+방문일은 **소프트 선호**로만 받는다 (`preferredVisitDates`, #139). 못 지켜도 일정은 나오고
+비교 순위만 밀린다. 실패 코드(`USER_CONSTRAINT_INFEASIBLE`)는 추가하지 않는다.
+
+이 엔진 계약은 #141 자연어 조율 **P0-1의 선행**이다 (#139 9-1). 날짜 선택 버튼·드래그
+**화면**은 P1에 남는다 — 세 표현이 모두 같은 입력을 만들고, P0에서는 자연어가 그 수단이다.
+
+결과는 `preferredDateOutcomes`로 장소마다 알린다 (#139 8절 확정 필드명).
+
+```ts
+preferredDateOutcomes?: {
+  placeId: string;
+  requestedDate: string;              // YYYY-MM-DD (KST)
+  outcome: "honored" | "adjusted" | "unplaced";
+  scheduledDate?: string;             // adjusted에서만 — 실제 배치된 날짜
+}[]
+```
+
+입력 검증: 여행 기간 밖 날짜와 현재 엄격 후보가 아닌 장소 ID는 거부하고,
+제외한 장소에 선호가 함께 오면 **제외가 우선**이라 그 선호는 무시한다.
+
+**`adjusted`를 호출부가 조용히 확정하지 않는다** (#141 결정). 엔진이 돌려준 일정은
+이 경우 확정본이 아니라 **미리보기**다 — 현재 일정을 유지한 채 대안으로 보여주고
+사용자 확인을 받은 뒤에 적용한다. 요청하지 않은 날짜 변경이나 장소 제외를 확정으로
+만들지 않기 위한 것이며, 엔진 계약 자체는 바뀌지 않는다.
 
 ### 엄격한 후보 집합과 합집합 (#51 최종 계약)
 
@@ -311,16 +337,32 @@ type ComparisonKeys = {
   selectionGroupCoverageCount: number; // 1) 배우·작품 요청 그룹 중 실제 방문에 반영된 수
   selectedUnionPlaceCount: number;     // 2) 엄격 합집합의 고유 방문 장소 수
   activityWarningCount: number;        // 3) 낮을수록 우선 (#43)
-  totalTravelMinutes: number;          // 4) 열차 + 역–장소 왕복 추정(문전간), 낮을수록 우선
-  transferCount: number;               // 5) 낮을수록 우선
-  slackSatisfied: boolean;             // 6) 충족 우선 (미달만 불이익, 초과 가점 없음)
+  preferredDateMismatchCount: number;  // 4) 낮을수록 우선 — 못 지킨 방문일 선호 수 (#139)
+  totalTravelMinutes: number;          // 5) 열차 + 역–장소 왕복 추정(문전간), 낮을수록 우선
+  transferCount: number;               // 6) 낮을수록 우선
+  slackSatisfied: boolean;             // 7) 충족 우선 (미달만 불이익, 초과 가점 없음)
 };
 ```
+
+선호 불일치가 경고 **뒤**·이동시간 **앞**인 이유: 운영시간 신뢰를 깎으면서까지 선호를
+강제하지는 않되, 단순 이동시간보다는 사용자 의사를 앞에 둔다 (#139 5절 2번).
+일정에 못 들어간 선호도 불일치 1로 센다.
 
 동점 타이브레이커(결정성 보장): **출국 전 여유 큼 → 장소 ID·열차번호 사전순.**
 비교 키에 이미 포함된 환승·이동시간은 동점 시점에 같으므로 반복하지 않는다(정의서 v0.5).
 beam pruning도 동일한 1차 키(선택 그룹 충족 수)를 먼저 사용하고, 그 다음
 `readyAt`과 안정 ID로 정렬한다. MVP beam 상한은 1,000개이며 회귀 프리셋으로 결과를 고정한다.
+
+방문일 선호가 있으면 (#139 6-2) 두 가지가 더해진다.
+
+1. 같은 서명의 대표를 고를 때 경고 수 **다음**으로 선호 일치 수를 본다. 서명 자체에는
+   날짜도 일치 여부도 넣지 않는다 — 넣으면 병합이 사라져 상태 수가 폭증한다.
+2. 상위 1,000개를 **뺏지 않고 더한다.** 기존 순서의 상위 1,000개에 선호 순서의 상위
+   1,000개를 합집합으로 얹는다. 선호가 없으면 한 톨도 달라지지 않고, 있어도 상한은 2,000개다.
+
+(2)가 필요한 이유: 선호 상태가 기존 자리를 밀어내면 밀려난 상태가 이어 가던 탐색이 끊겨
+**방문 장소 수가 준다.** 장소 수는 비교 키 2번으로 선호(4번)보다 위라 계약 위반이다.
+실측에서 선호 하나를 넣자 9곳이 8곳으로 줄었고, 자리를 더하자 9곳이 그대로 유지됐다.
 
 ## 7. 출력 타입
 
