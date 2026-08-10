@@ -81,6 +81,8 @@ export function StageUtilityDockController() {
       if (sourceNodes.length === 0) return;
 
       sourceNodes.forEach((node) => { node.dataset.stageSource = "data"; });
+      const texts = sourceNodes.map((source) => source.textContent?.trim() ?? "");
+      const signature = texts.join("\n---\n");
 
       let details = host.querySelector<HTMLDetailsElement>('details[data-stage-utility="data"]');
       if (!details) {
@@ -108,15 +110,18 @@ export function StageUtilityDockController() {
         host.append(details);
       }
 
+      if (details.dataset.stageSignature === signature) return;
+      details.dataset.stageSignature = signature;
+
       const panel = details.querySelector<HTMLElement>(".stage-data-panel");
       if (panel) {
-        panel.replaceChildren();
-        sourceNodes.forEach((source) => {
+        const paragraphs = texts.map((text) => {
           const p = document.createElement("p");
           p.className = "text-xs text-sc-muted";
-          p.textContent = source.textContent?.trim() ?? "";
-          panel.append(p);
+          p.textContent = text;
+          return p;
         });
+        panel.replaceChildren(...paragraphs);
       }
     };
 
@@ -171,9 +176,12 @@ export function InitialCapacitySelectionController() {
     const selectionButton = (card: HTMLElement) =>
       card.querySelector<HTMLButtonElement>(":scope > div > button:last-child");
 
-    const expandAllCandidates = (picker: HTMLElement, done: () => void) => {
-      const more = Array.from(picker.querySelectorAll<HTMLButtonElement>("button"))
+    const showMoreButton = (picker: HTMLElement) =>
+      Array.from(picker.querySelectorAll<HTMLButtonElement>("button"))
         .find((button) => button.parentElement === picker && button.classList.contains("w-full"));
+
+    const expandAllCandidates = (picker: HTMLElement, done: () => void) => {
+      const more = showMoreButton(picker);
       if (!more) {
         done();
         return;
@@ -182,13 +190,14 @@ export function InitialCapacitySelectionController() {
       window.setTimeout(() => expandAllCandidates(picker, done), 20);
     };
 
-    const normalizeVisibleCandidates = (picker: HTMLElement, result: HTMLElement, signature: string) => {
+    const normalizeVisibleCandidates = (picker: HTMLElement, result: HTMLElement) => {
       const cards = Array.from(picker.querySelectorAll<HTMLElement>(":scope > ul > li"));
+      const finalSignature = cards.map(candidateName).join("|");
       const itineraryRows = Array.from(result.querySelectorAll<HTMLElement>("li"))
         .filter((row) => row.textContent?.trim().startsWith("📍"));
 
       if (cards.length === 0 || itineraryRows.length === 0) {
-        normalizedSignature = signature;
+        normalizedSignature = finalSignature;
         return;
       }
 
@@ -209,7 +218,7 @@ export function InitialCapacitySelectionController() {
 
       const removeNext = (index: number) => {
         if (index >= toRemove.length) {
-          normalizedSignature = signature;
+          normalizedSignature = finalSignature;
           trimming = false;
           delete picker.dataset.autoTrimming;
           return;
@@ -233,16 +242,15 @@ export function InitialCapacitySelectionController() {
 
       const firstCards = Array.from(picker.querySelectorAll<HTMLElement>(":scope > ul > li"));
       if (firstCards.length === 0) return;
-      const moreText = Array.from(picker.querySelectorAll<HTMLButtonElement>("button"))
-        .find((button) => button.parentElement === picker && button.classList.contains("w-full"))?.textContent ?? "";
-      const signature = `${firstCards.map(candidateName).join("|")}::${moreText.trim()}`;
-      if (normalizedSignature === signature) return;
+      const moreText = showMoreButton(picker)?.textContent?.trim() ?? "";
+      const currentSignature = firstCards.map(candidateName).join("|") + (moreText ? `::${moreText}` : "");
+      if (normalizedSignature === currentSignature) return;
 
       const itineraryRows = Array.from(result.querySelectorAll<HTMLElement>("li"))
         .filter((row) => row.textContent?.trim().startsWith("📍"));
       if (itineraryRows.length === 0) return;
 
-      expandAllCandidates(picker, () => normalizeVisibleCandidates(picker, result, signature));
+      expandAllCandidates(picker, () => normalizeVisibleCandidates(picker, result));
     };
 
     tryNormalize();
