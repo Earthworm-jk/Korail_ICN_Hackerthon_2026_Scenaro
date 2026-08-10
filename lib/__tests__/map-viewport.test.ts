@@ -218,6 +218,11 @@ describe("지도 표시 창", () => {
     /**
      * 좌표를 적지 않고 시드에서 읽는다 — 이 회귀가 지키려는 것은 특정 숫자가 아니라
      * "시드에 실제로 들어 있는 가장 가까운 두 곳이 겹치지 않는 것"이다.
+     *
+     * 거리가 0인 쌍은 제외한다 (PR #115 리뷰 후속 1). 카탈로그가 넓어지면 서로 다른 촬영지가
+     * 같은 건물·같은 지점을 공유할 수 있는데, 그 쌍은 배율을 아무리 올려도 떨어지지 않는다.
+     * 그건 확대가 풀 문제가 아니라 클러스터·겹침 표시로 다룰 축이므로, 이 테스트가 데이터
+     * 특성 때문에 지도 회귀처럼 깨지지 않게 양의 거리만 본다.
      */
     const closestPair = (() => {
       const points = loadRepositories().places.flatMap((place) =>
@@ -228,11 +233,17 @@ describe("지도 표시 창", () => {
       let best = Infinity;
       for (let i = 0; i < points.length; i += 1) {
         for (let j = i + 1; j < points.length; j += 1) {
-          best = Math.min(best, Math.hypot(points[i].x - points[j].x, points[i].y - points[j].y));
+          const gap = Math.hypot(points[i].x - points[j].x, points[i].y - points[j].y);
+          if (gap > 0) best = Math.min(best, gap);
         }
       }
       return best;
     })();
+
+    it("시드에 서로 다른 자리의 촬영지가 둘 이상 있다 — 아래 두 회귀의 전제", () => {
+      // best가 Infinity로 남으면 아래 테스트가 조용히 통과해버린다
+      expect(Number.isFinite(closestPair)).toBe(true);
+    });
 
     /** 지도 폭 390px 기준 화면 간격 */
     const onScreen = (scale: number) => (closestPair * scale * 390) / BASE_VIEWPORT.width;
