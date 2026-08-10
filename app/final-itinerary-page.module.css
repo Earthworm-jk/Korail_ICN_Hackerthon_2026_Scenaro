@@ -1,0 +1,45 @@
+.page {
+  display: flex;
+  min-height: 0;
+  flex-direction: column;
+}
+
+.dayGrid {
+  display: grid;
+  min-height: 0;
+  grid-template-columns: repeat(var(--final-day-count), minmax(0, 1fr));
+  gap: 12px;
+}
+
+.dayCard {
+  min-width: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+}
+
+@media (min-width: 1024px) {
+  .page {
+    height: clamp(520px, calc(100dvh - 156px), 760px);
+  }
+
+  .dayGrid {
+    flex: 1 1 auto;
+  }
+}
+
+@media (max-width: 1023px) {
+  .dayGrid {
+    grid-auto-columns: minmax(260px, 82vw);
+    grid-auto-flow: column;
+    grid-template-columns: none;
+    overflow-x: auto;
+    padding-bottom: 8px;
+    scroll-snap-type: x proximity;
+  }
+
+  .dayCard {
+    max-height: 62vh;
+    scroll-snap-align: start;
+  }
+}
