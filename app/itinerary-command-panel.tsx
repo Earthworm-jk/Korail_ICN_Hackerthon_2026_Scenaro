@@ -18,7 +18,8 @@ export type CommandFeedback =
   | { kind: "clarify"; interpretation: CommandActionInterpretation; clarification: Clarification }
   | {
       kind: "proposal";
-      interpretation: CommandActionInterpretation;
+      /** 버튼·드래그에는 해석 단계가 없다 — 없으면 출처 줄을 그리지 않는다 (#109) */
+      interpretation?: CommandActionInterpretation;
       outcome: ProposalOutcome;
       applied: boolean;
       submittedSequence: number;
@@ -135,7 +136,7 @@ export function ItineraryCommandPanel({
     || feedback.kind === "proposal"
     || feedback.kind === "explain"
     || feedback.kind === "recommendations"
-  ) ? feedback.interpretation : null;
+  ) ? feedback.interpretation ?? null : null;
   const source = interpretation ? sourceLabel(interpretation, tr) : null;
   const addExample = tr("ai.exampleAdd");
   const recommendExample = tr("ai.exampleRecommend");

@@ -21,6 +21,7 @@ import {
 import { planGatewayAlternatives, planItinerary } from "@/lib/actions/itinerary";
 import {
   runItineraryCommand,
+  runVisitDateEdit,
   type RouteRecommendation,
 } from "@/lib/actions/itinerary-command";
 import { excludedPlaceIdsFrom, initialCandidateIds } from "@/lib/candidates";
@@ -254,6 +255,18 @@ function SummarySidebar({ arrivalAt, departureAt, readyAt, deadlineAt, actors, w
   );
 }
 
+/** 그 장소가 지금 배치된 날짜 — 같은 날 드롭을 걸러내는 데 쓴다 (#109) */
+function dateOfPlace(days: DayPlan[] | null, placeId: string): string | undefined {
+  return days?.find((day) => day.items.some((item) => item.placeId === placeId))?.date;
+}
+
+function withValues(template: string, values: Record<string, string>): string {
+  return Object.entries(values).reduce(
+    (text, [key, value]) => text.replaceAll(`{${key}}`, value),
+    template,
+  );
+}
+
 export default function PlannerWizard({ stationFacilities, stationCoordinates, railGeometry }: {
   stationFacilities: StationFacilitiesSnapshotT;
   stationCoordinates: StationCoordinatesSnapshotT;
@@ -339,6 +352,9 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
   const [lastItineraryDiff, setLastItineraryDiff] = useState<ItineraryDiff | null>(null);
   const [aiSentence, setAiSentence] = useState("");
   const [aiFeedback, setAiFeedback] = useState<CommandFeedback | null>(null);
+  // #109 드래그 — 잡고 있는 장소와 올라가 있는 날짜. 표시 전용 상태다
+  const [draggingPlaceId, setDraggingPlaceId] = useState<string | null>(null);
+  const [dragOverDate, setDragOverDate] = useState<string | null>(null);
   const [aiPending, startAiTransition] = useTransition();
   const planSequence = useRef(0); // 늦게 도착한 이전 요청의 공항버스 대안이 새 결과를 덮지 않게 한다.
   // 계산이 끝난(성공·무효·실패 모두) 마지막 선택. 지금 선택과 다르면 화면은 아직 옛 결론이다.
@@ -656,6 +672,44 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
     setAiFeedback(null);
     saveStub.markDirty();
   }, [candidateData, selectedPlaceIds, preferredVisitDates, saveStub]);
+
+  /**
+   * 날짜 선택 버튼·드래그 (#109).
+   *
+   * 자연어와 **같은 실행기·같은 판정·같은 적용 경로**를 쓴다. 해석 단계만 없다.
+   * `ready`면 바로 반영하고, 요청 밖 부작용이 있으면 확인 창을 띄운다 — 규칙이 갈리면
+   * 같은 변경인데 조작 방법에 따라 다르게 확정되는 일이 생긴다.
+   */
+  const submitVisitDateEdit = useCallback((placeId: string, targetDate: string) => {
+    const request = currentConstraints();
+    if (!request || !view.result || view.reopened || view.selectedAlt !== null) return;
+    const submittedSequence = ++planSequence.current;
+    setAiFeedback(null);
+    startAiTransition(async () => {
+      try {
+        const result = await runVisitDateEdit({ placeId, targetDate, request });
+        if (!commandResponseIsCurrent(submittedSequence, planSequence.current)) {
+          setAiFeedback({ kind: "cancelled" });
+          return;
+        }
+        if (!result.ok) {
+          setAiFeedback({ kind: "error" });
+          return;
+        }
+        setAiFeedback({
+          kind: "proposal",
+          outcome: result.outcome,
+          applied: false,
+          submittedSequence,
+        });
+        if (result.outcome.proposal.decision === "ready") {
+          applyCommandOutcome(result.outcome, submittedSequence);
+        }
+      } catch {
+        setAiFeedback({ kind: "error" });
+      }
+    });
+  }, [currentConstraints, view.result, view.reopened, view.selectedAlt, applyCommandOutcome]);
 
   const submitItineraryCommand = useCallback((sentence: string) => {
     const request = currentConstraints();
@@ -1623,15 +1677,66 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
               {displayedDays.map((day) => {
                 const baseDay = baseDays?.find((d) => d.date === day.date);
                 return (
-                  <div key={day.date} className="rounded-lg border p-4">
+                  <div
+                    key={day.date}
+                    className={`rounded-lg border p-4 ${dragOverDate === day.date ? "border-sc-blue bg-sc-blue-soft/40" : ""}`}
+                    onDragOver={(event) => {
+                      if (!draggingPlaceId) return;
+                      event.preventDefault();
+                      setDragOverDate(day.date);
+                    }}
+                    onDragLeave={() => setDragOverDate((current) => (current === day.date ? null : current))}
+                    onDrop={(event) => {
+                      event.preventDefault();
+                      setDragOverDate(null);
+                      const placeId = draggingPlaceId ?? event.dataTransfer.getData("text/plain");
+                      setDraggingPlaceId(null);
+                      // 같은 날로 떨어뜨리면 바뀌는 것이 없다 — 재계산을 부르지 않는다
+                      if (!placeId || dateOfPlace(displayedDays, placeId) === day.date) return;
+                      submitVisitDateEdit(placeId, day.date);
+                    }}
+                  >
                     <h3 className="font-medium">{day.date}</h3>
                     <ul className="mt-2 space-y-1 text-sm">
                       {/* #14: 장소 단위 시각 미표기 — 역 단위 활용시간은 regionWindows로 표시 (#33) */}
                       {day.items.map((item) => (
-                        <li key={item.placeId} className="flex items-center text-sc-text/80">
+                        <li
+                          key={item.placeId}
+                          draggable={!aiPending}
+                          onDragStart={(event) => {
+                            setDraggingPlaceId(item.placeId);
+                            event.dataTransfer.setData("text/plain", item.placeId);
+                            event.dataTransfer.effectAllowed = "move";
+                          }}
+                          onDragEnd={() => { setDraggingPlaceId(null); setDragOverDate(null); }}
+                          className={`flex flex-wrap items-center gap-x-1 gap-y-1 rounded text-sc-text/80 ${draggingPlaceId === item.placeId ? "opacity-50" : ""}`}
+                        >
                           <MapPin aria-hidden="true" className="mr-1 size-3.5 shrink-0 text-sc-blue" />
                           {placeName(item.placeId)}
-                          <span className="ml-2 text-xs text-sc-muted">{accessLabel(item.accessMinutes)}</span>
+                          <span className="ml-1 text-xs text-sc-muted">{accessLabel(item.accessMinutes)}</span>
+                          {/* 날짜 선택 버튼이 기준 조작이고 드래그는 같은 액션의 다른 표현이다
+                              (#14 안건 ⑩ · #139 9-1). 키보드만으로도 같은 편집이 가능하다. */}
+                          <span className="ml-auto flex items-center gap-1">
+                            {(displayedDays ?? []).map((target, index) => (
+                              <button
+                                key={target.date}
+                                type="button"
+                                disabled={aiPending || target.date === day.date}
+                                onClick={() => submitVisitDateEdit(item.placeId, target.date)}
+                                aria-label={withValues(tr("step4.moveToDay"), {
+                                  place: placeName(item.placeId), day: String(index + 1),
+                                })}
+                                aria-current={target.date === day.date ? "true" : undefined}
+                                className={`min-h-7 min-w-7 rounded border px-1.5 text-xs ${
+                                  target.date === day.date
+                                    ? "border-sc-blue bg-sc-blue text-white"
+                                    : "border-sc-blue/30 text-sc-blue hover:bg-sc-blue-soft disabled:opacity-40"
+                                }`}
+                              >
+                                {index + 1}
+                              </button>
+                            ))}
+                          </span>
                         </li>
                       ))}
                     </ul>
