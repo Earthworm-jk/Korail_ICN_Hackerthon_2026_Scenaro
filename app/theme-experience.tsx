@@ -1,16 +1,12 @@
 "use client";
 /**
  * 테마체험 권역 카드 (#80 · #14 v0.6 계약)
- *
- * - 추천 단위는 특정 업체가 아니라 권역이다 (#38 결정 기록)
- * - 현재 일정에 자동으로 포함되지 않는 주변 제안이며, 업체·가격·운영시간을 보증하지 않는다
- * - 상태 3분기: 표시 / 추천 없음(관련도 미달) / 추천 불가(검증 스냅샷 누락)
- * - 지도 권역 토글은 기본이 숨김이다. 눌렀을 때만 권역 대표 지점을 표시한다 (#14 v0.6)
  */
 import { project } from "@/lib/korea-map-projection";
 import { useMapOverlayEntry, useMapView } from "./korea-map";
 import type { ThemeExperienceResult } from "@/lib/actions/theme-experience";
 import type { MessageKey } from "@/lib/i18n/messages";
+import { StageUtilityPortal } from "./stage-utility-portal";
 
 export function ThemeExperienceMapOverlay({ result, visible }: {
   result: ThemeExperienceResult | null;
@@ -52,57 +48,58 @@ export function ThemeExperienceCard({ result, stationName, locale, tr, mapVisibl
 
   if (result.status !== "ok") {
     return (
-      <div
-        role="status"
-        className="rounded-lg border border-sc-orange/30 bg-sc-orange-soft px-3 py-2.5 text-xs text-sc-orange-text"
-      >
-        {tr(result.status === "none" ? "theme.statusNone" : "theme.statusUnavailable")}
-      </div>
+      <StageUtilityPortal>
+        <div data-stage-utility="theme" role="status" className="rounded-lg border bg-sc-surface px-3 py-2.5 text-xs text-sc-muted">
+          ✨ {tr(result.status === "none" ? "theme.statusNone" : "theme.statusUnavailable")}
+        </div>
+      </StageUtilityPortal>
     );
   }
 
   return (
-    <details className="group rounded-lg border bg-sc-surface">
-      <summary className="flex min-h-11 list-none items-center justify-between gap-3 px-3 py-2.5 marker:content-none">
-        <span className="min-w-0">
-          <span className="flex items-center gap-2">
-            <strong className="truncate text-sm font-medium">{result.theme[locale]}</strong>
-            <span className="shrink-0 rounded-full bg-sc-blue-soft px-2 py-0.5 text-[11px] text-sc-blue">
-              {tr("theme.badge")}
+    <StageUtilityPortal>
+      <details data-stage-utility="theme" className="group rounded-lg border bg-sc-surface">
+        <summary className="flex min-h-11 list-none items-center justify-between gap-3 px-3 py-2.5 marker:content-none">
+          <span className="min-w-0">
+            <span className="flex items-center gap-2">
+              <strong className="truncate text-sm font-medium">✨ {result.theme[locale]}</strong>
+              <span className="shrink-0 rounded-full bg-sc-blue-soft px-2 py-0.5 text-[11px] text-sc-blue">
+                {tr("theme.badge")}
+              </span>
             </span>
+            <span className="block truncate text-xs text-sc-muted">{result.zoneName[locale]}</span>
           </span>
-          <span className="block truncate text-xs text-sc-muted">{result.zoneName[locale]}</span>
-        </span>
-        <span aria-hidden className="shrink-0 text-sc-muted transition-transform group-open:rotate-180">⌄</span>
-      </summary>
+          <span aria-hidden className="shrink-0 text-sc-muted transition-transform group-open:rotate-180">⌄</span>
+        </summary>
 
-      <div className="border-t px-3 pb-3 pt-2">
-        <p className="text-xs text-sc-text/80">{result.reason[locale]}</p>
+        <div className="border-t px-3 pb-3 pt-2">
+          <p className="text-xs text-sc-text/80">{result.reason[locale]}</p>
 
-        <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-sc-muted">
-          {stationName && (
-            <span>
-              {tr("theme.routeBefore")}
-              {stationName}
-              {tr("theme.routeAfter")}
-            </span>
+          <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-sc-muted">
+            {stationName && (
+              <span>
+                {tr("theme.routeBefore")}
+                {stationName}
+                {tr("theme.routeAfter")}
+              </span>
+            )}
+            <span>{tr("theme.policy")}</span>
+          </div>
+
+          {result.point && (
+            <button
+              type="button"
+              aria-pressed={mapVisible}
+              onClick={onToggleMap}
+              className="mt-2 rounded border px-2.5 py-1 text-xs text-sc-muted hover:border-sc-blue hover:text-sc-blue"
+            >
+              {tr(mapVisible ? "theme.hideOnMap" : "theme.showOnMap")}
+            </button>
           )}
-          <span>{tr("theme.policy")}</span>
+
+          <p className="mt-2 text-[11px] text-sc-muted/70">{tr("theme.notice")}</p>
         </div>
-
-        {result.point && (
-          <button
-            type="button"
-            aria-pressed={mapVisible}
-            onClick={onToggleMap}
-            className="mt-2 rounded border px-2.5 py-1 text-xs text-sc-muted hover:border-sc-blue hover:text-sc-blue"
-          >
-            {tr(mapVisible ? "theme.hideOnMap" : "theme.showOnMap")}
-          </button>
-        )}
-
-        <p className="mt-2 text-[11px] text-sc-muted/70">{tr("theme.notice")}</p>
-      </div>
-    </details>
+      </details>
+    </StageUtilityPortal>
   );
 }
