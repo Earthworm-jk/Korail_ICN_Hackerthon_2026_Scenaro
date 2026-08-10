@@ -11,30 +11,38 @@ import type { MessageKey } from "./i18n/messages";
 import type { CommandProposal, ProposalReason } from "./itinerary-command-executor";
 
 /**
- * 사유별 문구 키. `displaced`·`moved`는 장소마다 줄이 하나씩 나가므로 목록으로 따로 그린다.
- * 여기 있는 셋은 일정 전체에 대한 한 줄이다.
+ * 장소마다 줄이 하나씩 나가는 사유 — 화면이 `displaced`·`moved` 목록으로 그린다.
+ *
+ * **이 타입과 아래 `IMPACT_REASON_MESSAGE`가 `ProposalReason`을 남김없이 가른다.**
+ * 새 사유를 추가하면 둘 중 하나에 분류하기 전까지 컴파일이 실패한다 (PR #148 리뷰 3번).
  */
-export const IMPACT_REASON_MESSAGE: Record<ImpactReason, MessageKey> = {
+type ListRenderedReason = "date_adjusted" | "places_displaced" | "places_moved";
+
+/** 장소 목록이 아니라 일정 전체에 대한 한 줄로 설명되는 사유 */
+export type ImpactReason = Exclude<ProposalReason, ListRenderedReason>;
+
+/**
+ * 사유별 문구 키.
+ *
+ * `satisfies Record<ImpactReason, MessageKey>`라 **`ImpactReason`에 값이 하나라도
+ * 늘면 여기서 컴파일이 깨진다.** 앞선 판(런타임 `Set`으로 좁히는 타입 가드)은
+ * 새 사유를 추가해도 컴파일러가 가드를 믿어 `undefined` 문구 키가 그대로 나갔다.
+ */
+export const IMPACT_REASON_MESSAGE = {
   travel_time_increased: "ai.confirmTravelTime",
   transfers_increased: "ai.confirmTransfers",
   departure_slack_reduced: "ai.confirmSlack",
-};
+} satisfies Record<ImpactReason, MessageKey>;
 
-/** 장소 목록이 아니라 한 줄로 설명되는 사유 */
-export type ImpactReason =
-  | "travel_time_increased"
-  | "transfers_increased"
-  | "departure_slack_reduced";
-
-/** 사유 전체 중 이 모듈이 문구를 대는 것 — 나머지는 화면이 장소 목록으로 그린다 */
-const LIST_RENDERED: ReadonlySet<ProposalReason> = new Set<ProposalReason>([
-  "date_adjusted",
-  "places_displaced",
-  "places_moved",
-]);
+/** 목록 렌더링 쪽도 같은 방식으로 잠근다 — 여기 빠지면 자동으로 `ImpactReason`이 된다 */
+const LIST_RENDERED = {
+  date_adjusted: true,
+  places_displaced: true,
+  places_moved: true,
+} satisfies Record<ListRenderedReason, true>;
 
 export function isImpactReason(reason: ProposalReason): reason is ImpactReason {
-  return !LIST_RENDERED.has(reason);
+  return !(reason in LIST_RENDERED);
 }
 
 export type ImpactLine = {

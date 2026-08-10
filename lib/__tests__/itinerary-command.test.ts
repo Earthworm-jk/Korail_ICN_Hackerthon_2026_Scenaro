@@ -12,8 +12,10 @@ import {
 } from "../itinerary-command-executor";
 import type { ItineraryResult } from "../engine/types";
 import type { CommandProposal, ProposalReason } from "../itinerary-command-executor";
-import { IMPACT_REASON_MESSAGE, impactLinesOf, isImpactReason } from "../itinerary-command-messages";
-import { t } from "../i18n/messages";
+import {
+  IMPACT_REASON_MESSAGE, impactLinesOf, isImpactReason, type ImpactReason,
+} from "../itinerary-command-messages";
+import { t, type MessageKey } from "../i18n/messages";
 
 
 /**
@@ -631,17 +633,21 @@ describe("#148 확인 창 문구 매핑 — 사유가 늘어도 빈 창이 뜨�
     reasons, displaced: [], moved: [], ...(impact ? { impact } : {}),
   });
 
-  // PR #148 리뷰 1번 — 타입만 늘고 화면이 안 그리면 `확인해 주세요` 아래가 빈다
-  it("모든 사유가 목록 렌더링이나 문구 키 중 하나로 반드시 이어진다", () => {
-    const all: ProposalReason[] = [
-      "date_adjusted", "places_displaced", "places_moved",
-      "travel_time_increased", "transfers_increased", "departure_slack_reduced",
-    ];
-    for (const reason of all) {
-      if (!isImpactReason(reason)) continue; // 장소 목록으로 그리는 셋
-      expect(IMPACT_REASON_MESSAGE[reason]).toBeTruthy();
-      expect(t("ko", IMPACT_REASON_MESSAGE[reason])).toBeTruthy();
-      expect(t("en", IMPACT_REASON_MESSAGE[reason])).toBeTruthy();
+  // PR #148 리뷰 3번 — 하드코딩 배열은 union을 다 담는다는 보장이 없다.
+  // 남김없이 가르는 것은 타입이 하고(`Exclude` + `satisfies`), 테스트는 실제 엔트리를 돈다.
+  it("문구 키를 가진 사유는 ko/en 본문이 모두 있다", () => {
+    const entries = Object.entries(IMPACT_REASON_MESSAGE) as Array<[ImpactReason, MessageKey]>;
+    expect(entries.length).toBeGreaterThan(0);
+    for (const [reason, key] of entries) {
+      expect(isImpactReason(reason)).toBe(true);
+      expect(t("ko", key)).toBeTruthy();
+      expect(t("en", key)).toBeTruthy();
+    }
+  });
+
+  it("목록으로 그리는 사유는 문구 키를 갖지 않는다", () => {
+    for (const reason of ["date_adjusted", "places_displaced", "places_moved"] as const) {
+      expect(isImpactReason(reason)).toBe(false);
     }
   });
 
