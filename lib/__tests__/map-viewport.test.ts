@@ -95,6 +95,40 @@ describe("지도 표시 창", () => {
     }
   });
 
+  /**
+   * 배율 사다리 (#27 P0-0 "지도 확대 기준 단일화").
+   *
+   * 배율 상수가 네 개라 하나만 바꿔도 관계가 조용히 뒤집힌다. 값이 아니라 **순서와 역할 분리**를
+   * 고정한다 — 값 조정은 자유롭되 사다리를 깨면 여기서 걸린다.
+   */
+  describe("배율 사다리", () => {
+    it("네 값의 순서가 유지된다", () => {
+      expect(MIN_SCALE).toBeLessThan(FOCUS_SCALE);
+      expect(FOCUS_SCALE).toBeLessThanOrEqual(COASTLINE_DETAIL_SCALE);
+      expect(COASTLINE_DETAIL_SCALE).toBeLessThan(MAX_SCALE);
+    });
+
+    it("자동 배치는 직접 조작 상한까지 당기지 않는다", () => {
+      // 같은 자리 한 점 — 가장 세게 당겨지는 경우다
+      expect(scaleOf(fitTo([seoul]))).toBeLessThanOrEqual(FOCUS_SCALE);
+      // 아주 가까운 두 점도 마찬가지
+      const near = project(37.5709, 126.9827);
+      expect(scaleOf(fitTo([seoul, near]))).toBeLessThanOrEqual(FOCUS_SCALE);
+      expect(scaleOf(fitTo([seoul, near]))).toBeLessThan(MAX_SCALE);
+    });
+
+    it("사용자는 자동 배치보다 훨씬 크게 당길 수 있다", () => {
+      expect(scaleOf(focusOn(seoul, MAX_SCALE))).toBeGreaterThan(FOCUS_SCALE * 10);
+    });
+
+    it("자동 배치 상한을 넘겨 요청하면 그 요청은 존중한다 — 상한은 MAX_SCALE이다", () => {
+      // fitTo의 maxScale은 인자다. 자동 경로의 기본값이 FOCUS_SCALE일 뿐 잠금이 아니다.
+      const wide = fitTo([seoul], MAX_SCALE);
+      expect(scaleOf(wide)).toBeGreaterThan(FOCUS_SCALE);
+      expect(scaleOf(wide)).toBeLessThanOrEqual(MAX_SCALE);
+    });
+  });
+
   it("모든 역에 대해 대표 지점 확대가 그 지점을 실제로 담는다", () => {
     for (const station of loadStationCoordinates().stations) {
       const at = project(station.latitude, station.longitude);
