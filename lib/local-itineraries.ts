@@ -218,14 +218,15 @@ function isGatewayRide(value: unknown): boolean {
 }
 
 /**
- * 표시 이름 스냅샷 (#130) — optional이다.
+ * 표시 이름 스냅샷(#130)이 화면이 읽을 수 있는 모양인가.
  *
- * **없으면 통과시킨다.** 이 필드가 생기기 전에 저장한 레코드가 이미 브라우저에 있고,
- * 그것들을 목록에서 지워 버리면 사용자는 저장했던 일정을 잃는다. 화면은 스냅샷이 없으면
- * 현지화된 대체 문구로 떨어지므로, 없다고 레코드를 버릴 이유가 없다.
+ * **이 함수는 유효성만 판정한다. 레코드를 버릴지는 호출부가 정한다** —
+ * `normalizeUsableRecord`가 무효 판정을 받으면 **그 필드만 제거하고 일정은 남긴다**
+ * (PR #133 리뷰). 보조 메타데이터 하나 때문에 성한 `days`·`constraints`를 잃으면 안 되고,
+ * 걸러진 레코드는 다음 저장 때 저장소에서 영구히 사라지기 때문이다.
  *
- * 반대로 **있는데 모양이 깨졌으면 그 레코드는 버린다.** 화면이 `names[id][locale]`을
- * 바로 읽기 때문에 `null`이나 한쪽 언어만 있는 값이 들어오면 그 자리에서 죽는다.
+ * 무효로 보는 것은 화면이 `names[id][locale]`을 바로 읽기 때문이다 — `null`이거나 한쪽
+ * 언어만 있는 값, 공백뿐인 이름은 그 자리에서 죽거나 빈칸을 찍는다.
  */
 function isDisplayNameSnapshot(value: unknown): boolean {
   if (!isObject(value) || Array.isArray(value)) return false;
