@@ -221,7 +221,7 @@ const MASK_REGION = { x: -20, y: -20, width: 440, height: 510 } as const;
  * 길이를 드러낼 수 없다. 그래서 같은 모양을 굵은 실선으로 그린 mask를 씌우고 그 mask를
  * `stroke-dashoffset`으로 연다. 점선 무늬는 그대로 둔 채 시작점부터 드러난다.
  */
-function RoutePath({
+export function RoutePath({
   d,
   kind,
   unit,
