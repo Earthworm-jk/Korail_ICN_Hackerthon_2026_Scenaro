@@ -94,13 +94,14 @@ export function PlaceRecommendationSheet({
 
           <ul className={styles.list} data-place-sheet-list>
             {children}
+            {remainingCount > 0 && (
+              <li className={styles.moreItem} data-place-sheet-more>
+                <button type="button" className={styles.more} onClick={onShowMore}>
+                  {tr("step3.showMore").replace("{n}", String(remainingCount))}
+                </button>
+              </li>
+            )}
           </ul>
-
-          {remainingCount > 0 && (
-            <button type="button" className={styles.more} onClick={onShowMore}>
-              {tr("step3.showMore").replace("{n}", String(remainingCount))}
-            </button>
-          )}
 
           <details className={styles.fallbackMap}>
             <summary>{tr("map.placesTitle")}</summary>

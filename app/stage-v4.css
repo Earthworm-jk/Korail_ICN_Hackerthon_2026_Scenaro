@@ -398,6 +398,16 @@
     box-shadow: 0 16px 40px rgba(16, 24, 40, .18) !important;
   }
 
+  /* Reset the legacy sticky left-rail header from stage-v2. Its negative margin
+     cancels the sheet padding and pins the title/toggle against the clipped edge. */
+  div#place-picker[data-place-sheet] > [data-place-sheet-header] {
+    position: relative !important;
+    top: auto !important;
+    min-height: 58px !important;
+    margin: 0 !important;
+    padding: 12px 14px 9px !important;
+  }
+
   div#place-picker[data-place-sheet][data-sheet-expanded="false"] {
     max-height: 62px !important;
   }

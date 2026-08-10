@@ -48,6 +48,11 @@ describe("지도 위 추천 장소 바텀시트", () => {
     expect(markup).toContain('aria-pressed="true"');
     expect(markup).toContain("더보기 (3곳)");
     expect(markup).toContain("data-test-map");
+    const listStart = markup.indexOf("data-place-sheet-list");
+    const listEnd = markup.indexOf("</ul>", listStart);
+    const moreItem = markup.indexOf("data-place-sheet-more");
+    expect(moreItem).toBeGreaterThan(listStart);
+    expect(moreItem).toBeLessThan(listEnd);
   });
 
   it("재계산 중에도 선택 수를 유지하며 일정과 경로가 함께 갱신됨을 알린다", () => {
