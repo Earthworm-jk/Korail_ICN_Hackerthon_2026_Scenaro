@@ -2,6 +2,7 @@
 /**
  * 테마체험 권역 카드 (#80 · #14 v0.6 계약)
  */
+import { Sparkles } from "lucide-react";
 import { project } from "@/lib/korea-map-projection";
 import { useMapOverlayEntry, useMapView } from "./korea-map";
 import type { ThemeExperienceResult } from "@/lib/actions/theme-experience";
@@ -49,8 +50,9 @@ export function ThemeExperienceCard({ result, stationName, locale, tr, mapVisibl
   if (result.status !== "ok") {
     return (
       <StageUtilityPortal>
-        <div data-stage-utility="theme" role="status" className="rounded-lg border bg-sc-surface px-3 py-2.5 text-xs text-sc-muted">
-          ✨ {tr(result.status === "none" ? "theme.statusNone" : "theme.statusUnavailable")}
+        <div data-stage-utility="theme" role="status" className="flex items-center gap-1.5 rounded-lg border bg-sc-surface px-3 py-2.5 text-xs text-sc-muted">
+          <Sparkles aria-hidden="true" className="size-4 shrink-0" />
+          {tr(result.status === "none" ? "theme.statusNone" : "theme.statusUnavailable")}
         </div>
       </StageUtilityPortal>
     );
@@ -62,7 +64,10 @@ export function ThemeExperienceCard({ result, stationName, locale, tr, mapVisibl
         <summary className="flex min-h-11 list-none items-center justify-between gap-3 px-3 py-2.5 marker:content-none">
           <span className="min-w-0">
             <span className="flex items-center gap-2">
-              <strong className="truncate text-sm font-medium">✨ {result.theme[locale]}</strong>
+              <strong className="flex min-w-0 items-center gap-1.5 text-sm font-medium">
+                <Sparkles aria-hidden="true" className="size-4 shrink-0" />
+                <span className="truncate">{result.theme[locale]}</span>
+              </strong>
               <span className="shrink-0 rounded-full bg-sc-blue-soft px-2 py-0.5 text-[11px] text-sc-blue">
                 {tr("theme.badge")}
               </span>
