@@ -9,7 +9,11 @@
  * 결과 문구는 만들지 않고 **코드만** 돌려준다. ko/en 문구는 레인 A(`messages.ts`)가 붙인다.
  */
 import type { LocalizedName } from "./saved-itineraries-stub";
-import type { ItineraryCommand, RawItineraryCommand } from "./itinerary-command";
+import type {
+  ItineraryCommand,
+  RawItineraryCommand,
+  UnknownClarification,
+} from "./itinerary-command";
 
 export type CommandCatalogEntry = {
   id: string;
@@ -44,8 +48,13 @@ export type Clarification =
    * 화면은 "현재 일정에 없습니다. 둘째 날에 추가할까요?"를 한 번의 확인으로 처리한다.
    */
   | { code: "MOVE_TARGET_NOT_SCHEDULED"; placeId: string; suggested: ItineraryCommand }
-  /** 해석기가 스스로 모르겠다고 한 경우 — 그대로 통과시킨다 */
-  | { code: "UNSUPPORTED"; question: string };
+  /**
+   * 해석기가 스스로 모르겠다고 한 경우 — 그대로 통과시킨다.
+   *
+   * `detail.source`로 폴백(코드)과 LLM(자유 문장)을 구분한다. 폴백이면 `messages.ts`가
+   * 문장을 만들고, LLM이면 이미 사용자 언어로 되물은 문장이라 그대로 쓴다.
+   */
+  | { code: "UNSUPPORTED"; detail: UnknownClarification };
 
 export type ResolveResult =
   | { ok: true; command: ItineraryCommand }
@@ -97,7 +106,7 @@ export function resolveCommand(
     return { ok: true, command: { intent: "explain_changes" } };
   }
   if (raw.intent === "unknown") {
-    return { ok: false, clarification: { code: "UNSUPPORTED", question: raw.clarificationQuestion } };
+    return { ok: false, clarification: { code: "UNSUPPORTED", detail: raw.clarification } };
   }
 
   const matches = matchPlaces(raw.placeName, context.candidates);

@@ -9,14 +9,25 @@
  * 나머지는 `unknown` + 재질문으로 정직하게 떨어뜨린다. 폴백이 LLM 성공처럼 보이게
  * 숨기지 않는다는 계약은 이 모듈이 아니라 호출부가 표시로 지킨다.
  */
-import { RawItineraryCommandSchema, type RawItineraryCommand } from "./itinerary-command";
+import {
+  RawItineraryCommandSchema,
+  type RawItineraryCommand,
+  type UnknownReason,
+} from "./itinerary-command";
 
 /** "둘째 날" 같은 한국어 서수. 인덱스가 곧 일차(1부터) */
 const KO_ORDINALS = ["첫", "둘", "셋", "넷", "다섯", "여섯", "일곱"];
 const KO_NATIVE_DAYS = ["하루", "이틀", "사흘", "나흘", "닷새", "엿새", "이레"];
 const EN_ORDINALS = ["first", "second", "third", "fourth", "fifth", "sixth", "seventh"];
 
-const MOVE_VERBS = /(옮겨|이동|바꿔|보내)/;
+/**
+ * `바꿔`는 넣지 않는다. #141 예시에서 이 동사는 **한 번도 날짜 이동이 아니다** —
+ * `여유롭게 바꿔줘`(하루 완화) · `순서를 바꿀 수 있어?`(같은 날 순서) ·
+ * `환승이 적은 일정으로 바꿀 수 있어?`(공항·열차) 전부 P0 밖이다.
+ * 넣으면 그 문장들이 이동으로 읽혀 "어떤 장소인가요?"로 되묻게 되고,
+ * 지원하지도 않는 기능으로 사용자를 끌고 간다.
+ */
+const MOVE_VERBS = /(옮겨|이동|보내)/;
 const ADD_VERBS = /(넣어|추가|포함)/;
 const EXPLAIN_PATTERNS = [
   /(뭐|무엇|무슨).*(달라|바뀌|변경)/,
@@ -80,7 +91,7 @@ export function parsePlaceName(input: string): string | undefined {
  */
 export function parseCommand(input: string): RawItineraryCommand {
   const text = input.trim();
-  if (text === "") return unknown("무엇을 바꿀지 알려 주세요.");
+  if (text === "") return unknown("EMPTY_INPUT");
 
   if (EXPLAIN_PATTERNS.some((pattern) => pattern.test(text))) {
     return { intent: "explain_changes" };
@@ -88,28 +99,29 @@ export function parseCommand(input: string): RawItineraryCommand {
 
   const wantsMove = MOVE_VERBS.test(text) || /\bmove\b/i.test(text);
   const wantsAdd = ADD_VERBS.test(text) || /\b(add|put)\b/i.test(text);
-  if (!wantsMove && !wantsAdd) {
-    return unknown("옮기기와 넣기만 이해할 수 있어요. 예: 영진해변을 둘째 날에 넣어줘");
-  }
+  if (!wantsMove && !wantsAdd) return unknown("UNSUPPORTED_INTENT");
 
   const placeName = parsePlaceName(text);
-  if (placeName === undefined) {
-    return unknown("어떤 장소인지 알려 주세요. 예: 영진해변을 둘째 날에 넣어줘");
-  }
-
   const dayIndex = parseDayIndex(text);
-  if (dayIndex === undefined) {
-    return unknown(`${placeName}을(를) 며칠째에 넣을지 알려 주세요. 예: 둘째 날`);
-  }
+
+  // 동사만 걸리고 장소도 일차도 없으면 애초에 이동·추가 요청이 아니다.
+  // `여유롭게 바꿔줘`가 `바꿔` 하나로 이동으로 읽히는데, 여기서 "어떤 장소인가요?"로
+  // 되물으면 지원하지도 않는 기능으로 사용자를 끌고 간다 — 못 알아들었다고 말하는 게 맞다.
+  if (placeName === undefined && dayIndex === undefined) return unknown("UNSUPPORTED_INTENT");
+  if (placeName === undefined) return unknown("PLACE_MISSING");
+  // 장소는 읽었으므로 되물을 때 되쓸 수 있게 함께 넘긴다 — 문장은 messages.ts가 만든다
+  if (dayIndex === undefined) return unknown("DAY_MISSING", placeName);
 
   // 이동과 추가가 함께 읽히면 이동으로 본다 — resolver가 일정에 없으면 되묻는다
   const intent = wantsMove ? "move_place" : "add_place";
   const parsed = RawItineraryCommandSchema.safeParse({ intent, placeName, dayIndex });
-  return parsed.success
-    ? parsed.data
-    : unknown("요청을 이해하지 못했어요. 예: 영진해변을 둘째 날에 넣어줘");
+  return parsed.success ? parsed.data : unknown("PLACE_MISSING");
 }
 
-function unknown(clarificationQuestion: string): RawItineraryCommand {
-  return { intent: "unknown", clarificationQuestion };
+/** 폴백은 문구를 만들지 않는다 — 코드와 조각만 (PR #142 리뷰 2번) */
+function unknown(reason: UnknownReason, placeName?: string): RawItineraryCommand {
+  return {
+    intent: "unknown",
+    clarification: { source: "deterministic", reason, ...(placeName ? { placeName } : {}) },
+  };
 }

@@ -22,6 +22,44 @@ const DayIndexSchema = z.number().int().min(MIN_DAY_INDEX).max(30);
 const KstDateSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "YYYY-MM-DD여야 합니다");
 
 /**
+ * 되물어야 하는 이유 — **결정적 폴백이 만드는 코드다.**
+ *
+ * 폴백은 문구를 만들지 않는다. 만들면 영어 입력에 한국어 재질문이 나오고 레인 A가
+ * locale에 맞게 옮길 수 없다(PR #142 리뷰 2번). 코드와 필요한 조각만 내놓고
+ * 문장은 `messages.ts`가 만든다.
+ */
+export const UnknownReasonSchema = z.enum([
+  "EMPTY_INPUT", // 빈 입력
+  "UNSUPPORTED_INTENT", // 옮기기·넣기·변경 설명이 아님
+  "PLACE_MISSING", // 어떤 장소인지 못 읽음
+  "DAY_MISSING", // 며칠째인지 못 읽음 — placeName은 읽었을 수 있다
+]);
+
+export type UnknownReason = z.infer<typeof UnknownReasonSchema>;
+
+/**
+ * `unknown`의 두 출처를 구분한다.
+ *
+ * - `deterministic` — 폴백 파서. 코드만 주고 문구는 `messages.ts`가 만든다
+ * - `llm` — 해석기가 사용자의 언어로 직접 되묻는 자유 문장. #141 본문이 요구하는
+ *   "명확한 재질문"이라 살려 두되, **출처를 구분해** 레인 A가 번역 대상인지 아닌지 안다
+ */
+export const UnknownClarificationSchema = z.discriminatedUnion("source", [
+  z.object({
+    source: z.literal("deterministic"),
+    reason: UnknownReasonSchema,
+    /** `DAY_MISSING`처럼 문장에 되쓸 조각이 있으면 함께 준다 */
+    placeName: PlaceNameSchema.optional(),
+  }),
+  z.object({
+    source: z.literal("llm"),
+    question: z.string().trim().min(1).max(300),
+  }),
+]);
+
+export type UnknownClarification = z.infer<typeof UnknownClarificationSchema>;
+
+/**
  * 해석기 출력 — 허용 enum과 스키마를 통과해야만 실행기로 간다.
  *
  * P0는 4종이다. 본문 9종 중 나머지 5종(`extend_stay`·`add_free_time`·`make_day_lighter`·
@@ -44,7 +82,7 @@ export const RawItineraryCommandSchema = z.discriminatedUnion("intent", [
   z.object({
     intent: z.literal("unknown"),
     // 지원하지 않는 요청은 조용히 삼키지 않는다 — 무엇을 물어야 하는지 함께 내놓는다
-    clarificationQuestion: z.string().trim().min(1).max(300),
+    clarification: UnknownClarificationSchema,
   }),
 ]);
 

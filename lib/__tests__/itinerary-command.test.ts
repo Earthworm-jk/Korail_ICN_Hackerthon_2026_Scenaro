@@ -103,20 +103,36 @@ describe("#141 결정적 폴백 파서 — LLM 없이 대표 명령을 읽는다
 
   // P0 밖 명령은 추측하지 않는다 — 잘못 해석해 일정을 바꾸는 것이 못 알아듣는 것보다 나쁘다
   it.each([
-    ["첫날 일정이 너무 빡빡해. 여유롭게 바꿔줘"],
-    ["영진해변에서 한 시간 더 있고 싶어"],
-    ["둘째 날 동선에 맞는 다른 촬영지를 추천해줘"],
-    [""],
-  ])("지원하지 않는 요청은 재질문으로 떨어진다 (%s)", (input) => {
+    ["첫날 일정이 너무 빡빡해. 여유롭게 바꿔줘", "UNSUPPORTED_INTENT"],
+    ["영진해변에서 한 시간 더 있고 싶어", "UNSUPPORTED_INTENT"],
+    ["둘째 날 동선에 맞는 다른 촬영지를 추천해줘", "UNSUPPORTED_INTENT"],
+    ["", "EMPTY_INPUT"],
+  ])("지원하지 않는 요청은 재질문 코드로 떨어진다 (%s)", (input, reason) => {
     const command = parseCommand(input);
     expect(command.intent).toBe("unknown");
-    if (command.intent === "unknown") expect(command.clarificationQuestion.length).toBeGreaterThan(0);
+    if (command.intent === "unknown" && command.clarification.source === "deterministic") {
+      expect(command.clarification.reason).toBe(reason);
+    }
   });
 
-  it("장소는 알아도 일차를 모르면 그것만 되묻는다", () => {
+  it("장소는 알아도 일차를 모르면 코드와 장소명을 함께 준다", () => {
     const command = parseCommand("영진해변을 넣어줘");
     expect(command.intent).toBe("unknown");
-    if (command.intent === "unknown") expect(command.clarificationQuestion).toContain("영진해변");
+    if (command.intent === "unknown" && command.clarification.source === "deterministic") {
+      expect(command.clarification.reason).toBe("DAY_MISSING");
+      expect(command.clarification.placeName).toBe("영진해변");
+    }
+  });
+
+  // PR #142 리뷰 2번 — 폴백이 문구를 만들면 영어 입력에 한국어 재질문이 나온다
+  it("폴백은 어떤 입력에서도 사람이 읽을 문장을 만들지 않는다", () => {
+    for (const input of ["", "아무 말", "영진해변을 넣어줘", "make it lighter"]) {
+      const command = parseCommand(input);
+      if (command.intent !== "unknown") continue;
+      expect(command.clarification.source).toBe("deterministic");
+      // 자유 문장을 담는 필드 자체가 없어야 한다 — 있으면 locale 경계를 우회한다
+      expect(command.clarification).not.toHaveProperty("question");
+    }
   });
 
   it("파서 출력은 항상 스키마를 통과한다", () => {
@@ -209,14 +225,30 @@ describe("#141 장소명·여행 일차 결정적 해결", () => {
     expect(result.ok && result.command.intent).toBe("move_place");
   });
 
-  it("해석기가 모르겠다고 하면 그 질문을 그대로 전달한다", () => {
+  it("폴백의 재질문 코드를 그대로 전달한다", () => {
     const result = resolveCommand(
-      { intent: "unknown", clarificationQuestion: "어떤 장소인가요?" },
+      { intent: "unknown", clarification: { source: "deterministic", reason: "PLACE_MISSING" } },
       context(),
     );
     expect(result.ok).toBe(false);
     if (!result.ok && result.clarification.code === "UNSUPPORTED") {
-      expect(result.clarification.question).toBe("어떤 장소인가요?");
+      expect(result.clarification.detail).toEqual({
+        source: "deterministic", reason: "PLACE_MISSING",
+      });
+    }
+  });
+
+  // LLM은 사용자 언어로 직접 되묻는다 — 번역 대상이 아니므로 출처를 구분해 넘긴다
+  it("LLM의 자유형 재질문은 출처를 구분해 살려 둔다", () => {
+    const result = resolveCommand(
+      { intent: "unknown", clarification: { source: "llm", question: "Which beach do you mean?" } },
+      context(),
+    );
+    expect(result.ok).toBe(false);
+    if (!result.ok && result.clarification.code === "UNSUPPORTED") {
+      expect(result.clarification.detail).toEqual({
+        source: "llm", question: "Which beach do you mean?",
+      });
     }
   });
 });
@@ -348,6 +380,57 @@ describe("#141 실행기 판정 — 적용하지 않고 제안한다", () => {
       decision: "impossible",
       rejection: "TRAIN_UNAVAILABLE",
       displaced: [],
+    });
+  });
+
+  // PR #142 리뷰 1번 — #141 결정문은 "제외나 **날짜 변경**을 조용히 확정하면 안 된다"이다
+  it("요청하지 않은 장소의 날짜가 바뀌면 요청대로 됐어도 확인을 받는다", () => {
+    const before = result({ days: [day("2026-08-12", ["p2"])] });
+    const after = result({
+      days: [day("2026-08-13", ["p1", "p2"])],
+      preferredDateOutcomes: [
+        { placeId: "p1", requestedDate: "2026-08-13", outcome: "honored" },
+      ],
+    });
+    const proposal = proposalFor(command, before, after);
+    expect(proposal.decision).toBe("needs_confirmation");
+    expect(proposal.reasons).toEqual(["places_moved"]);
+    expect(proposal.moved).toEqual([
+      { placeId: "p2", fromDate: "2026-08-12", toDate: "2026-08-13" },
+    ]);
+    expect(proposal.displaced).toEqual([]);
+  });
+
+  it("빠짐과 이동이 함께 생기면 둘 다 알린다", () => {
+    const before = result({ days: [day("2026-08-12", ["p2", "p3"])] });
+    const after = result({
+      days: [day("2026-08-13", ["p1", "p2"])],
+      rejectedPlaces: [{ code: "DAILY_CAPACITY_EXCEEDED", placeId: "p3" }],
+      preferredDateOutcomes: [
+        { placeId: "p1", requestedDate: "2026-08-13", outcome: "honored" },
+      ],
+    });
+    const proposal = proposalFor(command, before, after);
+    expect(proposal.reasons).toEqual(["places_displaced", "places_moved"]);
+    expect(proposal.displaced.map(({ placeId }) => placeId)).toEqual(["p3"]);
+    expect(proposal.moved.map(({ placeId }) => placeId)).toEqual(["p2"]);
+  });
+
+  it("명령한 장소 자신의 이동은 요청 밖 변화가 아니다", () => {
+    const moveCommand = {
+      intent: "move_place" as const, placeId: "p1", targetDate: "2026-08-13",
+    };
+    const before = result({ days: [day("2026-08-12", ["p1"])] });
+    const after = result({
+      days: [day("2026-08-13", ["p1"])],
+      preferredDateOutcomes: [
+        { placeId: "p1", requestedDate: "2026-08-13", outcome: "honored" },
+      ],
+    });
+    expect(proposalFor(moveCommand, before, after)).toMatchObject({
+      decision: "ready",
+      reasons: [],
+      moved: [],
     });
   });
 

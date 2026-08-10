@@ -10,12 +10,17 @@
  * 조용히 확정하지 않는다. 그래서 실행기는 `decision` 셋만 돌려주고,
  * **무엇을 화면에 띄우고 언제 확정할지는 레인 A가 정한다.**
  *
- * | outcome (#139 8절) | 빠지는 장소 | decision |
+ * | outcome (#139 8절) | 요청 밖 변화 | decision |
  * |---|---|---|
  * | `honored` | 없음 | `ready` |
- * | `honored` | 있음 | `needs_confirmation` (`places_displaced`) |
+ * | `honored` | 다른 장소가 빠짐 | `needs_confirmation` (`places_displaced`) |
+ * | `honored` | 다른 장소의 날짜가 바뀜 | `needs_confirmation` (`places_moved`) |
  * | `adjusted` | 무관 | `needs_confirmation` (`date_adjusted`) |
  * | `unplaced` | 무관 | `impossible` |
+ *
+ * **제외뿐 아니라 날짜 변경도 확인 대상이다** (PR #142 리뷰 1번). 전체 재계산이라
+ * 요청하지 않은 장소가 다른 날로 밀릴 수 있고, #141 결정문은 "요청하지 않은 장소 제외나
+ * 날짜 변경을 조용히 확정하면 안 된다"이다. 빠진 것만 보면 그 절반을 놓친다.
  *
  * 문구는 만들지 않는다 — 코드만 돌려주고 ko/en은 `messages.ts`(레인 A)가 붙인다.
  */
@@ -30,7 +35,14 @@ export type DisplacedPlace = {
   reason?: CandidateRejection["code"];
 };
 
-export type ProposalReason = "date_adjusted" | "places_displaced";
+/** 이 변경으로 방문일이 바뀌는 **다른** 장소 — 요청하지 않은 이동이다 */
+export type MovedPlace = {
+  placeId: string;
+  fromDate: string;
+  toDate: string;
+};
+
+export type ProposalReason = "date_adjusted" | "places_displaced" | "places_moved";
 
 export type CommandProposal = {
   decision: "ready" | "needs_confirmation" | "impossible";
@@ -41,6 +53,8 @@ export type CommandProposal = {
   /** 왜 확인이 필요한가. `ready`면 빈 배열 */
   reasons: ProposalReason[];
   displaced: DisplacedPlace[];
+  /** 명령 대상을 제외한, 날짜가 바뀌는 장소들 */
+  moved: MovedPlace[];
   /** `impossible`일 때 엔진이 준 사유 (`rejectedPlaces`에서 그대로) */
   rejection?: CandidateRejection["code"];
 };
@@ -92,45 +106,39 @@ export function proposalFor(
 ): CommandProposal {
   const base = { placeId: command.placeId, requestedDate: command.targetDate };
 
-  if (after.status !== "planned") {
-    // 일정 자체가 서지 않았다 — 요청한 장소 탓이라고 단정하지 않고 사유만 옮긴다
-    return {
-      ...base,
-      decision: "impossible",
-      reasons: [],
-      displaced: [],
-      rejection: rejectionOf(after, command.placeId),
-    };
-  }
+  const impossible = (): CommandProposal => ({
+    ...base,
+    decision: "impossible",
+    reasons: [],
+    displaced: [],
+    moved: [],
+    rejection: rejectionOf(after, command.placeId),
+  });
+
+  // 일정 자체가 서지 않았다 — 요청한 장소 탓이라고 단정하지 않고 사유만 옮긴다
+  if (after.status !== "planned") return impossible();
 
   const outcome = after.preferredDateOutcomes
     ?.find((entry) => entry.placeId === command.placeId)?.outcome;
+  if (outcome === undefined || outcome === "unplaced") return impossible();
 
-  if (outcome === undefined || outcome === "unplaced") {
-    return {
-      ...base,
-      decision: "impossible",
-      reasons: [],
-      displaced: [],
-      rejection: rejectionOf(after, command.placeId),
-    };
-  }
+  // 명령한 장소 자신은 요청 밖 변화가 아니다 — 이동은 의도한 것이고, 빠짐은 위에서 갈렸다
+  const diff = diffItineraries(before, after).places;
+  const displaced = diff.dropped.filter((entry) => entry.placeId !== command.placeId);
+  const moved = diff.moved.filter((entry) => entry.placeId !== command.placeId);
 
-  // 명령한 장소 자신은 "빠지는 장소"가 아니다 — 그건 위에서 이미 unplaced로 갈렸다
-  const displaced = diffItineraries(before, after).places.dropped
-    .filter((entry) => entry.placeId !== command.placeId);
-
-  const scheduledDate = dateOf(after, command.placeId);
   const reasons: ProposalReason[] = [];
   if (outcome === "adjusted") reasons.push("date_adjusted");
   if (displaced.length > 0) reasons.push("places_displaced");
+  if (moved.length > 0) reasons.push("places_moved");
 
   return {
     ...base,
     decision: reasons.length > 0 ? "needs_confirmation" : "ready",
-    scheduledDate,
+    scheduledDate: dateOf(after, command.placeId),
     reasons,
     displaced,
+    moved,
   };
 }
 
