@@ -19,11 +19,8 @@
  * 안 되므로 모든 진입점이 실패를 값으로 돌려주거나 조용히 무시한다. 읽기 실패는 "없음"과
  * 같게 다룬다 — 손상된 데이터로 화면을 그리는 것보다 빈 목록이 낫다.
  */
-import {
-  SAVED_SCHEMA_VERSION,
-  type SavedItineraryStub,
-  type TripInputFields,
-} from "./saved-itineraries-stub";
+import { SAVED_SCHEMA_VERSION, type SavedItineraryStub } from "./saved-itineraries-stub";
+import type { ActorSummary, WorkSummary } from "./actions/search";
 
 /**
  * 저장 형식 버전.
@@ -37,18 +34,38 @@ export const LOCAL_STORAGE_VERSION = 1;
 export const SAVED_KEY = `scenaro.itineraries.v${LOCAL_STORAGE_VERSION}`;
 export const DRAFT_KEY = `scenaro.draft.v${LOCAL_STORAGE_VERSION}`;
 
-/** 조율 중 초안 — 아직 저장하지 않은 화면 상태. 레인 A가 호출 지점을 연결한다 (#118) */
+/**
+ * 조율 중 초안 — 아직 저장하지 않은 화면 상태. 레인 A가 호출 지점을 연결한다 (#118)
+ *
+ * 저장 레코드(`SavedItineraryStub`)와 달리 계산 결과(`days`)를 담지 않는다. 초안은
+ * "무엇을 고르는 중이었나"이고, 되살린 뒤 다시 계산하면 되기 때문이다.
+ */
 export type LocalDraft = {
   savedAt: string;
   /**
-   * 1단계 여행 조건 입력값 (datetime-local 문자열).
+   * 1단계 여행 조건 화면 상태 (datetime-local 문자열).
    *
-   * 재열람이 쓰는 `tripInputsFromConstraints`의 반환형과 같은 모양이다 — 복구 코드가
-   * 두 경로에서 같은 필드를 읽게 해 두려는 것이다.
+   * `touched` 두 개를 함께 담는 이유는 위저드가 그 값으로 **파생 여부**를 가르기 때문이다
+   * (`planner-wizard.tsx` — false면 항공 시각이 바뀔 때 공항 시각을 다시 계산한다).
+   * 시각 네 개만 저장하고 복구하면 그 의미가 사라져, 자동으로 따라오던 값이 굳거나
+   * 사용자가 직접 고친 값이 덮인다 (PR #127 리뷰 1).
    */
-  trip: TripInputFields;
-  selectedActorIds: string[];
-  selectedWorkIds: string[];
+  trip: {
+    arrivalAt: string;
+    departureAt: string;
+    airportReadyAt: string;
+    airportArrivalDeadline: string;
+    airportReadyTouched: boolean;
+    airportDeadlineTouched: boolean;
+  };
+  /**
+   * 선택한 배우·작품 **요약**. ID만으로는 되살릴 수 없다 (PR #127 리뷰 2).
+   *
+   * 위저드 상태가 `ActorSummary[]`·`WorkSummary[]`이고 선택 칩이 이름·제목을 바로 읽는데,
+   * `getCandidatePlaces` 응답에는 works만 있고 actors 요약이 없다. ID→요약 경로가 없으므로
+   * 저장 레코드의 `context`와 같은 방식으로 요약을 그대로 담는다.
+   */
+  context: { actors: ActorSummary[]; works: WorkSummary[] };
   selectedPlaceIds: string[];
 };
 
@@ -306,18 +323,26 @@ export function saveDraft(draft: LocalDraft, storage: Storage | null = defaultSt
 /** 초안 복구 — 없거나 손상됐으면 null. 호출부는 그냥 빈 화면에서 시작하면 된다 */
 export function loadDraft(storage: Storage | null = defaultStorage()): LocalDraft | null {
   const data = readEnvelope<unknown>(DRAFT_KEY, storage);
-  if (typeof data !== "object" || data === null) return null;
-  const draft = data as Partial<LocalDraft>;
-  if (typeof draft.savedAt !== "string") return null;
-  // 네 필드를 다 보는 이유: 복구 코드가 `draft.trip.arrivalAt`을 바로 읽는다.
-  // 하나라도 없으면 undefined가 입력칸에 들어가 화면이 빈 채로 되살아난다.
-  const trip = draft.trip as Partial<TripInputFields> | undefined;
-  if (typeof trip !== "object" || trip === null) return null;
-  const tripFields = [trip.arrivalAt, trip.departureAt, trip.airportReadyAt, trip.airportArrivalDeadline];
-  if (!tripFields.every((value) => typeof value === "string" && value.length > 0)) return null;
-  const ids = [draft.selectedActorIds, draft.selectedWorkIds, draft.selectedPlaceIds];
-  if (!ids.every((list) => Array.isArray(list) && list.every((id) => typeof id === "string"))) return null;
-  return draft as LocalDraft;
+  if (!isObject(data)) return null;
+  if (typeof data.savedAt !== "string") return null;
+
+  // 복구 코드가 `draft.trip.arrivalAt`을 바로 읽는다. 하나라도 없으면 undefined가
+  // 입력칸에 들어가 화면이 빈 채로 되살아난다.
+  const trip = data.trip;
+  if (!isObject(trip)) return null;
+  const times = [trip.arrivalAt, trip.departureAt, trip.airportReadyAt, trip.airportArrivalDeadline];
+  if (!times.every((value) => typeof value === "string" && value.length > 0)) return null;
+  // 두 플래그가 없으면 파생 여부를 알 수 없다 — 기본값으로 채우면 원래 의미가 아니게 된다
+  if (typeof trip.airportReadyTouched !== "boolean") return null;
+  if (typeof trip.airportDeadlineTouched !== "boolean") return null;
+
+  const context = data.context;
+  if (!isObject(context)) return null;
+  if (!isArrayOf(context.actors, isActorSummary)) return null;
+  if (!isArrayOf(context.works, isWorkSummary)) return null;
+
+  if (!isStringArray(data.selectedPlaceIds)) return null;
+  return data as LocalDraft;
 }
 
 export function clearDraft(storage: Storage | null = defaultStorage()): void {

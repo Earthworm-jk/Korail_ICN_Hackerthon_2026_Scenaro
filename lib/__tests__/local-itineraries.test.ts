@@ -272,9 +272,13 @@ describe("조율 중 초안", () => {
       departureAt: "2026-08-14T18:00",
       airportReadyAt: "2026-08-12T12:00",
       airportArrivalDeadline: "2026-08-14T16:00",
+      airportReadyTouched: false,
+      airportDeadlineTouched: true,
     },
-    selectedActorIds: ["actor-kim-go-eun"],
-    selectedWorkIds: [],
+    context: {
+      actors: [{ id: "actor-kim-go-eun", name: { ko: "김고은", en: "Kim Go-eun" } }],
+      works: [],
+    },
     selectedPlaceIds: ["place-yeongjin-beach"],
   };
 
@@ -295,9 +299,49 @@ describe("조율 중 초안", () => {
   it("필드 모양이 계약과 다르면 null이다", () => {
     const wrong = JSON.stringify({
       version: LOCAL_STORAGE_VERSION,
-      data: { savedAt: "2026-08-10T00:00:00.000Z", trip: {}, selectedActorIds: [1, 2] },
+      data: { savedAt: "2026-08-10T00:00:00.000Z", trip: {}, selectedPlaceIds: [1, 2] },
     });
     expect(loadDraft(memoryStorage({ [DRAFT_KEY]: wrong }))).toBeNull();
+  });
+
+  /**
+   * PR #127 리뷰 1·2 — 복구 코드가 바로 읽는 값들이다. `touched`가 없으면 파생 여부를
+   * 알 수 없고(기본값으로 채우면 원래 의미가 아니다), 배우 요약이 없으면 선택 칩이
+   * 이름을 읽지 못한다.
+   */
+  it("복구에 필요한 값이 빠진 초안은 null이다", () => {
+    const storage = memoryStorage();
+    saveDraft(draft, storage);
+    const ok = loadDraft(storage) as LocalDraft;
+
+    const broken: Record<string, unknown>[] = [
+      { ...ok, trip: { ...ok.trip, airportReadyTouched: undefined } },
+      { ...ok, trip: { ...ok.trip, airportDeadlineTouched: "true" } },
+      { ...ok, trip: { ...ok.trip, arrivalAt: "" } },
+      { ...ok, context: undefined },
+      { ...ok, context: { actors: [null], works: [] } },
+      { ...ok, context: { actors: [{ id: "a" }], works: [] } },
+      { ...ok, context: { actors: [], works: [{ id: "w", name: { ko: "도깨비", en: "Goblin" } }] } },
+      { ...ok, selectedPlaceIds: [1] },
+    ];
+
+    for (const [i, value] of broken.entries()) {
+      const raw = JSON.stringify({ version: LOCAL_STORAGE_VERSION, data: value });
+      expect(loadDraft(memoryStorage({ [DRAFT_KEY]: raw })), `case ${i}`).toBeNull();
+    }
+  });
+
+  it("성한 초안은 복구 코드가 읽는 지점에서 죽지 않는다", () => {
+    const storage = memoryStorage();
+    saveDraft(draft, storage);
+    const ok = loadDraft(storage) as LocalDraft;
+    expect(() => {
+      void ok.trip.arrivalAt.length;
+      void ok.trip.airportReadyTouched;
+      for (const actor of ok.context.actors) void actor.name.ko;
+      for (const work of ok.context.works) void work.title.en;
+      for (const id of ok.selectedPlaceIds) void id.length;
+    }).not.toThrow();
   });
 
   it("초안을 지우면 최종 저장 목록은 남는다", () => {
