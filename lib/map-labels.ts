@@ -14,14 +14,15 @@ import { VIEW_BOX_BOUNDS } from "./korea-map-projection";
 
 /**
  * 라벨 글자 크기 (viewBox 단위, 배율 1 기준).
- * 시안은 12였지만 실데이터는 이름이 길어 10으로 줄여 배치 여유를 만든다.
+ * 중앙 지도를 크게 쓰는 Stage UI에서는 기존 10이 역명 자체를 주인공처럼 보이게 했다.
+ * 지도·경로를 먼저 읽고 역명은 보조 레이어로 인지하도록 8로 낮춘다.
  */
-export const LABEL_FONT_SIZE = 10;
+export const LABEL_FONT_SIZE = 8;
 /** 두 줄 라벨의 줄 간격 (배율 1 기준) */
-export const LABEL_LINE_HEIGHT = 11;
+export const LABEL_LINE_HEIGHT = 9;
 /** 라벨은 최대 두 줄까지 — 세 줄이면 지도보다 라벨이 커진다 */
 const MAX_LINES = 2;
-const LABEL_OFFSET_X = 9;
+const LABEL_OFFSET_X = 8;
 /** 라벨 사이 최소 여백 */
 const LABEL_PADDING = 1.5;
 /**
@@ -143,7 +144,7 @@ export function layoutLabels(
   options: LabelLayoutOptions = {},
 ): PlacedLabel[] {
   const bounds = options.bounds ?? LABEL_BOUNDS;
-  // 화면에서의 크기를 고정한다 — 배율 2에서 글자 10은 표시 좌표로 5다
+  // 화면에서의 크기를 고정한다 — 배율 2에서 글자 8은 표시 좌표로 4다
   const unit = 1 / (options.scale ?? 1);
   // 알약 배경까지 창 안에 들어오도록 가로 여유를 미리 뺀다
   const inner = {
