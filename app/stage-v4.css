@@ -155,14 +155,15 @@
 
   #stage-utility-dock {
     position: fixed;
-    left: 50%;
+    left: 33px;
     bottom: 12px;
     z-index: 60;
     display: grid;
-    width: min(780px, calc(100vw - 36px));
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    /* Keep every utility on the map side. The right result rail contains the
+       primary final-itinerary CTA and must never sit underneath this dock. */
+    width: calc(100vw - 462px);
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 7px;
-    transform: translateX(-50%);
     padding: 7px;
     border: 1px solid rgba(203, 211, 224, .9);
     border-radius: 13px;
@@ -173,6 +174,7 @@
 
   #stage-utility-dock > * {
     min-width: 0;
+    min-height: 48px;
   }
 
   #stage-utility-dock [data-stage-utility="change"] { order: 0; }
@@ -286,6 +288,7 @@
     position: static !important;
     bottom: auto !important;
     margin-top: 0 !important;
+    scroll-margin-bottom: 92px;
   }
 
   /* Presentation text must remain readable at tablet distance. Metadata may be quieter,
@@ -354,7 +357,9 @@
 @layer components {
 @media (min-width: 1024px) {
   body:has(div#place-picker[data-place-sheet]) main {
-    padding-bottom: 0 !important;
+    /* The fixed utility row still needs real document space. Without it the
+       final action row reaches the viewport edge and cannot be scrolled clear. */
+    padding-bottom: 88px !important;
   }
 
   html body main section > div.grid:has(> div#place-picker[data-place-sheet]) {
