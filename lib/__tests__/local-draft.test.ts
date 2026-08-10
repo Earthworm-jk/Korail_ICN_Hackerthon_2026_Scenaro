@@ -33,6 +33,7 @@ const input: DraftInput = {
     works: [],
   },
   selectedPlaceIds: ["place-yeongjin-beach", "place-lala-muri"],
+  preferredVisitDates: { "place-yeongjin-beach": "2026-08-13" },
 };
 
 const at = (iso: string) => new Date(iso);
@@ -186,6 +187,15 @@ describe("바뀐 것으로 볼지", () => {
     };
     expect(draftContentEquals(draft, swapped)).toBe(false);
   });
+
+  it("자연어로 확정한 방문일 선호가 달라지면 다른 초안이다", () => {
+    const draft = draftFromInput(input, at("2026-08-10T00:00:00.000Z"));
+    expect(draftContentEquals(draft, { ...input, preferredVisitDates: {} })).toBe(false);
+    expect(draftContentEquals(draft, {
+      ...input,
+      preferredVisitDates: { "place-yeongjin-beach": "2026-08-14" },
+    })).toBe(false);
+  });
 });
 
 /**
@@ -221,5 +231,6 @@ describe("저장 형태", () => {
     expect(draft.trip).toEqual(trip);
     expect(draft.context.actors[0].name.ko).toBe("김고은");
     expect(draft.selectedPlaceIds).toEqual(input.selectedPlaceIds);
+    expect(draft.preferredVisitDates).toEqual(input.preferredVisitDates);
   });
 });

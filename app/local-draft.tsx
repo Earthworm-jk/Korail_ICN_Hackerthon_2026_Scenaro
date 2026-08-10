@@ -107,17 +107,17 @@ export function useLocalDraft({ enabled, onRestore, ...input }: UseLocalDraftOpt
   }, [initialDraft]);
 
   // 저장 — 복구가 끝났고, 조율 중이고, 내용이 실제로 바뀐 경우에만 디바운스 후 한 번
-  const { trip, context, selectedPlaceIds } = input;
+  const { trip, context, selectedPlaceIds, preferredVisitDates } = input;
   // 예약된 저장을 밖에서 취소할 수 있어야 한다(finalizeDraft) — 그래서 id를 ref에 둔다
   const timerRef = useRef<number | null>(null);
   // 종료 시점의 화면 상태를 비교 기준으로 삼으려면 최신 입력이 필요하다
-  const latestInput = useRef<DraftInput>({ trip, context, selectedPlaceIds });
+  const latestInput = useRef<DraftInput>({ trip, context, selectedPlaceIds, preferredVisitDates });
   useEffect(() => {
-    latestInput.current = { trip, context, selectedPlaceIds };
-  }, [trip, context, selectedPlaceIds]);
+    latestInput.current = { trip, context, selectedPlaceIds, preferredVisitDates };
+  }, [trip, context, selectedPlaceIds, preferredVisitDates]);
 
   useEffect(() => {
-    const next: DraftInput = { trip, context, selectedPlaceIds };
+    const next: DraftInput = { trip, context, selectedPlaceIds, preferredVisitDates };
     const decision = draftDecision({
       enabled,
       restorePending: restoreBlocksSave(restoreState),
@@ -135,7 +135,7 @@ export function useLocalDraft({ enabled, onRestore, ...input }: UseLocalDraftOpt
       window.clearTimeout(timerRef.current);
       timerRef.current = null;
     };
-  }, [enabled, restoreState, trip, context, selectedPlaceIds]);
+  }, [enabled, restoreState, trip, context, selectedPlaceIds, preferredVisitDates]);
 
   const finalizeDraft = useCallback(() => {
     if (timerRef.current !== null) {

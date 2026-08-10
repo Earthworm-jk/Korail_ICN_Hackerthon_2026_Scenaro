@@ -376,6 +376,7 @@ describe("조율 중 초안", () => {
       works: [],
     },
     selectedPlaceIds: ["place-yeongjin-beach"],
+    preferredVisitDates: { "place-yeongjin-beach": "2026-08-13" },
   };
 
   it("저장한 초안을 그대로 되찾는다", () => {
@@ -437,7 +438,30 @@ describe("조율 중 초안", () => {
       for (const actor of ok.context.actors) void actor.name.ko;
       for (const work of ok.context.works) void work.title.en;
       for (const id of ok.selectedPlaceIds) void id.length;
+      for (const [id, date] of Object.entries(ok.preferredVisitDates)) void `${id}:${date}`;
     }).not.toThrow();
+  });
+
+  it("방문일 필드 추가 전 v1 초안은 빈 선호로 하위 호환 복구한다", () => {
+    const legacy: Partial<LocalDraft> = { ...draft };
+    delete legacy.preferredVisitDates;
+    const raw = JSON.stringify({ version: LOCAL_STORAGE_VERSION, data: legacy });
+    expect(loadDraft(memoryStorage({ [DRAFT_KEY]: raw }))).toEqual({
+      ...legacy,
+      preferredVisitDates: {},
+    });
+  });
+
+  it("방문일 선호만 손상됐으면 그 필드만 비우고 핵심 초안은 살린다", () => {
+    const damaged = {
+      ...draft,
+      preferredVisitDates: { "place-yeongjin-beach": "둘째 날" },
+    };
+    const raw = JSON.stringify({ version: LOCAL_STORAGE_VERSION, data: damaged });
+    expect(loadDraft(memoryStorage({ [DRAFT_KEY]: raw }))).toEqual({
+      ...draft,
+      preferredVisitDates: {},
+    });
   });
 
   it("초안을 지우면 최종 저장 목록은 남는다", () => {

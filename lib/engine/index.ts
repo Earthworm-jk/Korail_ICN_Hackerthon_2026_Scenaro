@@ -7,14 +7,14 @@
  */
 import type { Repositories } from "../repositories/json";
 import type { ItineraryResult, TripConstraints } from "./types";
-import { planItinerary, preferredVisitDateErrors } from "./planner";
+import { planItinerary, preferredVisitDateErrors, tripDatesForWindow } from "./planner";
 import { buildGatewayAlternatives } from "./gateway-alternatives";
 import { gatewayPlanningBaselineOf, type GatewayPlanningBaseline } from "./gateway-baseline";
 import { z } from "zod";
 
 // PR #30 리뷰 ③: Server Action 경계가 같은 계약을 safeParse해 잘못된 요청을
 // throw 없이 INVALID_REQUEST로 반환할 수 있도록 내보낸다
-export { preferredVisitDateErrors };
+export { preferredVisitDateErrors, tripDatesForWindow };
 
 export const TripConstraintsSchema = z.object({
   arrivalAt: z.iso.datetime({ offset: true }),

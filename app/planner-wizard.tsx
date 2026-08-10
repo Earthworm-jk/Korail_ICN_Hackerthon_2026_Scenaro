@@ -5,7 +5,7 @@
  * - 편집 = 촬영지 재선택·항공 시각 변경 후 전체 재계산 (무상태)
  * - 대안 시간표는 mock(#14 ⑨ 선행), 저장·내 일정은 in-memory 스텁(#25 선행) — 엔진·Supabase 연결 시 교체
  */
-import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useReducer, useRef, useState, useTransition } from "react";
 import { Info, MapPin, Sparkles, TriangleAlert, X } from "lucide-react";
 import {
   searchEntities,
@@ -19,8 +19,13 @@ import {
   type PlaceCandidate,
 } from "@/lib/actions/places";
 import { planGatewayAlternatives, planItinerary } from "@/lib/actions/itinerary";
+import { runItineraryCommand } from "@/lib/actions/itinerary-command";
 import { excludedPlaceIdsFrom, initialCandidateIds } from "@/lib/candidates";
 import { initialPlaceIdsFromItinerary } from "@/lib/initial-place-selection";
+import {
+  commandResponseIsCurrent,
+  selectionAfterCommand,
+} from "@/lib/itinerary-command-ui";
 import { sortCandidatePlaces } from "@/lib/place-ranking";
 import { getFlightInfo } from "@/lib/actions/flights";
 import { t, type Locale, type MessageKey } from "@/lib/i18n/messages";
@@ -61,6 +66,11 @@ import { ExecutionSupport } from "./execution-support";
 import { FinalItineraryPage } from "./final-itinerary-page";
 import { GatewayAlternatives } from "./gateway-alternatives";
 import { ItineraryChangeSummary } from "./itinerary-change-summary";
+import {
+  ItineraryCommandPanel,
+  type CommandFeedback,
+  type ProposalOutcome,
+} from "./itinerary-command-panel";
 import { ItineraryRouteMap, KoreaMapPanel, type MapPlace, type MapStation } from "./korea-map";
 import { PlaceRecommendationSheet, PlaceThumbnail } from "./place-recommendation-sheet";
 import { ThemeExperienceCard, ThemeExperienceMapOverlay } from "./theme-experience";
@@ -311,6 +321,8 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
   // step 3 — 후보·선택
   const [candidateData, setCandidateData] = useState<CandidateResponse | null>(null);
   const [selectedPlaceIds, setSelectedPlaceIds] = useState<Set<string>>(new Set());
+  // 자연어 방문일 선호는 일반 선택과 별도 입력이다. 적용 후 수동 재계산·저장에도 유지한다.
+  const [preferredVisitDates, setPreferredVisitDates] = useState<Record<string, string>>({});
   const [reopenCandidateStatus, setReopenCandidateStatus] = useState<"loading" | "failed" | null>(null);
   const [sortBy, setSortBy] = useState<"relevance" | "official">("relevance");
   // 후보 목록은 5곳씩 — 한 화면에 다 쏟으면 무엇을 고를지가 안 보인다. 표시 개수만 늘린다
@@ -320,6 +332,9 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
   const [view, dispatchView] = useReducer(reduceItineraryView, initialItineraryView);
   // 직전 확정 결과와 최신 성공 결과의 차이. 엔진 상태와 분리된 발표용 표현 상태다 (#118 P0-2).
   const [lastItineraryDiff, setLastItineraryDiff] = useState<ItineraryDiff | null>(null);
+  const [aiSentence, setAiSentence] = useState("");
+  const [aiFeedback, setAiFeedback] = useState<CommandFeedback | null>(null);
+  const [aiPending, startAiTransition] = useTransition();
   const planSequence = useRef(0); // 늦게 도착한 이전 요청의 공항버스 대안이 새 결과를 덮지 않게 한다.
   // 계산이 끝난(성공·무효·실패 모두) 마지막 선택. 지금 선택과 다르면 화면은 아직 옛 결론이다.
   // 대기 플래그를 따로 두지 않고 여기서 파생한다 — effect에서 setState를 하지 않기 위해서다.
@@ -355,6 +370,7 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
   // 입력·선택·후보 컨텍스트를 constraints에서 되살려, 이후 재계산이 저장 당시 조건으로 돈다
   const reopenRecord = useCallback(async (record: SavedItineraryStub) => {
     setLastItineraryDiff(null);
+    setAiFeedback(null);
     const c = record.constraints;
     const inputs = tripInputsFromConstraints(c);
     setArrival((f) => ({ ...f, at: inputs.arrivalAt }));
@@ -362,6 +378,7 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
     // 저장 당시 절대 시각을 그대로 복원 — 이후 항공편 변경이 파생 기본값으로 덮지 않게 touched 고정
     setAirportReady({ at: inputs.airportReadyAt, touched: true });
     setAirportDeadline({ at: inputs.airportArrivalDeadline, touched: true });
+    setPreferredVisitDates(c.preferredVisitDates ?? {});
     setSelectedActors(record.context.actors);
     setSelectedWorks(record.context.works);
 
@@ -437,6 +454,8 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
 
   const loadCandidates = useCallback(async () => {
     setShowFinalItinerary(false);
+    setPreferredVisitDates({});
+    setAiFeedback(null);
     const actorIds = selectedActors.map((a) => a.id);
     const workIds = selectedWorks.map((w) => w.id);
     const data = await getCandidatePlaces({
@@ -542,13 +561,128 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
   /** 현재 입력 상태의 전체 재계산 constraints — 저장 레코드와 plan 호출이 같은 값을 쓴다 */
   const currentConstraints = useCallback(() => {
     if (!candidateData) return null;
-    return constraintsFromTripInputs(
+    const base = constraintsFromTripInputs(
       { arrivalAt: arrival.at, departureAt: departure.at, airportReadyAt: airportReady.at, airportArrivalDeadline: airportDeadline.at },
       selectedActors.map((a) => a.id),
       selectedWorks.map((w) => w.id),
       excludedPlaceIdsFrom(candidateData.candidates, selectedPlaceIds),
     );
-  }, [candidateData, selectedPlaceIds, arrival.at, departure.at, airportReady.at, airportDeadline.at, selectedActors, selectedWorks]);
+    return Object.keys(preferredVisitDates).length > 0
+      ? { ...base, preferredVisitDates }
+      : base;
+  }, [candidateData, selectedPlaceIds, preferredVisitDates, arrival.at, departure.at, airportReady.at, airportDeadline.at, selectedActors, selectedWorks]);
+
+  /** 서버가 돌려준 제안을 실제 화면 상태에 반영한다. 확인 전에는 절대 호출하지 않는다. */
+  const applyCommandOutcome = useCallback((outcome: ProposalOutcome, submittedSequence: number) => {
+    if (!candidateData || outcome.proposal.decision === "impossible") return;
+    // 자동·수동 적용 모두 제출 당시 화면에만 유효하다. 응답 뒤 다시 계산하거나 항공 시각을
+    // 바꾼 경우에도 옛 nextResult를 새 입력 위에 덮지 않고 취소 이유를 사용자에게 알린다.
+    if (!commandResponseIsCurrent(submittedSequence, planSequence.current)) {
+      setAiFeedback({ kind: "cancelled" });
+      return;
+    }
+    const sequence = ++planSequence.current;
+    const scheduledPlaceIds = new Set(
+      outcome.nextResult.status === "planned"
+        ? outcome.nextResult.days.flatMap((day) => day.items.map(({ placeId }) => placeId))
+        : [],
+    );
+    // 확인 대화에서 고지한 displaced 장소는 사용자가 변경 적용을 누른 순간 선택에서도
+    // 제외되어야 한다. 그렇지 않으면 일정·지도는 8곳인데 선택 카운터만 9곳으로 남아
+    // "모두 배치할 수 없음" 상태가 되어 저장이 막힌다.
+    const displacedPlaceIds = new Set(
+      outcome.proposal.displaced.map(({ placeId }) => placeId),
+    );
+    const selected = selectionAfterCommand({
+      candidatePlaceIds: candidateData.candidates.map(({ id }) => id),
+      currentSelectedPlaceIds: selectedPlaceIds,
+      scheduledPlaceIds,
+      displacedPlaceIds,
+    });
+    const appliedRequest = {
+      ...outcome.nextRequest,
+      excludedPlaceIds: candidateData.candidates
+        .filter(({ id }) => !selected.has(id))
+        .map(({ id }) => id),
+    };
+    const nextSelectionKey = [...selected].sort().join("|");
+    setSelectedPlaceIds(selected);
+    setSettledSelectionKey(nextSelectionKey);
+    setPreferredVisitDates(outcome.nextRequest.preferredVisitDates ?? {});
+    setLastItineraryDiff(outcome.diff);
+    dispatchView({ type: "PLAN_SUCCESS", result: outcome.nextResult });
+    saveStub.markDirty();
+    setAiFeedback((current) => current?.kind === "proposal"
+      ? { ...current, applied: true }
+      : current);
+
+    if (outcome.nextResult.status === "planned") {
+      const baseline = gatewayPlanningBaselineOf(outcome.nextResult);
+      if (baseline) {
+        void planGatewayAlternatives(appliedRequest, baseline).then((gateway) => {
+          if (sequence !== planSequence.current || !gateway.ok) return;
+          dispatchView({ type: "GATEWAY_ALTERNATIVES_SUCCESS", alternatives: gateway.alternatives });
+        }).catch(() => {
+          // 자연어 변경은 이미 적용됐다. 비차단 대안 실패가 현재 결과를 되돌리지는 않는다.
+        });
+      }
+      void refreshThemeExperience(outcome.nextResult.days, appliedRequest.selectedWorkIds);
+    }
+  }, [candidateData, selectedPlaceIds, saveStub, refreshThemeExperience]);
+
+  const submitItineraryCommand = useCallback((sentence: string) => {
+    const request = currentConstraints();
+    if (!request || !view.result || view.reopened || view.selectedAlt !== null) return;
+    const normalized = sentence.trim();
+    if (!normalized) return;
+    // 제출 시점의 입력 상태를 식별한다. 이후 카드 토글·재계산이 이 값을 올리면 도착한
+    // 응답은 현재 화면을 대상으로 한 것이 아니므로 feedback과 자동 적용을 모두 버린다.
+    const submittedSequence = ++planSequence.current;
+    setAiSentence(normalized);
+    setAiFeedback(null);
+    startAiTransition(async () => {
+      try {
+        const result = await runItineraryCommand({ sentence: normalized, request });
+        if (!commandResponseIsCurrent(submittedSequence, planSequence.current)) {
+          setAiFeedback({ kind: "cancelled" });
+          return;
+        }
+        if (!result.ok) {
+          setAiFeedback({ kind: "error" });
+          return;
+        }
+        if (result.outcome.kind === "clarify") {
+          setAiFeedback({
+            kind: "clarify",
+            interpretation: result.interpretation,
+            clarification: result.outcome.clarification,
+          });
+          return;
+        }
+        if (result.outcome.kind === "explain") {
+          setAiFeedback({ kind: "explain", interpretation: result.interpretation });
+          return;
+        }
+        const feedback: CommandFeedback = {
+          kind: "proposal",
+          interpretation: result.interpretation,
+          outcome: result.outcome,
+          applied: false,
+          submittedSequence,
+        };
+        setAiFeedback(feedback);
+        if (result.outcome.proposal.decision === "ready") {
+          applyCommandOutcome(result.outcome, submittedSequence);
+        }
+      } catch {
+        if (!commandResponseIsCurrent(submittedSequence, planSequence.current)) {
+          setAiFeedback({ kind: "cancelled" });
+          return;
+        }
+        setAiFeedback({ kind: "error" });
+      }
+    });
+  }, [currentConstraints, view.result, view.reopened, view.selectedAlt, applyCommandOutcome]);
 
   /** 지금 고른 장소 집합의 지문 — 구분자는 `|`, 장소 ID는 kebab-case라 충돌하지 않는다 */
   const selectionKey = useMemo(() => [...selectedPlaceIds].sort().join("|"), [selectedPlaceIds]);
@@ -664,6 +798,7 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
     // 배우 요약은 후보 응답에 없어 ID로는 되살릴 수 없다 — 저장 레코드의 context와 같은 이유
     context: { actors: selectedActors, works: selectedWorks },
     selectedPlaceIds: [...selectedPlaceIds],
+    preferredVisitDates,
     // 재열람 중에는 저장된 일정을 보여주는 중이라 초안을 덮지 않는다
     enabled: reopened === null,
     onRestore: async (draft) => {
@@ -673,6 +808,8 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
       setAirportDeadline({ at: draft.trip.airportArrivalDeadline, touched: draft.trip.airportDeadlineTouched });
       setSelectedActors(draft.context.actors);
       setSelectedWorks(draft.context.works);
+      setPreferredVisitDates(draft.preferredVisitDates);
+      setAiFeedback(null);
       if (draft.context.actors.length === 0 && draft.context.works.length === 0) return;
 
       // 장소 선택은 후보를 다시 받아야 되살릴 수 있다. 여기서 던지면 훅이 자동 저장을
@@ -724,7 +861,7 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
    * 아니라 **선택이 바뀐 시점부터** 켠다. 재열람은 저장 당시 일정이라 대상이 아니다.
    */
   const updating =
-    view.planning ||
+    view.planning || aiPending ||
     (candidateData !== null && !view.reopened && !needsSelection && selectionKey !== settledSelectionKey);
   const viewBanner = banner(view);
   const viewRejected = deriveRejectedPlaces(view);
@@ -1240,6 +1377,13 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
                 const next = new Set(selectedPlaceIds);
                 if (next.has(c.id)) next.delete(c.id); else next.add(c.id);
                 if (next.size === 0) setLastItineraryDiff(null);
+                setPreferredVisitDates((current) => {
+                  if (!(c.id in current)) return current;
+                  const nextPreferences = { ...current };
+                  delete nextPreferences[c.id];
+                  return nextPreferences;
+                });
+                setAiFeedback(null);
                 setSelectedPlaceIds(next);
               }}
             />
@@ -1311,6 +1455,26 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
               </span>
             )}
           </div>
+
+          <ItineraryCommandPanel
+            value={aiSentence}
+            pending={aiPending}
+            disabled={
+              candidateData === null ||
+              view.result?.status !== "planned" ||
+              view.reopened !== null ||
+              view.selectedAlt !== null
+            }
+            feedback={aiFeedback}
+            lastDiff={lastItineraryDiff}
+            onChange={setAiSentence}
+            onSubmit={() => submitItineraryCommand(aiSentence)}
+            onExample={submitItineraryCommand}
+            onApply={applyCommandOutcome}
+            onDismiss={() => setAiFeedback(null)}
+            placeName={placeName}
+            tr={tr}
+          />
 
           {/* 아직 보여줄 일정 자체가 없을 때만 자리를 차지하는 안내로 바꾼다 */}
           {updating && !displayedDays && !needsSelection && (

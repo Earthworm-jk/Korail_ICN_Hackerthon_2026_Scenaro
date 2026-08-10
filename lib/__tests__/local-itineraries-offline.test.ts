@@ -121,6 +121,7 @@ describe("저장 어댑터가 fetch를 부르지 않는다", () => {
         works: [],
       },
       selectedPlaceIds: ["place-yeongjin-beach"],
+      preferredVisitDates: { "place-yeongjin-beach": "2026-08-13" },
     };
 
     expect(saveDraft(draft, storage)).toBe(true);

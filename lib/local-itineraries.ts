@@ -67,6 +67,8 @@ export type LocalDraft = {
    */
   context: { actors: ActorSummary[]; works: WorkSummary[] };
   selectedPlaceIds: string[];
+  /** 자연어 조율로 확정한 장소별 방문일 선호 — 새로고침 뒤 재계산에도 같은 입력을 쓴다 */
+  preferredVisitDates: Record<string, string>;
 };
 
 type Envelope<T> = { version: number; data: T };
@@ -115,6 +117,18 @@ function writeEnvelope<T>(key: string, data: T, storage: Storage | null): boolea
 
 function isStringArray(value: unknown): value is string[] {
   return Array.isArray(value) && value.every((item) => typeof item === "string");
+}
+
+function isVisitDateRecord(value: unknown): value is Record<string, string> {
+  return (
+    isObject(value)
+    && !Array.isArray(value)
+    && Object.entries(value).every(([placeId, date]) => (
+      placeId.length > 0
+      && typeof date === "string"
+      && /^\d{4}-\d{2}-\d{2}$/.test(date)
+    ))
+  );
 }
 
 /** 문자열이면서 Date로 읽을 수 있는가 — 목록의 Intl 포맷과 재열람의 시각 복원이 둘 다 요구한다 */
@@ -402,7 +416,12 @@ export function loadDraft(storage: Storage | null = defaultStorage()): LocalDraf
   if (!isArrayOf(context.works, isWorkSummary)) return null;
 
   if (!isStringArray(data.selectedPlaceIds)) return null;
-  return data as LocalDraft;
+  // v1 초안과 하위 호환한다. 필드 추가 전이거나 이 보조 필드만 손상됐으면 선호만 비우고
+  // 여행 조건·콘텐츠·장소 선택은 살린다. 핵심 초안 전체를 보조 메타 하나와 함께 버리지 않는다.
+  const preferredVisitDates = isVisitDateRecord(data.preferredVisitDates)
+    ? data.preferredVisitDates
+    : {};
+  return { ...data, preferredVisitDates } as LocalDraft;
 }
 
 export function clearDraft(storage: Storage | null = defaultStorage()): void {

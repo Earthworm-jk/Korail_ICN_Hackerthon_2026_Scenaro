@@ -1192,6 +1192,15 @@ function tripDatesOf(availableAt: number, deadline: number): string[] {
   return dates;
 }
 
+/**
+ * Action·resolver가 엔진과 정확히 같은 여행 일차 집합을 쓰는 공개 읽기 전용 헬퍼.
+ * 날짜 계산을 호출부에서 복제하면 `preferredVisitDateErrors`와 자연어 명령의 dayIndex가
+ * 서로 다른 날짜를 가리킬 수 있으므로, 엔진의 KST 경계 계산을 그대로 공유한다 (#141).
+ */
+export function tripDatesForWindow(availableAt: string, deadline: string): string[] {
+  return tripDatesOf(Date.parse(availableAt), Date.parse(deadline));
+}
+
 function koreaDate(epoch: number): string {
   return new Date(epoch + KOREA_OFFSET_MS).toISOString().slice(0, 10);
 }
