@@ -230,6 +230,102 @@ describe("깨진 저장소에서 죽지 않는다", () => {
     }
   });
 
+  /**
+   * 표시 이름 스냅샷 (#130) — optional이다.
+   *
+   * 이 필드가 생기기 전 저장분이 이미 브라우저에 있다. 없다고 걸러내면 사용자가 저장했던
+   * 일정이 목록에서 사라진다. 반대로 있는데 모양이 깨졌으면, 화면이 `names[id][locale]`을
+   * 바로 읽으므로 그 자리에서 죽는다.
+   */
+  it("표시 이름 스냅샷이 없어도 기존 저장분은 살아남는다", () => {
+    const storage = memoryStorage();
+    saveLocalItinerary(entry, storage);
+    const [legacy] = listLocalItineraries(storage);
+    expect(legacy.displayNames).toBeUndefined();
+
+    const raw = JSON.stringify({ version: LOCAL_STORAGE_VERSION, data: [legacy] });
+    expect(listLocalItineraries(memoryStorage({ [SAVED_KEY]: raw })).map((r) => r.id)).toEqual([legacy.id]);
+  });
+
+  it("성한 스냅샷이 있으면 그대로 실려 온다", () => {
+    const storage = memoryStorage();
+    const withNames = {
+      ...entry,
+      displayNames: {
+        places: { "place-yeongjin-beach": { ko: "영진해변", en: "Yeongjin Beach" } },
+        stations: { "station-seoul": { ko: "서울역", en: "Seoul Station" } },
+      },
+    };
+    saveLocalItinerary(withNames, storage);
+    const [record] = listLocalItineraries(storage);
+    expect(record.displayNames?.places["place-yeongjin-beach"].ko).toBe("영진해변");
+    expect(record.displayNames?.stations["station-seoul"].en).toBe("Seoul Station");
+  });
+
+  /**
+   * PR #133 리뷰 — 보조 필드 하나 때문에 일정 전체를 버리면 안 된다.
+   *
+   * 걸러진 레코드는 목록에서만 사라지는 게 아니다. 다음 저장이 `listLocalItineraries`
+   * 결과 위에 다시 쓰므로 **저장소에서 영구히 사라진다.**
+   */
+  it("스냅샷만 깨졌으면 그 필드만 떼고 일정은 살린다", () => {
+    const storage = memoryStorage();
+    saveLocalItinerary(entry, storage);
+    const [ok] = listLocalItineraries(storage);
+
+    const brokenSnapshots: Record<string, unknown>[] = [
+      "이름",
+      { places: {} }, // stations 누락
+      { places: { p: null }, stations: {} },
+      { places: { p: { ko: "영진해변" } }, stations: {} }, // en 누락
+      { places: {}, stations: { s: "서울역" } },
+      { places: [], stations: {} }, // 배열도 object라 Record처럼 통과하던 경우
+      { places: { p: { ko: " ", en: " " } }, stations: {} }, // 공백만
+    ].map((displayNames) => ({ ...ok, displayNames }));
+
+    for (const [i, record] of brokenSnapshots.entries()) {
+      const raw = JSON.stringify({ version: LOCAL_STORAGE_VERSION, data: [record] });
+      const list = listLocalItineraries(memoryStorage({ [SAVED_KEY]: raw }));
+      // 일정은 살아 있고
+      expect(list.map((r) => r.id), `case ${i}`).toEqual([ok.id]);
+      // 못 쓰는 필드만 사라진다
+      expect(list[0].displayNames, `case ${i}`).toBeUndefined();
+      // 나머지는 그대로다
+      expect(list[0].days, `case ${i}`).toEqual(ok.days);
+    }
+  });
+
+  it("깨진 스냅샷을 실은 일정도 이후 새 저장에서 지워지지 않는다", () => {
+    const seedStorage = memoryStorage();
+    saveLocalItinerary(entry, seedStorage);
+    const [ok] = listLocalItineraries(seedStorage);
+
+    const storage = memoryStorage({
+      [SAVED_KEY]: JSON.stringify({
+        version: LOCAL_STORAGE_VERSION,
+        data: [{ ...ok, displayNames: { places: { p: null }, stations: {} } }],
+      }),
+    });
+
+    const added = saveLocalItinerary({ ...entry, title: "새 일정" }, storage);
+    expect(added.ok).toBe(true);
+
+    const list = listLocalItineraries(storage);
+    expect(list.map((r) => r.title)).toEqual(["새 일정", ok.title]);
+    expect(list[1].displayNames).toBeUndefined();
+  });
+
+  it("core가 깨진 레코드는 여전히 통째로 제외한다", () => {
+    const storage = memoryStorage();
+    saveLocalItinerary(entry, storage);
+    const [ok] = listLocalItineraries(storage);
+    const raw = JSON.stringify({
+      version: LOCAL_STORAGE_VERSION,
+      data: [{ ...ok, id: "no-context", context: undefined, displayNames: { places: {}, stations: {} } }, ok],
+    });
+    expect(listLocalItineraries(memoryStorage({ [SAVED_KEY]: raw })).map((r) => r.id)).toEqual([ok.id]);
+  });
+
   it("걸러낸 뒤 남은 레코드는 목록 포맷과 재열람이 실제로 쓸 수 있다", () => {
     const storage = memoryStorage();
     saveLocalItinerary(entry, storage);

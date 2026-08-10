@@ -24,6 +24,42 @@ export type SavedItineraryStub = {
   /** 저장 시점 운영시간 경고 — 재열람에도 경고 누락 0건 유지 (#43, PR #44 리뷰 2).
    *  기존 레코드 호환을 위해 optional이며 없으면 빈 배열로 취급한다. */
   warnings?: CandidateWarning[];
+  /**
+   * 저장 당시 표시 이름 스냅샷 (#130).
+   *
+   * 재열람은 후보를 다시 받아 이름을 채우는데, 그 조회가 실패하면 화면이 `place-…`·
+   * `station-…` 같은 내부 ID를 그대로 보여 준다. 발표장 네트워크가 끊기면 그대로 노출되는
+   * 자리라, 이름을 조회와 무관하게 복원할 수 있도록 저장 시점 값을 함께 담는다.
+   *
+   * 기존 레코드 호환을 위해 optional이다. 없으면 화면이 현지화된 대체 문구로 떨어진다.
+   *
+   * **클라우드 경로(`?cloud=1`)에서는 보존되지 않는다.** `saved-itineraries-codec.ts`의
+   * `entryToRow`가 `days`·`context`·`warnings`만 담고 이 필드는 넣지 않아, 계정에 저장한 뒤
+   * 다시 받으면 사라진다. #130이 로컬 경로의 P0라 이번 범위에서 다루지 않았고, 클라우드를
+   * 계속 유지한다면 후속으로 채워야 한다 (PR #133 리뷰).
+   */
+  displayNames?: DisplayNameSnapshot;
+};
+
+/** 화면이 `text[locale]`로 바로 읽는 모양 */
+export type LocalizedName = { ko: string; en: string };
+
+/**
+ * 표시 이름 스냅샷 (#130).
+ *
+ * **전체 후보를 담지 않는다** — 이 일정에 실제로 쓰인 것만 담는다.
+ *
+ * - `places`: `days[].items[].placeId`로 배치된 장소
+ * - `stations`: `days[].rides`의 출발·도착역
+ *
+ * gateway leg는 레코드 자체에 `fromName`·`toName`을 이미 갖고 있어 중복 저장하지 않는다.
+ *
+ * locale 문자열 하나가 아니라 `{ ko, en }`을 담는 이유는, 재열람 뒤에도 ko/en 전환이
+ * 동작해야 하기 때문이다.
+ */
+export type DisplayNameSnapshot = {
+  places: Record<string, LocalizedName>;
+  stations: Record<string, LocalizedName>;
 };
 
 /** 여행 조건 입력 필드(1단계 화면 상태) ↔ constraints 왕복 변환 — 재열람 복원의 단일 경로 */
