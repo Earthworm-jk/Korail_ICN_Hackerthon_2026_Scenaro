@@ -30,8 +30,6 @@ import {
   defaultSavedTitle,
   SAVED_SCHEMA_VERSION,
   tripInputsFromConstraints,
-  type DisplayNameSnapshot,
-  type LocalizedName,
   type SavedItineraryStub,
 } from "@/lib/saved-itineraries-stub";
 import {
@@ -47,6 +45,7 @@ import {
   type SelectableAlternative,
 } from "@/lib/itinerary-view";
 import { autoPlanDecision } from "@/lib/auto-plan";
+import { collectDisplayNames, resolveDisplayName } from "@/lib/display-names";
 import { useLocalDraft } from "./local-draft";
 import { fromKstLocalInput as fromLocalInput, toKstLocalInput as toLocalInput } from "@/lib/kst-datetime";
 import { formatFlightStatus } from "@/lib/flight-status";
@@ -715,32 +714,11 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
     saveStub.markDirty();
   }, [saveStub]);
 
-  /**
-   * 저장 시점 표시 이름 수집 (#130).
-   *
-   * **이 일정에 실제로 쓰인 것만** 담는다 — 전체 후보를 담을 이유가 없다. gateway leg는
-   * 레코드가 `fromName`·`toName`을 이미 갖고 있어 제외한다.
-   *
-   * locale 문자열 하나가 아니라 `{ ko, en }`을 담는 이유는 재열람 뒤에도 언어 전환이
-   * 동작해야 하기 때문이다.
-   */
-  const collectDisplayNames = useCallback((days: DayPlan[]): DisplayNameSnapshot => {
-    const places: Record<string, LocalizedName> = {};
-    const stations: Record<string, LocalizedName> = {};
-    for (const day of days) {
-      for (const item of day.items) {
-        const found = candidateData?.candidates.find((c) => c.id === item.placeId);
-        if (found) places[item.placeId] = { ko: found.name.ko, en: found.name.en };
-      }
-      for (const ride of day.rides) {
-        for (const id of [ride.fromStationId, ride.toStationId]) {
-          const found = candidateData?.stations.find((station) => station.id === id);
-          if (found) stations[id] = { ko: found.name.ko, en: found.name.en };
-        }
-      }
-    }
-    return { places, stations };
-  }, [candidateData]);
+  /** 저장 시점 표시 이름 수집 — 규칙은 `lib/display-names.ts`에 있다 (#130) */
+  const collectNames = useCallback((days: DayPlan[]) => collectDisplayNames(days, {
+    place: (id) => candidateData?.candidates.find((c) => c.id === id)?.name,
+    station: (id) => candidateData?.stations.find((station) => station.id === id)?.name,
+  }), [candidateData]);
 
   /**
    * 후보 재조회만 다시 시도한다 (#130).
@@ -787,9 +765,9 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
       warnings,
       // #130 — 재열람이 후보를 다시 받지 못해도 이름을 보여줄 수 있게 저장 시점 값을 담는다.
       // 재저장 시에는 저장 당시 스냅샷을 우선 보존한다(재열람 보존 규칙과 동일).
-      displayNames: view.reopened?.displayNames ?? collectDisplayNames(displayedDays),
+      displayNames: view.reopened?.displayNames ?? collectNames(displayedDays),
     };
-  }, [displayedDays, selectionCapacity, view.reopened, viewWarnings, currentConstraints, selectedActors, selectedWorks, locale, collectDisplayNames]);
+  }, [displayedDays, selectionCapacity, view.reopened, viewWarnings, currentConstraints, selectedActors, selectedWorks, locale, collectNames]);
 
   const SAVE_STATUS_KEY: Record<SaveStatus, MessageKey> = {
     none: "save.statusNone",
@@ -884,14 +862,18 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
    * 온라인 재조회가 성공하면 현재 데이터가 먼저다 — 저장 이후 이름이 바뀌었을 수 있다.
    */
   const savedNames = view.reopened?.displayNames;
-  const stationName = (id: string) =>
-    candidateData?.stations.find((s) => s.id === id)?.name[locale]
-    ?? savedNames?.stations[id]?.[locale]
-    ?? tr("common.nameUnavailable");
-  const placeName = (id: string) =>
-    candidateData?.candidates.find((c) => c.id === id)?.name[locale]
-    ?? savedNames?.places[id]?.[locale]
-    ?? tr("common.nameUnavailable");
+  const stationName = (id: string) => resolveDisplayName({
+    locale,
+    current: candidateData?.stations.find((s) => s.id === id)?.name,
+    saved: savedNames?.stations[id],
+    fallback: tr("common.nameUnavailable"),
+  });
+  const placeName = (id: string) => resolveDisplayName({
+    locale,
+    current: candidateData?.candidates.find((c) => c.id === id)?.name,
+    saved: savedNames?.places[id],
+    fallback: tr("common.nameUnavailable"),
+  });
   const workTitles = (ids: string[]) =>
     ids.map((id) => candidateData?.works.find((w) => w.id === id)?.title[locale] ?? id).join(" · ");
 
