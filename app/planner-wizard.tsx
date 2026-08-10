@@ -50,6 +50,7 @@ import { formatFlightStatus } from "@/lib/flight-status";
 import { formatEpisodeLabel } from "@/lib/episode-label";
 import { splitSourceLink } from "@/lib/source-link";
 import { placeTypeIcon } from "@/lib/place-type-icon";
+import { placePhoto } from "@/lib/place-photos";
 import { diffItineraries, type ItineraryDiff } from "@/lib/itinerary-diff";
 import { gatewayPlanningBaselineOf } from "@/lib/engine/gateway-baseline";
 import { AlternativeTimetables } from "./alternative-timetables";
@@ -1561,6 +1562,7 @@ function PlaceCard({ candidate, locale, tr, selected, onToggle, stationName, wor
       ? `${sourceParts.label} · ${oh.verifiedAt} ${tr("step3.verifiedAt")}`
       : `${tr("step3.officialSource")} · ${tr("step3.verifiedAt")} ${oh.verifiedAt}`
     : null;
+  const photo = placePhoto(candidate.id);
 
   return (
     <li
@@ -1568,9 +1570,13 @@ function PlaceCard({ candidate, locale, tr, selected, onToggle, stationName, wor
       data-recommendation-card
     >
       <div className="flex items-start justify-between gap-2">
-        {/* #118 P0-4 — 사진 사용권이 확인되기 전에는 모든 카드가 같은 플레이스홀더
-            프레임을 쓴다. 장소 유형 표식은 팀원의 아이콘 교체 범위라 기존 파생만 넘긴다. */}
-        <PlaceThumbnail label={tr("step3.photoPlaceholder")}>
+        {/* 이름·좌표·이미지를 검증한 TourAPI 제1유형 사진만 쓴다. 나머지는 추정 사진
+            대신 동일한 플레이스홀더 프레임과 장소 유형 표식을 유지한다. */}
+        <PlaceThumbnail
+          label={tr("step3.photoPlaceholder")}
+          photo={photo}
+          locale={locale}
+        >
           {placeTypeIcon(candidate.placeType)}
         </PlaceThumbnail>
         <div className="min-w-0 flex-1 text-sm">
@@ -1649,6 +1655,21 @@ function PlaceCard({ candidate, locale, tr, selected, onToggle, stationName, wor
                   ) : (
                     sourceLabel
                   )}
+                </p>
+              )}
+              {photo && (
+                <p className="mt-0.5 text-xs text-sc-muted/80">
+                  <a
+                    href={photo.sourceUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="underline underline-offset-2 hover:text-sc-blue"
+                    title={locale === "ko" ? "사진 원본 열기" : "Open original photo"}
+                  >
+                    {locale === "ko"
+                      ? `사진: ${photo.provider} · ${photo.license}`
+                      : "Photo: Korea Tourism Organization TourAPI · KOGL Type 1"}
+                  </a>
                 </p>
               )}
             </div>
