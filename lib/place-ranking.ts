@@ -13,6 +13,7 @@ export const PlaceRanking = z.discriminatedUnion("reviewed", [
     reviewed: z.literal(true),
     reviewedAt: IsoDate,
     reviewedBy: NonEmptyId,
+    reviewMethod: z.enum(["manual", "verified_relation_auto"]).optional(),
     reason: LocalizedText.optional(),
   }),
 ]);
@@ -86,7 +87,8 @@ export type AiRelevance = { aiRank: number; aiReason?: Localized };
  * PR #70 리뷰 반영: ① 원시 점수·검토 메타는 RSC/액션 응답으로 직렬화하지 않도록
  * 순위(aiRank, dense rank)와 이유(ko/en)만 파생한다. ② 정렬·이유 모두 후보의
  * 선택 관련 작품(relationDetails) 범위만 사용한다 — 무관 작품 고득점은 순서에 영향 없음(#65 정합).
- * 미검토·하한 미달·스냅샷 없음은 파생 없음(폴백). 동점은 workId 오름차순으로 결정적.
+ * 미검토·스냅샷 없음은 파생 없음(폴백). 배지 하한은 이유 노출에만 적용하며, 검토된
+ * 점수는 하한 아래여도 관련성 정렬에 사용한다. 동점은 workId 오름차순으로 결정적.
  */
 export function deriveAiRelevance(
   candidates: readonly { id: string; relationDetails: { workId: string }[] }[],
@@ -95,11 +97,11 @@ export function deriveAiRelevance(
   if (!snapshot) return new Map();
   const eligible = new Map<string, { score: number; workId: string; reason?: Localized }>();
   for (const ranking of snapshot.rankings) {
-    if (!ranking.reviewed || ranking.score < snapshot.meta.badgeThreshold) continue;
+    if (!ranking.reviewed) continue;
     eligible.set(`${ranking.workId}|${ranking.placeId}`, {
       score: ranking.score,
       workId: ranking.workId,
-      reason: ranking.reason,
+      reason: ranking.score >= snapshot.meta.badgeThreshold ? ranking.reason : undefined,
     });
   }
 

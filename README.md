@@ -14,6 +14,8 @@
 - `pnpm test` — 엔진·스키마·번역 키 테스트 (Vitest)
 - `pnpm typecheck` — tsc --noEmit
 - API 키는 `.env.local` (`.env.example` 참조) — 커밋 금지 (docs/TEAM_RULES.md)
+- 런타임 장소 승격: `python3 scripts/promote_runtime_catalog.py` — 데이터·관련성 랭킹 동시 갱신
+- 오프라인 점검: `python3 scripts/promote_runtime_catalog.py --check` — API 키 없이 시드·랭킹 계약 확인
 
 ## 구조
 

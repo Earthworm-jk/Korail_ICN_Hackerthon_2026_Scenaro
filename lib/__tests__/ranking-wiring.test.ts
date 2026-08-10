@@ -77,9 +77,10 @@ describe("deriveAiRelevance (#48 — 서버 파생, 점수 비노출)", () => {
     expect(derived.get("p-2")?.aiRank).toBe(2); // 0.8 — dense rank
   });
 
-  it("미검토·하한 미달·무관 작품·스냅샷 없음은 파생하지 않는다", () => {
-    const derived = deriveAiRelevance([cand("p-1", ["w-c", "w-d"])], snapshot);
-    expect(derived.size).toBe(0);
+  it("미검토는 제외하고 하한 미달 점수는 이유 없이 순위만 파생한다", () => {
+    expect(deriveAiRelevance([cand("p-1", ["w-c"])], snapshot).size).toBe(0);
+    expect(deriveAiRelevance([cand("p-1", ["w-c", "w-d"])], snapshot).get("p-1"))
+      .toEqual({ aiRank: 1, aiReason: undefined });
     // 선택 관련 작품이 w-b뿐이면 최고점(w-a)이 아니라 w-b의 이유를 쓴다 (#65 정합)
     expect(deriveAiRelevance([cand("p-1", ["w-b"])], snapshot).get("p-1")?.aiReason?.ko).toBe("나");
     expect(deriveAiRelevance([cand("p-1", ["w-a"])], null).size).toBe(0);

@@ -15,6 +15,11 @@ import json
 import math
 from pathlib import Path
 
+if __package__:
+    from scripts import build_place_rankings as ranking_pipeline
+else:  # `python3 scripts/promote_runtime_catalog.py` 직접 실행
+    import build_place_rankings as ranking_pipeline
+
 
 ROOT = Path(__file__).resolve().parent.parent
 CATALOG_PATH = ROOT / "data" / "filming-catalog.json"
@@ -422,6 +427,11 @@ def build() -> tuple[list[dict], list[dict], dict, list[dict]]:
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--check", action="store_true", help="생성 결과가 커밋된 시드와 같은지만 확인")
+    parser.add_argument(
+        "--skip-rankings",
+        action="store_true",
+        help="로컬 데이터 초안만 생성. 관계 랭킹이 비어 CI가 실패하므로 커밋 용도로 사용하지 않음",
+    )
     args = parser.parse_args()
     try:
         places, relations, ranking_inputs, evidence_records = build()
@@ -440,12 +450,28 @@ def main() -> int:
         if stale:
             print("재생성 필요: " + ", ".join(str(path.relative_to(ROOT)) for path in stale))
             return 1
+        if ranking_pipeline.main_with_args(["--check"]) != 0:
+            return 1
         print(f"승격 스냅샷 일치: 장소 {len(places)}곳 · 관계 {len(relations)}건")
         return 0
 
+    previous_contents = {
+        path: path.read_text(encoding="utf-8") if path.exists() else None
+        for path in outputs
+    }
     for path, value in outputs.items():
         dump(path, value)
     print(f"승격 완료: 장소 {len(places)}곳 · 관계 {len(relations)}건")
+    if not args.skip_rankings:
+        print("관련성 랭킹 자동 갱신 중...")
+        if ranking_pipeline.main_with_args([]) != 0:
+            for path, content in previous_contents.items():
+                if content is not None:
+                    path.write_text(content, encoding="utf-8")
+            print("관련성 랭킹 실패로 승격 데이터도 이전 상태로 복원했습니다")
+            return 1
+    else:
+        print("주의: --skip-rankings 결과는 랭킹 준비 계약을 통과하지 못해 CI에서 차단됩니다")
     return 0
 
 

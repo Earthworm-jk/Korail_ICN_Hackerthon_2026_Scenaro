@@ -31,7 +31,7 @@ const snapshot = {
 };
 
 describe("촬영지 랭킹 스냅샷 계약 (#48)", () => {
-  it("실스냅은 참조·검토 계약을 지키고 신규 배치는 미탑재 폴백을 허용한다", () => {
+  it("실스냅은 검증된 작품–장소 관계 전부를 활성 랭킹으로 갖는다", () => {
     const schema = createPlaceRankingSnapshotSchema(
       new Set(worksSeed.map(({ id }) => id)),
       new Set(placesSeed.map(({ id }) => id)),
@@ -42,21 +42,45 @@ describe("촬영지 랭킹 스냅샷 계약 (#48)", () => {
       inputRuleVersion: "v1",
       badgeThreshold: 0.25,
     });
-    expect(placeRankingsSeed.rankings.length).toBeGreaterThan(0);
+    expect(placeRankingsSeed.rankings.length).toBe(workPlaceRelationsSeed.length);
 
-    const reviewedPairs = placeRankingsSeed.rankings
-      .filter(({ reviewed }) => reviewed)
+    const rankingPairs = placeRankingsSeed.rankings
       .map(({ workId, placeId }) => `${workId}|${placeId}`)
       .sort();
     const relationPairs = workPlaceRelationsSeed
       .map(({ workId, placeId }) => `${workId}|${placeId}`)
       .sort();
-    expect(reviewedPairs.every((pair) => relationPairs.includes(pair))).toBe(true);
-    expect(relationPairs).toContain("work-encounter|place-simgok-port");
-    expect(reviewedPairs).not.toContain("work-encounter|place-simgok-port");
-    expect(placeRankingsSeed.rankings.filter(({ reviewed }) => reviewed).every(
-      ({ score, reason }) => score >= placeRankingsSeed.meta.badgeThreshold && Boolean(reason?.ko && reason.en),
-    )).toBe(true);
+    expect(rankingPairs).toEqual(relationPairs);
+    expect(placeRankingsSeed.rankings.every(({ reviewed, reason }) =>
+      reviewed && Boolean(reason?.ko && reason.en))).toBe(true);
+    expect(rankingPairs).toContain("work-encounter|place-simgok-port");
+    expect(rankingPairs).toContain("work-twenty-five-twenty-one|place-sejong-daero");
+  });
+
+  it("김태리 후보는 준비된 점수로 관련성순과 공식 출처순을 구분한다", () => {
+    const schema = createPlaceRankingSnapshotSchema(
+      new Set(worksSeed.map(({ id }) => id)),
+      new Set(placesSeed.map(({ id }) => id)),
+    );
+    const parsedSnapshot = schema.parse(placeRankingsSeed);
+    const relations = workPlaceRelationsSeed.filter(({ featuredActorIds }) =>
+      featuredActorIds?.includes("actor-kim-tae-ri"));
+    const candidates = relations.map(({ placeId, workId }) => ({
+      id: placeId,
+      relationDetails: [{ workId }],
+      relation: "actor_other_work" as const,
+      officialSourceCount: placesSeed.find(({ id }) => id === placeId)?.officialSourceCount ?? 0,
+    }));
+    const relevance = deriveAiRelevance(candidates, parsedSnapshot);
+    const ranked = candidates.map((candidate) => ({
+      ...candidate,
+      aiRank: relevance.get(candidate.id)?.aiRank,
+    }));
+
+    expect(relevance.size).toBe(5);
+    expect(sortCandidatePlaces(ranked, "relevance").map(({ id }) => id)).not.toEqual(
+      sortCandidatePlaces(ranked, "official_sources").map(({ id }) => id),
+    );
   });
 
   it("검토 이력·노출 이유·참조가 유효한 스냅샷을 허용한다", () => {
@@ -114,7 +138,7 @@ describe("촬영지 후보 정렬 (#48 — PR #70 리뷰: 서버 파생 aiRank �
     ]);
   });
 
-  it("검토됐어도 하한 미달이면 미탑재와 같게 출처·ID 폴백을 사용한다", () => {
+  it("검토된 하한 미달 점수도 정렬에는 쓰되 관련성 이유는 노출하지 않는다", () => {
     const belowThreshold = {
       ...snapshot,
       rankings: [{
@@ -123,9 +147,11 @@ describe("촬영지 후보 정렬 (#48 — PR #70 리뷰: 서버 파생 aiRank �
         reason: undefined,
       }],
     };
+    const relevance = deriveAiRelevance(candidates, belowThreshold);
+    expect(relevance.get("place-a")).toEqual({ aiRank: 1, aiReason: undefined });
     expect(sortCandidatePlaces(withRank(belowThreshold), "relevance").map(({ id }) => id)).toEqual([
-      "place-b",
       "place-a",
+      "place-b",
       "place-c",
     ]);
   });

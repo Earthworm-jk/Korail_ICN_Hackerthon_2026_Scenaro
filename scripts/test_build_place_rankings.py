@@ -17,20 +17,62 @@ class PlaceRankingPipelineTest(unittest.TestCase):
     def test_입력은_현재_작품과_장소를_빠짐없이_포함한다(self) -> None:
         version, works, places = pipeline.load_inputs()
         self.assertEqual(version, "v1")
-        self.assertEqual(len(works), 4)
-        self.assertEqual(len(places), 14)
+        self.assertGreaterEqual(len(works), 10)
+        self.assertGreaterEqual(len(places), 36)
 
-    def test_작품과_장소의_모든_조합을_미검토_점수로_생성한다(self) -> None:
+    def test_검증된_관계만_자동_활성화하고_장면_설명을_이유로_쓴다(self) -> None:
+        reasons = {
+            ("work-a", "place-a"): {"ko": "장면 A", "en": "Scene A"},
+            ("work-b", "place-b"): {"ko": "장면 B", "en": "Scene B"},
+        }
         snapshot = pipeline.build_snapshot(
             "test-model", "v1", ["work-a", "work-b"], ["place-a", "place-b"],
             [[1.0, 0.0], [0.0, 1.0], [1.0, 0.0], [1.0, 1.0]],
             0.7, "2026-08-09T12:00:00+09:00",
+            reasons,
         )
-        self.assertEqual(len(snapshot["rankings"]), 4)
+        self.assertEqual(len(snapshot["rankings"]), 2)
         self.assertEqual(snapshot["rankings"][0], {
-            "workId": "work-a", "placeId": "place-a", "score": 1.0, "reviewed": False,
+            "workId": "work-a",
+            "placeId": "place-a",
+            "score": 1.0,
+            "reviewed": True,
+            "reviewedAt": "2026-08-09",
+            "reviewedBy": pipeline.AUTO_REVIEWER,
+            "reviewMethod": pipeline.AUTO_REVIEW_METHOD,
+            "reason": reasons[("work-a", "place-a")],
         })
-        self.assertTrue(all(item["reviewed"] is False for item in snapshot["rankings"]))
+
+    def test_기존_사람_검토_이력은_점수_재생성_후에도_보존한다(self) -> None:
+        previous = {
+            "rankings": [{
+                "workId": "work-a",
+                "placeId": "place-a",
+                "score": 0.5,
+                "reviewed": True,
+                "reviewedAt": "2026-08-08",
+                "reviewedBy": "reviewer",
+                "reason": {"ko": "사람 검토", "en": "Human review"},
+            }],
+        }
+        snapshot = pipeline.build_snapshot(
+            "test-model", "v1", ["work-a"], ["place-a"], [[1.0, 0.0], [1.0, 0.0]],
+            0.25, "2026-08-10T12:00:00+09:00",
+            {("work-a", "place-a"): {"ko": "자동", "en": "Automatic"}}, previous,
+        )
+        self.assertEqual(snapshot["rankings"][0]["reviewedBy"], "reviewer")
+        self.assertEqual(snapshot["rankings"][0]["reason"]["ko"], "사람 검토")
+        self.assertEqual(snapshot["rankings"][0]["score"], 1.0)
+
+    def test_관계_누락이나_미활성_랭킹은_check에서_차단한다(self) -> None:
+        reasons = {("work-a", "place-a"): {"ko": "장면", "en": "Scene"}}
+        with self.assertRaisesRegex(pipeline.PipelineError, "활성화되지"):
+            pipeline.assert_snapshot_coverage({
+                "meta": {"inputRuleVersion": "v1"},
+                "rankings": [{
+                    "workId": "work-a", "placeId": "place-a", "score": 0.5, "reviewed": False,
+                }],
+            }, "v1", reasons)
 
     def test_임베딩_응답을_index_순서로_복원하고_사용량을_읽는다(self) -> None:
         payload = {
