@@ -49,11 +49,26 @@ function generateItinerary(c: TripConstraints, repos: Repos): ItineraryResult;
 엔진은 장소를 특정 날짜에 강제하거나 반드시 포함시키는 계약을 제공하지 않는다.
 
 방문일은 **소프트 선호**로만 받는다 (`preferredVisitDates`, #139). 못 지켜도 일정은 나오고
-비교 순위만 밀리며, 결과는 `preferredDateOutcomes`로 장소마다 `honored / adjusted / unplaced`를
-알린다. 실패 코드(`USER_CONSTRAINT_INFEASIBLE`)는 추가하지 않는다.
+비교 순위만 밀린다. 실패 코드(`USER_CONSTRAINT_INFEASIBLE`)는 추가하지 않는다.
+
+결과는 `preferredDateOutcomes`로 장소마다 알린다 (#139 8절 확정 필드명).
+
+```ts
+preferredDateOutcomes?: {
+  placeId: string;
+  requestedDate: string;              // YYYY-MM-DD (KST)
+  outcome: "honored" | "adjusted" | "unplaced";
+  scheduledDate?: string;             // adjusted에서만 — 실제 배치된 날짜
+}[]
+```
 
 입력 검증: 여행 기간 밖 날짜와 현재 엄격 후보가 아닌 장소 ID는 거부하고,
 제외한 장소에 선호가 함께 오면 **제외가 우선**이라 그 선호는 무시한다.
+
+**`adjusted`를 호출부가 조용히 확정하지 않는다** (#141 결정). 엔진이 돌려준 일정은
+이 경우 확정본이 아니라 **미리보기**다 — 현재 일정을 유지한 채 대안으로 보여주고
+사용자 확인을 받은 뒤에 적용한다. 요청하지 않은 날짜 변경이나 장소 제외를 확정으로
+만들지 않기 위한 것이며, 엔진 계약 자체는 바뀌지 않는다.
 
 ### 엄격한 후보 집합과 합집합 (#51 최종 계약)
 

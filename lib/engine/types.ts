@@ -161,7 +161,7 @@ export type GatewayAlternative = {
 export type PreferredDateOutcome = {
   placeId: string;
   requestedDate: string; // YYYY-MM-DD (KST)
-  status: "honored" | "adjusted" | "unplaced";
+  outcome: "honored" | "adjusted" | "unplaced";
   scheduledDate?: string; // adjusted에서만 — 실제 배치된 날짜
 };
 

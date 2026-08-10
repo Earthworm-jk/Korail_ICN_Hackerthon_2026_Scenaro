@@ -986,10 +986,10 @@ function preferredDateOutcomesOf(
   );
   return [...preferredVisitDates].map(([placeId, requestedDate]) => {
     const scheduledDate = scheduledDates.get(placeId);
-    if (scheduledDate === undefined) return { placeId, requestedDate, status: "unplaced" as const };
+    if (scheduledDate === undefined) return { placeId, requestedDate, outcome: "unplaced" as const };
     return scheduledDate === requestedDate
-      ? { placeId, requestedDate, status: "honored" as const }
-      : { placeId, requestedDate, status: "adjusted" as const, scheduledDate };
+      ? { placeId, requestedDate, outcome: "honored" as const }
+      : { placeId, requestedDate, outcome: "adjusted" as const, scheduledDate };
   });
 }
 

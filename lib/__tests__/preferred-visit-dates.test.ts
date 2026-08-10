@@ -49,7 +49,7 @@ async function otherCandidateIds(keep: string[]): Promise<string[]> {
   return candidates.map(({ id }) => id).filter((id) => !keep.includes(id));
 }
 
-function outcome(
+function outcomeOf(
   outcomes: PreferredDateOutcome[] | undefined,
   placeId: string,
 ): PreferredDateOutcome | undefined {
@@ -80,7 +80,7 @@ describe("#139 선호 반영 — 후보가 실제로 만들어진다 (6-1)", () 
       preferredVisitDates: { [SEOULLO]: "2026-08-14" },
     });
     expect(dateOf(preferred, SEOULLO)).toBe("2026-08-14");
-    expect(outcome(preferred.preferredDateOutcomes, SEOULLO)?.status).toBe("honored");
+    expect(outcomeOf(preferred.preferredDateOutcomes, SEOULLO)?.outcome).toBe("honored");
   });
 
   it("기본 배치가 첫날이어도 요청한 날짜에 배치된다", async () => {
@@ -89,7 +89,7 @@ describe("#139 선호 반영 — 후보가 실제로 만들어진다 (6-1)", () 
 
     const preferred = await plan({ preferredVisitDates: { [GATE]: "2026-08-14" } });
     expect(dateOf(preferred, GATE)).toBe("2026-08-14");
-    expect(outcome(preferred.preferredDateOutcomes, GATE)?.status).toBe("honored");
+    expect(outcomeOf(preferred.preferredDateOutcomes, GATE)?.outcome).toBe("honored");
     expect(preferred.comparisonKeys.preferredDateMismatchCount).toBe(0);
   });
 
@@ -119,8 +119,8 @@ describe("#139 못 지킨 선호 — 실패가 아니라 보고다", () => {
     });
 
     expect(result.status).toBe("planned"); // 실패 분기를 만들지 않는다
-    const entry = outcome(result.preferredDateOutcomes, BEXCO);
-    expect(entry?.status).toBe("adjusted");
+    const entry = outcomeOf(result.preferredDateOutcomes, BEXCO);
+    expect(entry?.outcome).toBe("adjusted");
     expect(entry?.scheduledDate).toBe(dateOf(result, BEXCO));
     expect(entry?.scheduledDate).not.toBe("2026-08-14");
     expect(result.comparisonKeys.preferredDateMismatchCount).toBe(1);
@@ -130,7 +130,7 @@ describe("#139 못 지킨 선호 — 실패가 아니라 보고다", () => {
     const base = await plan();
     const result = await plan({ preferredVisitDates: { [BEXCO]: "2026-08-13" } });
 
-    expect(outcome(result.preferredDateOutcomes, BEXCO)?.status).toBe("unplaced");
+    expect(outcomeOf(result.preferredDateOutcomes, BEXCO)?.outcome).toBe("unplaced");
     expect(result.comparisonKeys.preferredDateMismatchCount).toBe(1);
     // 넣을 수 없는 선호가 beam을 밀어내 다른 장소를 떨어뜨리면 안 된다 (#139 6-2)
     expect(result.comparisonKeys.selectedUnionPlaceCount)

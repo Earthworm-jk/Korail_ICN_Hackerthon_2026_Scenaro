@@ -133,7 +133,10 @@ type PlanRequest = {
 // 계산 결과는 ENGINE_SPEC §7의 status 2분기(#14 ver.0.4 — 필수·고정일 제거로 실패 분기 소멸):
 // #43: 운영시간 밖·미확인 배치는 자동 제외하지 않고 warnings에 담는다.
 //   { status: "planned", days, rejectedPlaces, warnings, selectionGroups, comparisonKeys, metrics,
-//     preferredDateOutcomes? }  // #139 — 선호 입력이 있을 때만. honored / adjusted / unplaced
+//     preferredDateOutcomes? }  // #139 8절 — 선호 입력이 있을 때만.
+//   preferredDateOutcomes[]: { placeId, requestedDate, outcome, scheduledDate? }
+//     outcome = "honored" | "adjusted" | "unplaced"
+//     adjusted는 확정이 아니라 미리보기다 — 사용자 확인 후 적용 (#141 결정)
 //   { status: "empty",   days: [], rejectedPlaces, warnings, selectionGroups }
 // empty는 정상 응답이며 comparisonKeys·metrics를 포함하지 않는다(허위 값 금지)
 
