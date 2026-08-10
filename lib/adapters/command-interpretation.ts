@@ -70,7 +70,7 @@ export type CommandInterpretation = {
  * 모양이 어긋나면 그 자체가 폴백 사유다.
  */
 const ModelOutputSchema = z.object({
-  intent: z.enum(["move_place", "add_place", "explain_changes", "unknown"]),
+  intent: z.enum(["move_place", "add_place", "recommend_along_route", "explain_changes", "unknown"]),
   placeName: z.string().nullable(),
   dayIndex: z.number().int().nullable(),
   clarificationQuestion: z.string().nullable(),
@@ -78,12 +78,14 @@ const ModelOutputSchema = z.object({
 
 const SYSTEM_PROMPT = [
   "You convert one Korean or English sentence about editing a travel itinerary into a single structured command.",
-  "Allowed intents: move_place, add_place, explain_changes, unknown.",
+  "Allowed intents: move_place, add_place, recommend_along_route, explain_changes, unknown.",
   "move_place: the user wants a place they already have in the itinerary on a different trip day.",
   "add_place: the user wants a place put into the itinerary on a specific trip day.",
+  "recommend_along_route: the user asks for another filming location near a specific trip day's route.",
   "explain_changes: the user asks what changed after the last edit.",
-  "unknown: anything else, including stay length, free time, making a day lighter, recommending places, airport buffer, train choice, or same-day ordering.",
+  "unknown: anything else, including stay length, free time, making a day lighter, airport buffer, train choice, or same-day ordering.",
   "For move_place and add_place return placeName exactly as the user wrote it and dayIndex as a 1-based trip day number.",
+  "For recommend_along_route set placeName to null and return the requested 1-based trip day in dayIndex.",
   "Never invent or output place IDs, calendar dates, times, train numbers, or travel durations. Only the user's own wording and the day ordinal.",
   "For unknown, write clarificationQuestion in the same language as the user, naming what you need.",
   "Set unused fields to null.",
@@ -137,7 +139,9 @@ function toCommand(output: z.infer<typeof ModelOutputSchema>): RawItineraryComma
         intent: "unknown",
         clarification: { source: "llm", question: output.clarificationQuestion },
       }
-      : { intent: output.intent, placeName: output.placeName, dayIndex: output.dayIndex };
+      : output.intent === "recommend_along_route"
+        ? { intent: "recommend_along_route", dayIndex: output.dayIndex }
+        : { intent: output.intent, placeName: output.placeName, dayIndex: output.dayIndex };
 
   const parsed = RawItineraryCommandSchema.safeParse(candidate);
   if (!parsed.success) {
@@ -197,7 +201,7 @@ export async function interpretCommandWithModel(
           properties: {
             intent: {
               type: "string",
-              enum: ["move_place", "add_place", "explain_changes", "unknown"],
+              enum: ["move_place", "add_place", "recommend_along_route", "explain_changes", "unknown"],
             },
             placeName: { type: ["string", "null"] },
             dayIndex: { type: ["integer", "null"] },

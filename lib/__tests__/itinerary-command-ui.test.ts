@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   commandResponseIsCurrent,
   selectionAfterCommand,
+  stateAfterRouteRecommendation,
 } from "../itinerary-command-ui";
 
 describe("자연어 명령 응답 적용 경계 (#144 리뷰)", () => {
@@ -19,5 +20,20 @@ describe("자연어 명령 응답 적용 경계 (#144 리뷰)", () => {
     });
 
     expect([...selected]).toEqual(["requested", "already-rejected", "newly-scheduled"]);
+  });
+
+  it("동선 추천 적용은 고지한 제외만 반영하고 추천 장소의 방문일을 보존한다", () => {
+    expect(stateAfterRouteRecommendation({
+      currentSelectedPlaceIds: new Set(["kept", "displaced"]),
+      currentPreferredVisitDates: { displaced: "2026-08-12", kept: "2026-08-13" },
+      recommendation: {
+        placeId: "recommended",
+        targetDate: "2026-08-13",
+        displacedPlaceIds: ["displaced"],
+      },
+    })).toEqual({
+      selectedPlaceIds: new Set(["kept", "recommended"]),
+      preferredVisitDates: { kept: "2026-08-13", recommended: "2026-08-13" },
+    });
   });
 });

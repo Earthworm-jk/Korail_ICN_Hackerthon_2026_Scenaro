@@ -11,6 +11,7 @@ import type { Clarification } from "@/lib/itinerary-command-resolver";
 
 type SuccessfulResult = Extract<CommandActionResult, { ok: true }>;
 export type ProposalOutcome = Extract<SuccessfulResult["outcome"], { kind: "proposal" }>;
+export type RecommendationOutcome = Extract<SuccessfulResult["outcome"], { kind: "recommendations" }>;
 
 export type CommandFeedback =
   | { kind: "clarify"; interpretation: CommandActionInterpretation; clarification: Clarification }
@@ -22,6 +23,12 @@ export type CommandFeedback =
       submittedSequence: number;
     }
   | { kind: "explain"; interpretation: CommandActionInterpretation }
+  | {
+      kind: "recommendations";
+      interpretation: CommandActionInterpretation;
+      outcome: RecommendationOutcome;
+      submittedSequence: number;
+    }
   | { kind: "cancelled" }
   | { kind: "error" };
 
@@ -124,9 +131,11 @@ export function ItineraryCommandPanel({
     feedback.kind === "clarify"
     || feedback.kind === "proposal"
     || feedback.kind === "explain"
+    || feedback.kind === "recommendations"
   ) ? feedback.interpretation : null;
   const source = interpretation ? sourceLabel(interpretation, tr) : null;
   const addExample = tr("ai.exampleAdd");
+  const recommendExample = tr("ai.exampleRecommend");
   const explainExample = tr("ai.exampleExplain");
 
   return (
@@ -173,7 +182,7 @@ export function ItineraryCommandPanel({
       </form>
 
       <div className="mt-2 flex flex-wrap gap-1.5">
-        {[addExample, explainExample].map((example) => (
+        {[addExample, recommendExample, explainExample].map((example) => (
           <button
             key={example}
             type="button"
@@ -208,6 +217,17 @@ export function ItineraryCommandPanel({
 
           {feedback.kind === "explain" && (
             <p className="mt-1 text-sc-text">{diffExplanation(lastDiff, tr)}</p>
+          )}
+
+          {feedback.kind === "recommendations" && (
+            <p className="mt-1 text-sc-text">
+              {feedback.outcome.recommendations.length > 0
+                ? withValues(tr("ai.recommendReady"), {
+                  count: feedback.outcome.recommendations.length,
+                  date: feedback.outcome.targetDate,
+                })
+                : tr("ai.recommendEmpty")}
+            </p>
           )}
 
           {feedback.kind === "proposal" && (

@@ -19,6 +19,8 @@ const copy: Partial<Record<MessageKey, string>> = {
   "step3.sortRelevance": "추천순",
   "step3.sortOfficial": "공식 출처순",
   "step3.showMore": "더보기 ({n}곳)",
+  "ai.recommendSheetTitle": "현재 동선에 맞는 촬영지",
+  "ai.recommendSheetSubtitle": "추가 전에는 일정이 바뀌지 않습니다.",
   "map.placesTitle": "추천 장소 지도",
   "common.back": "이전",
 };
@@ -75,6 +77,28 @@ describe("지도 위 추천 장소 바텀시트", () => {
 
     expect(markup).toContain("일정·경로 다시 그리는 중");
     expect(markup).toContain("2/8곳 선택");
+  });
+
+  it("AI 동선 추천을 일반 후보보다 앞에서 별도 확인하게 한다", () => {
+    const markup = renderToStaticMarkup(createElement(PlaceRecommendationSheet, {
+      selectedCount: 2,
+      totalCount: 8,
+      updating: false,
+      updated: false,
+      sortBy: "relevance",
+      onSortChange: () => undefined,
+      remainingCount: 0,
+      onShowMore: () => undefined,
+      onBack: () => undefined,
+      map: null,
+      routeRecommendations: createElement("li", { "data-route-card": true }, "영진해변"),
+      tr,
+    }));
+
+    expect(markup).toContain("data-route-recommendations");
+    expect(markup).toContain("현재 동선에 맞는 촬영지");
+    expect(markup).toContain("추가 전에는 일정이 바뀌지 않습니다.");
+    expect(markup).toContain("data-route-card");
   });
 
   it("실제 일정이 변경된 뒤에도 선택 수와 반영 완료 상태를 함께 보여준다", () => {

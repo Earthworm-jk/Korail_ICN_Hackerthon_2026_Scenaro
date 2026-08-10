@@ -17,6 +17,7 @@ export function PlaceRecommendationSheet({
   sortBy,
   onSortChange,
   children,
+  routeRecommendations,
   remainingCount,
   onShowMore,
   map,
@@ -30,6 +31,7 @@ export function PlaceRecommendationSheet({
   sortBy: "relevance" | "official";
   onSortChange: (sort: "relevance" | "official") => void;
   children?: ReactNode;
+  routeRecommendations?: ReactNode;
   remainingCount: number;
   onShowMore: () => void;
   map: ReactNode;
@@ -100,6 +102,19 @@ export function PlaceRecommendationSheet({
 
       {expanded && (
         <div className={styles.body} id="place-sheet-body" data-place-sheet-body>
+          {routeRecommendations && (
+            <section
+              className="mb-3 rounded-xl border border-sc-blue/30 bg-sc-blue-soft/70 p-3"
+              aria-labelledby="route-recommendation-title"
+              data-route-recommendations
+            >
+              <h4 id="route-recommendation-title" className="text-sm font-semibold text-sc-blue">
+                {tr("ai.recommendSheetTitle")}
+              </h4>
+              <p className="mt-1 text-xs text-sc-muted">{tr("ai.recommendSheetSubtitle")}</p>
+              <ul className="mt-2 space-y-2">{routeRecommendations}</ul>
+            </section>
+          )}
           <ul className={styles.list} data-place-sheet-list>
             {children}
             {remainingCount > 0 && (

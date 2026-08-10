@@ -29,6 +29,12 @@ const EN_ORDINALS = ["first", "second", "third", "fourth", "fifth", "sixth", "se
  */
 const MOVE_VERBS = /(옮겨|이동|보내)/;
 const ADD_VERBS = /(넣어|추가|포함)/;
+const ROUTE_RECOMMEND_PATTERNS = [
+  /(동선|경로).*(맞|가까|근처).*(추천|촬영지|장소)/,
+  /(추천|촬영지|장소).*(동선|경로).*(맞|가까|근처)/,
+  /recommend.*(?:along|near).*(?:route|way)/i,
+  /(?:place|filming location).*(?:along|near).*(?:route|way)/i,
+];
 const EXPLAIN_PATTERNS = [
   /(뭐|무엇|무슨).*(달라|바뀌|변경)/,
   /(변경|바뀐).*(내용|점|것).*(설명|알려|뭐)/,
@@ -95,6 +101,13 @@ export function parseCommand(input: string): RawItineraryCommand {
 
   if (EXPLAIN_PATTERNS.some((pattern) => pattern.test(text))) {
     return { intent: "explain_changes" };
+  }
+
+  if (ROUTE_RECOMMEND_PATTERNS.some((pattern) => pattern.test(text))) {
+    const dayIndex = parseDayIndex(text);
+    return dayIndex === undefined
+      ? unknown("DAY_MISSING")
+      : { intent: "recommend_along_route", dayIndex };
   }
 
   const wantsMove = MOVE_VERBS.test(text) || /\bmove\b/i.test(text);

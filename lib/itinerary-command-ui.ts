@@ -23,3 +23,25 @@ export function selectionAfterCommand(input: {
     )
   )));
 }
+
+export function stateAfterRouteRecommendation(input: {
+  currentSelectedPlaceIds: ReadonlySet<string>;
+  currentPreferredVisitDates: Readonly<Record<string, string>>;
+  recommendation: {
+    placeId: string;
+    targetDate: string;
+    displacedPlaceIds: readonly string[];
+  };
+}): { selectedPlaceIds: Set<string>; preferredVisitDates: Record<string, string> } {
+  const selectedPlaceIds = new Set(input.currentSelectedPlaceIds);
+  const preferredVisitDates = {
+    ...input.currentPreferredVisitDates,
+    [input.recommendation.placeId]: input.recommendation.targetDate,
+  };
+  for (const placeId of input.recommendation.displacedPlaceIds) {
+    selectedPlaceIds.delete(placeId);
+    delete preferredVisitDates[placeId];
+  }
+  selectedPlaceIds.add(input.recommendation.placeId);
+  return { selectedPlaceIds, preferredVisitDates };
+}

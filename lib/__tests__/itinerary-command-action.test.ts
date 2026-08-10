@@ -11,6 +11,15 @@ const request: PlanRequest = {
   selectedWorkIds: ["work-goblin"],
   excludedPlaceIds: ["place-yeongjin-beach"],
 };
+const routeRequest: PlanRequest = {
+  ...request,
+  excludedPlaceIds: [
+    "place-yeongjin-beach",
+    "place-lala-muri",
+    "place-unhyeongung-western-house",
+    "place-woljeongsa-temple",
+  ],
+};
 
 describe("#141 자연어 일정 조율 서버 액션", () => {
   it("키 없이도 대표 문장을 검증·재계산해 제안한다", async () => {
@@ -70,6 +79,38 @@ describe("#141 자연어 일정 조율 서버 액션", () => {
       interpretation: { source: "deterministic" },
       outcome: { kind: "explain" },
     });
+  });
+
+  it("동선 추천은 검증된 미선택 후보만 최대 3곳 반환하고 일정은 바꾸지 않는다", async () => {
+    const result = await runItineraryCommand({
+      sentence: "둘째 날 동선에 맞는 다른 촬영지를 추천해줘",
+      request: routeRequest,
+    });
+
+    expect(result.ok).toBe(true);
+    if (!result.ok || result.outcome.kind !== "recommendations") return;
+    expect(result.interpretation).toEqual({
+      source: "deterministic",
+      fallbackReason: "NO_API_KEY",
+    });
+    expect(result.outcome.targetDate).toBe("2026-08-13");
+    expect(result.outcome.recommendations.length).toBeGreaterThan(0);
+    expect(result.outcome.recommendations.length).toBeLessThanOrEqual(3);
+    for (const recommendation of result.outcome.recommendations) {
+      expect(routeRequest.excludedPlaceIds).toContain(recommendation.placeId);
+      expect(recommendation.targetDate).toBe("2026-08-13");
+      expect(["same_station", "same_region"]).toContain(recommendation.routeMatch);
+    }
+  });
+
+  it("동일한 동선 추천을 세 번 실행해도 후보와 영향이 같다", async () => {
+    const results = await Promise.all(Array.from({ length: 3 }, () => runItineraryCommand({
+      sentence: "둘째 날 동선에 맞는 다른 촬영지를 추천해줘",
+      request: routeRequest,
+    })));
+    expect(results.every((result) => result.ok && result.outcome.kind === "recommendations")).toBe(true);
+    expect(results[1]).toEqual(results[0]);
+    expect(results[2]).toEqual(results[0]);
   });
 
   it("클라이언트 입력 모양을 서버 경계에서 제한한다", async () => {
