@@ -14,6 +14,8 @@ export const messages = {
     "common.next": "다음",
     "common.back": "이전",
     "common.loading": "불러오는 중…",
+    // #130 — 후보 재조회가 실패해도 place-…·station-… 내부 ID를 화면에 내보내지 않는다
+    "common.nameUnavailable": "이름을 불러오지 못했습니다",
     "step1.title": "공항에서 출발하고 돌아올 시간을 정해주세요",
     "step1.subtitle": "항공편을 조회해 예정 시각을 불러온 뒤 실제 이동 시작·복귀 시각을 확인합니다.",
     "step1.arrival": "입국",
@@ -173,6 +175,7 @@ export const messages = {
     "trips.logout": "로그아웃",
     "trips.loadError": "저장된 일정을 불러오지 못했습니다 — 연결을 확인하고 다시 열어 주세요.",
     "trips.reopenCandidatesFailed": "저장 일정은 열었습니다. 연결이 복구되면 촬영지 후보를 다시 불러와 조율할 수 있습니다.",
+    "trips.reopenCandidatesRetry": "후보 다시 불러오기",
     "region.block": "권역",
     "region.about": "약",
     "region.hours": "시간",
@@ -318,6 +321,8 @@ export const messages = {
     "common.next": "Next",
     "common.back": "Back",
     "common.loading": "Loading…",
+    // #130 — never leak internal ids (place-… / station-…) when the lookup fails
+    "common.nameUnavailable": "Name unavailable",
     "step1.title": "Set when you leave and return to the airport",
     "step1.subtitle": "Look up your flights from the snapshot, then confirm your actual start and return times.",
     "step1.arrival": "Arrival",
@@ -474,6 +479,7 @@ export const messages = {
     "trips.logout": "Log out",
     "trips.loadError": "Could not load saved itineraries — check your connection and reopen.",
     "trips.reopenCandidatesFailed": "Your saved itinerary is open. Reconnect to reload filming-location candidates and adjust it.",
+    "trips.reopenCandidatesRetry": "Reload candidates",
     "region.block": "area",
     "region.about": "About",
     "region.hours": "h",
