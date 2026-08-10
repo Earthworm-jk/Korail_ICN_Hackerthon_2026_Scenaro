@@ -82,11 +82,16 @@ export type CommandProposal = {
 };
 
 /**
- * 이동시간 증가를 `크게`로 볼 기준 — **절대와 비율을 함께** 넘겨야 한다.
+ * 이동시간 증가를 `크게`로 볼 기준 — 경로가 둘이다.
  *
- * 절대만 쓰면 원래 10시간짜리 일정에서 30분 증가에도 확인을 받아 성가시고,
- * 비율만 쓰면 짧은 일정의 20%(예: 12분)에도 확인을 받는다.
+ * **중간 증가**는 절대와 비율을 함께 넘어야 한다. 절대만 쓰면 원래 10시간짜리 일정에서
+ * 30분 증가에도 확인을 받아 성가시고, 비율만 쓰면 짧은 일정의 20%(예: 12분)에도 받는다.
+ *
+ * **다만 그 AND만 두면 기준 일정이 길수록 허용되는 절대 증가량에 상한이 없어진다** —
+ * 600분 일정에서 119분이 늘어도 20% 미만이라 그냥 통과한다(PR #148 리뷰 2번).
+ * 그래서 비율과 무관하게 걸리는 절대 상한 경로를 함께 둔다.
  */
+const LARGE_TRAVEL_INCREASE_MINUTES = 60;
 const TRAVEL_INCREASE_MINUTES = 30;
 const TRAVEL_INCREASE_RATIO = 0.2;
 /** 출국 전 여유가 이만큼 줄면 알린다 — 공항 마감은 되돌리기 어려운 축이다 */
@@ -206,6 +211,8 @@ function impactOf(before: ItineraryResult, after: ItineraryResult): ProposalImpa
 }
 
 function isLargeTravelIncrease(delta: number, before: ItineraryResult): boolean {
+  // 절대 상한 — 기준 일정이 아무리 길어도 이만큼 늘면 알린다
+  if (delta >= LARGE_TRAVEL_INCREASE_MINUTES) return true;
   if (delta < TRAVEL_INCREASE_MINUTES) return false;
   if (before.status !== "planned") return false;
   const baseline = before.metrics.totalTravelMinutes;

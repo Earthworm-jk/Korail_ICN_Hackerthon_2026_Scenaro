@@ -8,6 +8,7 @@ import type {
 import type { MessageKey } from "@/lib/i18n/messages";
 import type { ItineraryDiff } from "@/lib/itinerary-diff";
 import type { Clarification } from "@/lib/itinerary-command-resolver";
+import { impactLinesOf } from "@/lib/itinerary-command-messages";
 
 type SuccessfulResult = Extract<CommandActionResult, { ok: true }>;
 export type ProposalOutcome = Extract<SuccessfulResult["outcome"], { kind: "proposal" }>;
@@ -243,6 +244,15 @@ export function ItineraryCommandPanel({
                       <li key={`moved-${placeId}`}>
                         {withValues(tr("ai.confirmMoved"), {
                           place: placeName(placeId), from: fromDate, to: toDate,
+                        })}
+                      </li>
+                    ))}
+                    {/* 이동시간·환승·출국 여유는 장소 목록이 아니라 일정 전체에 대한 한 줄이다.
+                        사유와 문구 키의 매핑은 lib에 두고 테스트로 잠근다 (PR #148 리뷰 1번) */}
+                    {impactLinesOf(feedback.outcome.proposal).map(({ reason, messageKey, value }) => (
+                      <li key={`impact-${reason}`}>
+                        {withValues(tr(messageKey), {
+                          minutes: String(value), count: String(value),
                         })}
                       </li>
                     ))}

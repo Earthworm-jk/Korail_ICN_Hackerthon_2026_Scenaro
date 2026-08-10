@@ -11,6 +11,10 @@ import {
   withoutPreference,
 } from "../itinerary-command-executor";
 import type { ItineraryResult } from "../engine/types";
+import type { CommandProposal, ProposalReason } from "../itinerary-command-executor";
+import { IMPACT_REASON_MESSAGE, impactLinesOf, isImpactReason } from "../itinerary-command-messages";
+import { t } from "../i18n/messages";
+
 
 /**
  * #141 P0-1 명령 계층 — 계약 회귀
@@ -464,13 +468,23 @@ describe("#141 실행기 판정 — 적용하지 않고 제안한다", () => {
     });
 
     // 두 기준을 함께 걸어야 짧은 일정에서 과민하거나 긴 일정에서 무뎌지지 않는다
-    it("절대 기준만 넘고 비율이 낮으면 그대로 적용한다", () => {
-      const before = result({ days: [day("2026-08-12", ["p2"])], ...metrics({ totalTravelMinutes: 600 }) });
+    // PR #148 리뷰 2번 — AND만 두면 기준 일정이 길수록 허용 증가량에 상한이 없어진다
+    it.each([
+      ["baseline 600 · +40분 (중간 증가, 비율 미달)", 600, 640, "ready"],
+      ["baseline 600 · +60분 (절대 상한)", 600, 660, "needs_confirmation"],
+      ["baseline 600 · +119분", 600, 719, "needs_confirmation"],
+      ["경계 · +30분이고 정확히 20%", 150, 180, "needs_confirmation"],
+      ["경계 · +30분인데 20% 미만", 200, 230, "ready"],
+      ["baseline 0 · +30분 (절대 기준만 적용)", 0, 30, "needs_confirmation"],
+    ])("%s → %s", (_label, beforeMinutes, afterMinutes, decision) => {
+      const before = result({
+        days: [day("2026-08-12", ["p2"])], ...metrics({ totalTravelMinutes: beforeMinutes as number }),
+      });
       const after = result({
         days: [day("2026-08-12", ["p2"]), day("2026-08-13", ["p1"])],
-        ...honored, ...metrics({ totalTravelMinutes: 640 }),
+        ...honored, ...metrics({ totalTravelMinutes: afterMinutes as number }),
       });
-      expect(proposalFor(command, before, after).decision).toBe("ready");
+      expect(proposalFor(command, before, after).decision).toBe(decision);
     });
 
     it("비율만 넘고 절대 증가가 작으면 그대로 적용한다", () => {
@@ -607,5 +621,43 @@ describe("#141 P0-1 수직 — 폴백만으로 대표 명령이 끝까지 간다
     const first = await planned(patched);
     const second = await planned(patched);
     expect(JSON.stringify(second)).toBe(JSON.stringify(first));
+  });
+});
+
+describe("#148 확인 창 문구 매핑 — 사유가 늘어도 빈 창이 뜨지 않는다", () => {
+  const proposal = (reasons: ProposalReason[], impact?: CommandProposal["impact"]) => ({
+    decision: "needs_confirmation" as const,
+    placeId: "p1", requestedDate: "2026-08-13",
+    reasons, displaced: [], moved: [], ...(impact ? { impact } : {}),
+  });
+
+  // PR #148 리뷰 1번 — 타입만 늘고 화면이 안 그리면 `확인해 주세요` 아래가 빈다
+  it("모든 사유가 목록 렌더링이나 문구 키 중 하나로 반드시 이어진다", () => {
+    const all: ProposalReason[] = [
+      "date_adjusted", "places_displaced", "places_moved",
+      "travel_time_increased", "transfers_increased", "departure_slack_reduced",
+    ];
+    for (const reason of all) {
+      if (!isImpactReason(reason)) continue; // 장소 목록으로 그리는 셋
+      expect(IMPACT_REASON_MESSAGE[reason]).toBeTruthy();
+      expect(t("ko", IMPACT_REASON_MESSAGE[reason])).toBeTruthy();
+      expect(t("en", IMPACT_REASON_MESSAGE[reason])).toBeTruthy();
+    }
+  });
+
+  it("문구에 넣을 값은 사람이 읽는 방향으로 양수다", () => {
+    const lines = impactLinesOf(proposal(
+      ["travel_time_increased", "transfers_increased", "departure_slack_reduced"],
+      { travelMinutesDelta: 70, transferCountDelta: 1, departureSlackMinutesDelta: -40 },
+    ));
+    expect(lines.map(({ reason, value }) => [reason, value])).toEqual([
+      ["travel_time_increased", 70],
+      ["transfers_increased", 1],
+      ["departure_slack_reduced", 40], // 40분 줄었다 → 양수 40
+    ]);
+  });
+
+  it("impact가 없으면 줄을 만들지 않는다", () => {
+    expect(impactLinesOf(proposal(["travel_time_increased"]))).toEqual([]);
   });
 });
