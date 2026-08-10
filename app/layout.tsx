@@ -6,10 +6,7 @@ import "./stage-v2.css";
 import "./stage-v3.css";
 import "./stage-v4.css";
 import { StepNavController } from "./step-nav-controller";
-import {
-  InitialCapacitySelectionController,
-  StageUtilityDockController,
-} from "./stage-utility-portal";
+import { StageUtilityDockController } from "./stage-utility-portal";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -35,7 +32,6 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
       <body className="min-h-full flex flex-col">
         <StepNavController />
         <StageUtilityDockController />
-        <InitialCapacitySelectionController />
         {children}
         <div id="stage-utility-dock" />
       </body>
