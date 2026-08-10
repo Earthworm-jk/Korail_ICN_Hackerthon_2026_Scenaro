@@ -62,8 +62,8 @@ export type UnknownClarification = z.infer<typeof UnknownClarificationSchema>;
 /**
  * 해석기 출력 — 허용 enum과 스키마를 통과해야만 실행기로 간다.
  *
- * P0는 4종이다. 본문 9종 중 나머지 5종(`extend_stay`·`add_free_time`·`make_day_lighter`·
- * `recommend_along_route`·`adjust_airport_buffer`)은 **엔진 입력이 없거나 P0-7이라**
+ * P0는 방문일 조율·동선 추천·변경 설명이다. 나머지 4종(`extend_stay`·`add_free_time`·
+ * `make_day_lighter`·`adjust_airport_buffer`)은 **엔진 입력이 아직 없어**
  * `unknown` + 재질문으로 떨어뜨린다. 입력이 생기면 그때 union에 넣는다 —
  * 실행할 수 없는 명령을 계약에 두면 해석기는 만들어 내는데 실행기가 못 받는다.
  */
@@ -79,6 +79,10 @@ export const RawItineraryCommandSchema = z.discriminatedUnion("intent", [
     dayIndex: DayIndexSchema,
   }),
   z.object({ intent: z.literal("explain_changes") }),
+  z.object({
+    intent: z.literal("recommend_along_route"),
+    dayIndex: DayIndexSchema,
+  }),
   z.object({
     intent: z.literal("unknown"),
     // 지원하지 않는 요청은 조용히 삼키지 않는다 — 무엇을 물어야 하는지 함께 내놓는다
@@ -101,6 +105,10 @@ export const ItineraryCommandSchema = z.discriminatedUnion("intent", [
     targetDate: KstDateSchema,
   }),
   z.object({ intent: z.literal("explain_changes") }),
+  z.object({
+    intent: z.literal("recommend_along_route"),
+    targetDate: KstDateSchema,
+  }),
 ]);
 
 export type ItineraryCommand = z.infer<typeof ItineraryCommandSchema>;
@@ -114,3 +122,8 @@ export type VisitDateCommand = Extract<
 export function isVisitDateCommand(command: ItineraryCommand): command is VisitDateCommand {
   return command.intent === "move_place" || command.intent === "add_place";
 }
+
+export type RouteRecommendationCommand = Extract<
+  ItineraryCommand,
+  { intent: "recommend_along_route" }
+>;

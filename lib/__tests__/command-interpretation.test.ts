@@ -50,6 +50,18 @@ describe("#141 명령 해석 — 모델 경로", () => {
     expect(result.command).toEqual({ intent: "explain_changes" });
   });
 
+  it("동선 추천은 장소를 만들지 않고 여행 일차만 구조화한다", async () => {
+    const fetchImpl = respond({ intent: "recommend_along_route", dayIndex: 2 });
+    const result = await interpretCommand("둘째 날 동선에 맞는 촬영지를 추천해줘", {
+      apiKey: "k",
+      fetchImpl,
+    });
+    expect(result).toEqual({
+      command: { intent: "recommend_along_route", dayIndex: 2 },
+      source: "llm",
+    });
+  });
+
   // 모델은 사용자 언어로 되묻는다 — 번역 대상이 아니라 출처를 구분해 싣는다
   it("모델의 자유형 재질문은 출처 llm으로 전달한다", async () => {
     const fetchImpl = respond({

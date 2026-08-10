@@ -1,7 +1,7 @@
 "use server";
 
 /**
- * #141 P0-1 자연어 일정 조율의 서버 경계.
+ * #141 P0-1 방문일 조율과 P0-2 동선 추천의 서버 경계.
  *
  * 클라이언트는 문장과 현재 조건만 보낸다. 현재 일정·장소 ID·날짜 판정을 신뢰 입력으로
  * 받지 않고 서버에서 기준 일정을 다시 계산한 뒤, 검증 카탈로그와 엔진 결과로 제안한다.
@@ -24,7 +24,8 @@ import {
 } from "../itinerary-command-executor";
 import type { PlanRequest } from "./itinerary";
 import { planItinerary } from "./itinerary";
-import { getCandidatePlaces } from "./places";
+import { getCandidatePlaces, type PlaceCandidate } from "./places";
+import { loadRepositories } from "../repositories/json";
 
 const SentenceSchema = z.string().trim().min(1).max(300);
 const PlanRequestSchema = z.object({
@@ -46,6 +47,16 @@ export type CommandActionInterpretation = Pick<
   "source" | "fallbackReason"
 >;
 
+export type RouteRecommendation = {
+  placeId: string;
+  targetDate: string;
+  travelMinutesDelta: number;
+  routeMatch: "same_station" | "same_region";
+  matchedWorkIds: string[];
+  displacedPlaceIds: string[];
+  movedPlaceIds: string[];
+};
+
 export type CommandActionResult =
   | { ok: false; code: "INVALID_REQUEST"; fieldErrors: Record<string, string> }
   | {
@@ -54,6 +65,11 @@ export type CommandActionResult =
       outcome:
         | { kind: "clarify"; clarification: Clarification }
         | { kind: "explain" }
+        | {
+            kind: "recommendations";
+            targetDate: string;
+            recommendations: RouteRecommendation[];
+          }
         | {
             kind: "proposal";
             proposal: CommandProposal;
@@ -78,6 +94,98 @@ function scheduledPlaceIds(result: ItineraryResult): Set<string> {
       ? result.days.flatMap((day) => day.items.map((item) => item.placeId))
       : [],
   );
+}
+
+const MAX_RECOMMENDATIONS = 3;
+const MAX_VALIDATION_CANDIDATES = 8;
+
+async function routeRecommendations(params: {
+  request: PlanRequest;
+  before: ItineraryResult;
+  candidates: PlaceCandidate[];
+  targetDate: string;
+}): Promise<RouteRecommendation[]> {
+  if (params.before.status !== "planned") return [];
+  const targetDay = params.before.days.find(({ date }) => date === params.targetDate);
+  if (!targetDay) return [];
+
+  const repos = loadRepositories();
+  const candidateById = new Map(params.candidates.map((candidate) => [candidate.id, candidate]));
+  const stationRegion = new Map<string, string>(
+    repos.stations.map(({ id, regionId }) => [id, regionId]),
+  );
+  const targetStations = new Set(
+    targetDay.items
+      .map(({ placeId }) => candidateById.get(placeId)?.nearestStationId)
+      .filter((id): id is string => id !== undefined),
+  );
+  for (const window of targetDay.regionWindows) targetStations.add(window.stationId);
+  const targetRegions = new Set<string>(
+    [...targetStations]
+      .map((stationId) => stationRegion.get(stationId))
+      .filter((id): id is string => id !== undefined),
+  );
+  const excluded = new Set(params.request.excludedPlaceIds);
+
+  const shortlist = params.candidates
+    .filter((candidate) => excluded.has(candidate.id))
+    .map((candidate) => {
+      const routeMatch = targetStations.has(candidate.nearestStationId)
+        ? "same_station" as const
+        : targetRegions.has(stationRegion.get(candidate.nearestStationId) ?? "")
+          ? "same_region" as const
+          : null;
+      return routeMatch ? { candidate, routeMatch } : null;
+    })
+    .filter((entry): entry is NonNullable<typeof entry> => entry !== null)
+    .sort((a, b) => {
+      const routeOrder = Number(a.routeMatch === "same_region") - Number(b.routeMatch === "same_region");
+      if (routeOrder !== 0) return routeOrder;
+      const rankOrder = (a.candidate.aiRank ?? Number.MAX_SAFE_INTEGER)
+        - (b.candidate.aiRank ?? Number.MAX_SAFE_INTEGER);
+      if (rankOrder !== 0) return rankOrder;
+      return a.candidate.id.localeCompare(b.candidate.id, "en");
+    })
+    .slice(0, MAX_VALIDATION_CANDIDATES);
+
+  const recommendations: RouteRecommendation[] = [];
+  for (const { candidate, routeMatch } of shortlist) {
+    const nextRequest: PlanRequest = {
+      ...params.request,
+      excludedPlaceIds: params.request.excludedPlaceIds.filter((id) => id !== candidate.id),
+      preferredVisitDates: {
+        ...(params.request.preferredVisitDates ?? {}),
+        [candidate.id]: params.targetDate,
+      },
+    };
+    const action = await planItinerary(nextRequest);
+    if (!action.ok || action.result.status !== "planned") continue;
+    const scheduledOnTarget = action.result.days
+      .find(({ date }) => date === params.targetDate)
+      ?.items.some(({ placeId }) => placeId === candidate.id) === true;
+    if (!scheduledOnTarget) continue;
+
+    const diff = diffItineraries(params.before, action.result);
+    recommendations.push({
+      placeId: candidate.id,
+      targetDate: params.targetDate,
+      travelMinutesDelta: action.result.metrics.totalTravelMinutes - params.before.metrics.totalTravelMinutes,
+      routeMatch,
+      matchedWorkIds: candidate.workIds
+        .filter((id) => params.request.selectedWorkIds.includes(id))
+        .sort((a, b) => a.localeCompare(b, "en")),
+      displacedPlaceIds: diff.places.dropped.map(({ placeId }) => placeId).sort((a, b) => a.localeCompare(b, "en")),
+      movedPlaceIds: diff.places.moved.map(({ placeId }) => placeId).sort((a, b) => a.localeCompare(b, "en")),
+    });
+  }
+
+  return recommendations
+    .sort((a, b) => a.displacedPlaceIds.length - b.displacedPlaceIds.length
+      || a.movedPlaceIds.length - b.movedPlaceIds.length
+      || a.travelMinutesDelta - b.travelMinutesDelta
+      || Number(a.routeMatch === "same_region") - Number(b.routeMatch === "same_region")
+      || a.placeId.localeCompare(b.placeId, "en"))
+    .slice(0, MAX_RECOMMENDATIONS);
 }
 
 /**
@@ -147,6 +255,22 @@ export async function runItineraryCommand(input: {
   }
   if (isExplainCommand(resolved.command)) {
     return { ok: true, interpretation, outcome: { kind: "explain" } };
+  }
+  if (resolved.command.intent === "recommend_along_route") {
+    return {
+      ok: true,
+      interpretation,
+      outcome: {
+        kind: "recommendations",
+        targetDate: resolved.command.targetDate,
+        recommendations: await routeRecommendations({
+          request,
+          before: beforeAction.result,
+          candidates: candidates.candidates,
+          targetDate: resolved.command.targetDate,
+        }),
+      },
+    };
   }
 
   const proposedRequest = planRequestFor(resolved.command, request);

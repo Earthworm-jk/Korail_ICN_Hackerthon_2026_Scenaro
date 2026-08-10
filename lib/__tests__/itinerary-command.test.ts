@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { getCandidatePlaces } from "../actions/places";
 import { planItinerary, type PlanRequest } from "../actions/itinerary";
-import { RawItineraryCommandSchema } from "../itinerary-command";
+import { isVisitDateCommand, RawItineraryCommandSchema } from "../itinerary-command";
 import { parseCommand, parseDayIndex, parsePlaceName } from "../itinerary-command-fallback";
 import { resolveCommand, type ResolveContext } from "../itinerary-command-resolver";
 import {
@@ -101,11 +101,29 @@ describe("#141 결정적 폴백 파서 — LLM 없이 대표 명령을 읽는다
     expect(parsePlaceName("둘째 날에 영진해변을 넣어줘")).toBe("영진해변");
   });
 
+  it("동선 추천 대표 문장을 결정적 명령으로 읽는다", () => {
+    expect(parseCommand("둘째 날 동선에 맞는 다른 촬영지를 추천해줘")).toEqual({
+      intent: "recommend_along_route",
+      dayIndex: 2,
+    });
+    expect(parseCommand("Recommend another filming location along the route on day 2")).toEqual({
+      intent: "recommend_along_route",
+      dayIndex: 2,
+    });
+    expect(parseCommand("둘째 날에 갈 만한 다른 촬영지 추천해줘")).toEqual({
+      intent: "recommend_along_route",
+      dayIndex: 2,
+    });
+    expect(parseCommand("Recommend another filming location for day 2")).toEqual({
+      intent: "recommend_along_route",
+      dayIndex: 2,
+    });
+  });
+
   // P0 밖 명령은 추측하지 않는다 — 잘못 해석해 일정을 바꾸는 것이 못 알아듣는 것보다 나쁘다
   it.each([
     ["첫날 일정이 너무 빡빡해. 여유롭게 바꿔줘", "UNSUPPORTED_INTENT"],
     ["영진해변에서 한 시간 더 있고 싶어", "UNSUPPORTED_INTENT"],
-    ["둘째 날 동선에 맞는 다른 촬영지를 추천해줘", "UNSUPPORTED_INTENT"],
     ["", "EMPTY_INPUT"],
   ])("지원하지 않는 요청은 재질문 코드로 떨어진다 (%s)", (input, reason) => {
     const command = parseCommand(input);
@@ -197,6 +215,13 @@ describe("#141 장소명·여행 일차 결정적 해결", () => {
     if (!result.ok && result.clarification.code === "DAY_OUT_OF_RANGE") {
       expect(result.clarification.tripDayCount).toBe(3);
     }
+  });
+
+  it("동선 추천 일차를 실제 여행 날짜로 확정한다", () => {
+    expect(resolveCommand({ intent: "recommend_along_route", dayIndex: 2 }, context())).toEqual({
+      ok: true,
+      command: { intent: "recommend_along_route", targetDate: "2026-08-13" },
+    });
   });
 
   // #141 지영님 정정 — baseline에 없는 장소를 "옮겨줘"라고 하면 조용히 추가하지 않는다
@@ -465,7 +490,7 @@ describe("#141 P0-1 수직 — 폴백만으로 대표 명령이 끝까지 간다
       scheduledPlaceIds: scheduled,
     });
     expect(resolved.ok).toBe(true);
-    if (!resolved.ok || resolved.command.intent === "explain_changes") return;
+    if (!resolved.ok || !isVisitDateCommand(resolved.command)) return;
 
     // 3) 검증된 엔진이 전체 재계산
     const after = await planned(planRequestFor(resolved.command, request()));

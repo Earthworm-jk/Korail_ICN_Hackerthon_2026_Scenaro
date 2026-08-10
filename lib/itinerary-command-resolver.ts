@@ -109,6 +109,20 @@ export function resolveCommand(
     return { ok: false, clarification: { code: "UNSUPPORTED", detail: raw.clarification } };
   }
 
+  if (raw.intent === "recommend_along_route") {
+    const targetDate = dateOfDayIndex(context.tripDates, raw.dayIndex);
+    return targetDate === undefined
+      ? {
+        ok: false,
+        clarification: {
+          code: "DAY_OUT_OF_RANGE",
+          dayIndex: raw.dayIndex,
+          tripDayCount: context.tripDates.length,
+        },
+      }
+      : { ok: true, command: { intent: "recommend_along_route", targetDate } };
+  }
+
   const matches = matchPlaces(raw.placeName, context.candidates);
   if (matches.length === 0) {
     return { ok: false, clarification: { code: "PLACE_NOT_FOUND", query: raw.placeName } };
