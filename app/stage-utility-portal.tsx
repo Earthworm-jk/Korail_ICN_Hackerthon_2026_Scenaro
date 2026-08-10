@@ -34,6 +34,56 @@ export function StageUtilityDockController() {
     const host = document.getElementById("stage-utility-dock");
     if (!host) return;
 
+    const root = document.documentElement;
+    let observedSheet: HTMLElement | null = null;
+    let geometryFrame = 0;
+
+    const syncGeometry = () => {
+      geometryFrame = 0;
+      const dockHeight = host.offsetHeight;
+      root.style.setProperty("--sc-dock-h", `${dockHeight}px`);
+
+      const sheet = document.querySelector<HTMLElement>("#place-picker[data-place-sheet]");
+      if (sheet !== observedSheet) {
+        if (observedSheet) geometryObserver.unobserve(observedSheet);
+        observedSheet?.style.removeProperty("--sc-sheet-dock-offset");
+        observedSheet?.style.removeProperty("--sc-sheet-available-h");
+        observedSheet = sheet;
+        if (sheet) geometryObserver.observe(sheet);
+      }
+      if (!sheet || dockHeight === 0) {
+        sheet?.style.setProperty("--sc-sheet-dock-offset", "0px");
+        sheet?.style.removeProperty("--sc-sheet-available-h");
+        return;
+      }
+
+      // Preserve the sheet's natural top edge. Shrink its available height by exactly
+      // the collision amount, then translate that smaller box upward by the same value.
+      // scrollHeight retains the unconstrained content height, so repeated observer
+      // passes converge even while max-height changes.
+      const sheetRect = sheet.getBoundingClientRect();
+      const previousOffset = Number.parseFloat(
+        sheet.style.getPropertyValue("--sc-sheet-dock-offset"),
+      ) || 0;
+      const unshiftedSheetBottom = sheetRect.bottom + previousOffset;
+      const dockTop = host.getBoundingClientRect().top;
+      const nextOffset = Math.max(0, Math.ceil(unshiftedSheetBottom - dockTop + 12));
+      const borderHeight = Math.max(0, sheet.offsetHeight - sheet.clientHeight);
+      const naturalHeight = Math.min(270, sheet.scrollHeight + borderHeight);
+      const nextAvailableHeight = Math.max(62, naturalHeight - nextOffset);
+      sheet.style.setProperty("--sc-sheet-dock-offset", `${nextOffset}px`);
+      sheet.style.setProperty("--sc-sheet-available-h", `${nextAvailableHeight}px`);
+    };
+
+    const scheduleGeometrySync = () => {
+      if (geometryFrame) cancelAnimationFrame(geometryFrame);
+      geometryFrame = requestAnimationFrame(syncGeometry);
+    };
+
+    const geometryObserver = new ResizeObserver(scheduleGeometrySync);
+    geometryObserver.observe(host);
+    window.addEventListener("resize", scheduleGeometrySync);
+
     const closeOpenUtilities = () => {
       host.querySelectorAll<HTMLDetailsElement>("details[open]").forEach((details) => {
         details.open = false;
@@ -79,6 +129,7 @@ export function StageUtilityDockController() {
           if (node.querySelector('a[href="#place-picker"]')) return;
           bindWarning(node);
         });
+      scheduleGeometrySync();
     };
 
     markWarnings();
@@ -87,7 +138,13 @@ export function StageUtilityDockController() {
 
     return () => {
       document.removeEventListener("keydown", onKeyDown);
+      window.removeEventListener("resize", scheduleGeometrySync);
       observer.disconnect();
+      geometryObserver.disconnect();
+      if (geometryFrame) cancelAnimationFrame(geometryFrame);
+      root.style.removeProperty("--sc-dock-h");
+      observedSheet?.style.removeProperty("--sc-sheet-dock-offset");
+      observedSheet?.style.removeProperty("--sc-sheet-available-h");
     };
   }, []);
 

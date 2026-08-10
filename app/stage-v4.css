@@ -137,16 +137,9 @@
     font-size: 11px !important;
   }
 
-  /* Data-basis prose is intentionally not promoted into a separate UI feature.
-     Keep the itinerary rail focused on itinerary and actionable warnings. */
-  #place-picker + div[aria-busy] > p.rounded-lg.border.bg-sc-subtle,
-  #place-picker + div[aria-busy] > div[class*="space-y"] > div.grid > div:nth-child(2) > p.rounded-lg.border.bg-sc-subtle {
-    display: none !important;
-  }
-
   /* ---- Bottom utility dock ---- */
   body:has(#place-picker) main {
-    padding-bottom: 88px;
+    padding-bottom: calc(var(--sc-dock-h, 0px) + 24px);
   }
 
   #stage-utility-dock:empty {
@@ -155,14 +148,16 @@
 
   #stage-utility-dock {
     position: fixed;
-    left: 50%;
+    left: 33px;
     bottom: 12px;
     z-index: 60;
     display: grid;
-    width: min(780px, calc(100vw - 36px));
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    /* Keep every utility on the map side. The right result rail contains the
+       primary final-itinerary CTA and must never sit underneath this dock. */
+    width: calc(100vw - 462px);
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(0, 1fr);
     gap: 7px;
-    transform: translateX(-50%);
     padding: 7px;
     border: 1px solid rgba(203, 211, 224, .9);
     border-radius: 13px;
@@ -173,6 +168,7 @@
 
   #stage-utility-dock > * {
     min-width: 0;
+    min-height: 48px;
   }
 
   #stage-utility-dock [data-stage-utility="change"] { order: 0; }
@@ -202,6 +198,15 @@
 
   #stage-utility-dock details > summary span[class*="text-xs"] {
     font-size: 10px !important;
+  }
+
+  /* Dock copy is deliberately two short lines. Never trade away the button's
+     meaning for an ellipsis; long explanations remain in the expanded panel. */
+  #stage-utility-dock details > summary strong,
+  #stage-utility-dock details > summary span[class*="text-xs"] {
+    overflow: visible !important;
+    white-space: normal !important;
+    text-overflow: clip !important;
   }
 
   #stage-utility-dock details[open] > div {
@@ -286,6 +291,7 @@
     position: static !important;
     bottom: auto !important;
     margin-top: 0 !important;
+    scroll-margin-bottom: 92px;
   }
 
   /* Presentation text must remain readable at tablet distance. Metadata may be quieter,
@@ -354,7 +360,9 @@
 @layer components {
 @media (min-width: 1024px) {
   body:has(div#place-picker[data-place-sheet]) main {
-    padding-bottom: 0 !important;
+    /* The fixed utility row still needs real document space. Without it the
+       final action row reaches the viewport edge and cannot be scrolled clear. */
+    padding-bottom: calc(var(--sc-dock-h, 0px) + 24px) !important;
   }
 
   html body main section > div.grid:has(> div#place-picker[data-place-sheet]) {
@@ -372,12 +380,23 @@
     z-index: 12;
     width: calc(100% - 20px) !important;
     height: auto !important;
-    max-height: 238px !important;
+    max-height: var(--sc-sheet-available-h, 270px) !important;
     margin: 0 10px 10px !important;
-    overflow: hidden !important;
+    overflow-y: auto !important;
     border-radius: 14px !important;
     padding: 0 !important;
     box-shadow: 0 16px 40px rgba(16, 24, 40, .18) !important;
+    transform: translateY(calc(-1 * var(--sc-sheet-dock-offset, 0px)));
+  }
+
+  /* Reset the legacy sticky left-rail header from stage-v2. Its negative margin
+     cancels the sheet padding and pins the title/toggle against the clipped edge. */
+  div#place-picker[data-place-sheet] > [data-place-sheet-header] {
+    position: relative !important;
+    top: auto !important;
+    min-height: 58px !important;
+    margin: 0 !important;
+    padding: 12px 14px 9px !important;
   }
 
   div#place-picker[data-place-sheet][data-sheet-expanded="false"] {
@@ -403,6 +422,24 @@
 
   div#place-picker[data-place-sheet] + div[aria-busy] > div[class*="space-y"] > div.grid > div:first-child {
     grid-row: 3;
+  }
+}
+
+/* The theme no-result state uses the same compact summary/detail pattern as the
+   other utilities, so the dock no longer needs a 1024-only height penalty. */
+@media (min-width: 1024px) and (max-width: 1279px) {
+  div#place-picker[data-place-sheet] {
+    margin-bottom: 10px !important;
+    max-height: var(--sc-sheet-available-h, 270px) !important;
+  }
+}
+
+/* The 720px-high projector viewport still needs the sheet lifted above the fixed
+   dock, but keep its full content height so cards never clip behind the shell. */
+@media (min-width: 1024px) and (max-height: 740px) {
+  div#place-picker[data-place-sheet] {
+    margin-bottom: 44px !important;
+    max-height: var(--sc-sheet-available-h, 270px) !important;
   }
 }
 

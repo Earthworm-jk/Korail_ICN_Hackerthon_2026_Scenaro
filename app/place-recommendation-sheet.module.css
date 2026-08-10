@@ -29,9 +29,8 @@
 }
 
 .toggle,
-.sort,
-.activeSort,
-.more {
+.more,
+.sortControl {
   min-height: 36px;
   border: 1px solid var(--sc-line);
   border-radius: 9px;
@@ -41,26 +40,49 @@
 }
 
 .toggle:hover,
-.sort:hover,
 .more:hover {
   border-color: var(--sc-blue);
   color: var(--sc-blue);
 }
 
+.sortControl:hover {
+  color: var(--sc-blue);
+}
+
+.toggle,
+.sortControl {
+  flex-shrink: 0;
+}
+
+.sortControl {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding-block: 0;
+  padding-right: 6px;
+  color: var(--sc-text);
+}
+
+.sortControl select {
+  min-width: 0;
+  max-width: 132px;
+  cursor: pointer;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  outline: 0;
+}
+
+.sortControl select:focus-visible:not([data-pointer-focus="true"]) {
+  border-radius: 4px;
+  outline: 2px solid var(--sc-blue);
+  outline-offset: 2px;
+}
+
 .body {
   min-height: 0;
   padding: 10px 12px 12px;
-}
-
-.controls {
-  display: flex;
-  gap: 8px;
-}
-
-.activeSort {
-  border-color: var(--sc-blue);
-  background: var(--sc-blue-soft);
-  color: var(--sc-blue);
 }
 
 .list {
@@ -75,8 +97,13 @@
 
 .more {
   width: 100%;
-  margin-top: 9px;
   background: var(--sc-surface);
+}
+
+.moreItem {
+  display: flex;
+  min-width: 0;
+  list-style: none;
 }
 
 .fallbackMap {
@@ -144,18 +171,6 @@
   text-decoration: underline;
 }
 
-.thumbnailLabel {
-  position: absolute;
-  inset-inline: 5px;
-  bottom: 5px;
-  color: var(--sc-muted);
-  font-size: 0.625rem;
-  font-weight: 700;
-  letter-spacing: 0.02em;
-  line-height: 1.05;
-  text-align: center;
-}
-
 @media (min-width: 1024px) {
   .sheet {
     max-height: 238px;
@@ -167,23 +182,11 @@
   }
 
   .body {
-    display: grid;
-    grid-template-columns: auto minmax(0, 1fr) auto;
-    align-items: start;
-    gap: 8px 10px;
     padding: 8px 10px 10px;
   }
 
-  .controls {
-    grid-column: 1;
-    flex-direction: column;
-  }
-
   .list {
-    grid-column: 2;
-    grid-row: 1 / span 2;
-    grid-auto-columns: minmax(250px, 280px);
-    grid-auto-flow: column;
+    display: flex;
     gap: 9px;
     margin-top: 0;
     overflow-x: auto;
@@ -193,16 +196,34 @@
   }
 
   .list :global([data-recommendation-card]) {
-    height: 145px;
-    overflow-y: auto;
+    flex: 0 0 270px;
+    height: 166px;
+    overflow-y: hidden;
     scroll-snap-align: start;
   }
 
+  .list :global([data-place-card-title]) {
+    display: -webkit-box;
+    overflow: hidden;
+    line-height: 1.35;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
+
+  .list :global([data-place-detail-toggle]) {
+    min-height: 28px !important;
+  }
+
   .more {
-    grid-column: 3;
-    grid-row: 1;
-    width: 90px;
-    margin-top: 0;
+    width: 100%;
+    height: 100%;
+    white-space: nowrap;
+  }
+
+  .moreItem {
+    flex: 0 0 112px;
+    height: 166px;
+    scroll-snap-align: start;
   }
 
   .fallbackMap,
@@ -211,8 +232,12 @@
   }
 
   .thumbnail {
-    width: 72px;
-    min-width: 72px;
-    height: 70px;
+    width: 64px;
+    min-width: 64px;
+    height: 64px;
+  }
+
+  .sortControl select {
+    max-width: 118px;
   }
 }
