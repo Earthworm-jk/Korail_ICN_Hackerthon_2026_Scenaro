@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import { ArrowUpDown } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import type { MessageKey } from "@/lib/i18n/messages";
 import type { PlacePhoto } from "@/lib/place-photos";
@@ -65,6 +66,18 @@ export function PlaceRecommendationSheet({
             )}
           </div>
         </div>
+        <label className={styles.sortControl}>
+          <ArrowUpDown aria-hidden="true" className="size-4 shrink-0" />
+          <span className="sr-only">{tr("step3.sortLabel")}</span>
+          <select
+            aria-label={tr("step3.sortLabel")}
+            value={sortBy}
+            onChange={(event) => onSortChange(event.target.value as "relevance" | "official")}
+          >
+            <option value="relevance">{tr("step3.sortRelevance")}</option>
+            <option value="official">{tr("step3.sortOfficial")}</option>
+          </select>
+        </label>
         <button
           type="button"
           className={styles.toggle}
@@ -78,20 +91,6 @@ export function PlaceRecommendationSheet({
 
       {expanded && (
         <div className={styles.body} id="place-sheet-body" data-place-sheet-body>
-          <div className={styles.controls} data-place-sheet-controls>
-            {(["relevance", "official"] as const).map((mode) => (
-              <button
-                key={mode}
-                type="button"
-                className={sortBy === mode ? styles.activeSort : styles.sort}
-                aria-pressed={sortBy === mode}
-                onClick={() => onSortChange(mode)}
-              >
-                {tr(mode === "relevance" ? "step3.sortRelevance" : "step3.sortOfficial")}
-              </button>
-            ))}
-          </div>
-
           <ul className={styles.list} data-place-sheet-list>
             {children}
             {remainingCount > 0 && (

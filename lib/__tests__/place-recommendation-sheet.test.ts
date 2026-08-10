@@ -15,7 +15,8 @@ const copy: Partial<Record<MessageKey, string>> = {
   "step3.selectedCount": "{selected}/{total}곳 선택",
   "step3.routeUpdating": "일정·경로 다시 그리는 중",
   "step3.routeUpdated": "새 일정·경로 반영 완료",
-  "step3.sortRelevance": "관련성순",
+  "step3.sortLabel": "장소 정렬 방식",
+  "step3.sortRelevance": "추천순",
   "step3.sortOfficial": "공식 출처순",
   "step3.showMore": "더보기 ({n}곳)",
   "map.placesTitle": "추천 장소 지도",
@@ -45,7 +46,9 @@ describe("지도 위 추천 장소 바텀시트", () => {
     expect(markup).toContain("지도 위 추천 장소");
     expect(markup).not.toContain("장소를 고르면 일정과 경로가 함께 바뀝니다.");
     expect(markup).toContain("3/8곳 선택");
-    expect(markup).toContain('aria-pressed="true"');
+    expect(markup).toContain('aria-label="장소 정렬 방식"');
+    expect(markup).toContain('<option value="relevance" selected="">추천순</option>');
+    expect(markup).not.toContain("data-place-sheet-controls");
     expect(markup).toContain("더보기 (3곳)");
     expect(markup).toContain("data-test-map");
     const listStart = markup.indexOf("data-place-sheet-list");

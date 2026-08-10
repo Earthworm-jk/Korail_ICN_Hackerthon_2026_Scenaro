@@ -29,9 +29,8 @@
 }
 
 .toggle,
-.sort,
-.activeSort,
-.more {
+.more,
+.sortControl {
   min-height: 36px;
   border: 1px solid var(--sc-line);
   border-radius: 9px;
@@ -41,30 +40,45 @@
 }
 
 .toggle:hover,
-.sort:hover,
-.more:hover {
+.more:hover,
+.sortControl:hover {
   border-color: var(--sc-blue);
   color: var(--sc-blue);
 }
 
-.toggle {
+.toggle,
+.sortControl {
   flex-shrink: 0;
+}
+
+.sortControl {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding-block: 0;
+  padding-right: 6px;
+  color: var(--sc-text);
+}
+
+.sortControl:focus-within {
+  border-color: var(--sc-blue);
+  box-shadow: 0 0 0 2px var(--sc-blue-soft);
+}
+
+.sortControl select {
+  min-width: 0;
+  max-width: 132px;
+  cursor: pointer;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  outline: 0;
 }
 
 .body {
   min-height: 0;
   padding: 10px 12px 12px;
-}
-
-.controls {
-  display: flex;
-  gap: 8px;
-}
-
-.activeSort {
-  border-color: var(--sc-blue);
-  background: var(--sc-blue-soft);
-  color: var(--sc-blue);
 }
 
 .list {
@@ -164,22 +178,11 @@
   }
 
   .body {
-    display: grid;
-    grid-template-columns: auto minmax(0, 1fr);
-    align-items: start;
-    gap: 8px 10px;
     padding: 8px 10px 10px;
-  }
-
-  .controls {
-    grid-column: 1;
-    flex-direction: column;
   }
 
   .list {
     display: flex;
-    grid-column: 2;
-    grid-row: 1 / span 2;
     gap: 9px;
     margin-top: 0;
     overflow-x: auto;
@@ -228,5 +231,9 @@
     width: 64px;
     min-width: 64px;
     height: 64px;
+  }
+
+  .sortControl select {
+    max-width: 118px;
   }
 }
