@@ -108,9 +108,18 @@ describe("저장 어댑터가 fetch를 부르지 않는다", () => {
     const storage = memoryStorage();
     const draft: LocalDraft = {
       savedAt: "2026-08-10T00:00:00.000Z",
-      trip: { arrivalAt: "2026-08-12T10:00" },
-      selectedActorIds: ["actor-kim-go-eun"],
-      selectedWorkIds: [],
+      trip: {
+        arrivalAt: "2026-08-12T10:00",
+        departureAt: "2026-08-14T18:00",
+        airportReadyAt: "2026-08-12T12:00",
+        airportArrivalDeadline: "2026-08-14T16:00",
+        airportReadyTouched: false,
+        airportDeadlineTouched: true,
+      },
+      context: {
+        actors: [{ id: "actor-kim-go-eun", name: { ko: "김고은", en: "Kim Go-eun" } }],
+        works: [],
+      },
       selectedPlaceIds: ["place-yeongjin-beach"],
     };
 
