@@ -23,8 +23,10 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useId,
   useRef,
   useState,
+  useSyncExternalStore,
   type KeyboardEvent as ReactKeyboardEvent,
   type PointerEvent as ReactPointerEvent,
   type ReactNode,
@@ -54,6 +56,7 @@ import { KOREA_OUTLINE_PATH } from "@/lib/korea-outline";
 import {
   railRouteSegments,
   routePairKey,
+  routePathKeys,
   routeStationSequence,
   type RailLineGeometry,
 } from "@/lib/map-route";
@@ -112,7 +115,11 @@ function MapLabels({ labels, unit }: { labels: readonly PlacedLabel[]; unit: num
               />
             )}
             {/* 알약 배경 — 해안선·동선 위에 글씨가 얹히면 읽히지 않는다 (발표자료 라벨 방식).
-                오버레이(권역) 이름은 점선 원과 같은 색·같은 파선으로 묶어 역 이름과 구분한다 */}
+                오버레이(권역) 이름은 색과 굵기로 역 이름과 구분한다.
+
+                파선은 쓰지 않는다. 권역 표식인 점선 원과 짝을 맞추려고 라벨에도 같은 파선을
+                줬었는데, 한 지점에 점선이 둘(원 + 알약 테두리) 겹쳐 표식이 뭘 가리키는지
+                흐려졌다. 파선은 "여기가 권역이다"를 말하는 원 하나에만 남긴다. */}
             <rect
               x={label.left - 3.5 * unit}
               y={label.top}
@@ -121,7 +128,6 @@ function MapLabels({ labels, unit }: { labels: readonly PlacedLabel[]; unit: num
               rx={4 * unit}
               className={overlay ? "fill-sc-surface stroke-sc-blue" : "fill-sc-surface stroke-sc-line"}
               strokeWidth={overlay ? 0.9 * unit : 0.6 * unit}
-              strokeDasharray={overlay ? `${3 * unit} ${2 * unit}` : undefined}
               opacity={0.94}
             />
             <text
@@ -144,6 +150,143 @@ function MapLabels({ labels, unit }: { labels: readonly PlacedLabel[]; unit: num
           </g>
         );
       })}
+    </>
+  );
+}
+
+/**
+ * 경로 한 줄을 그리는 시간(초).
+ *
+ * 재계산은 실시드에서 2초 안에 끝난다(NFR-PERF-001). 애니메이션이 그보다 길면 계산이 끝난
+ * 뒤에도 화면이 계속 움직여 "아직 계산 중"으로 읽힌다. 결과 확인을 늦추지 않는 길이로 잡는다.
+ */
+const ROUTE_DRAW_SECONDS = 0.7;
+
+/**
+ * 동작 줄이기 설정을 읽는다 (#118 P0-2 `reduced motion 대체 표현`).
+ *
+ * CSS가 아니라 여기서 읽는 이유는 두 가지다. 하나는 애니메이션이 SVG SMIL이라 CSS 미디어
+ * 쿼리로 끌 수 없다는 것이고, 다른 하나는 스타일 파일이 다른 레인 소유라는 것이다(#118).
+ *
+ * **서버 스냅샷은 `true`(동작 줄임)다.** 설정을 읽을 수 없는 곳에서는 보수적으로 잡는다.
+ * `false`로 두면 서버가 내려주는 HTML에 SVG `<animate>`가 들어가고, SMIL은 hydration을
+ * 기다리지 않으므로 동작 줄이기를 켠 사용자에게도 잠깐 움직임이 보일 수 있다 (PR #122 리뷰).
+ *
+ * 계약은 이것이다 — **서버 HTML에는 애니메이션이 없고, 클라이언트에서 reduce가 아님을
+ * 확인한 뒤에만 붙는다.** 동작 줄이기를 끈 사용자는 hydration 직후 스냅샷이 `false`로
+ * 바뀌면서 애니메이션이 붙으므로, 보이는 결과는 달라지지 않는다.
+ */
+const REDUCED_MOTION_QUERY = "(prefers-reduced-motion: reduce)";
+
+function subscribeReducedMotion(onChange: () => void): () => void {
+  if (typeof window === "undefined" || !window.matchMedia) return () => {};
+  const query = window.matchMedia(REDUCED_MOTION_QUERY);
+  query.addEventListener("change", onChange);
+  return () => query.removeEventListener("change", onChange);
+}
+
+function readReducedMotion(): boolean {
+  if (typeof window === "undefined" || !window.matchMedia) return false;
+  return window.matchMedia(REDUCED_MOTION_QUERY).matches;
+}
+
+/** 설정을 읽을 수 없는 서버에서는 동작을 줄인 쪽으로 본다 — 위 주석의 계약 */
+function serverReducedMotion(): boolean {
+  return true;
+}
+
+function usePrefersReducedMotion(): boolean {
+  return useSyncExternalStore(subscribeReducedMotion, readReducedMotion, serverReducedMotion);
+}
+
+/**
+ * 그려 넣기 mask가 덮는 영역 — 시안 좌표계(360×430) 전체에 여유를 둔 상자.
+ *
+ * mask 기본 영역은 대상의 bounding box 기준이라, 거의 직선인 구간에서는 상자가 얇아
+ * 굵은 mask 획이 잘린다. 좌표계 전체를 쓰면 어떤 구간이 와도 잘리지 않는다.
+ */
+const MASK_REGION = { x: -20, y: -20, width: 440, height: 510 } as const;
+
+/**
+ * 동선 한 구간.
+ *
+ * **철도 구간은 실선이다.** OSM way의 꼭짓점을 그대로 그린 실제 선로이고, `화면의 선이 실제
+ * 선로다`가 이 표시의 근거다(`korea-map-projection.ts`의 `polylinePath` 주석). 점선은 보통
+ * `대략적`으로 읽히므로 실선형에 쓰면 정확도를 실제보다 낮게 전달한다.
+ *
+ * **폴백 곡선은 점선이다.** 철도 축을 못 찾았을 때 역과 역을 잇기만 하는 보조선이라 실제
+ * 경로가 아니고(#14 6절), 점선이 그 성격에 맞다.
+ *
+ * 점선을 그려 넣는 방법 — `stroke-dasharray`는 점선 무늬에 이미 쓰이므로 같은 속성으로
+ * 길이를 드러낼 수 없다. 그래서 같은 모양을 굵은 실선으로 그린 mask를 씌우고 그 mask를
+ * `stroke-dashoffset`으로 연다. 점선 무늬는 그대로 둔 채 시작점부터 드러난다.
+ */
+export function RoutePath({
+  d,
+  kind,
+  unit,
+  animate,
+  maskId,
+}: {
+  d: string;
+  kind: "rail" | "curve";
+  unit: number;
+  animate: boolean;
+  maskId: string;
+}) {
+  const common = {
+    d,
+    fill: "none" as const,
+    className: "stroke-sc-orange",
+    strokeWidth: 3 * unit,
+    strokeLinecap: "round" as const,
+    strokeLinejoin: "round" as const,
+  };
+  /* pathLength로 길이를 1로 정규화한다 — 구간마다 실제 길이가 달라도 같은 시간에 그려지고,
+     DOM을 재서 길이를 알아낼 필요가 없다 */
+  const reveal = (
+    <animate
+      attributeName="stroke-dashoffset"
+      from="1"
+      to="0"
+      dur={`${ROUTE_DRAW_SECONDS}s`}
+      fill="freeze"
+      calcMode="spline"
+      keyTimes="0;1"
+      keySplines="0.2 0.7 0.2 1"
+    />
+  );
+
+  if (kind === "rail") {
+    if (!animate) return <path {...common} />;
+    return (
+      <path {...common} pathLength={1} strokeDasharray={1} strokeDashoffset={1}>
+        {reveal}
+      </path>
+    );
+  }
+
+  // 점선 무늬는 화면에서 같은 간격으로 보여야 하므로 unit을 곱한다 — 길이 정규화를 쓰지 않는다
+  const dash = `${4 * unit} ${4 * unit}`;
+  if (!animate) return <path {...common} strokeDasharray={dash} />;
+  return (
+    <>
+      <mask id={maskId} maskUnits="userSpaceOnUse" {...MASK_REGION}>
+        <path
+          d={d}
+          fill="none"
+          stroke="white"
+          strokeWidth={6 * unit}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          pathLength={1}
+          strokeDasharray={1}
+          strokeDashoffset={1}
+        >
+          {reveal}
+        </path>
+      </mask>
+      <path {...common} strokeDasharray={dash} mask={`url(#${maskId})`} />
     </>
   );
 }
@@ -370,6 +513,16 @@ export function KoreaMapPanel({
   }, [view]);
   const unit = screenUnit(view);
   const scale = scaleOf(view);
+  /**
+   * 경로를 그려 넣을지 — 동선 지도이고 동작 줄이기가 꺼져 있을 때만.
+   *
+   * 끄면 애니메이션 속성 자체를 붙이지 않는다. `dur=0`으로 두면 dasharray가 남아 실선이
+   * 미세하게 달라 보이므로, 아예 평소 렌더로 되돌린다 — 결과는 같고 과정만 없다.
+   */
+  const prefersReducedMotion = usePrefersReducedMotion();
+  const drawRoute = isRoute && !prefersReducedMotion;
+  // mask id는 문서에서 유일해야 한다 — 한 화면에 지도가 둘 이상 뜬다
+  const maskBaseId = useId();
 
   /**
    * 오버레이(테마체험 필터) 항목 등록부.
@@ -521,8 +674,9 @@ export function KoreaMapPanel({
     railLines,
     roadPairKeys,
   );
-  const routePaths = routeSegments.map((segment, index) => ({
-    key: `${segment.kind}-${index}`,
+  // key는 인덱스가 아니라 내용으로 잡는다 — 바뀐 구간만 다시 그려지게 (routePathKeys 주석 참고)
+  const routeShapes = routeSegments.map((segment) => ({
+    kind: segment.kind,
     d:
       segment.kind === "rail"
         ? polylinePath(segment.points)
@@ -533,6 +687,8 @@ export function KoreaMapPanel({
               .map((station) => project(station.latitude, station.longitude)),
           ),
   }));
+  const routePathKeyList = routePathKeys(routeShapes);
+  const routePaths = routeShapes.map((shape, index) => ({ ...shape, key: routePathKeyList[index] }));
   // ODbL 1.0 — OSM 선형을 실제로 그린 화면에서만 출처를 띄운다
   const hasRailGeometry = routeSegments.some((segment) => segment.kind === "rail");
 
@@ -633,16 +789,15 @@ export function KoreaMapPanel({
           />
 
           {isRoute &&
-            routePaths.map(({ key, d }) =>
+            routePaths.map(({ key, d, kind }, index) =>
               d ? (
-                <path
+                <RoutePath
                   key={key}
                   d={d}
-                  fill="none"
-                  className="stroke-sc-orange"
-                  strokeWidth={3 * unit}
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
+                  kind={kind}
+                  unit={unit}
+                  animate={drawRoute}
+                  maskId={`${maskBaseId}-route-${index}`}
                 />
               ) : null,
             )}

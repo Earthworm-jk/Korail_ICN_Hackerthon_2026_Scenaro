@@ -26,8 +26,33 @@ export const BASE_VIEWPORT: Viewport = {
   height: VIEW_BOX_BOUNDS.bottom - VIEW_BOX_BOUNDS.top,
 };
 
+/**
+ * 배율 사다리 — 이 파일의 배율 상수 네 개를 한 곳에서 정의한다 (#27 P0-0 "지도 확대 기준 단일화").
+ *
+ * 흩어져 있으면 왜 이 숫자인지, 서로 어떤 관계인지 알 수 없다. 순서는 항상 아래를 지키며
+ * `map-viewport.test.ts`의 `배율 사다리`가 이를 고정한다.
+ *
+ *   MIN_SCALE(1) < FOCUS_SCALE(3) <= COASTLINE_DETAIL_SCALE(5) < MAX_SCALE(200)
+ *
+ *   1    기본 창. 남한 전체가 들어온다. 축소 하한이자 팬 한계
+ *   3    자동 배치가 잡는 상한. 사람이 아니라 코드가 창을 정할 때는 여기까지만 당긴다
+ *   5    해안선 원천 해상도의 한계. 이 위로는 배경이 물러난다
+ *   200  사용자가 직접 당길 수 있는 상한. 화면 폭 약 2.5km
+ *
+ * **자동과 수동의 상한이 다른 것이 이 사다리의 핵심이다.** 자동 배치가 200까지 당기면 주변
+ * 역이 화면에서 사라져 "그 지점이 어디쯤인가"를 잃는다. 반대로 수동 상한을 3으로 묶으면 같은
+ * 도시 안의 촬영지가 한 점으로 겹친다(PR #115). 두 값을 하나로 합치지 않는다.
+ */
+
 /** 축소 하한 = 기본 창. 이보다 더 빼면 남한 둘레에 빈 바다만 늘어난다 */
 export const MIN_SCALE = 1;
+/**
+ * 자동 배치가 잡는 상한 — "대표 지점 보기"와 `fitTo`의 기본값.
+ *
+ * 3이면 창이 약 65×85 표시단위로, 권역 하나와 가까운 역이 함께 들어온다. 사용자가 직접
+ * 당길 수 있는 상한(MAX_SCALE)까지 코드가 자동으로 당기지 않는 이유는 위 사다리 주석에 있다.
+ */
+export const FOCUS_SCALE = 3;
 /**
  * 해안선이 버티는 배율.
  *
@@ -69,7 +94,7 @@ const WHEEL_PAGE_PX = 800;
  * 휠 한 이벤트의 배율 변화 — 이벤트 "횟수"가 아니라 이동량 `deltaY`에 비례한다.
  *
  * 이벤트마다 고정 배수를 곱하면 트랙패드에서 지도를 제어할 수 없다. 트랙패드는 한 번 쓸어도
- * 작은 deltaY 이벤트를 여러 건 보내므로, 고정 1.5배라면 네 건(1.5^4 = 5.06)만에 상한에 닿는다.
+ * 작은 deltaY 이벤트를 여러 건 보내므로, 고정 1.5배라면 한 번 쓸 때마다 배율이 수십 배씩 뛴다.
  * 지수를 쓰면 곱이 지수의 합이 되어, 같은 총 이동량이면 잘게 나뉘어 오든 한 번에 오든 결과가
  * 같다 — `map-viewport.test.ts`가 이 등식을 고정한다 (PR #111 리뷰).
  *
@@ -82,13 +107,6 @@ export function wheelZoomFactor(deltaY: number, deltaMode = 0): number {
   const steps = clamp(-pixels / WHEEL_NOTCH_PX, -1, 1);
   return Math.exp(steps * Math.log(ZOOM_STEP));
 }
-/**
- * "대표 지점 보기"가 잡는 배율.
- * 상한(5)까지 당기면 주변 역이 화면에서 사라져 그 지점이 어디쯤인지 알 수 없다. 3이면 창이
- * 약 65×85 표시단위 — 권역 하나와 가까운 역이 함께 들어오는 크기다.
- */
-export const FOCUS_SCALE = 3;
-
 function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));
 }

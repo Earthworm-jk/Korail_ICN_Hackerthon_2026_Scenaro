@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { routeStationSequence } from "../map-route";
+import { routePathKeys, routeStationSequence } from "../map-route";
 import { planItinerary } from "../actions/itinerary";
 
 describe("지도 동선 순서", () => {
@@ -72,5 +72,56 @@ describe("지도 동선 순서", () => {
       );
       expect(adjacent, `${ride.fromStationId} → ${ride.toStationId}`).toBe(true);
     }
+  });
+});
+
+/**
+ * 경로 path key (#118 P0-2 — 경로 재생성 애니메이션).
+ *
+ * 애니메이션 자체는 SVG SMIL이라 node 환경에서 검증할 수 없다. 대신 애니메이션이 **어디에
+ * 걸리는지**를 정하는 규칙, 즉 "무엇이 다시 마운트되는가"를 고정한다.
+ */
+describe("경로 path key", () => {
+  const rail = (d: string) => ({ kind: "rail", d });
+  const curve = (d: string) => ({ kind: "curve", d });
+
+  it("같은 입력이면 같은 key다", () => {
+    const paths = [rail("M0,0L1,1"), curve("M1,1L2,2")];
+    expect(routePathKeys(paths)).toEqual(routePathKeys(paths));
+  });
+
+  it("종류가 다르면 모양이 같아도 다른 key다", () => {
+    const [a, b] = routePathKeys([rail("M0,0L1,1"), curve("M0,0L1,1")]);
+    expect(a).not.toBe(b);
+  });
+
+  it("앞에 구간이 추가돼도 뒤 구간의 key는 그대로다 — 인덱스 key였다면 전부 바뀐다", () => {
+    const before = routePathKeys([rail("A"), rail("B")]);
+    const after = routePathKeys([rail("NEW"), rail("A"), rail("B")]);
+
+    expect(after.slice(1)).toEqual(before);
+    // 새로 들어온 구간만 before에 없다
+    expect(after.filter((key) => !before.includes(key))).toHaveLength(1);
+  });
+
+  it("가운데 구간만 바뀌면 그 구간 key만 바뀐다", () => {
+    const before = routePathKeys([rail("A"), rail("B"), rail("C")]);
+    const after = routePathKeys([rail("A"), rail("B2"), rail("C")]);
+
+    expect(after[0]).toBe(before[0]);
+    expect(after[2]).toBe(before[2]);
+    expect(after[1]).not.toBe(before[1]);
+  });
+
+  it("같은 모양이 두 번 나와도 key가 겹치지 않는다 — 왕복 구간", () => {
+    const keys = routePathKeys([rail("A"), rail("B"), rail("A")]);
+    expect(new Set(keys).size).toBe(3);
+    // 첫 등장은 순번 없이 그대로 — 되돌아오는 구간만 순번을 받는다
+    expect(keys[0]).not.toContain("#");
+    expect(keys[2]).toContain("#");
+  });
+
+  it("빈 목록은 빈 목록이다", () => {
+    expect(routePathKeys([])).toEqual([]);
   });
 });
