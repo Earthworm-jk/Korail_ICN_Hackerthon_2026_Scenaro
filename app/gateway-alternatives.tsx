@@ -1,5 +1,6 @@
 "use client";
 
+import { BusFront, TrainFront } from "lucide-react";
 import type { GatewayAlternative } from "@/lib/engine/types";
 import type { Locale, MessageKey } from "@/lib/i18n/messages";
 import { StageUtilityPortal } from "./stage-utility-portal";
@@ -26,16 +27,23 @@ export function GatewayAlternatives({ alternatives, selectedId, locale, onSelect
 }) {
   if (alternatives.length === 0) return null;
   const selected = selectedId === null
-    ? `🚆 ${tr("gateway.railTitle")}`
+    ? tr("gateway.railTitle")
     : alternatives.find((alternative) => alternative.id === selectedId)?.serviceName[locale] ?? tr("gateway.title");
+  const SelectedIcon = selectedId === null ? TrainFront : BusFront;
 
   return (
     <StageUtilityPortal>
       <details data-stage-utility="gateway" className="group rounded-lg border border-sc-blue/25 bg-sc-surface">
         <summary className="flex min-h-11 list-none items-center justify-between gap-3 px-3 py-2.5 text-sm marker:content-none">
           <span className="min-w-0">
-            <strong className="block truncate font-medium text-sc-text">🚌 {tr("gateway.title")}</strong>
-            <span className="block truncate text-xs text-sc-muted">{selected}</span>
+            <strong className="flex items-center gap-1.5 font-medium text-sc-text">
+              <BusFront aria-hidden="true" className="size-4 shrink-0" />
+              <span className="truncate">{tr("gateway.title")}</span>
+            </strong>
+            <span className="flex items-center gap-1.5 text-xs text-sc-muted">
+              <SelectedIcon aria-hidden="true" className="size-3.5 shrink-0" />
+              <span className="truncate">{selected}</span>
+            </span>
           </span>
           <span aria-hidden className="shrink-0 text-sc-muted transition-transform group-open:rotate-180">⌄</span>
         </summary>
@@ -47,7 +55,10 @@ export function GatewayAlternatives({ alternatives, selectedId, locale, onSelect
               aria-pressed={selectedId === null}
               onClick={() => onSelect(null)}
             >
-              <span className="font-medium">🚆 {tr("gateway.railTitle")}</span>
+              <span className="flex items-center gap-1.5 font-medium">
+                <TrainFront aria-hidden="true" className="size-4 shrink-0" />
+                {tr("gateway.railTitle")}
+              </span>
               <span className="mt-0.5 block text-xs text-sc-muted">{tr("gateway.railDesc")}</span>
             </button>
             {alternatives.map((alternative) => {
@@ -61,7 +72,10 @@ export function GatewayAlternatives({ alternatives, selectedId, locale, onSelect
                   aria-pressed={selectedId === alternative.id}
                   onClick={() => onSelect(alternative)}
                 >
-                  <span className="font-medium">🚌 {alternative.serviceName[locale]}</span>
+                  <span className="inline-flex items-center gap-1.5 font-medium">
+                    <BusFront aria-hidden="true" className="size-4 shrink-0" />
+                    {alternative.serviceName[locale]}
+                  </span>
                   <span className="ml-2 rounded bg-sc-orange-soft px-1.5 py-0.5 text-xs text-sc-orange-text">
                     {tr("gateway.direct")}
                   </span>
