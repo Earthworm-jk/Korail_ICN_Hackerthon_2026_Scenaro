@@ -144,18 +144,6 @@
   text-decoration: underline;
 }
 
-.thumbnailLabel {
-  position: absolute;
-  inset-inline: 5px;
-  bottom: 5px;
-  color: var(--sc-muted);
-  font-size: 0.625rem;
-  font-weight: 700;
-  letter-spacing: 0.02em;
-  line-height: 1.05;
-  text-align: center;
-}
-
 @media (min-width: 1024px) {
   .sheet {
     max-height: 238px;
@@ -193,7 +181,7 @@
   }
 
   .list :global([data-recommendation-card]) {
-    height: 160px;
+    height: 166px;
     overflow-y: hidden;
     scroll-snap-align: start;
   }

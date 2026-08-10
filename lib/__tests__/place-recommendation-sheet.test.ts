@@ -43,6 +43,7 @@ describe("지도 위 추천 장소 바텀시트", () => {
     expect(markup).toContain("data-place-sheet");
     expect(markup).toContain('data-sheet-expanded="true"');
     expect(markup).toContain("지도 위 추천 장소");
+    expect(markup).not.toContain("장소를 고르면 일정과 경로가 함께 바뀝니다.");
     expect(markup).toContain("3/8곳 선택");
     expect(markup).toContain('aria-pressed="true"');
     expect(markup).toContain("더보기 (3곳)");
@@ -97,6 +98,7 @@ describe("지도 위 추천 장소 바텀시트", () => {
     expect(markup).toContain("data-place-thumbnail");
     expect(markup).toContain('role="img"');
     expect(markup).toContain('aria-label="장소 이미지 준비 중"');
+    expect(markup).not.toContain(">장소 이미지 준비 중<");
   });
 
   it("검증된 사진은 장소 설명과 제1유형 원본 링크를 함께 제공한다", () => {

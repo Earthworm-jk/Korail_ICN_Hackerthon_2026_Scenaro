@@ -6,7 +6,7 @@
  * - 대안 시간표는 mock(#14 ⑨ 선행), 저장·내 일정은 in-memory 스텁(#25 선행) — 엔진·Supabase 연결 시 교체
  */
 import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from "react";
-import { MapPin, Sparkles, TriangleAlert } from "lucide-react";
+import { Info, MapPin, Sparkles, TriangleAlert } from "lucide-react";
 import {
   searchEntities,
   type ActorSummary,
@@ -1105,7 +1105,6 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
       {!showFinalItinerary && step === 3 && (candidateData || view.reopened) && (
         <section>
           <h2 className="text-lg font-semibold">{tr("step3.title")}</h2>
-          <p className="text-sm text-sc-muted">{tr("step3.subtitle")}</p>
           {/* #61 — 접근시간이 대중교통으로 읽히지 않도록 목록 위에 한 번 고지 */}
           <p className="mt-3 text-xs text-sc-muted">{tr("access.notice")}</p>
 
@@ -1175,6 +1174,23 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
           <div className="min-w-0" aria-busy={updating}>
           <div className="flex flex-wrap items-center gap-2">
             <h3 className="text-base font-semibold">{tr("step4.title")}</h3>
+            <details data-itinerary-info className="group relative">
+              <summary
+                aria-label={tr("step4.infoOpen")}
+                className="flex size-8 list-none cursor-pointer items-center justify-center rounded-full border text-sc-muted marker:content-none hover:border-sc-blue hover:text-sc-blue"
+              >
+                <Info aria-hidden="true" className="size-4" />
+              </summary>
+              <div className="absolute right-0 top-full z-40 mt-2 w-[min(360px,calc(100vw-32px))] rounded-xl border bg-sc-surface p-3 text-left shadow-xl">
+                <h4 className="text-sm font-semibold text-sc-text">{tr("step4.infoTitle")}</h4>
+                <p className="mt-2 text-xs text-sc-muted">{tr("step4.subtitle")}</p>
+                <p className="mt-2 border-t pt-2 text-xs text-sc-muted">
+                  <strong className="font-medium text-sc-text">{tr("step4.dataNoticeTitle")}</strong>{" "}
+                  {tr("step4.dataNotice")}
+                </p>
+                <p className="mt-2 border-t pt-2 text-xs text-sc-muted">{tr("step4.validation")}</p>
+              </div>
+            </details>
             {/* #85 리뷰 1 — 갱신 중에도 직전 일정을 지우지 않는다. 표시만 겹쳐 얹는다.
                 리뷰 비차단 — 계산 시작이 아니라 선택이 바뀐 시점부터 켠다 */}
             {updating && displayedDays && (
@@ -1183,15 +1199,6 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
               </span>
             )}
           </div>
-          <p className="text-sm text-sc-muted">{tr("step4.subtitle")}</p>
-
-          {/* #83 §F sc-data-notice — 이 열의 숫자가 어디서 왔는지. 결과 유무와 무관하게 항상 둔다.
-              헤더의 "데모 스냅샷" 배지는 제품 전체 라벨이고, 이쪽은 이 결과의 데이터 근거와
-              예약 전 재확인 안내라 역할이 다르다 */}
-          <p className="mt-3 rounded-lg border bg-sc-subtle px-3 py-2 text-xs text-sc-muted">
-            <strong className="font-medium text-sc-text">{tr("step4.dataNoticeTitle")}</strong>{" "}
-            {tr("step4.dataNotice")}
-          </p>
 
           {/* 아직 보여줄 일정 자체가 없을 때만 자리를 차지하는 안내로 바꾼다 */}
           {updating && !displayedDays && !needsSelection && (
@@ -1393,12 +1400,6 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
                   ) : undefined
                 }
               />
-              {/* #83 §F validation-copy — 이 일정이 무엇을 지켰는지. 지도 아래, 경고·미배치 목록
-                  바로 위에 둬서 "지킨 것 → 다만 이런 예외가 있다" 순서로 읽히게 한다.
-                  displayedDays가 있을 때만 렌더되므로 empty·선택 0곳에서는 나오지 않는다 */}
-              <p className="rounded-lg border bg-sc-subtle px-3 py-2 text-xs text-sc-muted">
-                {tr("step4.validation")}
-              </p>
               {viewWarnings.length > 0 && (
                 // #43 수용 기준: 경고 누락 0건 — 배치는 유지하되 방문 전 확인을 안내
                 <div className="rounded-lg border border-sc-orange/30 bg-sc-orange-soft p-4">
@@ -1607,7 +1608,7 @@ function PlaceCard({ candidate, locale, tr, selected, onToggle, stationName, wor
             {hoursLabel ? (
               <span>· {hoursLabel}</span>
             ) : (
-              <span className="inline-flex items-center gap-1 rounded bg-sc-orange-soft px-1.5 py-0.5 text-sc-orange-text">
+              <span className="inline-flex items-center gap-1 whitespace-nowrap rounded bg-sc-orange-soft px-1.5 py-0.5 text-sc-orange-text">
                 <TriangleAlert aria-hidden="true" className="size-3.5 shrink-0" />
                 {tr("step3.hoursUnverified")}
               </span>

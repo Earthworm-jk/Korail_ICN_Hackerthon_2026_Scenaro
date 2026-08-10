@@ -64,7 +64,6 @@ export function PlaceRecommendationSheet({
               </span>
             )}
           </div>
-          <p className="mt-0.5 text-xs text-sc-muted">{tr("step3.sheetSubtitle")}</p>
         </div>
         <button
           type="button"
@@ -167,7 +166,6 @@ export function PlaceThumbnail({
       role="img"
     >
       <span className={styles.thumbnailAdornment} aria-hidden>{children}</span>
-      <span className={styles.thumbnailLabel}>{label}</span>
     </div>
   );
 }

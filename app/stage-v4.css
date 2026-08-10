@@ -137,11 +137,24 @@
     font-size: 11px !important;
   }
 
-  /* Data-basis prose is intentionally not promoted into a separate UI feature.
-     Keep the itinerary rail focused on itinerary and actionable warnings. */
-  #place-picker + div[aria-busy] > p.rounded-lg.border.bg-sc-subtle,
-  #place-picker + div[aria-busy] > div[class*="space-y"] > div.grid > div:nth-child(2) > p.rounded-lg.border.bg-sc-subtle {
-    display: none !important;
+  /* Keep methodology available without occupying the itinerary rail. The native
+     disclosure works with touch and keyboard, while its panel opens over the rail
+     instead of changing the map/sheet geometry. */
+  #place-picker + div[aria-busy] details[data-itinerary-info] {
+    position: relative;
+    overflow: visible !important;
+  }
+
+  #place-picker + div[aria-busy] details[data-itinerary-info] > summary {
+    min-height: 32px !important;
+    padding: 6px !important;
+    border-radius: 999px !important;
+  }
+
+  #place-picker + div[aria-busy] details[data-itinerary-info][open] > summary {
+    border-radius: 999px !important;
+    background: var(--sc-blue-soft);
+    color: var(--sc-blue);
   }
 
   /* ---- Bottom utility dock ---- */
