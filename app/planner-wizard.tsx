@@ -22,6 +22,10 @@ import { planGatewayAlternatives, planItinerary } from "@/lib/actions/itinerary"
 import { runItineraryCommand } from "@/lib/actions/itinerary-command";
 import { excludedPlaceIdsFrom, initialCandidateIds } from "@/lib/candidates";
 import { initialPlaceIdsFromItinerary } from "@/lib/initial-place-selection";
+import {
+  commandResponseIsCurrent,
+  selectionAfterCommand,
+} from "@/lib/itinerary-command-ui";
 import { sortCandidatePlaces } from "@/lib/place-ranking";
 import { getFlightInfo } from "@/lib/actions/flights";
 import { t, type Locale, type MessageKey } from "@/lib/i18n/messages";
@@ -569,8 +573,15 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
   }, [candidateData, selectedPlaceIds, preferredVisitDates, arrival.at, departure.at, airportReady.at, airportDeadline.at, selectedActors, selectedWorks]);
 
   /** 서버가 돌려준 제안을 실제 화면 상태에 반영한다. 확인 전에는 절대 호출하지 않는다. */
-  const applyCommandOutcome = useCallback((outcome: ProposalOutcome) => {
+  const applyCommandOutcome = useCallback((outcome: ProposalOutcome, submittedSequence?: number) => {
     if (!candidateData || outcome.proposal.decision === "impossible") return;
+    // 자동 적용(ready)은 제출 당시 화면에만 유효하다. LLM 응답을 기다리는 동안 사용자가
+    // 장소를 토글했다면 그 새 선택을 늦은 응답으로 덮지 않는다. 수동 확인 경로는 토글 시
+    // aiFeedback 자체가 사라지므로 sequence를 넘기지 않아도 같은 안전 경계를 갖는다.
+    if (
+      submittedSequence !== undefined
+      && !commandResponseIsCurrent(submittedSequence, planSequence.current)
+    ) return;
     const sequence = ++planSequence.current;
     const scheduledPlaceIds = new Set(
       outcome.nextResult.status === "planned"
@@ -580,11 +591,15 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
     // 확인 대화에서 고지한 displaced 장소는 사용자가 변경 적용을 누른 순간 선택에서도
     // 제외되어야 한다. 그렇지 않으면 일정·지도는 8곳인데 선택 카운터만 9곳으로 남아
     // "모두 배치할 수 없음" 상태가 되어 저장이 막힌다.
-    const selected = new Set(
-      candidateData.candidates
-        .filter(({ id }) => scheduledPlaceIds.has(id))
-        .map(({ id }) => id),
+    const displacedPlaceIds = new Set(
+      outcome.proposal.displaced.map(({ placeId }) => placeId),
     );
+    const selected = selectionAfterCommand({
+      candidatePlaceIds: candidateData.candidates.map(({ id }) => id),
+      currentSelectedPlaceIds: selectedPlaceIds,
+      scheduledPlaceIds,
+      displacedPlaceIds,
+    });
     const appliedRequest = {
       ...outcome.nextRequest,
       excludedPlaceIds: candidateData.candidates
@@ -614,18 +629,22 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
       }
       void refreshThemeExperience(outcome.nextResult.days, appliedRequest.selectedWorkIds);
     }
-  }, [candidateData, saveStub, refreshThemeExperience]);
+  }, [candidateData, selectedPlaceIds, saveStub, refreshThemeExperience]);
 
   const submitItineraryCommand = useCallback((sentence: string) => {
     const request = currentConstraints();
     if (!request || !view.result || view.reopened || view.selectedAlt !== null) return;
     const normalized = sentence.trim();
     if (!normalized) return;
+    // 제출 시점의 입력 상태를 식별한다. 이후 카드 토글·재계산이 이 값을 올리면 도착한
+    // 응답은 현재 화면을 대상으로 한 것이 아니므로 feedback과 자동 적용을 모두 버린다.
+    const submittedSequence = ++planSequence.current;
     setAiSentence(normalized);
     setAiFeedback(null);
     startAiTransition(async () => {
       try {
         const result = await runItineraryCommand({ sentence: normalized, request });
+        if (!commandResponseIsCurrent(submittedSequence, planSequence.current)) return;
         if (!result.ok) {
           setAiFeedback({ kind: "error" });
           return;
@@ -650,9 +669,10 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
         };
         setAiFeedback(feedback);
         if (result.outcome.proposal.decision === "ready") {
-          applyCommandOutcome(result.outcome);
+          applyCommandOutcome(result.outcome, submittedSequence);
         }
       } catch {
+        if (!commandResponseIsCurrent(submittedSequence, planSequence.current)) return;
         setAiFeedback({ kind: "error" });
       }
     });
@@ -772,6 +792,7 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
     // 배우 요약은 후보 응답에 없어 ID로는 되살릴 수 없다 — 저장 레코드의 context와 같은 이유
     context: { actors: selectedActors, works: selectedWorks },
     selectedPlaceIds: [...selectedPlaceIds],
+    preferredVisitDates,
     // 재열람 중에는 저장된 일정을 보여주는 중이라 초안을 덮지 않는다
     enabled: reopened === null,
     onRestore: async (draft) => {
@@ -781,7 +802,7 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
       setAirportDeadline({ at: draft.trip.airportArrivalDeadline, touched: draft.trip.airportDeadlineTouched });
       setSelectedActors(draft.context.actors);
       setSelectedWorks(draft.context.works);
-      setPreferredVisitDates({});
+      setPreferredVisitDates(draft.preferredVisitDates);
       setAiFeedback(null);
       if (draft.context.actors.length === 0 && draft.context.works.length === 0) return;
 

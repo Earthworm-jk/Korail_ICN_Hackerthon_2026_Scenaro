@@ -88,6 +88,7 @@ export function draftContentEquals(a: LocalDraft | null, b: DraftInput): boolean
     && sameIds(a.context.actors.map((x) => x.id), b.context.actors.map((x) => x.id))
     && sameIds(a.context.works.map((x) => x.id), b.context.works.map((x) => x.id))
     && sameIds(a.selectedPlaceIds, b.selectedPlaceIds)
+    && sameVisitDates(a.preferredVisitDates, b.preferredVisitDates)
   );
 }
 
@@ -99,6 +100,20 @@ function sameIds(a: readonly string[], b: readonly string[]): boolean {
   return x.every((id, i) => id === y[i]);
 }
 
+function sameVisitDates(
+  a: Readonly<Record<string, string>>,
+  b: Readonly<Record<string, string>>,
+): boolean {
+  const aEntries = Object.entries(a).sort(([aId], [bId]) => aId.localeCompare(bId));
+  const bEntries = Object.entries(b).sort(([aId], [bId]) => aId.localeCompare(bId));
+  return (
+    aEntries.length === bEntries.length
+    && aEntries.every(([placeId, date], index) => (
+      placeId === bEntries[index]?.[0] && date === bEntries[index]?.[1]
+    ))
+  );
+}
+
 /** 화면 상태 → 저장 형태. `savedAt`은 쓰는 시점에 붙인다 */
 export function draftFromInput(input: DraftInput, now: Date): LocalDraft {
   return {
@@ -106,5 +121,6 @@ export function draftFromInput(input: DraftInput, now: Date): LocalDraft {
     trip: input.trip,
     context: input.context,
     selectedPlaceIds: input.selectedPlaceIds,
+    preferredVisitDates: input.preferredVisitDates,
   };
 }

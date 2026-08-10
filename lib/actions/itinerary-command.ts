@@ -103,16 +103,26 @@ export async function runItineraryCommand(input: {
   }
 
   const request = parsedRequest.data;
+  // 변경 설명은 화면이 보유한 실제 diff를 문장으로 옮길 뿐이다. 대표 설명 문장은 LLM뿐
+  // 아니라 기준 일정 재계산도 필요 없으므로 가장 먼저 종료한다.
+  const deterministic = parseCommand(parsedSentence.data);
+  if (deterministic.intent === "explain_changes") {
+    return {
+      ok: true,
+      interpretation: { source: "deterministic" },
+      outcome: { kind: "explain" },
+    };
+  }
+
   const beforeAction = await planItinerary(request);
   if (!beforeAction.ok) {
     return { ok: false, code: "INVALID_REQUEST", fieldErrors: beforeAction.fieldErrors };
   }
 
-  // 변경 설명은 실제 diff를 화면이 이미 보유한다. API를 호출해 같은 사실을 다시 쓰지 않는다.
-  const deterministic = parseCommand(parsedSentence.data);
-  const interpreted: CommandInterpretation = deterministic.intent === "explain_changes"
-    ? { command: deterministic, source: "deterministic" }
-    : await interpretCommand(parsedSentence.data, { apiKey: env.OPENAI_API_KEY });
+  const interpreted: CommandInterpretation = await interpretCommand(
+    parsedSentence.data,
+    { apiKey: env.OPENAI_API_KEY },
+  );
   const interpretation: CommandActionInterpretation = {
     source: interpreted.source,
     ...(interpreted.fallbackReason ? { fallbackReason: interpreted.fallbackReason } : {}),
