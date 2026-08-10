@@ -1,6 +1,6 @@
 name: Validate stage v2
 
-# One-shot full validation for the nested design PR.
+# One-shot full validation for the nested design PR. Rerun after backend-selection sync fix.
 on:
   push:
     branches:
