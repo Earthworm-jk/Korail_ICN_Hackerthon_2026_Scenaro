@@ -59,3 +59,28 @@ export function stateAfterRouteRecommendation(input: {
   selectedPlaceIds.add(input.recommendation.placeId);
   return { selectedPlaceIds, preferredVisitDates };
 }
+
+/**
+ * 날짜 편집(버튼·드래그)을 지금 허용해도 되는가 (PR #150 리뷰 1번).
+ *
+ * 화면은 선택이 바뀐 순간부터 재계산이 끝날 때까지 **직전 일정을 계속 보여준다.**
+ * 그 구간에 직전 일정의 장소를 편집하면, 이미 바뀐 선택 집합을 기준으로 요청이 나가
+ * 서로 다른 기준 상태가 섞인다. 새 선택에서 빠진 장소가 직전 일정에 남아 있는 짧은
+ * 순간에는 의도하지 않은 재추가가 된다.
+ *
+ * **표시 일정과 입력 상태가 일치할 때만** 허용한다. UI 비활성만으로는 서버 호출을 막지
+ * 못하므로 핸들러도 같은 기준으로 한 번 더 본다.
+ */
+export function canEditVisitDate(input: {
+  updating: boolean;
+  commandDisabled: boolean;
+  hasDisplayedDays: boolean;
+  needsSelection: boolean;
+  requiresAdjustment: boolean;
+}): boolean {
+  return !input.updating
+    && !input.commandDisabled
+    && input.hasDisplayedDays
+    && !input.needsSelection
+    && !input.requiresAdjustment;
+}
