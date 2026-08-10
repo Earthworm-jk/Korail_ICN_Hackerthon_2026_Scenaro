@@ -44,7 +44,7 @@ import {
   type SelectableAlternative,
 } from "@/lib/itinerary-view";
 import { autoPlanDecision } from "@/lib/auto-plan";
-import { clearLocalDraft, useLocalDraft } from "./local-draft";
+import { useLocalDraft } from "./local-draft";
 import { fromKstLocalInput as fromLocalInput, toKstLocalInput as toLocalInput } from "@/lib/kst-datetime";
 import { formatFlightStatus } from "@/lib/flight-status";
 import { formatEpisodeLabel } from "@/lib/episode-label";
@@ -619,7 +619,7 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
 
   // 조율 중 초안 자동 저장·복구 (#118 P0-3 · PR #123 어댑터 · PR #127 훅).
   // 판단·디바운스·저장은 훅이 갖고 있고, 여기서는 무엇을 담고 무엇을 되살릴지만 정한다.
-  useLocalDraft({
+  const { finalizeDraft } = useLocalDraft({
     trip: {
       arrivalAt: arrival.at,
       departureAt: departure.at,
@@ -661,6 +661,10 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
 
   // 최종 저장이 끝나면 초안을 비운다. 남겨 두면 다음 방문에서 이미 저장까지 마친 일정이
   // 초안으로 되살아나 사용자가 끝낸 작업을 다시 보게 된다.
+  //
+  // 키만 지우지 않고 훅의 finalizeDraft를 부른다 — 예약된 저장 타이머와 비교 기준까지
+  // 함께 정리해야 지운 직후 같은 내용이 다시 쓰이지 않는다 (PR #129 리뷰).
+  //
   // 재열람은 제외한다 — `reopen`도 저장 상태를 saved로 바꾸는데, 그때 지우면 사용자가
   // 만들던 초안이 저장 일정을 열었다는 이유로 사라진다.
   const prevSaveStatus = useRef(saveStub.saveStatus);
@@ -668,9 +672,9 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
     const previous = prevSaveStatus.current;
     prevSaveStatus.current = saveStub.saveStatus;
     if (previous !== "saved" && saveStub.saveStatus === "saved" && reopened === null) {
-      clearLocalDraft();
+      finalizeDraft();
     }
-  }, [saveStub.saveStatus, reopened]);
+  }, [saveStub.saveStatus, reopened, finalizeDraft]);
 
   const baseDays = recommendedDays(view);
   const mockAlternatives = useMemo(

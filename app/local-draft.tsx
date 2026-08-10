@@ -27,7 +27,7 @@
  * 초안대로 복원되지 않았다는 뜻이라, 거기서 저장을 열면 초기값·부분 상태가 원본을 덮는다 —
  * 오프라인에서 오히려 원본을 잃는 경로다.
  */
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { clearDraft, loadDraft, saveDraft, type LocalDraft } from "@/lib/local-itineraries";
 import {
   draftContentEquals,
@@ -66,7 +66,20 @@ export type UseLocalDraftOptions = DraftInput & {
   onRestore: (draft: LocalDraft) => void | Promise<void>;
 };
 
-export function useLocalDraft({ enabled, onRestore, ...input }: UseLocalDraftOptions): void {
+export type UseLocalDraftResult = {
+  /**
+   * 최종 저장이 끝났을 때 부른다. 예약된 초안 저장을 취소하고, 지금 화면을 비교 기준으로
+   * 삼은 뒤 저장소의 초안을 지운다 — **셋을 한 번에** 한다.
+   *
+   * 키만 지우면(`clearLocalDraft`) 훅에 예약된 타이머가 그대로 남아 지운 직후 같은 내용이
+   * 다시 쓰인다. 그러면 다음 방문에서 이미 끝낸 일정이 초안으로 되살아난다 (PR #129 리뷰).
+   *
+   * 이후 사용자가 실제로 입력을 바꾸면 초안 저장은 다시 열린다.
+   */
+  finalizeDraft: () => void;
+};
+
+export function useLocalDraft({ enabled, onRestore, ...input }: UseLocalDraftOptions): UseLocalDraftResult {
   const lastWritten = useRef<LocalDraft | null>(null);
   // 서버 렌더에서는 저장소가 없어 null이다. 없으면 처음부터 저장이 열린다.
   const [initialDraft] = useState<LocalDraft | null>(() => loadDraft());
@@ -95,6 +108,14 @@ export function useLocalDraft({ enabled, onRestore, ...input }: UseLocalDraftOpt
 
   // 저장 — 복구가 끝났고, 조율 중이고, 내용이 실제로 바뀐 경우에만 디바운스 후 한 번
   const { trip, context, selectedPlaceIds } = input;
+  // 예약된 저장을 밖에서 취소할 수 있어야 한다(finalizeDraft) — 그래서 id를 ref에 둔다
+  const timerRef = useRef<number | null>(null);
+  // 종료 시점의 화면 상태를 비교 기준으로 삼으려면 최신 입력이 필요하다
+  const latestInput = useRef<DraftInput>({ trip, context, selectedPlaceIds });
+  useEffect(() => {
+    latestInput.current = { trip, context, selectedPlaceIds };
+  }, [trip, context, selectedPlaceIds]);
+
   useEffect(() => {
     const next: DraftInput = { trip, context, selectedPlaceIds };
     const decision = draftDecision({
@@ -104,18 +125,36 @@ export function useLocalDraft({ enabled, onRestore, ...input }: UseLocalDraftOpt
     });
     if (decision === "skip") return;
 
-    const timer = window.setTimeout(() => {
+    timerRef.current = window.setTimeout(() => {
+      timerRef.current = null;
       const draft = draftFromInput(next, new Date());
       if (saveDraft(draft)) lastWritten.current = draft;
     }, DRAFT_DEBOUNCE_MS);
-    return () => window.clearTimeout(timer);
+    return () => {
+      if (timerRef.current === null) return;
+      window.clearTimeout(timerRef.current);
+      timerRef.current = null;
+    };
   }, [enabled, restoreState, trip, context, selectedPlaceIds]);
+
+  const finalizeDraft = useCallback(() => {
+    if (timerRef.current !== null) {
+      window.clearTimeout(timerRef.current);
+      timerRef.current = null;
+    }
+    // 지금 화면을 기준으로 삼는다 — 지운 직후 같은 내용이 "바뀐 것"으로 보여 다시 쓰이지 않게
+    lastWritten.current = draftFromInput(latestInput.current, new Date());
+    clearDraft();
+  }, []);
+
+  return { finalizeDraft };
 }
 
 /**
- * 최종 저장이 끝난 뒤 초안을 비운다.
+ * 저장소의 초안 키만 지운다.
  *
- * 남겨 두면 다음 방문에서 "저장까지 마친 일정"이 초안으로 되살아나 사용자가 이미 끝낸
- * 작업을 다시 보게 된다.
+ * **최종 저장 뒤에는 이 함수 대신 `useLocalDraft`가 돌려주는 `finalizeDraft`를 쓴다.**
+ * 키만 지우면 훅 안에 예약된 타이머와 비교 기준(`lastWritten`)이 남아 있어, 지운 직후
+ * 같은 내용이 다시 쓰인다 (PR #129 리뷰).
  */
 export { clearDraft as clearLocalDraft };
