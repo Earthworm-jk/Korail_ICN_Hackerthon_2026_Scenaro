@@ -379,7 +379,7 @@
     z-index: 12;
     width: calc(100% - 20px) !important;
     height: auto !important;
-    max-height: 270px !important;
+    max-height: var(--sc-sheet-available-h, 270px) !important;
     margin: 0 10px 10px !important;
     overflow-y: auto !important;
     border-radius: 14px !important;
@@ -429,7 +429,7 @@
 @media (min-width: 1024px) and (max-width: 1279px) {
   div#place-picker[data-place-sheet] {
     margin-bottom: 10px !important;
-    max-height: 270px !important;
+    max-height: var(--sc-sheet-available-h, 270px) !important;
   }
 }
 
@@ -438,7 +438,7 @@
 @media (min-width: 1024px) and (max-height: 740px) {
   div#place-picker[data-place-sheet] {
     margin-bottom: 44px !important;
-    max-height: 270px !important;
+    max-height: var(--sc-sheet-available-h, 270px) !important;
   }
 }
 

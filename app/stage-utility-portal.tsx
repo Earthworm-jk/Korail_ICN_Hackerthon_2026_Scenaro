@@ -47,23 +47,32 @@ export function StageUtilityDockController() {
       if (sheet !== observedSheet) {
         if (observedSheet) geometryObserver.unobserve(observedSheet);
         observedSheet?.style.removeProperty("--sc-sheet-dock-offset");
+        observedSheet?.style.removeProperty("--sc-sheet-available-h");
         observedSheet = sheet;
         if (sheet) geometryObserver.observe(sheet);
       }
       if (!sheet || dockHeight === 0) {
         sheet?.style.setProperty("--sc-sheet-dock-offset", "0px");
+        sheet?.style.removeProperty("--sc-sheet-available-h");
         return;
       }
 
-      // getBoundingClientRect includes the previous translation. Add it back before
-      // calculating the next value so repeated ResizeObserver passes converge.
+      // Preserve the sheet's natural top edge. Shrink its available height by exactly
+      // the collision amount, then translate that smaller box upward by the same value.
+      // scrollHeight retains the unconstrained content height, so repeated observer
+      // passes converge even while max-height changes.
+      const sheetRect = sheet.getBoundingClientRect();
       const previousOffset = Number.parseFloat(
         sheet.style.getPropertyValue("--sc-sheet-dock-offset"),
       ) || 0;
-      const unshiftedSheetBottom = sheet.getBoundingClientRect().bottom + previousOffset;
+      const unshiftedSheetBottom = sheetRect.bottom + previousOffset;
       const dockTop = host.getBoundingClientRect().top;
       const nextOffset = Math.max(0, Math.ceil(unshiftedSheetBottom - dockTop + 12));
+      const borderHeight = Math.max(0, sheet.offsetHeight - sheet.clientHeight);
+      const naturalHeight = Math.min(270, sheet.scrollHeight + borderHeight);
+      const nextAvailableHeight = Math.max(62, naturalHeight - nextOffset);
       sheet.style.setProperty("--sc-sheet-dock-offset", `${nextOffset}px`);
+      sheet.style.setProperty("--sc-sheet-available-h", `${nextAvailableHeight}px`);
     };
 
     const scheduleGeometrySync = () => {
@@ -135,6 +144,7 @@ export function StageUtilityDockController() {
       if (geometryFrame) cancelAnimationFrame(geometryFrame);
       root.style.removeProperty("--sc-dock-h");
       observedSheet?.style.removeProperty("--sc-sheet-dock-offset");
+      observedSheet?.style.removeProperty("--sc-sheet-available-h");
     };
   }, []);
 
