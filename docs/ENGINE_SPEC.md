@@ -51,6 +51,9 @@ function generateItinerary(c: TripConstraints, repos: Repos): ItineraryResult;
 방문일은 **소프트 선호**로만 받는다 (`preferredVisitDates`, #139). 못 지켜도 일정은 나오고
 비교 순위만 밀린다. 실패 코드(`USER_CONSTRAINT_INFEASIBLE`)는 추가하지 않는다.
 
+이 엔진 계약은 #141 자연어 조율 **P0-1의 선행**이다 (#139 9-1). 날짜 선택 버튼·드래그
+**화면**은 P1에 남는다 — 세 표현이 모두 같은 입력을 만들고, P0에서는 자연어가 그 수단이다.
+
 결과는 `preferredDateOutcomes`로 장소마다 알린다 (#139 8절 확정 필드명).
 
 ```ts
