@@ -121,10 +121,51 @@ describe("#141 명령 해석 — 폴백을 성공처럼 보이게 하지 않는�
     }
   });
 
-  it("재질문 없는 unknown도 받지 않는다", async () => {
-    const fetchImpl = respond({ intent: "unknown", clarificationQuestion: null });
+  // PR #143 리뷰 1번 — unknown이 최종 계약 검사를 우회하면 안 된다
+  it.each([
+    ["재질문 없음", null],
+    ["공백뿐인 재질문", "   "],
+    ["길이 상한 초과", "긴".repeat(400)],
+  ])("계약을 못 지키는 unknown은 받지 않는다 (%s)", async (_label, clarificationQuestion) => {
+    clearCommandInterpretationCache();
+    const fetchImpl = respond({ intent: "unknown", clarificationQuestion });
     const result = await interpretCommand("아무 말", { apiKey: "k", fetchImpl });
     expect(result.source).toBe("deterministic");
+    expect(result.fallbackReason).toBe("INTERPRETATION_FAILED");
+  });
+
+  it("장소명이 계약 상한을 넘어도 받지 않는다", async () => {
+    const fetchImpl = respond({
+      intent: "add_place", placeName: "가".repeat(200), dayIndex: 2,
+    });
+    const result = await interpretCommand(MOVE_SENTENCE, { apiKey: "k", fetchImpl });
+    expect(result.source).toBe("deterministic");
+  });
+
+  // PR #143 리뷰 2번 — 발표장 네트워크 실패 대응의 핵심 경로다
+  it("제한 시간을 넘기면 호출을 끊고 결정적 경로로 간다", async () => {
+    let aborted = false;
+    const hanging = vi.fn((_url: string, init: { signal: AbortSignal }) =>
+      new Promise<never>((_resolve, reject) => {
+        init.signal.addEventListener("abort", () => {
+          aborted = true;
+          reject(new Error("The operation was aborted"));
+        });
+      }));
+
+    const result = await interpretCommand(MOVE_SENTENCE, {
+      apiKey: "k",
+      fetchImpl: hanging as never,
+      timeoutMs: 10,
+    });
+
+    expect(aborted).toBe(true);
+    expect(result.source).toBe("deterministic");
+    expect(result.fallbackReason).toBe("INTERPRETATION_FAILED");
+    // 대표 문장은 폴백만으로도 그대로 명령이 된다
+    expect(result.command).toEqual({
+      intent: "add_place", placeName: "영진해변", dayIndex: 2,
+    });
   });
 
   it("실패한 해석은 캐시하지 않는다", async () => {

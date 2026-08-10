@@ -120,26 +120,28 @@ function outputText(payload: unknown): string {
   throw new CommandInterpretationError("OpenAI output_text missing");
 }
 
-/** 평평한 모델 출력을 계약 union으로 옮긴다. 옮길 수 없으면 폴백 사유다 */
+/**
+ * 평평한 모델 출력을 계약 union으로 옮긴다. 옮길 수 없으면 폴백 사유다.
+ *
+ * **모든 intent가 마지막에 `RawItineraryCommandSchema`를 한 번 지난다.** intent별로
+ * 직접 객체를 만들어 돌려주면 계약 검사를 우회한다 — `clarificationQuestion: "   "`은
+ * `ModelOutputSchema`를 통과하고 truthy라 빈 값 검사도 통과하지만, 최종 계약의
+ * `trim().min(1)`은 만족하지 못한다. 길이 상한도 같은 방식으로 새 나간다 (PR #143 리뷰 1번).
+ */
 function toCommand(output: z.infer<typeof ModelOutputSchema>): RawItineraryCommand {
-  if (output.intent === "explain_changes") return { intent: "explain_changes" };
-  if (output.intent === "unknown") {
-    if (!output.clarificationQuestion) {
-      throw new CommandInterpretationError("unknown without a clarification question");
-    }
-    // 모델이 사용자 언어로 직접 되물은 문장 — 번역 대상이 아니라 출처를 구분해 싣는다
-    return {
-      intent: "unknown",
-      clarification: { source: "llm", question: output.clarificationQuestion },
-    };
-  }
-  const parsed = RawItineraryCommandSchema.safeParse({
-    intent: output.intent,
-    placeName: output.placeName,
-    dayIndex: output.dayIndex,
-  });
+  const candidate = output.intent === "explain_changes"
+    ? { intent: "explain_changes" }
+    : output.intent === "unknown"
+      // 모델이 사용자 언어로 직접 되물은 문장 — 번역 대상이 아니라 출처를 구분해 싣는다
+      ? {
+        intent: "unknown",
+        clarification: { source: "llm", question: output.clarificationQuestion },
+      }
+      : { intent: output.intent, placeName: output.placeName, dayIndex: output.dayIndex };
+
+  const parsed = RawItineraryCommandSchema.safeParse(candidate);
   if (!parsed.success) {
-    throw new CommandInterpretationError(`${output.intent} without a place name or day`);
+    throw new CommandInterpretationError(`model output failed the command contract: ${output.intent}`);
   }
   return parsed.data;
 }
