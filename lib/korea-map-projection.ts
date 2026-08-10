@@ -19,12 +19,21 @@
  * 좌표를 임의로 배치하지 않는다: 화면에 찍히는 모든 점은 실제 위도·경도의 투영이다.
  */
 
-/** 메르카토르 축척 (d3 scale 값과 동일 단위) */
-const SCALE = 1983.2751905175248;
+/**
+ * 메르카토르 축척 (d3 scale 값과 동일 단위).
+ *
+ * 배경 타일을 얹으려면 이 세 상수가 밖에서 필요하다 — 타일 좌표계(EPSG:3857)와 우리 좌표는
+ * 같은 구면 메르카토르라 축척·평행이동만 알면 아핀 변환으로 이어진다 (`map-tiles.ts`).
+ * 값을 바꾸면 시안 재현 회귀와 타일 정렬이 함께 깨진다.
+ */
+export const MERCATOR_SCALE = 1983.2751905175248;
+const SCALE = MERCATOR_SCALE;
 /** 경도 0°가 놓이는 x (px) */
-const TRANSLATE_X = -4234.162150478736;
+export const MERCATOR_TRANSLATE_X = -4234.162150478736;
+const TRANSLATE_X = MERCATOR_TRANSLATE_X;
 /** 적도(mercY = 0)가 놓이는 y (px) */
-const TRANSLATE_Y = 1675.0702691478289;
+export const MERCATOR_TRANSLATE_Y = 1675.0702691478289;
+const TRANSLATE_Y = MERCATOR_TRANSLATE_Y;
 
 const DEG = Math.PI / 180;
 
