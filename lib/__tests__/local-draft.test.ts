@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { draftContentEquals, draftDecision, draftFromInput, type DraftInput } from "../local-draft";
+import {
+  draftContentEquals,
+  draftDecision,
+  draftFromInput,
+  restoreBlocksSave,
+  type DraftInput,
+  type RestoreState,
+} from "../local-draft";
 import type { LocalDraft } from "../local-itineraries";
 
 /**
@@ -61,6 +68,47 @@ describe("언제 초안을 쓰는가", () => {
         expect(draftDecision({ enabled, changed, restorePending: true })).toBe("skip");
       }
     }
+  });
+});
+
+/**
+ * PR #127 2차 리뷰 — 저장 잠금은 복구 상태 하나로 결정된다.
+ *
+ * 성공이 늦는 동안만 막고 실패에는 열어 주면, 화면이 복원되지 않은 채로 자동 저장이 돌아
+ * **원본 초안을 초기값·부분 상태로 덮는다.** 오프라인·일시 오류에서 오히려 원본을 잃는다.
+ */
+describe("복구 상태가 저장 잠금을 정한다", () => {
+  it("복구할 초안이 없으면 처음부터 열려 있다", () => {
+    expect(restoreBlocksSave("none")).toBe(false);
+  });
+
+  it("복구 중에는 막는다", () => {
+    expect(restoreBlocksSave("pending")).toBe(true);
+  });
+
+  it("복구에 성공해야 열린다", () => {
+    expect(restoreBlocksSave("restored")).toBe(false);
+  });
+
+  it("복구가 실패하면 계속 막는다 — 원본 초안을 지킨다", () => {
+    expect(restoreBlocksSave("failed")).toBe(true);
+  });
+
+  it("열리는 상태는 none과 restored 둘뿐이다", () => {
+    const states: RestoreState[] = ["none", "pending", "restored", "failed"];
+    expect(states.filter((s) => !restoreBlocksSave(s))).toEqual(["none", "restored"]);
+  });
+
+  it("막히면 저장 판단도 skip이다 — 두 함수가 어긋나지 않게", () => {
+    for (const state of ["pending", "failed"] as RestoreState[]) {
+      expect(
+        draftDecision({ enabled: true, changed: true, restorePending: restoreBlocksSave(state) }),
+        state,
+      ).toBe("skip");
+    }
+    expect(
+      draftDecision({ enabled: true, changed: true, restorePending: restoreBlocksSave("restored") }),
+    ).toBe("save");
   });
 });
 

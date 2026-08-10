@@ -9,6 +9,36 @@ import type { LocalDraft } from "./local-itineraries";
 
 export type DraftInput = Omit<LocalDraft, "savedAt">;
 
+/**
+ * 초안 복구의 진행 상태.
+ *
+ * 저장 잠금이 이 값 하나로 결정된다 — 훅 안에 조건으로 흩어 두면 "실패했는데 저장이
+ * 열려 원본을 잃었다" 같은 전이를 테스트로 잡을 수 없다 (PR #127 2차 리뷰).
+ */
+export type RestoreState =
+  /** 복구할 초안이 없다 — 처음부터 저장이 열려 있다 */
+  | "none"
+  /** 읽어 왔고 호출부가 되살리는 중 */
+  | "pending"
+  /** 되살리기가 끝났다 */
+  | "restored"
+  /** 되살리기가 실패했다 — 화면은 초기값이거나 반쯤 복원된 상태다 */
+  | "failed";
+
+/**
+ * 지금 저장을 막아야 하는가.
+ *
+ * **실패도 막는다.** 실패했다는 것은 화면이 초안대로 복원되지 않았다는 뜻이라, 여기서
+ * 저장을 열면 초기값·부분 상태가 원본 초안을 덮어쓴다. 성공이 늦는 동안만 막고 실패에는
+ * 열어 주면, 오프라인·일시 오류에서 **오히려 원본을 잃는다**.
+ *
+ * 실패한 마운트에서는 계속 막아 둔다. 다음 방문에서 초안을 다시 읽으면 되고, 그동안
+ * 사용자가 새로 만든 것은 저장되지 않지만 **이미 있던 것을 잃는 쪽이 더 나쁘다**.
+ */
+export function restoreBlocksSave(state: RestoreState): boolean {
+  return state === "pending" || state === "failed";
+}
+
 export type DraftDecision =
   /** 쓰지 않는다 — 복구 중이거나, 재열람 중이거나, 직전에 쓴 것과 같다 */
   | "skip"
