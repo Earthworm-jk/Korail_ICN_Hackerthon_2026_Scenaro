@@ -53,9 +53,23 @@ function throwingStorage(): Storage {
   };
 }
 
+/**
+ * 실제 저장 레코드에 가까운 fixture.
+ *
+ * 빈 배열만으로 검증하면 "원소까지 본다"는 계약을 확인할 수 없다 — 통과도 실패도 공허해진다.
+ * 그래서 하루·탑승·방문·권역창·경고·선택 칩을 모두 한 건씩 채운다.
+ */
+const day = {
+  date: "2026-08-12",
+  items: [{ placeId: "place-yeongjin-beach", arriveAt: "2026-08-12T05:00:00.000Z", departAt: "2026-08-12T06:00:00.000Z", accessMinutes: 25 }],
+  rides: [{ trainNo: "KTX-001", fromStationId: "station-seoul", toStationId: "station-gangneung", departAt: "2026-08-12T02:00:00.000Z", arriveAt: "2026-08-12T04:00:00.000Z" }],
+  regionWindows: [{ stationId: "station-gangneung", regionId: "region-gangwon", startAt: "2026-08-12T04:00:00.000Z", endAt: "2026-08-12T12:00:00.000Z", availableMinutes: 480, startBoundary: "TRAIN_ARRIVAL", endBoundary: "DAY_END" }],
+};
+
 const entry: Omit<SavedItineraryStub, "id" | "savedAt"> = {
   title: "강원 2박 3일",
-  days: [],
+  days: [day] as unknown as SavedItineraryStub["days"],
+  warnings: [{ code: "ACTIVITY_WINDOW_MISMATCH", placeId: "place-lala-muri", detail: "UNVERIFIED_HOURS" }],
   constraints: {
     arrivalAt: "2026-08-12T01:00:00.000Z",
     departureAt: "2026-08-14T09:00:00.000Z",
@@ -67,7 +81,10 @@ const entry: Omit<SavedItineraryStub, "id" | "savedAt"> = {
   } as SavedItineraryStub["constraints"],
   schemaVersion: 2,
   snapshotVersion: "2026-08-09",
-  context: { actors: [], works: [] },
+  context: {
+    actors: [{ id: "actor-kim-go-eun", name: { ko: "김고은", en: "Kim Go-eun" } }],
+    works: [{ id: "work-goblin", title: { ko: "도깨비", en: "Goblin" } }],
+  },
 };
 
 describe("저장·목록·다시 열기", () => {
@@ -178,16 +195,63 @@ describe("깨진 저장소에서 죽지 않는다", () => {
     }
   });
 
+  /**
+   * PR #123 2차 리뷰 — 배열 여부만 보면 `[null]`이 통과한다. 다시 열었을 때 렌더가
+   * 원소의 `placeId`·`trainNo`·`name[locale]`을 바로 읽으므로 그 자리에서 죽는다.
+   */
+  it("중첩 배열의 원소가 깨진 레코드를 걸러낸다", () => {
+    const [ok] = (() => {
+      const storage = memoryStorage();
+      saveLocalItinerary(entry, storage);
+      return listLocalItineraries(storage);
+    })();
+    const [firstDay] = ok.days as unknown as Record<string, unknown>[];
+
+    const broken: Record<string, unknown>[] = [
+      { ...ok, id: "actor-null", context: { ...ok.context, actors: [null] } },
+      { ...ok, id: "actor-no-name", context: { ...ok.context, actors: [{ id: "a" }] } },
+      // WorkSummary의 제목 키는 title이다 — name을 넣으면 화면이 undefined를 읽는다
+      { ...ok, id: "work-wrong-key", context: { ...ok.context, works: [{ id: "w", name: { ko: "도깨비", en: "Goblin" } }] } },
+      { ...ok, id: "item-null", days: [{ ...firstDay, items: [null] }] },
+      { ...ok, id: "item-no-placeId", days: [{ ...firstDay, items: [{ arriveAt: "2026-08-12T05:00:00.000Z", departAt: "2026-08-12T06:00:00.000Z", accessMinutes: 10 }] }] },
+      { ...ok, id: "ride-null", days: [{ ...firstDay, rides: [null] }] },
+      { ...ok, id: "ride-bad-instant", days: [{ ...firstDay, rides: [{ ...(firstDay.rides as unknown[])[0] as object, departAt: "언제" }] }] },
+      { ...ok, id: "window-null", days: [{ ...firstDay, regionWindows: [null] }] },
+      { ...ok, id: "window-minutes-string", days: [{ ...firstDay, regionWindows: [{ ...(firstDay.regionWindows as unknown[])[0] as object, availableMinutes: "480" }] }] },
+      { ...ok, id: "gateway-null", days: [{ ...firstDay, gatewayLegs: [null] }] },
+      { ...ok, id: "warning-null", warnings: [null] },
+      { ...ok, id: "warning-no-detail", warnings: [{ code: "ACTIVITY_WINDOW_MISMATCH", placeId: "p" }] },
+    ];
+
+    for (const record of broken) {
+      const raw = JSON.stringify({ version: LOCAL_STORAGE_VERSION, data: [record, ok] });
+      const list = listLocalItineraries(memoryStorage({ [SAVED_KEY]: raw }));
+      expect(list.map((r) => r.id), String(record.id)).toEqual([ok.id]);
+    }
+  });
+
   it("걸러낸 뒤 남은 레코드는 목록 포맷과 재열람이 실제로 쓸 수 있다", () => {
     const storage = memoryStorage();
     saveLocalItinerary(entry, storage);
     const [record] = listLocalItineraries(storage);
+
     // 목록이 부르는 그 식 — 잘못된 값이면 RangeError를 던진다
     expect(() =>
       new Intl.DateTimeFormat("ko-KR", { timeZone: "Asia/Seoul" }).format(new Date(record.savedAt)),
     ).not.toThrow();
-    // 재열람이 참조하는 지점들
-    expect(Array.isArray(record.context.actors)).toBe(true);
+
+    // 재열람 직후 화면이 원소를 읽는 지점들 — 여기서 죽지 않아야 걸러내기가 의미가 있다
+    expect(() => {
+      for (const actor of record.context.actors) void actor.name.ko;
+      for (const work of record.context.works) void work.title.en;
+      for (const d of record.days) {
+        for (const item of d.items) void item.placeId.length;
+        for (const ride of d.rides) void `${ride.trainNo}-${ride.departAt}`;
+        for (const w of d.regionWindows) void w.availableMinutes.toFixed(0);
+      }
+      for (const warning of record.warnings ?? []) void warning.placeId.length;
+    }).not.toThrow();
+
     expect(Number.isNaN(new Date(record.constraints.airportArrivalDeadline).getTime())).toBe(false);
   });
 

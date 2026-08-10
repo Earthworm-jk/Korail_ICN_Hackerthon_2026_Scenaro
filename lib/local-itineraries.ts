@@ -116,15 +116,106 @@ function isUsableConstraints(value: unknown): boolean {
   );
 }
 
-/** 일정 하루치 — 렌더가 배열 세 개를 그대로 순회한다 */
-function isUsableDay(value: unknown): boolean {
-  if (typeof value !== "object" || value === null) return false;
-  const day = value as Record<string, unknown>;
+function isObject(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
+/** 배열이면서 원소가 전부 조건을 만족하는가 — 빈 배열은 통과한다 */
+function isArrayOf(value: unknown, check: (item: unknown) => boolean): boolean {
+  return Array.isArray(value) && value.every(check);
+}
+
+/** `{ ko, en }` — 화면이 `text[locale]`로 바로 읽는다 */
+function isLocalizedText(value: unknown): boolean {
+  return isObject(value) && typeof value.ko === "string" && typeof value.en === "string";
+}
+
+/** `ActorSummary` — 칩이 `name[locale]`을 읽는다 */
+function isActorSummary(value: unknown): boolean {
+  return isObject(value) && typeof value.id === "string" && isLocalizedText(value.name);
+}
+
+/** `WorkSummary` — 제목 키가 name이 아니라 title이다 */
+function isWorkSummary(value: unknown): boolean {
+  return isObject(value) && typeof value.id === "string" && isLocalizedText(value.title);
+}
+
+/** `ItineraryItem` */
+function isItineraryItem(value: unknown): boolean {
   return (
-    typeof day.date === "string"
-    && Array.isArray(day.items)
-    && Array.isArray(day.rides)
-    && Array.isArray(day.regionWindows)
+    isObject(value)
+    && typeof value.placeId === "string"
+    && isUsableInstant(value.arriveAt)
+    && isUsableInstant(value.departAt)
+    && typeof value.accessMinutes === "number"
+  );
+}
+
+/** `TrainRide` — 렌더가 key로 `trainNo`+`departAt`을 쓴다 */
+function isTrainRide(value: unknown): boolean {
+  return (
+    isObject(value)
+    && typeof value.trainNo === "string"
+    && typeof value.fromStationId === "string"
+    && typeof value.toStationId === "string"
+    && isUsableInstant(value.departAt)
+    && isUsableInstant(value.arriveAt)
+  );
+}
+
+/** `RegionWindow` — 활용 가능 시간 표시가 분을 그대로 포맷한다 */
+function isRegionWindow(value: unknown): boolean {
+  return (
+    isObject(value)
+    && typeof value.stationId === "string"
+    && typeof value.regionId === "string"
+    && isUsableInstant(value.startAt)
+    && isUsableInstant(value.endAt)
+    && typeof value.availableMinutes === "number"
+  );
+}
+
+/** `GatewayRide` — 목록이 `fromName[locale]`·`serviceName[locale]`까지 읽는다 */
+function isGatewayRide(value: unknown): boolean {
+  return (
+    isObject(value)
+    && typeof value.id === "string"
+    && typeof value.fromStationId === "string"
+    && typeof value.toStationId === "string"
+    && isUsableInstant(value.departAt)
+    && isUsableInstant(value.arriveAt)
+    && isLocalizedText(value.fromName)
+    && isLocalizedText(value.toName)
+    && isLocalizedText(value.serviceName)
+    && isLocalizedText(value.operator)
+  );
+}
+
+/** `CandidateWarning` — 경고 목록이 `placeId`와 `detail`을 문구 키로 쓴다 */
+function isCandidateWarning(value: unknown): boolean {
+  return (
+    isObject(value)
+    && typeof value.code === "string"
+    && typeof value.placeId === "string"
+    && typeof value.detail === "string"
+  );
+}
+
+/**
+ * 일정 하루치.
+ *
+ * PR #123 2차 리뷰 — 배열인지만 보면 `items: [null]`이 통과하고, 다시 열었을 때 렌더가
+ * `null.placeId`를 읽으며 죽는다. 원소까지 본다.
+ */
+function isUsableDay(value: unknown): boolean {
+  if (!isObject(value)) return false;
+  return (
+    typeof value.date === "string"
+    && isArrayOf(value.items, isItineraryItem)
+    && isArrayOf(value.rides, isTrainRide)
+    && isArrayOf(value.regionWindows, isRegionWindow)
+    // gatewayLegs는 저장 레코드 v2 호환을 위한 additive optional (#58)
+    && (value.gatewayLegs === undefined || isArrayOf(value.gatewayLegs, isGatewayRide))
   );
 }
 
@@ -149,12 +240,12 @@ function isUsableRecord(value: unknown): value is SavedItineraryStub {
   if (record.schemaVersion !== SAVED_SCHEMA_VERSION) return false;
   if (typeof record.snapshotVersion !== "string") return false;
   if (!isUsableConstraints(record.constraints)) return false;
-  if (!Array.isArray(record.days) || !record.days.every(isUsableDay)) return false;
-  const context = record.context as Record<string, unknown> | undefined;
-  if (typeof context !== "object" || context === null) return false;
-  if (!Array.isArray(context.actors) || !Array.isArray(context.works)) return false;
-  // warnings는 optional(#43, PR #44 리뷰 2) — 있으면 배열이어야 한다
-  if (record.warnings !== undefined && !Array.isArray(record.warnings)) return false;
+  if (!isArrayOf(record.days, isUsableDay)) return false;
+  if (!isObject(record.context)) return false;
+  if (!isArrayOf(record.context.actors, isActorSummary)) return false;
+  if (!isArrayOf(record.context.works, isWorkSummary)) return false;
+  // warnings는 optional(#43, PR #44 리뷰 2) — 있으면 원소까지 성해야 한다
+  if (record.warnings !== undefined && !isArrayOf(record.warnings, isCandidateWarning)) return false;
   return true;
 }
 

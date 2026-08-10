@@ -65,6 +65,12 @@ export function useSaveStub(onReopen: (saved: SavedItineraryStub) => void) {
    * 확인 전에는 저장 위치를 알 수 없다. 그때 로컬로 흘려보내면 클라우드를 요청했는데
    * 로컬에 저장되고, 곧이어 mode만 supabase로 바뀌어 화면과 저장 위치가 어긋난다.
    * 그래서 실행하지 않고 여기 담아 뒀다가 확정된 mode로 처리한다.
+   *
+   * **단일 슬롯이다 — 마지막 의도만 남긴다** (PR #123 2차 리뷰 비차단). 로딩 중 저장을 눌렀다가
+   * "내 일정"을 누르면 앞선 저장은 버려진다. 큐로 쌓아 둘 수도 있지만, 그러면 확정 직후
+   * 저장과 목록 열기가 연달아 일어나 사용자가 누른 적 없는 순서로 화면이 움직인다.
+   * 마지막에 누른 것이 사용자의 현재 의도라고 본다. 이 창은 `?cloud=1`에서만 열리고
+   * 기본 로컬 경로는 `loading`을 거치지 않으므로 대표 데모에는 나타나지 않는다.
    */
   const pendingIntent = useRef<
     { kind: "save"; entry: Omit<SavedItineraryStub, "id" | "savedAt"> } | { kind: "trips" } | null
