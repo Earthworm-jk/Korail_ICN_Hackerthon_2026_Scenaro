@@ -58,6 +58,7 @@ import { FinalItineraryPage } from "./final-itinerary-page";
 import { GatewayAlternatives } from "./gateway-alternatives";
 import { ItineraryChangeSummary } from "./itinerary-change-summary";
 import { ItineraryRouteMap, KoreaMapPanel, type MapPlace, type MapStation } from "./korea-map";
+import { PlaceRecommendationSheet, PlaceThumbnail } from "./place-recommendation-sheet";
 import { ThemeExperienceCard, ThemeExperienceMapOverlay } from "./theme-experience";
 import { TrainLegModal, legDurationLabel, type TrainLegDetail } from "./train-leg-modal";
 import { getThemeExperience, type ThemeExperienceResult } from "@/lib/actions/theme-experience";
@@ -1047,57 +1048,18 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
 
           {/* #85 — 좌: 후보 선택 / 우: 계산 결과. 왕복 없이 같은 화면에서 판단한다 */}
           <div className="mt-3 grid gap-[18px] lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
-          <div className="min-w-0" id="place-picker">
-          {candidateData ? (
-          <>
-          <div className="flex gap-2 text-sm">
-            {(["relevance", "official"] as const).map((mode) => (
-              <button
-                key={mode}
-                className={`rounded border px-3 py-1 ${sortBy === mode ? "border-sc-blue bg-sc-blue-soft text-sc-blue" : ""}`}
-                onClick={() => setSortBy(mode)}
-              >
-                {tr(mode === "relevance" ? "step3.sortRelevance" : "step3.sortOfficial")}
-              </button>
-            ))}
-          </div>
-          {sortedCandidates.length === 0 && (
-            <p className="mt-4 rounded border border-sc-orange/30 bg-sc-orange-soft p-3 text-sm text-sc-orange-text">
-              {tr("step3.noCandidates")}
-            </p>
-          )}
-          <ul className="mt-3 space-y-2">
-            {/* #43 확정: 미확인 후보도 같은 목록에서 선택 가능 — 카드에 경고 배지 */}
-            {sortedCandidates.slice(0, visibleCount).map((c) => (
-              <PlaceCard key={c.id} candidate={c} locale={locale} tr={tr}
-                selected={selectedPlaceIds.has(c.id)}
-                stationName={stationName} workTitles={workTitles}
-                aiReason={c.aiReason ?? null}
-                onToggle={() => {
-                  const next = new Set(selectedPlaceIds);
-                  if (next.has(c.id)) next.delete(c.id); else next.add(c.id);
-                  if (next.size === 0) setLastItineraryDiff(null);
-                  setSelectedPlaceIds(next);
-                }}
-              />
-            ))}
-          </ul>
-          {sortedCandidates.length > visibleCount && (
-            <button
-              type="button"
-              className="mt-2 w-full rounded-lg border py-2 text-sm hover:bg-sc-subtle"
-              onClick={() => setVisibleCount((n) => n + PLACES_PAGE_SIZE)}
-            >
-              {tr("step3.showMore").replace(
-                "{n}",
-                String(sortedCandidates.length - visibleCount),
-              )}
-            </button>
-          )}
-          {/* #85 확정 — 지도는 기본 접힘. 선택·결과가 먼저 보이고 필요할 때만 편다 */}
-          <details className="mt-3 rounded-lg border">
-            <summary className="cursor-pointer px-3 py-2 text-sm font-medium">{tr("map.placesTitle")}</summary>
-            <div className="border-t p-3">
+          <PlaceRecommendationSheet
+            selectedCount={selectedPlaceIds.size}
+            totalCount={sortedCandidates.length}
+            updating={updating}
+            updated={lastItineraryDiff !== null && !updating}
+            sortBy={sortBy}
+            onSortChange={setSortBy}
+            remainingCount={Math.max(0, sortedCandidates.length - visibleCount)}
+            onShowMore={() => setVisibleCount((n) => n + PLACES_PAGE_SIZE)}
+            onBack={() => setStep(2)}
+            tr={tr}
+            map={candidateData ? (
               <KoreaMapPanel
                 kind="places"
                 places={step3MapPlaces}
@@ -1115,18 +1077,36 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
                   </button>
                 }
               />
-            </div>
-          </details>
-          <div className="mt-4">
-            <button className="rounded border px-4 py-2 text-sm" onClick={() => setStep(2)}>{tr("common.back")}</button>
-          </div>
+            ) : null}
+          >
+          {candidateData ? (
+          <>
+          {sortedCandidates.length === 0 && (
+            <li className="rounded border border-sc-orange/30 bg-sc-orange-soft p-3 text-sm text-sc-orange-text">
+              {tr("step3.noCandidates")}
+            </li>
+          )}
+          {/* #43 확정: 미확인 후보도 같은 목록에서 선택 가능 — 카드에 경고 배지 */}
+          {sortedCandidates.slice(0, visibleCount).map((c) => (
+            <PlaceCard key={c.id} candidate={c} locale={locale} tr={tr}
+              selected={selectedPlaceIds.has(c.id)}
+              stationName={stationName} workTitles={workTitles}
+              aiReason={c.aiReason ?? null}
+              onToggle={() => {
+                const next = new Set(selectedPlaceIds);
+                if (next.has(c.id)) next.delete(c.id); else next.add(c.id);
+                if (next.size === 0) setLastItineraryDiff(null);
+                setSelectedPlaceIds(next);
+              }}
+            />
+          ))}
           </>
           ) : (
-            <p className="rounded border border-sc-orange/30 bg-sc-orange-soft p-3 text-sm text-sc-orange-text" role="status">
+            <li className="rounded border border-sc-orange/30 bg-sc-orange-soft p-3 text-sm text-sc-orange-text" role="status">
               {tr(reopenCandidateStatus === "failed" ? "trips.reopenCandidatesFailed" : "common.loading")}
-            </p>
+            </li>
           )}
-          </div>
+          </PlaceRecommendationSheet>
 
           {/* 우측 열 — 계산 결과. 장소를 켜고 끄면 여기서 바로 갱신된다 */}
           <div className="min-w-0" aria-busy={updating}>
@@ -1523,17 +1503,16 @@ function PlaceCard({ candidate, locale, tr, selected, onToggle, stationName, wor
     : null;
 
   return (
-    <li className={`rounded-lg border p-3 ${selected ? "border-sc-blue bg-sc-blue-soft/60" : ""}`}>
+    <li
+      className={`rounded-lg border p-3 ${selected ? "border-sc-blue bg-sc-blue-soft/60" : ""}`}
+      data-recommendation-card
+    >
       <div className="flex items-start justify-between gap-2">
-        {/* #83 §F 썸네일 — 시안의 48×48 그라데이션 박스. 사진 대신 유형 아이콘을 넣는다.
-            heritage는 아이콘이 비어 박스만 남는다(의도 — place-type-icon.ts 참고).
-            유형은 이름·역·접근시간에 없는 정보를 더하지 않는 장식이라 스크린리더에서 감춘다 */}
-        <div
-          aria-hidden="true"
-          className="grid size-12 shrink-0 place-items-center rounded-[9px] bg-gradient-to-br from-sc-blue-soft to-sc-airport-soft text-xl"
-        >
+        {/* #118 P0-4 — 사진 사용권이 확인되기 전에는 모든 카드가 같은 플레이스홀더
+            프레임을 쓴다. 장소 유형 표식은 팀원의 아이콘 교체 범위라 기존 파생만 넘긴다. */}
+        <PlaceThumbnail label={tr("step3.photoPlaceholder")}>
           {placeTypeIcon(candidate.placeType)}
-        </div>
+        </PlaceThumbnail>
         <div className="min-w-0 flex-1 text-sm">
           <p className="font-medium">
             {candidate.name[locale]}
@@ -1618,6 +1597,8 @@ function PlaceCard({ candidate, locale, tr, selected, onToggle, stationName, wor
         <button
           className={`shrink-0 rounded px-3 py-1 text-sm ${selected ? "bg-sc-blue text-white" : "border"}`}
           onClick={onToggle}
+          aria-label={tr(selected ? "step3.removePlace" : "step3.addPlace").replace("{place}", candidate.name[locale])}
+          aria-pressed={selected}
         >
           {selected ? "✓" : "+"}
         </button>

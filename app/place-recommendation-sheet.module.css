@@ -1,0 +1,192 @@
+.sheet {
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid var(--sc-line);
+  border-radius: 14px;
+  background: var(--sc-surface);
+  box-shadow: 0 14px 36px rgba(16, 24, 40, 0.16);
+}
+
+.header {
+  position: relative;
+  display: flex;
+  min-height: 68px;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px 12px;
+  border-bottom: 1px solid var(--sc-line);
+}
+
+.handle {
+  position: absolute;
+  top: 6px;
+  left: 50%;
+  width: 44px;
+  height: 4px;
+  transform: translateX(-50%);
+  border-radius: 999px;
+  background: var(--sc-line-strong);
+}
+
+.toggle,
+.sort,
+.activeSort,
+.more {
+  min-height: 36px;
+  border: 1px solid var(--sc-line);
+  border-radius: 9px;
+  padding: 7px 11px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+.toggle:hover,
+.sort:hover,
+.more:hover {
+  border-color: var(--sc-blue);
+  color: var(--sc-blue);
+}
+
+.body {
+  min-height: 0;
+  padding: 10px 12px 12px;
+}
+
+.controls {
+  display: flex;
+  gap: 8px;
+}
+
+.activeSort {
+  border-color: var(--sc-blue);
+  background: var(--sc-blue-soft);
+  color: var(--sc-blue);
+}
+
+.list {
+  display: grid;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.list :global([data-recommendation-card]) {
+  min-width: 0;
+}
+
+.more {
+  width: 100%;
+  margin-top: 9px;
+  background: var(--sc-surface);
+}
+
+.fallbackMap {
+  margin-top: 10px;
+  overflow: hidden;
+  border: 1px solid var(--sc-line);
+  border-radius: 10px;
+}
+
+.fallbackMap > summary {
+  padding: 10px 12px;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.fallbackMap > div {
+  border-top: 1px solid var(--sc-line);
+  padding: 10px;
+}
+
+.thumbnail {
+  position: relative;
+  display: grid;
+  width: 82px;
+  min-width: 82px;
+  height: 74px;
+  place-items: center;
+  overflow: hidden;
+  border: 1px solid rgba(0, 91, 172, 0.14);
+  border-radius: 10px;
+  background:
+    linear-gradient(135deg, rgba(0, 91, 172, 0.14), rgba(0, 143, 152, 0.08)),
+    repeating-linear-gradient(45deg, transparent 0 10px, rgba(255, 255, 255, 0.34) 10px 11px);
+  color: var(--sc-blue);
+}
+
+.thumbnailAdornment {
+  font-size: 1.25rem;
+  line-height: 1;
+}
+
+.thumbnailLabel {
+  position: absolute;
+  inset-inline: 5px;
+  bottom: 5px;
+  color: var(--sc-muted);
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  line-height: 1.05;
+  text-align: center;
+}
+
+@media (min-width: 1024px) {
+  .sheet {
+    max-height: 238px;
+  }
+
+  .header {
+    min-height: 58px;
+    padding: 12px 14px 9px;
+  }
+
+  .body {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: start;
+    gap: 8px 10px;
+    padding: 8px 10px 10px;
+  }
+
+  .controls {
+    grid-column: 1;
+    flex-direction: column;
+  }
+
+  .list {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+    grid-auto-columns: minmax(250px, 280px);
+    grid-auto-flow: column;
+    gap: 9px;
+    margin-top: 0;
+    overflow-x: auto;
+    overscroll-behavior-inline: contain;
+    padding: 1px 2px 8px;
+    scroll-snap-type: x proximity;
+  }
+
+  .list :global([data-recommendation-card]) {
+    height: 145px;
+    overflow-y: auto;
+    scroll-snap-align: start;
+  }
+
+  .more {
+    grid-column: 3;
+    grid-row: 1;
+    width: 90px;
+    margin-top: 0;
+  }
+
+  .fallbackMap,
+  .sheet > :global([data-place-sheet-back]) {
+    display: none;
+  }
+
+  .thumbnail {
+    width: 72px;
+    min-width: 72px;
+    height: 70px;
+  }
+}
