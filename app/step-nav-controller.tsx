@@ -10,8 +10,8 @@ import { useEffect } from "react";
  *
  * 허용 규칙:
  * - 이전 단계는 언제든 이동 가능.
- * - 바로 다음 단계는 현재 화면의 기존 CTA가 활성화된 경우만 이동.
- * - 1 → 3처럼 필수 K-content 선택을 건너뛰는 점프는 막는다.
+ * - 앞으로 갈 때는 현재 단계의 기존 CTA가 활성화된 경우에만 한 단계씩 진행한다.
+ * - 1 → 3을 눌러도 2단계 필수 K-content 선택이 비어 있으면 2단계에서 멈춘다.
  *
  * Step 3 구조가 정식 컴포넌트로 분리될 때 이 브리지는 PlannerWizard 내부 onStepChange로
  * 교체할 수 있다. 현재 파생 디자인 PR에서는 기능 계약을 중복 구현하지 않는 쪽을 택한다.
@@ -59,24 +59,22 @@ export function StepNavController() {
     };
 
     const goTo = (target: number) => {
-      let current = activeIndex();
-      if (current < 0 || target === current) return;
+      const move = () => {
+        const current = activeIndex();
+        if (current < 0 || current === target) return;
 
-      if (target > current) {
-        // 필수 입력을 건너뛰지 않는다. 한 번에 한 단계만 전진.
-        if (target !== current + 1) return;
-        clickPrimaryNext();
-        return;
-      }
+        if (target > current) {
+          // 기존 CTA가 비활성이라면 해당 단계의 필수 입력이 아직 충족되지 않은 것.
+          if (!clickPrimaryNext()) return;
+          window.setTimeout(move, 0);
+          return;
+        }
 
-      // 이전 단계는 검증된 back 전이를 반복해 도달한다.
-      const moveBack = () => {
-        current = activeIndex();
-        if (current <= target) return;
         if (!clickBack(current)) return;
-        window.setTimeout(moveBack, 0);
+        window.setTimeout(move, 0);
       };
-      moveBack();
+
+      move();
     };
 
     tabs.forEach((tab, index) => {
