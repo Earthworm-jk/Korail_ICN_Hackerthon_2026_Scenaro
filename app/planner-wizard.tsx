@@ -993,11 +993,12 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
    */
   /** 확인 대기 중에는 닫히지 않는다 — 닫으면 무엇을 승인하려던 것인지 사라진다 (#151) */
   const closeAiPanel = useCallback(() => {
-    if (!panelDismissable(aiFeedback)) return;
+    if (!panelDismissable(aiFeedback, aiPending)) return;
+    // 표시를 숨길 뿐 작업 상태를 버리지 않는다 — 지우면 다시 열었을 때 최근 결과와
+    // 실행 취소가 사라진다. 폐기는 `현재 일정 유지` 같은 명시적 동작에서만 한다
     setAiPanelOpen(false);
-    setAiFeedback(null);
     aiTriggerRef.current?.focus();
-  }, [aiFeedback]);
+  }, [aiFeedback, aiPending]);
 
   useEffect(() => {
     if (!aiPanelOpen) return;
@@ -1723,7 +1724,7 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
             placeName={placeName}
             tr={tr}
             onClose={closeAiPanel}
-            closeDisabled={!panelDismissable(aiFeedback)}
+            closeDisabled={!panelDismissable(aiFeedback, aiPending)}
           />
           )}
 

@@ -154,7 +154,7 @@ export function ItineraryCommandPanel({
 
   return (
     <section
-      className="mt-3 rounded-xl border border-sc-blue/25 bg-gradient-to-br from-sc-blue-soft to-sc-surface p-3"
+      className="mt-3 ml-auto w-full max-w-[400px] rounded-xl border border-sc-blue/25 bg-gradient-to-br from-sc-blue-soft to-sc-surface p-3"
       aria-labelledby="itinerary-ai-title"
       data-itinerary-command-panel
       id="itinerary-ai-panel"
@@ -264,6 +264,18 @@ export function ItineraryCommandPanel({
                 })
                 : tr("ai.recommendEmpty")}
             </p>
+          )}
+
+          {/* 추천은 적용 또는 취소로 결론나야 한다. 취소 경로가 없으면 카드를 고르지
+              않으려는 사용자가 X·Esc·토글이 모두 막힌 채 갇힌다 (PR #152 리뷰 3번) */}
+          {feedback.kind === "recommendations" && (
+            <button
+              type="button"
+              onClick={onDismiss}
+              className="mt-3 min-h-9 rounded-lg border px-3 py-1.5 text-xs font-medium"
+            >
+              {tr("ai.cancel")}
+            </button>
           )}
 
           {feedback.kind === "proposal" && (
