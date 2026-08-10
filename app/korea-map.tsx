@@ -168,8 +168,13 @@ const ROUTE_DRAW_SECONDS = 0.7;
  * CSS가 아니라 여기서 읽는 이유는 두 가지다. 하나는 애니메이션이 SVG SMIL이라 CSS 미디어
  * 쿼리로 끌 수 없다는 것이고, 다른 하나는 스타일 파일이 다른 레인 소유라는 것이다(#118).
  *
- * 서버 렌더에서는 `false`로 시작한다. 첫 페인트에 애니메이션이 한 번 도는 것보다, 설정을
- * 켠 사용자에게 잠깐이라도 움직임이 보이는 쪽이 문제이므로 마운트 직후 즉시 다시 읽는다.
+ * **서버 스냅샷은 `true`(동작 줄임)다.** 설정을 읽을 수 없는 곳에서는 보수적으로 잡는다.
+ * `false`로 두면 서버가 내려주는 HTML에 SVG `<animate>`가 들어가고, SMIL은 hydration을
+ * 기다리지 않으므로 동작 줄이기를 켠 사용자에게도 잠깐 움직임이 보일 수 있다 (PR #122 리뷰).
+ *
+ * 계약은 이것이다 — **서버 HTML에는 애니메이션이 없고, 클라이언트에서 reduce가 아님을
+ * 확인한 뒤에만 붙는다.** 동작 줄이기를 끈 사용자는 hydration 직후 스냅샷이 `false`로
+ * 바뀌면서 애니메이션이 붙으므로, 보이는 결과는 달라지지 않는다.
  */
 const REDUCED_MOTION_QUERY = "(prefers-reduced-motion: reduce)";
 
@@ -185,9 +190,13 @@ function readReducedMotion(): boolean {
   return window.matchMedia(REDUCED_MOTION_QUERY).matches;
 }
 
+/** 설정을 읽을 수 없는 서버에서는 동작을 줄인 쪽으로 본다 — 위 주석의 계약 */
+function serverReducedMotion(): boolean {
+  return true;
+}
+
 function usePrefersReducedMotion(): boolean {
-  // 서버 스냅샷은 false — 설정을 읽을 수 없는 곳에서 움직임을 가정하지 않는다
-  return useSyncExternalStore(subscribeReducedMotion, readReducedMotion, () => false);
+  return useSyncExternalStore(subscribeReducedMotion, readReducedMotion, serverReducedMotion);
 }
 
 /**
