@@ -1,6 +1,6 @@
 /* Stage workspace v4 — role redistribution.
    Right rail = itinerary + blocking/important warnings.
-   Center = map. Bottom dock = transport alternatives / theme / station support / data basis.
+   Center = map. Bottom dock = transport alternatives / theme / station support.
    Step 3 keeps trip context as a horizontal summary bar. */
 
 @media (min-width: 1024px) {
@@ -63,7 +63,7 @@
     overflow: hidden;
   }
 
-  /* ---- Blocking capacity alert: unique visual language, no longer another yellow box ---- */
+  /* ---- Blocking capacity alert: unique visual language ---- */
   #place-picker + div[aria-busy] [role="status"]:has(a[href="#place-picker"]) {
     border: 2px solid rgba(192, 57, 43, .55) !important;
     border-radius: 12px !important;
@@ -102,7 +102,7 @@
     font-weight: 700 !important;
   }
 
-  /* ---- Non-blocking warnings: compact, low-area orange disclosure ---- */
+  /* ---- Non-blocking warnings: compact disclosure ---- */
   [data-stage-warning] {
     border-color: var(--sc-line) !important;
     background: white !important;
@@ -142,8 +142,10 @@
     font-size: 11px !important;
   }
 
-  /* Original long data/validation prose is represented by the data utility in the dock. */
-  [data-stage-source="data"] {
+  /* Data-basis prose is intentionally not promoted into a separate UI feature.
+     Keep the itinerary rail focused on itinerary and actionable warnings. */
+  #place-picker + div[aria-busy] > p.rounded-lg.border.bg-sc-subtle,
+  #place-picker + div[aria-busy] > div[class*="space-y"] > div.grid > div:nth-child(2) > p.rounded-lg.border.bg-sc-subtle {
     display: none !important;
   }
 
@@ -162,8 +164,8 @@
     bottom: 12px;
     z-index: 60;
     display: grid;
-    width: min(960px, calc(100vw - 36px));
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    width: min(780px, calc(100vw - 36px));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 7px;
     transform: translateX(-50%);
     padding: 7px;
@@ -181,7 +183,6 @@
   #stage-utility-dock [data-stage-utility="gateway"] { order: 1; }
   #stage-utility-dock [data-stage-utility="theme"] { order: 2; }
   #stage-utility-dock [data-stage-utility="support"] { order: 3; }
-  #stage-utility-dock [data-stage-utility="data"] { order: 4; }
 
   #stage-utility-dock details {
     position: relative;
@@ -207,7 +208,6 @@
     font-size: 10px !important;
   }
 
-  /* The opened utility becomes a popover above the dock instead of making the right rail taller. */
   #stage-utility-dock details[open] > div {
     position: absolute;
     bottom: calc(100% + 11px);
@@ -227,17 +227,8 @@
     left: 50%;
     transform: translateX(-50%);
   }
-  #stage-utility-dock [data-stage-utility="support"][open] > div,
-  #stage-utility-dock [data-stage-utility="data"][open] > div {
-    right: 0;
-  }
+  #stage-utility-dock [data-stage-utility="support"][open] > div { right: 0; }
 
-  #stage-utility-dock .stage-data-panel {
-    display: grid;
-    gap: 9px;
-  }
-
-  /* Existing sticky action bar sits above the dock. */
   #place-picker + div[aria-busy] > div[class*="flex-wrap"][class*="justify-between"] {
     bottom: 78px !important;
   }
@@ -245,6 +236,6 @@
 
 @media (min-width: 1440px) {
   #stage-utility-dock {
-    width: min(1040px, calc(100vw - 44px));
+    width: min(840px, calc(100vw - 44px));
   }
 }
