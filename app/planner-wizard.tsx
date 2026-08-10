@@ -505,9 +505,9 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
     if (!constraints) return;
     const sequence = ++planSequence.current;
     const requestedSelectionKey = selectionKey;
-    // 계산 중에도 view.result는 직전 확정 결과를 유지한다. 최신 응답이 성공했을 때만 이 기준과
-    // 비교해 지도 애니메이션과 같은 전환 단위의 설명을 만든다.
-    const previousResult = view.result;
+    // 계산 중에도 view.result는 직전 확정 결과를 유지한다. 다만 대안을 보고 있었다면 화면과
+    // view.result(추천안)의 기준이 다르므로 부정확한 변화량을 만들지 않는다.
+    const previousResult = view.selectedAlt === null ? view.result : null;
     dispatchView({ type: "PLAN_START" });
     setLastItineraryDiff(null);
     setThemeExperience(null);
@@ -541,7 +541,7 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
       setSettledSelectionKey(requestedSelectionKey);
       dispatchView({ type: "PLAN_FAILED" }); // 네트워크·서버 장애 — 기존 결과 유지
     }
-  }, [currentConstraints, selectionKey, saveStub, refreshThemeExperience, view.result]);
+  }, [currentConstraints, selectionKey, saveStub, refreshThemeExperience, view.result, view.selectedAlt]);
 
   // #85 기술항목 2 — 장소를 켜고 끄면 자동 재계산한다. 연속 토글은 마지막 것만 계산하고,
   // 항공편 시각은 확정대로 자동 감지하지 않는다(사용자가 조회·변경 후 "다시 계산").
