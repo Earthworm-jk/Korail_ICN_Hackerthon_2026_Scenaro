@@ -56,10 +56,13 @@ export function ThemeExperienceCard({ result, stationName, locale, tr, mapVisibl
         <details data-stage-utility="theme" className="group rounded-lg border bg-sc-surface">
           <span role="status" className="sr-only">{tr(statusKey)}</span>
           <summary className="flex min-h-11 list-none items-center justify-between gap-3 px-3 py-2.5 marker:content-none">
-            <strong className="flex min-w-0 items-center gap-1.5 text-sm font-medium">
-              <Sparkles aria-hidden="true" className="size-4 shrink-0" />
-              <span className="truncate">{tr(shortStatusKey)}</span>
-            </strong>
+            <span className="min-w-0">
+              <strong className="flex items-center gap-1.5 text-sm font-medium">
+                <Sparkles aria-hidden="true" className="size-4 shrink-0" />
+                <span>{tr("theme.dockTitle")}</span>
+              </strong>
+              <span className="block text-xs text-sc-muted">{tr(shortStatusKey)}</span>
+            </span>
             <span aria-hidden className="shrink-0 text-sc-muted transition-transform group-open:rotate-180">⌄</span>
           </summary>
           <div className="border-t px-3 pb-3 pt-2">
@@ -76,21 +79,25 @@ export function ThemeExperienceCard({ result, stationName, locale, tr, mapVisibl
         <summary className="flex min-h-11 list-none items-center justify-between gap-3 px-3 py-2.5 marker:content-none">
           <span className="min-w-0">
             <span className="flex items-center gap-2">
-              <strong className="flex min-w-0 items-center gap-1.5 text-sm font-medium">
+              <strong className="flex items-center gap-1.5 text-sm font-medium">
                 <Sparkles aria-hidden="true" className="size-4 shrink-0" />
-                <span className="truncate">{result.theme[locale]}</span>
+                <span>{tr("theme.dockTitle")}</span>
               </strong>
-              <span className="shrink-0 rounded-full bg-sc-blue-soft px-2 py-0.5 text-[11px] text-sc-blue">
-                {tr("theme.badge")}
-              </span>
             </span>
-            <span className="block truncate text-xs text-sc-muted">{result.zoneName[locale]}</span>
+            <span className="block text-xs text-sc-muted">{tr("theme.statusAvailableShort")}</span>
           </span>
           <span aria-hidden className="shrink-0 text-sc-muted transition-transform group-open:rotate-180">⌄</span>
         </summary>
 
         <div className="border-t px-3 pb-3 pt-2">
-          <p className="text-xs text-sc-text/80">{result.reason[locale]}</p>
+          <div className="flex flex-wrap items-center gap-2">
+            <strong className="text-sm font-medium">{result.theme[locale]}</strong>
+            <span className="rounded-full bg-sc-blue-soft px-2 py-0.5 text-[11px] text-sc-blue">
+              {tr("theme.badge")}
+            </span>
+          </div>
+          <p className="mt-0.5 text-xs text-sc-muted">{result.zoneName[locale]}</p>
+          <p className="mt-2 text-xs text-sc-text/80">{result.reason[locale]}</p>
 
           <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-sc-muted">
             {stationName && (

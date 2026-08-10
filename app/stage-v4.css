@@ -137,26 +137,6 @@
     font-size: 11px !important;
   }
 
-  /* Keep methodology available without occupying the itinerary rail. The native
-     disclosure works with touch and keyboard, while its panel opens over the rail
-     instead of changing the map/sheet geometry. */
-  #place-picker + div[aria-busy] details[data-itinerary-info] {
-    position: relative;
-    overflow: visible !important;
-  }
-
-  #place-picker + div[aria-busy] details[data-itinerary-info] > summary {
-    min-height: 32px !important;
-    padding: 6px !important;
-    border-radius: 999px !important;
-  }
-
-  #place-picker + div[aria-busy] details[data-itinerary-info][open] > summary {
-    border-radius: 999px !important;
-    background: var(--sc-blue-soft);
-    color: var(--sc-blue);
-  }
-
   /* ---- Bottom utility dock ---- */
   body:has(#place-picker) main {
     padding-bottom: 88px;
@@ -217,6 +197,15 @@
 
   #stage-utility-dock details > summary span[class*="text-xs"] {
     font-size: 10px !important;
+  }
+
+  /* Dock copy is deliberately two short lines. Never trade away the button's
+     meaning for an ellipsis; long explanations remain in the expanded panel. */
+  #stage-utility-dock details > summary strong,
+  #stage-utility-dock details > summary span[class*="text-xs"] {
+    overflow: visible !important;
+    white-space: normal !important;
+    text-overflow: clip !important;
   }
 
   #stage-utility-dock details[open] > div {
@@ -390,7 +379,7 @@
     z-index: 12;
     width: calc(100% - 20px) !important;
     height: auto !important;
-    max-height: 258px !important;
+    max-height: 268px !important;
     margin: 0 10px 10px !important;
     overflow: hidden !important;
     border-radius: 14px !important;
@@ -439,7 +428,7 @@
 @media (min-width: 1024px) and (max-width: 1279px) {
   div#place-picker[data-place-sheet] {
     margin-bottom: 10px !important;
-    max-height: 258px !important;
+    max-height: 268px !important;
   }
 }
 
@@ -448,7 +437,7 @@
 @media (min-width: 1024px) and (max-height: 740px) {
   div#place-picker[data-place-sheet] {
     margin-bottom: 44px !important;
-    max-height: 258px !important;
+    max-height: 268px !important;
   }
 }
 

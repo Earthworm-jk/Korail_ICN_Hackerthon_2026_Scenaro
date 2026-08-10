@@ -195,8 +195,12 @@
     scroll-snap-align: start;
   }
 
-  .list :global([data-recommendation-card][data-card-expanded="true"]) {
-    overflow-y: auto;
+  .list :global([data-place-card-title]) {
+    display: -webkit-box;
+    overflow: hidden;
+    line-height: 1.35;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
   }
 
   .list :global([data-place-detail-toggle]) {
@@ -221,8 +225,8 @@
   }
 
   .thumbnail {
-    width: 72px;
-    min-width: 72px;
-    height: 70px;
+    width: 64px;
+    min-width: 64px;
+    height: 64px;
   }
 }

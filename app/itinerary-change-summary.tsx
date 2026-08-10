@@ -37,8 +37,8 @@ export function ItineraryChangeSummary({ diff, placeName, reasonLabel, tr }: Pro
           </span>
           <summary className="flex min-h-11 list-none items-center justify-between gap-3 px-3 py-2.5 text-sm marker:content-none">
             <span className="min-w-0">
-              <strong className="block truncate font-medium text-sc-blue">{tr("step4.changeUnchangedTitle")}</strong>
-              <span className="block truncate text-xs text-sc-text/70">{tr("step4.changeUnchangedShort")}</span>
+              <strong className="block font-medium text-sc-blue">{tr("step4.changeDockTitle")}</strong>
+              <span className="block text-xs text-sc-text/70">{tr("step4.changeUnchangedShort")}</span>
             </span>
             <span aria-hidden className="shrink-0 text-sc-muted transition-transform group-open:rotate-180">⌄</span>
           </summary>
@@ -53,6 +53,7 @@ export function ItineraryChangeSummary({ diff, placeName, reasonLabel, tr }: Pro
   const changedRideCount = Math.max(diff.rides.added.length, diff.rides.dropped.length);
   const detailCount =
     diff.places.added.length + diff.places.moved.length + diff.places.dropped.length;
+  const dockChangeCount = detailCount + changedRideCount;
 
   const summaryCounts = [
     diff.places.added.length > 0
@@ -81,8 +82,10 @@ export function ItineraryChangeSummary({ diff, placeName, reasonLabel, tr }: Pro
         </span>
         <summary className="flex min-h-11 list-none items-center justify-between gap-3 px-3 py-2.5 text-sm marker:content-none">
           <span className="min-w-0">
-            <strong className="block truncate font-semibold text-sc-blue">{tr("step4.changeTitle")}</strong>
-            <span className="block truncate text-xs text-sc-text/70">{summaryCounts.join(" · ")}</span>
+            <strong className="block font-semibold text-sc-blue">{tr("step4.changeDockTitle")}</strong>
+            <span className="block text-xs text-sc-text/70">
+              {withValues(tr("step4.changeDockSummary"), { n: dockChangeCount })}
+            </span>
           </span>
           <span aria-hidden className="shrink-0 text-sc-muted transition-transform group-open:rotate-180">⌄</span>
         </summary>

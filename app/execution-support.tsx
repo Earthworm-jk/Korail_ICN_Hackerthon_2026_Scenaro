@@ -30,9 +30,9 @@ export function ExecutionSupport({ snapshot, stationIds, stationName, tr }: {
             <span className="min-w-0">
               <strong className="flex items-center gap-1.5 text-sm font-medium">
                 <Luggage aria-hidden="true" className="size-4 shrink-0" />
-                <span className="truncate">{tr("support.title")}</span>
+                <span>{tr("support.dockTitle")}</span>
               </strong>
-              <span className="block truncate text-xs text-sc-muted">
+              <span className="block text-xs text-sc-muted">
                 {covered.length > 0 ? `${covered.length}/${stationIds.length}` : tr("support.subtitle")}
               </span>
             </span>

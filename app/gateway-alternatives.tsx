@@ -38,11 +38,11 @@ export function GatewayAlternatives({ alternatives, selectedId, locale, onSelect
           <span className="min-w-0">
             <strong className="flex items-center gap-1.5 font-medium text-sc-text">
               <BusFront aria-hidden="true" className="size-4 shrink-0" />
-              <span className="truncate">{tr("gateway.title")}</span>
+              <span>{tr("gateway.dockTitle")}</span>
             </strong>
             <span className="flex items-center gap-1.5 text-xs text-sc-muted">
               <SelectedIcon aria-hidden="true" className="size-3.5 shrink-0" />
-              <span className="truncate">{selected}</span>
+              <span>{selected}</span>
             </span>
           </span>
           <span aria-hidden className="shrink-0 text-sc-muted transition-transform group-open:rotate-180">⌄</span>

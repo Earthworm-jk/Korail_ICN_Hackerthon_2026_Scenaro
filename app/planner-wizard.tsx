@@ -6,7 +6,7 @@
  * - 대안 시간표는 mock(#14 ⑨ 선행), 저장·내 일정은 in-memory 스텁(#25 선행) — 엔진·Supabase 연결 시 교체
  */
 import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from "react";
-import { Info, MapPin, Sparkles, TriangleAlert } from "lucide-react";
+import { Info, MapPin, Sparkles, TriangleAlert, X } from "lucide-react";
 import {
   searchEntities,
   type ActorSummary,
@@ -249,6 +249,35 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
   // 요약 사이드바 접기 — 접으면 본문(지도·일정)이 220px을 더 쓴다
   const [summaryCollapsed, setSummaryCollapsed] = useState(false);
   const tr = useCallback((key: MessageKey) => t(locale, key), [locale]);
+
+  // Popover API의 light-dismiss 동작은 내장 브라우저·WebView별 편차가 있다. 열린 패널을
+  // 바깥 클릭과 Escape로 확실히 닫아 일정 안내와 장소 상세가 화면에 남지 않게 한다.
+  useEffect(() => {
+    const hideOpenPopovers = () => {
+      document.querySelectorAll<HTMLElement>(":popover-open").forEach((popover) => {
+        popover.hidePopover();
+      });
+    };
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") hideOpenPopovers();
+    };
+    const onPointerDown = (event: PointerEvent) => {
+      const target = event.target;
+      if (!(target instanceof Node)) return;
+      document.querySelectorAll<HTMLElement>(":popover-open").forEach((popover) => {
+        const invoker = [...document.querySelectorAll<HTMLElement>("[popovertarget]")]
+          .find((element) => element.getAttribute("popovertarget") === popover.id);
+        if (!popover.contains(target) && !invoker?.contains(target)) popover.hidePopover();
+      });
+    };
+
+    document.addEventListener("keydown", onKeyDown);
+    document.addEventListener("pointerdown", onPointerDown);
+    return () => {
+      document.removeEventListener("keydown", onKeyDown);
+      document.removeEventListener("pointerdown", onPointerDown);
+    };
+  }, []);
 
   // step 1 — 여행 조건
   const [arrival, setArrival] = useState<FlightField>({ flightNo: "", at: "2026-08-12T10:00", notFound: false });
@@ -1174,23 +1203,43 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
           <div className="min-w-0" aria-busy={updating}>
           <div className="flex flex-wrap items-center gap-2">
             <h3 className="text-base font-semibold">{tr("step4.title")}</h3>
-            <details data-itinerary-info className="group relative">
-              <summary
-                aria-label={tr("step4.infoOpen")}
-                className="flex size-8 list-none cursor-pointer items-center justify-center rounded-full border text-sc-muted marker:content-none hover:border-sc-blue hover:text-sc-blue"
-              >
-                <Info aria-hidden="true" className="size-4" />
-              </summary>
-              <div className="absolute right-0 top-full z-40 mt-2 w-[min(360px,calc(100vw-32px))] rounded-xl border bg-sc-surface p-3 text-left shadow-xl">
-                <h4 className="text-sm font-semibold text-sc-text">{tr("step4.infoTitle")}</h4>
-                <p className="mt-2 text-xs text-sc-muted">{tr("step4.subtitle")}</p>
-                <p className="mt-2 border-t pt-2 text-xs text-sc-muted">
-                  <strong className="font-medium text-sc-text">{tr("step4.dataNoticeTitle")}</strong>{" "}
-                  {tr("step4.dataNotice")}
-                </p>
-                <p className="mt-2 border-t pt-2 text-xs text-sc-muted">{tr("step4.validation")}</p>
+            <button
+              type="button"
+              popoverTarget="itinerary-info-popover"
+              aria-haspopup="dialog"
+              aria-controls="itinerary-info-popover"
+              aria-label={tr("step4.infoOpen")}
+              className="flex size-8 items-center justify-center rounded-full border text-sc-muted hover:border-sc-blue hover:text-sc-blue"
+            >
+              <Info aria-hidden="true" className="size-4" />
+            </button>
+            <div
+              id="itinerary-info-popover"
+              popover="auto"
+              role="dialog"
+              aria-labelledby="itinerary-info-title"
+              data-itinerary-info-popover
+              className="m-auto w-[min(400px,calc(100vw-32px))] rounded-xl border bg-sc-surface p-4 text-left shadow-2xl backdrop:bg-black/20"
+            >
+              <div className="flex items-start justify-between gap-3">
+                <h4 id="itinerary-info-title" className="text-sm font-semibold text-sc-text">{tr("step4.infoTitle")}</h4>
+                <button
+                  type="button"
+                  popoverTarget="itinerary-info-popover"
+                  popoverTargetAction="hide"
+                  aria-label={tr("common.close")}
+                  className="grid size-8 shrink-0 place-items-center rounded-full border text-sc-muted hover:border-sc-blue hover:text-sc-blue"
+                >
+                  <X aria-hidden="true" className="size-4" />
+                </button>
               </div>
-            </details>
+              <p className="mt-2 text-xs text-sc-muted">{tr("step4.subtitle")}</p>
+              <p className="mt-2 border-t pt-2 text-xs text-sc-muted">
+                <strong className="font-medium text-sc-text">{tr("step4.dataNoticeTitle")}</strong>{" "}
+                {tr("step4.dataNotice")}
+              </p>
+              <p className="mt-2 border-t pt-2 text-xs text-sc-muted">{tr("step4.validation")}</p>
+            </div>
             {/* #85 리뷰 1 — 갱신 중에도 직전 일정을 지우지 않는다. 표시만 겹쳐 얹는다.
                 리뷰 비차단 — 계산 시작이 아니라 선택이 바뀐 시점부터 켠다 */}
             {updating && displayedDays && (
@@ -1553,9 +1602,10 @@ function PlaceCard({ candidate, locale, tr, selected, onToggle, stationName, wor
   workTitles: (ids: string[]) => string;
   aiReason?: { ko: string; en: string } | null; // #48 — 검증된 장면 근거(점수 비노출)
 }) {
-  // 카드는 기본이 요약이다. 작품·회차·장면·검토 이유·출처를 한 번에 펼치면 후보 5개만으로
-  // 화면이 꽉 차서 "무엇을 고를지"가 안 보인다 — 판단에 필요한 것만 남기고 근거는 토글 뒤로.
-  const [showDetail, setShowDetail] = useState(false);
+  // 카드는 고르는 데 필요한 요약만 유지한다. 작품·회차·장면·출처는 top-layer 팝오버로
+  // 분리해 고정 높이 카드가 잘리거나 내부 스크롤을 만들지 않게 한다.
+  const detailPopoverId = `place-detail-${candidate.id}`;
+  const detailTitleId = `${detailPopoverId}-title`;
   const oh = candidate.openingHours;
   const hoursLabel =
     oh.type === "always_open" ? tr("step3.alwaysOpen")
@@ -1576,9 +1626,8 @@ function PlaceCard({ candidate, locale, tr, selected, onToggle, stationName, wor
     <li
       className={`rounded-lg border p-3 ${selected ? "border-sc-blue bg-sc-blue-soft/60" : ""}`}
       data-recommendation-card
-      data-card-expanded={showDetail}
     >
-      <div className="flex items-start justify-between gap-2">
+      <div className="flex items-start gap-2">
         {/* 이름·좌표·이미지를 검증한 TourAPI 제1유형 사진만 쓴다. 나머지는 추정 사진
             대신 동일한 플레이스홀더 프레임과 Lucide 장소 유형 표식을 유지한다. */}
         <PlaceThumbnail
@@ -1588,45 +1637,75 @@ function PlaceCard({ candidate, locale, tr, selected, onToggle, stationName, wor
         >
           <PlaceTypeIcon placeType={candidate.placeType} />
         </PlaceThumbnail>
-        <div className="min-w-0 flex-1 text-sm">
-          <p className="font-medium">
-            {candidate.name[locale]}
+        <p className="min-w-0 flex-1 text-sm font-medium" data-place-card-title>
+          {candidate.name[locale]}
+        </p>
+        <button
+          type="button"
+          className={`shrink-0 rounded px-3 py-1 text-sm ${selected ? "bg-sc-blue text-white" : "border"}`}
+          onClick={onToggle}
+          aria-label={tr(selected ? "step3.removePlace" : "step3.addPlace").replace("{place}", candidate.name[locale])}
+          aria-pressed={selected}
+        >
+          {selected ? "✓" : "+"}
+        </button>
+      </div>
+
+      <p className="mt-1.5 text-xs text-sc-muted" data-place-card-access>
+        {stationName(candidate.nearestStationId)} · {tr("access.byCar").replace("{n}", String(candidate.accessEstimate.minutes))}
+      </p>
+
+      <div className="mt-1.5 flex items-center justify-between gap-2">
+        {hoursLabel ? (
+          <span className="text-xs text-sc-muted">{hoursLabel}</span>
+        ) : (
+          <span className="inline-flex items-center gap-1 whitespace-nowrap rounded bg-sc-orange-soft px-1.5 py-0.5 text-xs text-sc-orange-text">
+            <TriangleAlert aria-hidden="true" className="size-3.5 shrink-0" />
+            {tr("step3.hoursUnverified")}
+          </span>
+        )}
+        <button
+          type="button"
+          data-place-detail-toggle
+          popoverTarget={detailPopoverId}
+          aria-haspopup="dialog"
+          aria-controls={detailPopoverId}
+          className="shrink-0 text-xs text-sc-blue underline underline-offset-2"
+        >
+          {tr("step3.showDetail")}
+        </button>
+      </div>
+
+      <div
+        id={detailPopoverId}
+        popover="auto"
+        role="dialog"
+        aria-labelledby={detailTitleId}
+        data-place-detail-popover
+        className="m-auto max-h-[min(520px,calc(100dvh-32px))] w-[min(480px,calc(100vw-32px))] overflow-auto rounded-xl border bg-sc-surface p-4 text-left shadow-2xl backdrop:bg-black/20"
+      >
+        <div className="flex items-start justify-between gap-3">
+          <h4 id={detailTitleId} className="text-base font-semibold text-sc-text">{candidate.name[locale]}</h4>
+          <button
+            type="button"
+            popoverTarget={detailPopoverId}
+            popoverTargetAction="hide"
+            aria-label={tr("common.close")}
+            className="grid size-8 shrink-0 place-items-center rounded-full border text-sc-muted hover:border-sc-blue hover:text-sc-blue"
+          >
+            <X aria-hidden="true" className="size-4" />
+          </button>
+        </div>
+        {candidate.selectionGroups.length > 0 && (
+          <div className="mt-2 flex flex-wrap gap-1.5">
             {candidate.selectionGroups.map((group) => (
-              <span
-                key={group}
-                className="ml-2 rounded bg-sc-subtle px-1.5 py-0.5 text-xs text-sc-muted"
-              >
+              <span key={group} className="rounded bg-sc-subtle px-1.5 py-0.5 text-xs text-sc-muted">
                 {tr(group === "work" ? "step3.relationSelected" : "step3.relationActor")}
               </span>
             ))}
-          </p>
-          {/* 요약 — 어디인지, 얼마나 걸리는지, 열려 있는지. 고르는 데 필요한 것만 */}
-          <p className="mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-xs text-sc-muted">
-            <span>
-              {stationName(candidate.nearestStationId)} · {tr("access.byCar").replace("{n}", String(candidate.accessEstimate.minutes))}
-            </span>
-            {hoursLabel ? (
-              <span>· {hoursLabel}</span>
-            ) : (
-              <span className="inline-flex items-center gap-1 whitespace-nowrap rounded bg-sc-orange-soft px-1.5 py-0.5 text-sc-orange-text">
-                <TriangleAlert aria-hidden="true" className="size-3.5 shrink-0" />
-                {tr("step3.hoursUnverified")}
-              </span>
-            )}
-          </p>
-
-          <button
-            type="button"
-            data-place-detail-toggle
-            aria-expanded={showDetail}
-            className="mt-1.5 text-xs text-sc-blue underline underline-offset-2"
-            onClick={() => setShowDetail((open) => !open)}
-          >
-            {tr(showDetail ? "step3.hideDetail" : "step3.showDetail")}
-          </button>
-
-          {showDetail && (
-            <div className="mt-1.5 border-t pt-1.5">
+          </div>
+        )}
+        <div className="mt-3 border-t pt-3">
               {/* #51 계약 5·6·7 — 작품별 `작품명 · 회차` + 검증된 장면 설명, 회차 미확인은 작품명만.
                   회차는 locale 포맷(영문 Ep. N) — 숫자 패턴이 아니면 영어에서 숨김 */}
               {candidate.relationDetails.length > 0 ? (
@@ -1684,17 +1763,7 @@ function PlaceCard({ candidate, locale, tr, selected, onToggle, stationName, wor
                   </a>
                 </p>
               )}
-            </div>
-          )}
         </div>
-        <button
-          className={`shrink-0 rounded px-3 py-1 text-sm ${selected ? "bg-sc-blue text-white" : "border"}`}
-          onClick={onToggle}
-          aria-label={tr(selected ? "step3.removePlace" : "step3.addPlace").replace("{place}", candidate.name[locale])}
-          aria-pressed={selected}
-        >
-          {selected ? "✓" : "+"}
-        </button>
       </div>
     </li>
   );
