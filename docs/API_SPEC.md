@@ -95,7 +95,7 @@ getCandidatePlaces(selection: {
 //   selectionGroups: ("actor" | "work")[],           // #3·#51 실제 집합 소속(둘 다 가능)
 //   relationDetails: RelationDetail[],               // #51 — 작품별 회차·장면·장면 배우(검증값 그대로)
 //   aiRank?: number,                                 // #48 — 서버 파생 순위(선택 관련 작품 범위, 1=최고)
-//   aiReason?: { ko, en },                           // #48 — 검토된 관련 이유. 원시 점수·검토 메타는 서버 전용
+//   aiReason?: { ko, en },                           // #48 — 검증된 장면 근거. 원시 점수·검토 메타는 서버 전용
 //   badge?: "CONSERVATIVE_BUFFER_MISMATCH"           // 방문 가능성 직접 확인 필요
 //         | "UNVERIFIED_HOURS"                       // 운영시간 확인 필요
 // }  // ActivityWindowDetail과 동일 열거값 — 화면 배지 2종(WIREFRAMES S3)과 1:1

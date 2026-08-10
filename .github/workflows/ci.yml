@@ -50,7 +50,16 @@ jobs:
         run: pnpm test
 
       - name: Pipeline and source verifier unit tests (Python)
-        run: python3 -m unittest scripts.test_build_train_snapshot scripts.test_verify_stay_sources -v
+        run: >-
+          python3 -m unittest
+          scripts.test_build_place_rankings
+          scripts.test_build_train_snapshot
+          scripts.test_promote_runtime_catalog
+          scripts.test_verify_stay_sources
+          -v
+
+      - name: Runtime ranking coverage
+        run: python3 scripts/build_place_rankings.py --check
 
       - name: Build
         run: pnpm build

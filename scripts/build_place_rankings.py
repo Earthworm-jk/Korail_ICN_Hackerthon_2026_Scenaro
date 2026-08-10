@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """#48 촬영지 관련성 랭킹 스냅샷 생성기 (오프라인 전용).
 
-`OPENAI_API_KEY`로 Embeddings API를 한 번 호출해 작품×촬영지 코사인 유사도를
-계산한다. 생성 결과는 모두 미검토 상태이며, 사람이 점수·근거를 검토한 항목만
-`reviewed: true`와 `reason`을 추가해 런타임 정렬에 사용한다.
+`OPENAI_API_KEY`로 Embeddings API를 한 번 호출해 검증된 작품×촬영지 관계의 코사인
+유사도를 계산한다. 작품–장소 관계와 장면 설명이 이미 검토된 항목은 자동 활성화하고,
+관계 미검토·설명 누락·참조 불일치만 파이프라인을 중단해 사람이 예외를 확인한다.
 """
 from __future__ import annotations
 
@@ -22,16 +22,33 @@ INPUT_PATH = REPO_ROOT / "data" / "place-ranking-inputs.json"
 OUTPUT_PATH = REPO_ROOT / "data" / "place-rankings.json"
 WORKS_PATH = REPO_ROOT / "data" / "works.json"
 PLACES_PATH = REPO_ROOT / "data" / "places.json"
+RELATIONS_PATH = REPO_ROOT / "data" / "work-place-relations.json"
 
 OPENAI_EMBEDDINGS_URL = "https://api.openai.com/v1/embeddings"
 DEFAULT_MODEL = "text-embedding-3-small"
 DEFAULT_BADGE_THRESHOLD = 0.25
 MAX_INPUTS = 100
 MAX_TOTAL_CHARS = 50_000
+AUTO_REVIEWER = "pipeline:verified-relation-v1"
+AUTO_REVIEW_METHOD = "verified_relation_auto"
 
 
 class PipelineError(RuntimeError):
     pass
+
+
+def load_api_key() -> str:
+    key = os.environ.get("OPENAI_API_KEY", "").strip()
+    if key:
+        return key
+    env_path = REPO_ROOT / ".env.local"
+    if not env_path.exists():
+        return ""
+    for line in env_path.read_text(encoding="utf-8").splitlines():
+        if not line.startswith("OPENAI_API_KEY="):
+            continue
+        return line.split("=", 1)[1].strip().strip("\"'")
+    return ""
 
 
 def read_json(path: Path) -> object:
@@ -76,6 +93,31 @@ def load_inputs(input_path: Path = INPUT_PATH) -> tuple[str, dict[str, str], dic
     if set(places) != expected_places:
         raise PipelineError(f"장소 입력 ID 불일치: 누락={sorted(expected_places - set(places))}, 초과={sorted(set(places) - expected_places)}")
     return version, works, places
+
+
+def load_relations(relations_path: Path = RELATIONS_PATH) -> dict[tuple[str, str], dict[str, str]]:
+    raw = read_json(relations_path)
+    if not isinstance(raw, list):
+        raise PipelineError("작품–장소 관계 파일은 배열이어야 합니다")
+    result: dict[tuple[str, str], dict[str, str]] = {}
+    for index, item in enumerate(raw):
+        if not isinstance(item, dict):
+            raise PipelineError(f"relations[{index}]는 객체여야 합니다")
+        work_id, place_id = item.get("workId"), item.get("placeId")
+        if not isinstance(work_id, str) or not work_id or not isinstance(place_id, str) or not place_id:
+            raise PipelineError(f"relations[{index}] 작품·장소 ID가 비어 있습니다")
+        if item.get("reviewed") is not True:
+            raise PipelineError(f"미검토 관계는 자동 랭킹할 수 없습니다: {work_id}|{place_id}")
+        scene_note = item.get("sceneNote")
+        if not isinstance(scene_note, dict) or not all(
+            isinstance(scene_note.get(locale), str) and scene_note[locale].strip() for locale in ("ko", "en")
+        ):
+            raise PipelineError(f"장면 설명 ko/en 누락: {work_id}|{place_id}")
+        key = (work_id, place_id)
+        if key in result:
+            raise PipelineError(f"중복 작품–장소 관계: {work_id}|{place_id}")
+        result[key] = {locale: scene_note[locale].strip() for locale in ("ko", "en")}
+    return result
 
 
 def request_embeddings(api_key: str, model: str, texts: list[str], timeout: float = 30.0) -> tuple[list[list[float]], int]:
@@ -136,19 +178,42 @@ def build_snapshot(
     vectors: list[list[float]],
     badge_threshold: float,
     generated_at: str,
+    relation_reasons: dict[tuple[str, str], dict[str, str]],
+    previous_snapshot: dict | None = None,
 ) -> dict:
     work_vectors = dict(zip(work_ids, vectors[:len(work_ids)]))
     place_vectors = dict(zip(place_ids, vectors[len(work_ids):]))
-    rankings = [
-        {
+    previous_by_pair = {
+        (item["workId"], item["placeId"]): item
+        for item in (previous_snapshot or {}).get("rankings", [])
+        if isinstance(item, dict) and isinstance(item.get("workId"), str) and isinstance(item.get("placeId"), str)
+    }
+    rankings = []
+    reviewed_at = generated_at[:10]
+    for work_id, place_id in sorted(relation_reasons):
+        if work_id not in work_vectors or place_id not in place_vectors:
+            raise PipelineError(f"랭킹 입력에 없는 관계: {work_id}|{place_id}")
+        item = {
             "workId": work_id,
             "placeId": place_id,
             "score": round(cosine_similarity(work_vectors[work_id], place_vectors[place_id]), 6),
-            "reviewed": False,
+            "reviewed": True,
         }
-        for work_id in work_ids
-        for place_id in place_ids
-    ]
+        previous = previous_by_pair.get((work_id, place_id))
+        if previous and previous.get("reviewed") is True:
+            item.update({
+                key: previous[key]
+                for key in ("reviewedAt", "reviewedBy", "reviewMethod", "reason")
+                if key in previous
+            })
+        else:
+            item.update({
+                "reviewedAt": reviewed_at,
+                "reviewedBy": AUTO_REVIEWER,
+                "reviewMethod": AUTO_REVIEW_METHOD,
+                "reason": relation_reasons[(work_id, place_id)],
+            })
+        rankings.append(item)
     return {
         "meta": {
             "model": model,
@@ -160,22 +225,63 @@ def build_snapshot(
     }
 
 
+def assert_snapshot_coverage(
+    snapshot: object,
+    input_rule_version: str,
+    relation_reasons: dict[tuple[str, str], dict[str, str]],
+) -> None:
+    if not isinstance(snapshot, dict) or not isinstance(snapshot.get("meta"), dict):
+        raise PipelineError("랭킹 스냅샷 meta가 없습니다")
+    if snapshot["meta"].get("inputRuleVersion") != input_rule_version:
+        raise PipelineError("랭킹 입력 규칙 버전이 현재 입력과 다릅니다")
+    rankings = snapshot.get("rankings")
+    if not isinstance(rankings, list):
+        raise PipelineError("랭킹 스냅샷 rankings가 배열이 아닙니다")
+    actual: set[tuple[str, str]] = set()
+    for index, item in enumerate(rankings):
+        if not isinstance(item, dict):
+            raise PipelineError(f"rankings[{index}]는 객체여야 합니다")
+        pair = (item.get("workId"), item.get("placeId"))
+        if not all(isinstance(value, str) and value for value in pair):
+            raise PipelineError(f"rankings[{index}] 작품·장소 ID가 비어 있습니다")
+        typed_pair = (str(pair[0]), str(pair[1]))
+        if typed_pair in actual:
+            raise PipelineError(f"중복 랭킹: {typed_pair[0]}|{typed_pair[1]}")
+        actual.add(typed_pair)
+        if item.get("reviewed") is not True:
+            raise PipelineError(f"런타임 관계 랭킹이 활성화되지 않았습니다: {typed_pair[0]}|{typed_pair[1]}")
+        reason = item.get("reason")
+        if not isinstance(reason, dict) or not all(
+            isinstance(reason.get(locale), str) and reason[locale].strip() for locale in ("ko", "en")
+        ):
+            raise PipelineError(f"랭킹 이유 ko/en 누락: {typed_pair[0]}|{typed_pair[1]}")
+    expected = set(relation_reasons)
+    if actual != expected:
+        missing = sorted(f"{work}|{place}" for work, place in expected - actual)
+        extra = sorted(f"{work}|{place}" for work, place in actual - expected)
+        raise PipelineError(f"관계 랭킹 범위 불일치: 누락={missing}, 초과={extra}")
+
+
 def main_with_args(argv: list[str], api_key: str | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--model", default=DEFAULT_MODEL)
     parser.add_argument("--badge-threshold", type=float, default=DEFAULT_BADGE_THRESHOLD)
     parser.add_argument("--dry-run", action="store_true", help="API 호출·점수 계산만 하고 파일은 쓰지 않음")
+    parser.add_argument("--check", action="store_true", help="API 호출 없이 현재 관계의 랭킹 준비 상태만 확인")
     args = parser.parse_args(argv)
     if not -1 <= args.badge_threshold <= 1:
         print("오류: --badge-threshold는 -1~1이어야 합니다", file=sys.stderr)
         return 2
-    key = api_key or os.environ.get("OPENAI_API_KEY", "")
-    if not key:
-        print("오류: 오프라인 실행 환경에 OPENAI_API_KEY가 필요합니다", file=sys.stderr)
-        return 2
-
     try:
         version, works, places = load_inputs()
+        relation_reasons = load_relations()
+        if args.check:
+            assert_snapshot_coverage(read_json(OUTPUT_PATH), version, relation_reasons)
+            print(f"랭킹 준비 완료: 검증 관계 {len(relation_reasons)}건")
+            return 0
+        key = api_key or load_api_key()
+        if not key:
+            raise PipelineError("오프라인 실행 환경에 OPENAI_API_KEY가 필요합니다")
         work_ids, place_ids = sorted(works), sorted(places)
         texts = [works[item_id] for item_id in work_ids] + [places[item_id] for item_id in place_ids]
         total_chars = sum(map(len, texts))
@@ -185,9 +291,12 @@ def main_with_args(argv: list[str], api_key: str | None = None) -> int:
             )
         vectors, prompt_tokens = request_embeddings(key, args.model, texts)
         generated_at = datetime.now(timezone(timedelta(hours=9))).isoformat(timespec="seconds")
+        previous_snapshot = read_json(OUTPUT_PATH) if OUTPUT_PATH.exists() else None
         snapshot = build_snapshot(
             args.model, version, work_ids, place_ids, vectors, args.badge_threshold, generated_at,
+            relation_reasons, previous_snapshot if isinstance(previous_snapshot, dict) else None,
         )
+        assert_snapshot_coverage(snapshot, version, relation_reasons)
     except PipelineError as error:
         print(f"실패: {error}", file=sys.stderr)
         print("기존 스냅샷은 변경하지 않았습니다", file=sys.stderr)
@@ -195,7 +304,7 @@ def main_with_args(argv: list[str], api_key: str | None = None) -> int:
 
     scores = [item["score"] for item in snapshot["rankings"]]
     print(f"모델 {args.model} · 입력 {len(texts)}개/{total_chars}자 · API 사용 {prompt_tokens}토큰")
-    print(f"작품×장소 {len(snapshot['rankings'])}쌍 · 점수 {min(scores):.4f}~{max(scores):.4f}")
+    print(f"검증 작품×장소 {len(snapshot['rankings'])}쌍 · 점수 {min(scores):.4f}~{max(scores):.4f}")
     if args.dry_run:
         print("--dry-run: 파일을 쓰지 않았습니다")
         return 0
@@ -204,7 +313,7 @@ def main_with_args(argv: list[str], api_key: str | None = None) -> int:
         OUTPUT_PATH.with_suffix(".json.bak").write_text(OUTPUT_PATH.read_text(encoding="utf-8"), encoding="utf-8")
     OUTPUT_PATH.write_text(json.dumps(snapshot, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     print(f"기록 완료: {OUTPUT_PATH}")
-    print("다음 단계: 점수 분포·근거를 사람이 검토한 뒤 reviewed/reason을 확정하세요")
+    print("정상 관계는 자동 활성화했습니다. 파이프라인이 중단한 예외만 사람이 검토하세요")
     return 0
 
 

@@ -1428,7 +1428,7 @@ function PlaceCard({ candidate, locale, tr, selected, onToggle, stationName, wor
   onToggle: () => void; // #43: 미확인 후보도 선택 가능 — 표시 전용 카드 없음
   stationName: (id: string) => string;
   workTitles: (ids: string[]) => string;
-  aiReason?: { ko: string; en: string } | null; // #48 — 검토된 관련 이유(점수 비노출)
+  aiReason?: { ko: string; en: string } | null; // #48 — 검증된 장면 근거(점수 비노출)
 }) {
   // 카드는 기본이 요약이다. 작품·회차·장면·검토 이유·출처를 한 번에 펼치면 후보 5개만으로
   // 화면이 꽉 차서 "무엇을 고를지"가 안 보인다 — 판단에 필요한 것만 남기고 근거는 토글 뒤로.
