@@ -24,9 +24,10 @@ export function StageUtilityPortal({ children }: { children: ReactNode }) {
 /**
  * Utility Dock 공통 동작.
  * - 일반 확인사항은 compact disclosure로 축약
- * - 데이터 기준/검증 문구는 우측에서 제거하고 dock의 '데이터 기준' 항목으로 모음
  * - Escape로 열린 dock 항목 닫기
  * - blocking 과선택 경고는 건드리지 않음
+ *
+ * 데이터 산출 기준은 별도 dock 항목으로 노출하지 않는다.
  */
 export function StageUtilityDockController() {
   useEffect(() => {
@@ -70,61 +71,6 @@ export function StageUtilityDockController() {
       });
     };
 
-    const syncDataUtility = () => {
-      const desktop = window.matchMedia("(min-width: 1024px)").matches;
-      const result = document.querySelector<HTMLElement>("#place-picker + div[aria-busy]");
-      if (!desktop || !result) return;
-
-      const sourceNodes = Array.from(
-        result.querySelectorAll<HTMLElement>("p.rounded-lg.border.bg-sc-subtle"),
-      );
-      if (sourceNodes.length === 0) return;
-
-      sourceNodes.forEach((node) => { node.dataset.stageSource = "data"; });
-      const texts = sourceNodes.map((source) => source.textContent?.trim() ?? "");
-      const signature = texts.join("\n---\n");
-
-      let details = host.querySelector<HTMLDetailsElement>('details[data-stage-utility="data"]');
-      if (!details) {
-        details = document.createElement("details");
-        details.dataset.stageUtility = "data";
-        details.className = "group rounded-lg border bg-sc-surface";
-        const summary = document.createElement("summary");
-        summary.className = "flex min-h-11 list-none items-center justify-between gap-3 px-3 py-2.5 text-sm";
-        const label = document.createElement("span");
-        label.className = "min-w-0";
-        const strong = document.createElement("strong");
-        strong.className = "block truncate font-medium text-sc-text";
-        strong.textContent = "ⓘ 데이터 기준";
-        const sub = document.createElement("span");
-        sub.className = "block truncate text-xs text-sc-muted";
-        sub.textContent = "일정 산출·검증 근거";
-        label.append(strong, sub);
-        const arrow = document.createElement("span");
-        arrow.className = "shrink-0 text-sc-muted";
-        arrow.textContent = "⌄";
-        summary.append(label, arrow);
-        const panel = document.createElement("div");
-        panel.className = "stage-data-panel border-t px-3 pb-3 pt-2";
-        details.append(summary, panel);
-        host.append(details);
-      }
-
-      if (details.dataset.stageSignature === signature) return;
-      details.dataset.stageSignature = signature;
-
-      const panel = details.querySelector<HTMLElement>(".stage-data-panel");
-      if (panel) {
-        const paragraphs = texts.map((text) => {
-          const p = document.createElement("p");
-          p.className = "text-xs text-sc-muted";
-          p.textContent = text;
-          return p;
-        });
-        panel.replaceChildren(...paragraphs);
-      }
-    };
-
     const markWarnings = () => {
       document
         .querySelectorAll<HTMLElement>("#place-picker + div[aria-busy] div.rounded-lg.border.border-sc-orange\\/30.bg-sc-orange-soft")
@@ -135,133 +81,14 @@ export function StageUtilityDockController() {
         });
     };
 
-    const sync = () => {
-      markWarnings();
-      syncDataUtility();
-    };
-
-    sync();
-    const observer = new MutationObserver(sync);
-    observer.observe(document.body, { childList: true, subtree: true, characterData: true });
-    const media = window.matchMedia("(min-width: 1024px)");
-    media.addEventListener("change", sync);
+    markWarnings();
+    const observer = new MutationObserver(markWarnings);
+    observer.observe(document.body, { childList: true, subtree: true });
 
     return () => {
       document.removeEventListener("keydown", onKeyDown);
-      media.removeEventListener("change", sync);
       observer.disconnect();
     };
-  }, []);
-
-  return null;
-}
-
-/**
- * 최초 Step 3 진입 때 엔진의 첫 추천 일정에 실제로 배치된 장소만 기본 선택으로 남긴다.
- * 후보 전체를 평가하는 기존 첫 계산을 이용하므로 고정 '3곳' 같은 임의 상한을 만들지 않는다.
- * 이후 사용자가 직접 장소를 더 선택하면 자동으로 다시 줄이지 않는다.
- */
-export function InitialCapacitySelectionController() {
-  useEffect(() => {
-    let trimming = false;
-    let normalizedSignature: string | null = null;
-
-    const candidateName = (card: HTMLElement) => {
-      const title = card.querySelector<HTMLElement>("p.font-medium");
-      if (!title) return "";
-      const first = title.childNodes[0]?.textContent ?? title.textContent ?? "";
-      return first.trim();
-    };
-
-    const selectionButton = (card: HTMLElement) =>
-      card.querySelector<HTMLButtonElement>(":scope > div > button:last-child");
-
-    const showMoreButton = (picker: HTMLElement) =>
-      Array.from(picker.querySelectorAll<HTMLButtonElement>("button"))
-        .find((button) => button.parentElement === picker && button.classList.contains("w-full"));
-
-    const expandAllCandidates = (picker: HTMLElement, done: () => void) => {
-      const more = showMoreButton(picker);
-      if (!more) {
-        done();
-        return;
-      }
-      more.click();
-      window.setTimeout(() => expandAllCandidates(picker, done), 20);
-    };
-
-    const normalizeVisibleCandidates = (picker: HTMLElement, result: HTMLElement) => {
-      const cards = Array.from(picker.querySelectorAll<HTMLElement>(":scope > ul > li"));
-      const finalSignature = cards.map(candidateName).join("|");
-      const itineraryRows = Array.from(result.querySelectorAll<HTMLElement>("li"))
-        .filter((row) => row.textContent?.trim().startsWith("📍"));
-
-      if (cards.length === 0 || itineraryRows.length === 0) {
-        normalizedSignature = finalSignature;
-        return;
-      }
-
-      const scheduledNames = itineraryRows.map((row) => row.textContent ?? "");
-      const toRemove = cards.filter((card) => {
-        const button = selectionButton(card);
-        const name = candidateName(card);
-        return Boolean(
-          button &&
-          button.textContent?.trim() === "✓" &&
-          name &&
-          !scheduledNames.some((row) => row.includes(name)),
-        );
-      });
-
-      trimming = true;
-      picker.dataset.autoTrimming = "true";
-
-      const removeNext = (index: number) => {
-        if (index >= toRemove.length) {
-          normalizedSignature = finalSignature;
-          trimming = false;
-          delete picker.dataset.autoTrimming;
-          return;
-        }
-        const name = candidateName(toRemove[index]);
-        const latestCards = Array.from(picker.querySelectorAll<HTMLElement>(":scope > ul > li"));
-        const latest = latestCards.find((card) => candidateName(card) === name);
-        const button = latest ? selectionButton(latest) : null;
-        if (button?.textContent?.trim() === "✓") button.click();
-        window.setTimeout(() => removeNext(index + 1), 45);
-      };
-
-      removeNext(0);
-    };
-
-    const tryNormalize = () => {
-      if (trimming) return;
-      const picker = document.getElementById("place-picker");
-      const result = picker?.nextElementSibling as HTMLElement | null;
-      if (!picker || !result || result.getAttribute("aria-busy") === "true") return;
-
-      const firstCards = Array.from(picker.querySelectorAll<HTMLElement>(":scope > ul > li"));
-      if (firstCards.length === 0) return;
-      const moreText = showMoreButton(picker)?.textContent?.trim() ?? "";
-      const currentSignature = firstCards.map(candidateName).join("|") + (moreText ? `::${moreText}` : "");
-      if (normalizedSignature === currentSignature) return;
-
-      const itineraryRows = Array.from(result.querySelectorAll<HTMLElement>("li"))
-        .filter((row) => row.textContent?.trim().startsWith("📍"));
-      if (itineraryRows.length === 0) return;
-
-      expandAllCandidates(picker, () => normalizeVisibleCandidates(picker, result));
-    };
-
-    tryNormalize();
-    const observer = new MutationObserver(tryNormalize);
-    observer.observe(document.body, {
-      childList: true,
-      subtree: true,
-      attributes: true,
-      attributeFilter: ["aria-busy"],
-    });
-    return () => observer.disconnect();
   }, []);
 
   return null;
