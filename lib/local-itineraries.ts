@@ -19,7 +19,11 @@
  * 안 되므로 모든 진입점이 실패를 값으로 돌려주거나 조용히 무시한다. 읽기 실패는 "없음"과
  * 같게 다룬다 — 손상된 데이터로 화면을 그리는 것보다 빈 목록이 낫다.
  */
-import { SAVED_SCHEMA_VERSION, type SavedItineraryStub } from "./saved-itineraries-stub";
+import {
+  SAVED_SCHEMA_VERSION,
+  type SavedItineraryStub,
+  type TripInputFields,
+} from "./saved-itineraries-stub";
 
 /**
  * 저장 형식 버전.
@@ -36,8 +40,13 @@ export const DRAFT_KEY = `scenaro.draft.v${LOCAL_STORAGE_VERSION}`;
 /** 조율 중 초안 — 아직 저장하지 않은 화면 상태. 레인 A가 호출 지점을 연결한다 (#118) */
 export type LocalDraft = {
   savedAt: string;
-  /** 1단계 여행 조건 입력값 (datetime-local 문자열) */
-  trip: Record<string, string>;
+  /**
+   * 1단계 여행 조건 입력값 (datetime-local 문자열).
+   *
+   * 재열람이 쓰는 `tripInputsFromConstraints`의 반환형과 같은 모양이다 — 복구 코드가
+   * 두 경로에서 같은 필드를 읽게 해 두려는 것이다.
+   */
+  trip: TripInputFields;
   selectedActorIds: string[];
   selectedWorkIds: string[];
   selectedPlaceIds: string[];
@@ -300,7 +309,12 @@ export function loadDraft(storage: Storage | null = defaultStorage()): LocalDraf
   if (typeof data !== "object" || data === null) return null;
   const draft = data as Partial<LocalDraft>;
   if (typeof draft.savedAt !== "string") return null;
-  if (typeof draft.trip !== "object" || draft.trip === null) return null;
+  // 네 필드를 다 보는 이유: 복구 코드가 `draft.trip.arrivalAt`을 바로 읽는다.
+  // 하나라도 없으면 undefined가 입력칸에 들어가 화면이 빈 채로 되살아난다.
+  const trip = draft.trip as Partial<TripInputFields> | undefined;
+  if (typeof trip !== "object" || trip === null) return null;
+  const tripFields = [trip.arrivalAt, trip.departureAt, trip.airportReadyAt, trip.airportArrivalDeadline];
+  if (!tripFields.every((value) => typeof value === "string" && value.length > 0)) return null;
   const ids = [draft.selectedActorIds, draft.selectedWorkIds, draft.selectedPlaceIds];
   if (!ids.every((list) => Array.isArray(list) && list.every((id) => typeof id === "string"))) return null;
   return draft as LocalDraft;

@@ -267,7 +267,12 @@ describe("깨진 저장소에서 죽지 않는다", () => {
 describe("조율 중 초안", () => {
   const draft: LocalDraft = {
     savedAt: "2026-08-10T00:00:00.000Z",
-    trip: { arrivalAt: "2026-08-12T10:00" },
+    trip: {
+      arrivalAt: "2026-08-12T10:00",
+      departureAt: "2026-08-14T18:00",
+      airportReadyAt: "2026-08-12T12:00",
+      airportArrivalDeadline: "2026-08-14T16:00",
+    },
     selectedActorIds: ["actor-kim-go-eun"],
     selectedWorkIds: [],
     selectedPlaceIds: ["place-yeongjin-beach"],
