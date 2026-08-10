@@ -25,6 +25,7 @@ import {
   useMemo,
   useRef,
   useState,
+  useSyncExternalStore,
   type KeyboardEvent as ReactKeyboardEvent,
   type PointerEvent as ReactPointerEvent,
   type ReactNode,
@@ -54,6 +55,7 @@ import { KOREA_OUTLINE_PATH } from "@/lib/korea-outline";
 import {
   railRouteSegments,
   routePairKey,
+  routePathKeys,
   routeStationSequence,
   type RailLineGeometry,
 } from "@/lib/map-route";
@@ -146,6 +148,42 @@ function MapLabels({ labels, unit }: { labels: readonly PlacedLabel[]; unit: num
       })}
     </>
   );
+}
+
+/**
+ * 경로 한 줄을 그리는 시간(초).
+ *
+ * 재계산은 실시드에서 2초 안에 끝난다(NFR-PERF-001). 애니메이션이 그보다 길면 계산이 끝난
+ * 뒤에도 화면이 계속 움직여 "아직 계산 중"으로 읽힌다. 결과 확인을 늦추지 않는 길이로 잡는다.
+ */
+const ROUTE_DRAW_SECONDS = 0.7;
+
+/**
+ * 동작 줄이기 설정을 읽는다 (#118 P0-2 `reduced motion 대체 표현`).
+ *
+ * CSS가 아니라 여기서 읽는 이유는 두 가지다. 하나는 애니메이션이 SVG SMIL이라 CSS 미디어
+ * 쿼리로 끌 수 없다는 것이고, 다른 하나는 스타일 파일이 다른 레인 소유라는 것이다(#118).
+ *
+ * 서버 렌더에서는 `false`로 시작한다. 첫 페인트에 애니메이션이 한 번 도는 것보다, 설정을
+ * 켠 사용자에게 잠깐이라도 움직임이 보이는 쪽이 문제이므로 마운트 직후 즉시 다시 읽는다.
+ */
+const REDUCED_MOTION_QUERY = "(prefers-reduced-motion: reduce)";
+
+function subscribeReducedMotion(onChange: () => void): () => void {
+  if (typeof window === "undefined" || !window.matchMedia) return () => {};
+  const query = window.matchMedia(REDUCED_MOTION_QUERY);
+  query.addEventListener("change", onChange);
+  return () => query.removeEventListener("change", onChange);
+}
+
+function readReducedMotion(): boolean {
+  if (typeof window === "undefined" || !window.matchMedia) return false;
+  return window.matchMedia(REDUCED_MOTION_QUERY).matches;
+}
+
+function usePrefersReducedMotion(): boolean {
+  // 서버 스냅샷은 false — 설정을 읽을 수 없는 곳에서 움직임을 가정하지 않는다
+  return useSyncExternalStore(subscribeReducedMotion, readReducedMotion, () => false);
 }
 
 function LegendSwatch({ className }: { className: string }) {
@@ -370,6 +408,14 @@ export function KoreaMapPanel({
   }, [view]);
   const unit = screenUnit(view);
   const scale = scaleOf(view);
+  /**
+   * 경로를 그려 넣을지 — 동선 지도이고 동작 줄이기가 꺼져 있을 때만.
+   *
+   * 끄면 애니메이션 속성 자체를 붙이지 않는다. `dur=0`으로 두면 dasharray가 남아 실선이
+   * 미세하게 달라 보이므로, 아예 평소 렌더로 되돌린다 — 결과는 같고 과정만 없다.
+   */
+  const prefersReducedMotion = usePrefersReducedMotion();
+  const drawRoute = isRoute && !prefersReducedMotion;
 
   /**
    * 오버레이(테마체험 필터) 항목 등록부.
@@ -521,8 +567,9 @@ export function KoreaMapPanel({
     railLines,
     roadPairKeys,
   );
-  const routePaths = routeSegments.map((segment, index) => ({
-    key: `${segment.kind}-${index}`,
+  // key는 인덱스가 아니라 내용으로 잡는다 — 바뀐 구간만 다시 그려지게 (routePathKeys 주석 참고)
+  const routeShapes = routeSegments.map((segment) => ({
+    kind: segment.kind,
     d:
       segment.kind === "rail"
         ? polylinePath(segment.points)
@@ -533,6 +580,8 @@ export function KoreaMapPanel({
               .map((station) => project(station.latitude, station.longitude)),
           ),
   }));
+  const routePathKeyList = routePathKeys(routeShapes);
+  const routePaths = routeShapes.map((shape, index) => ({ ...shape, key: routePathKeyList[index] }));
   // ODbL 1.0 — OSM 선형을 실제로 그린 화면에서만 출처를 띄운다
   const hasRailGeometry = routeSegments.some((segment) => segment.kind === "rail");
 
@@ -643,7 +692,25 @@ export function KoreaMapPanel({
                   strokeWidth={3 * unit}
                   strokeLinecap="round"
                   strokeLinejoin="round"
-                />
+                  /* pathLength로 길이를 1로 정규화한다 — 구간마다 실제 길이가 달라도
+                     같은 시간에 그려지고, DOM을 재서 길이를 알아낼 필요가 없다 */
+                  pathLength={drawRoute ? 1 : undefined}
+                  strokeDasharray={drawRoute ? 1 : undefined}
+                  strokeDashoffset={drawRoute ? 1 : undefined}
+                >
+                  {drawRoute && (
+                    <animate
+                      attributeName="stroke-dashoffset"
+                      from="1"
+                      to="0"
+                      dur={`${ROUTE_DRAW_SECONDS}s`}
+                      fill="freeze"
+                      calcMode="spline"
+                      keyTimes="0;1"
+                      keySplines="0.2 0.7 0.2 1"
+                    />
+                  )}
+                </path>
               ) : null,
             )}
 

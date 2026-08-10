@@ -118,3 +118,23 @@ export function routeStationSequence(rides: readonly RouteRide[]): string[] {
   }
   return sequence;
 }
+
+/**
+ * 경로 path의 React key — 인덱스가 아니라 **내용**으로 잡는다 (#118 P0-2).
+ *
+ * 경로 재생성 애니메이션은 React가 어떤 path를 다시 마운트하는지에 그대로 얹힌다. 인덱스를
+ * key로 쓰면 구간이 하나 늘거나 줄 때 뒤의 모든 구간이 새 것으로 취급돼 화면 전체가 다시
+ * 그려진다. 사용자가 봐야 하는 것은 "무엇이 달라졌나"이므로, 그대로인 구간은 가만히 있고
+ * 바뀐 구간만 다시 그려져야 한다.
+ *
+ * 같은 모양이 두 번 나오는 경우(왕복 등)에만 순번을 붙여 key 충돌을 피한다.
+ */
+export function routePathKeys(paths: readonly { kind: string; d: string }[]): string[] {
+  const seen = new Map<string, number>();
+  return paths.map(({ kind, d }) => {
+    const base = `${kind}:${d}`;
+    const count = seen.get(base) ?? 0;
+    seen.set(base, count + 1);
+    return count === 0 ? base : `${base}#${count}`;
+  });
+}
