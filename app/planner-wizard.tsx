@@ -49,11 +49,13 @@ import { formatFlightStatus } from "@/lib/flight-status";
 import { formatEpisodeLabel } from "@/lib/episode-label";
 import { splitSourceLink } from "@/lib/source-link";
 import { placeTypeIcon } from "@/lib/place-type-icon";
+import { diffItineraries, type ItineraryDiff } from "@/lib/itinerary-diff";
 import { gatewayPlanningBaselineOf } from "@/lib/engine/gateway-baseline";
 import { AlternativeTimetables } from "./alternative-timetables";
 import { AuthModal, TripsModal, useSaveStub, type SaveStatus } from "./save-stub";
 import { ExecutionSupport } from "./execution-support";
 import { GatewayAlternatives } from "./gateway-alternatives";
+import { ItineraryChangeSummary } from "./itinerary-change-summary";
 import { ItineraryRouteMap, KoreaMapPanel, type MapPlace, type MapStation } from "./korea-map";
 import { ThemeExperienceCard, ThemeExperienceMapOverlay } from "./theme-experience";
 import { TrainLegModal, legDurationLabel, type TrainLegDetail } from "./train-leg-modal";
@@ -279,6 +281,8 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
 
   // step 4 — 결과. 전이 규칙·파생은 lib/itinerary-view 순수 함수로 고정 (PR #35 리뷰 3)
   const [view, dispatchView] = useReducer(reduceItineraryView, initialItineraryView);
+  // 직전 확정 결과와 최신 성공 결과의 차이. 엔진 상태와 분리된 발표용 표현 상태다 (#118 P0-2).
+  const [lastItineraryDiff, setLastItineraryDiff] = useState<ItineraryDiff | null>(null);
   const planSequence = useRef(0); // 늦게 도착한 이전 요청의 공항버스 대안이 새 결과를 덮지 않게 한다.
   // 계산이 끝난(성공·무효·실패 모두) 마지막 선택. 지금 선택과 다르면 화면은 아직 옛 결론이다.
   // 대기 플래그를 따로 두지 않고 여기서 파생한다 — effect에서 setState를 하지 않기 위해서다.
@@ -313,6 +317,7 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
   // 재열람 = 화면 교체가 아니라 저장 당시 조건의 복원 (PR #35 리뷰 3)
   // 입력·선택·후보 컨텍스트를 constraints에서 되살려, 이후 재계산이 저장 당시 조건으로 돈다
   const reopenRecord = useCallback(async (record: SavedItineraryStub) => {
+    setLastItineraryDiff(null);
     const c = record.constraints;
     const inputs = tripInputsFromConstraints(c);
     setArrival((f) => ({ ...f, at: inputs.arrivalAt }));
@@ -411,6 +416,7 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
     };
 
     dispatchView({ type: "PLAN_START" });
+    setLastItineraryDiff(null);
     setThemeExperience(null);
 
     let selectedIds = allCandidateIds;
@@ -499,7 +505,11 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
     if (!constraints) return;
     const sequence = ++planSequence.current;
     const requestedSelectionKey = selectionKey;
+    // 계산 중에도 view.result는 직전 확정 결과를 유지한다. 최신 응답이 성공했을 때만 이 기준과
+    // 비교해 지도 애니메이션과 같은 전환 단위의 설명을 만든다.
+    const previousResult = view.result;
     dispatchView({ type: "PLAN_START" });
+    setLastItineraryDiff(null);
     setThemeExperience(null);
     try {
       const res = await planItinerary(constraints);
@@ -509,6 +519,7 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
       // 성공이든 무효든 "이 선택으로는 끝났다" — 실패에도 기록해야 갱신 표시가 남지 않는다
       setSettledSelectionKey(requestedSelectionKey);
       if (res.ok) {
+        setLastItineraryDiff(previousResult ? diffItineraries(previousResult, res.result) : null);
         dispatchView({ type: "PLAN_SUCCESS", result: res.result });
         saveStub.markDirty();
         if (res.result.status === "planned") {
@@ -530,7 +541,7 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
       setSettledSelectionKey(requestedSelectionKey);
       dispatchView({ type: "PLAN_FAILED" }); // 네트워크·서버 장애 — 기존 결과 유지
     }
-  }, [currentConstraints, selectionKey, saveStub, refreshThemeExperience]);
+  }, [currentConstraints, selectionKey, saveStub, refreshThemeExperience, view.result]);
 
   // #85 기술항목 2 — 장소를 켜고 끄면 자동 재계산한다. 연속 토글은 마지막 것만 계산하고,
   // 항공편 시각은 확정대로 자동 감지하지 않는다(사용자가 조회·변경 후 "다시 계산").
@@ -615,6 +626,7 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
   );
 
   const chooseAlternative = useCallback((alt: SelectableAlternative | null) => {
+    setLastItineraryDiff(null);
     dispatchView({ type: "SELECT_ALT", alt });
     saveStub.markDirty();
   }, [saveStub]);
@@ -1024,6 +1036,7 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
                 onToggle={() => {
                   const next = new Set(selectedPlaceIds);
                   if (next.has(c.id)) next.delete(c.id); else next.add(c.id);
+                  if (next.size === 0) setLastItineraryDiff(null);
                   setSelectedPlaceIds(next);
                 }}
               />
@@ -1113,6 +1126,15 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
             <div className="mt-4 rounded-lg border border-sc-airport/30 bg-sc-airport-soft p-3 text-sm text-sc-airport-text">
               {tr(viewBanner === "reopened" ? "trips.reopened" : viewBanner === "gateway" ? "gateway.swapped" : "alt.swapped")}
             </div>
+          )}
+
+          {lastItineraryDiff && !updating && !view.reopened && (
+            <ItineraryChangeSummary
+              diff={lastItineraryDiff}
+              placeName={placeName}
+              reasonLabel={(reason) => tr(`reason.${reason}` as MessageKey)}
+              tr={tr}
+            />
           )}
 
           {selectionCapacity?.requiresAdjustment && (
