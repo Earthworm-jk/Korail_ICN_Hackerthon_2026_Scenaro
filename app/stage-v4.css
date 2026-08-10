@@ -377,7 +377,7 @@
     z-index: 12;
     width: calc(100% - 20px) !important;
     height: auto !important;
-    max-height: 238px !important;
+    max-height: 258px !important;
     margin: 0 10px 10px !important;
     overflow: hidden !important;
     border-radius: 14px !important;
@@ -411,24 +411,21 @@
   }
 }
 
-/* At the minimum presentation width the dock is taller because each of its four
-   summaries wraps. Lift the recommendation sheet as a whole so its final visible
-   card and controls stay visually clear and receive pointer events themselves.
-   If the dock's density changes, remeasure this clearance at 1024x768. */
+/* The theme no-result state uses the same compact summary/detail pattern as the
+   other utilities, so the dock no longer needs a 1024-only height penalty. */
 @media (min-width: 1024px) and (max-width: 1279px) {
   div#place-picker[data-place-sheet] {
-    margin-bottom: 44px !important;
-    max-height: 204px !important;
+    margin-bottom: 10px !important;
+    max-height: 258px !important;
   }
 }
 
-/* The 720px-high projector viewport leaves less room below the workspace than
-   1024x768. Reduce the expanded sheet by the same amount that it moves upward,
-   preserving its top edge while clearing the fixed dock below. */
+/* The 720px-high projector viewport still needs the sheet lifted above the fixed
+   dock, but keep its full content height so cards never clip behind the shell. */
 @media (min-width: 1024px) and (max-height: 740px) {
   div#place-picker[data-place-sheet] {
-    margin-bottom: 62px !important;
-    max-height: 186px !important;
+    margin-bottom: 44px !important;
+    max-height: 258px !important;
   }
 }
 

@@ -1575,6 +1575,7 @@ function PlaceCard({ candidate, locale, tr, selected, onToggle, stationName, wor
     <li
       className={`rounded-lg border p-3 ${selected ? "border-sc-blue bg-sc-blue-soft/60" : ""}`}
       data-recommendation-card
+      data-card-expanded={showDetail}
     >
       <div className="flex items-start justify-between gap-2">
         {/* 이름·좌표·이미지를 검증한 TourAPI 제1유형 사진만 쓴다. 나머지는 추정 사진
@@ -1615,6 +1616,7 @@ function PlaceCard({ candidate, locale, tr, selected, onToggle, stationName, wor
 
           <button
             type="button"
+            data-place-detail-toggle
             aria-expanded={showDetail}
             className="mt-1.5 text-xs text-sc-blue underline underline-offset-2"
             onClick={() => setShowDetail((open) => !open)}

@@ -48,12 +48,24 @@ export function ThemeExperienceCard({ result, stationName, locale, tr, mapVisibl
   if (!result) return null;
 
   if (result.status !== "ok") {
+    const statusKey = result.status === "none" ? "theme.statusNone" : "theme.statusUnavailable";
+    const shortStatusKey = result.status === "none" ? "theme.statusNoneShort" : "theme.statusUnavailableShort";
+
     return (
       <StageUtilityPortal>
-        <div data-stage-utility="theme" role="status" className="flex items-center gap-1.5 rounded-lg border bg-sc-surface px-3 py-2.5 text-xs text-sc-muted">
-          <Sparkles aria-hidden="true" className="size-4 shrink-0" />
-          {tr(result.status === "none" ? "theme.statusNone" : "theme.statusUnavailable")}
-        </div>
+        <details data-stage-utility="theme" className="group rounded-lg border bg-sc-surface">
+          <span role="status" className="sr-only">{tr(statusKey)}</span>
+          <summary className="flex min-h-11 list-none items-center justify-between gap-3 px-3 py-2.5 marker:content-none">
+            <strong className="flex min-w-0 items-center gap-1.5 text-sm font-medium">
+              <Sparkles aria-hidden="true" className="size-4 shrink-0" />
+              <span className="truncate">{tr(shortStatusKey)}</span>
+            </strong>
+            <span aria-hidden className="shrink-0 text-sc-muted transition-transform group-open:rotate-180">⌄</span>
+          </summary>
+          <div className="border-t px-3 pb-3 pt-2">
+            <p className="text-xs text-sc-muted">{tr(statusKey)}</p>
+          </div>
+        </details>
       </StageUtilityPortal>
     );
   }

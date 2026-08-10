@@ -182,7 +182,7 @@
   .list {
     grid-column: 2;
     grid-row: 1 / span 2;
-    grid-auto-columns: minmax(250px, 280px);
+    grid-auto-columns: minmax(270px, 280px);
     grid-auto-flow: column;
     gap: 9px;
     margin-top: 0;
@@ -193,16 +193,25 @@
   }
 
   .list :global([data-recommendation-card]) {
-    height: 145px;
-    overflow-y: auto;
+    height: 160px;
+    overflow-y: hidden;
     scroll-snap-align: start;
+  }
+
+  .list :global([data-recommendation-card][data-card-expanded="true"]) {
+    overflow-y: auto;
+  }
+
+  .list :global([data-place-detail-toggle]) {
+    min-height: 28px !important;
   }
 
   .more {
     grid-column: 3;
     grid-row: 1;
-    width: 90px;
+    width: 98px;
     margin-top: 0;
+    white-space: nowrap;
   }
 
   .fallbackMap,
