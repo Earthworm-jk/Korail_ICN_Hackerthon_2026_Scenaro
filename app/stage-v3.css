@@ -1,0 +1,77 @@
+/* #117 feedback pass 2: compact map labels are handled in map-labels.ts.
+   This layer focuses on navigable step tabs and disclosure density in the right rail. */
+
+/* The stepper is navigation now, not a passive progress indicator. */
+nav.grid.grid-cols-3 > [role="button"] {
+  cursor: pointer;
+  user-select: none;
+  transition: background-color 140ms ease, color 140ms ease, box-shadow 140ms ease;
+}
+
+nav.grid.grid-cols-3 > [role="button"]:not([aria-current="step"]):hover {
+  background: rgba(255, 255, 255, 0.72);
+  color: var(--sc-text);
+}
+
+nav.grid.grid-cols-3 > [role="button"]:focus-visible {
+  position: relative;
+  z-index: 2;
+  box-shadow: inset 0 0 0 2px var(--sc-blue), 0 0 0 2px var(--sc-surface);
+}
+
+@media (min-width: 1024px) {
+  /* Supplementary information should collapse to one summary row by default. */
+  #place-picker + div[aria-busy] > div[class*="space-y"] > div.grid > div:nth-child(2) > details {
+    padding: 0 !important;
+    overflow: clip;
+    border-color: var(--sc-line) !important;
+    background: rgba(255,255,255,.92) !important;
+  }
+
+  #place-picker + div[aria-busy] details > summary {
+    min-height: 42px !important;
+    padding: 8px 10px !important;
+    border-radius: 8px;
+  }
+
+  #place-picker + div[aria-busy] details > summary:hover {
+    background: var(--sc-subtle);
+  }
+
+  #place-picker + div[aria-busy] details[open] > summary {
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+    background: rgba(245,248,251,.82);
+  }
+
+  #place-picker + div[aria-busy] details > summary strong {
+    font-size: 0.78rem !important;
+    line-height: 1.35;
+  }
+
+  #place-picker + div[aria-busy] details > summary span {
+    line-height: 1.35;
+  }
+
+  /* Gateway disclosure is now a details element rather than the old section. */
+  #place-picker + div[aria-busy] > details,
+  #place-picker + div[aria-busy] > div[class*="space-y"] > details {
+    grid-column: 3 !important;
+    margin-top: 6px !important;
+  }
+
+  #place-picker + div[aria-busy] details button {
+    max-width: 100%;
+  }
+
+  /* Critical warnings remain visible, but make them scan faster than supporting prose. */
+  #place-picker + div[aria-busy] div[class*="bg-sc-orange-soft"] ul {
+    margin-top: 6px !important;
+    display: grid;
+    gap: 4px;
+  }
+
+  #place-picker + div[aria-busy] div[class*="bg-sc-orange-soft"] li {
+    line-height: 1.35 !important;
+  }
+}

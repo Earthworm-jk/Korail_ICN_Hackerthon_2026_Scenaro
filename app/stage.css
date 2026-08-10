@@ -1,0 +1,214 @@
+/* Step 3 presentation-stage comparison overrides.
+   Loaded after Tailwind so layout composition wins over utility display rules. */
+
+@media (min-width: 1024px) {
+  body > main > div.mx-auto {
+    max-width: 1536px !important;
+    padding: 18px 20px 24px !important;
+  }
+
+  body > main > div.mx-auto > div.overflow-hidden {
+    border-radius: 8px !important;
+    box-shadow: 0 1px 3px rgba(16, 24, 40, 0.06), 0 12px 40px rgba(16, 24, 40, 0.08) !important;
+  }
+
+  body > main > div.mx-auto > div.overflow-hidden > header {
+    min-height: 62px !important;
+    padding-top: 12px !important;
+    padding-bottom: 12px !important;
+  }
+
+  body > main > div.mx-auto > div.overflow-hidden > nav > div {
+    min-height: 44px !important;
+  }
+
+  /* Step 3: remove the persistent summary rail and spend the width on the stage. */
+  body > main div.grid:has(> aside[aria-label]):has(#place-picker) {
+    display: block !important;
+  }
+
+  body > main div.grid:has(> aside[aria-label]):has(#place-picker) > aside[aria-label] {
+    display: none !important;
+  }
+
+  body > main div.grid:has(> aside[aria-label]):has(#place-picker) > div {
+    padding: 18px 16px 22px !important;
+  }
+
+  /* Left / Map / Right. 1024px minimums are deliberately conservative to avoid overflow. */
+  section > div.grid:has(> #place-picker) {
+    display: grid !important;
+    grid-template-columns: minmax(215px, 250px) minmax(390px, 1fr) minmax(255px, 290px) !important;
+    column-gap: 16px !important;
+    row-gap: 10px !important;
+    align-items: start !important;
+    min-height: min(720px, calc(100vh - 190px));
+  }
+
+  #place-picker {
+    grid-column: 1 !important;
+    grid-row: 1 / span 100 !important;
+    position: sticky !important;
+    top: 14px !important;
+    max-height: calc(100vh - 176px) !important;
+    min-width: 0 !important;
+    overflow-y: auto !important;
+    overscroll-behavior: contain;
+    scrollbar-gutter: stable;
+    border: 1px solid var(--sc-line) !important;
+    border-radius: 10px !important;
+    background: var(--sc-surface) !important;
+    padding: 13px !important;
+    box-shadow: 0 1px 3px rgba(16, 24, 40, 0.04) !important;
+  }
+
+  #place-picker > ul {
+    margin-top: 10px !important;
+    padding: 0 2px !important;
+  }
+
+  #place-picker > ul > li {
+    border: 0 !important;
+    border-top: 1px solid var(--sc-line) !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    padding: 11px 3px !important;
+    box-shadow: none !important;
+  }
+
+  #place-picker > ul > li:first-child {
+    border-top: 0 !important;
+  }
+
+  #place-picker > ul > li[class*="bg-sc-blue-soft"] {
+    margin: 2px 0 !important;
+    border: 0 !important;
+    border-left: 3px solid var(--sc-blue) !important;
+    border-radius: 8px !important;
+    background: var(--sc-blue-soft) !important;
+    padding-left: 9px !important;
+    padding-right: 7px !important;
+  }
+
+  #place-picker > ul > li > div > div[aria-hidden="true"] {
+    width: 36px !important;
+    height: 36px !important;
+    border-radius: 8px !important;
+    font-size: 16px !important;
+  }
+
+  /* Desktop Stage uses one shared route map. */
+  #place-picker > details {
+    display: none !important;
+  }
+
+  /* Flatten the result wrappers into the three-column stage. */
+  #place-picker + div[aria-busy] {
+    display: contents !important;
+  }
+
+  #place-picker + div[aria-busy] > * {
+    grid-column: 3 !important;
+    min-width: 0 !important;
+  }
+
+  #place-picker + div[aria-busy] > p[class*="bg-sc-subtle"] {
+    margin-top: 7px !important;
+    border-radius: 8px !important;
+    padding: 8px 10px !important;
+  }
+
+  #place-picker + div[aria-busy] > div[class*="space-y"] {
+    display: contents !important;
+  }
+
+  #place-picker + div[aria-busy] > div[class*="space-y"] > section {
+    grid-column: 3 !important;
+    margin-top: 7px !important;
+    border-radius: 9px !important;
+    padding: 11px !important;
+  }
+
+  #place-picker + div[aria-busy] > div[class*="space-y"] > div.grid {
+    display: contents !important;
+  }
+
+  /* Right itinerary rail. */
+  #place-picker + div[aria-busy] > div[class*="space-y"] > div.grid > div:first-child {
+    grid-column: 3 !important;
+    min-width: 0 !important;
+    max-height: calc(100vh - 315px) !important;
+    overflow-y: auto !important;
+    overscroll-behavior: contain;
+    scrollbar-gutter: stable;
+    padding-right: 3px !important;
+  }
+
+  #place-picker + div[aria-busy] > div[class*="space-y"] > div.grid > div:first-child > div {
+    border-radius: 9px !important;
+    padding: 12px !important;
+    box-shadow: 0 1px 2px rgba(16, 24, 40, 0.035) !important;
+  }
+
+  /* Former map/support stack: map to center, support cards to right. */
+  #place-picker + div[aria-busy] > div[class*="space-y"] > div.grid > div:nth-child(2) {
+    display: contents !important;
+  }
+
+  #place-picker + div[aria-busy] > div[class*="space-y"] > div.grid > div:nth-child(2) > aside:first-child {
+    grid-column: 2 !important;
+    grid-row: 1 / span 100 !important;
+    align-self: start !important;
+    position: sticky !important;
+    top: 14px !important;
+    z-index: 2;
+    min-width: 0 !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    padding: 0 6px !important;
+    box-shadow: none !important;
+  }
+
+  #place-picker + div[aria-busy] > div[class*="space-y"] > div.grid > div:nth-child(2) > aside:first-child > div:first-child {
+    margin-bottom: 5px !important;
+    padding: 0 3px !important;
+  }
+
+  #place-picker + div[aria-busy] aside:first-child svg[role="img"] {
+    display: block !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    max-height: calc(100vh - 205px) !important;
+    filter: drop-shadow(0 8px 18px rgba(16, 24, 40, 0.035));
+  }
+
+  #place-picker + div[aria-busy] > div[class*="space-y"] > div.grid > div:nth-child(2) > :not(aside:first-child) {
+    grid-column: 3 !important;
+    min-width: 0 !important;
+    border-radius: 9px !important;
+  }
+
+  #place-picker + div[aria-busy] > div[class*="flex-wrap"][class*="justify-between"] {
+    grid-column: 3 !important;
+    margin-top: 9px !important;
+  }
+}
+
+@media (min-width: 1280px) {
+  section > div.grid:has(> #place-picker) {
+    grid-template-columns: minmax(270px, 300px) minmax(510px, 1fr) minmax(310px, 350px) !important;
+    column-gap: 23px !important;
+  }
+
+  #place-picker + div[aria-busy] > div[class*="space-y"] > div.grid > div:nth-child(2) > aside:first-child {
+    padding-inline: 11px !important;
+  }
+}
+
+@media (min-width: 1440px) {
+  section > div.grid:has(> #place-picker) {
+    grid-template-columns: 305px minmax(600px, 1fr) 360px !important;
+    column-gap: 28px !important;
+  }
+}

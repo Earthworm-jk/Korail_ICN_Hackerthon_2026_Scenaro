@@ -1,0 +1,241 @@
+/* Stage workspace v4 — role redistribution.
+   Right rail = itinerary + blocking/important warnings.
+   Center = map. Bottom dock = transport alternatives / theme / station support.
+   Step 3 keeps trip context as a horizontal summary bar. */
+
+@media (min-width: 1024px) {
+  /* ---- Step 3 trip summary continuity ---- */
+  body > main div.grid:has(> aside[aria-label]):has(#place-picker) > aside[aria-label] {
+    display: flex !important;
+    align-items: center !important;
+    gap: 16px !important;
+    min-height: 58px;
+    padding: 8px 14px !important;
+    border-right: 0 !important;
+    border-bottom: 1px solid var(--sc-line) !important;
+    background: rgba(248, 250, 252, .94) !important;
+  }
+
+  body > main div.grid:has(> aside[aria-label]):has(#place-picker) > aside[aria-label] > div:first-child {
+    flex: 0 0 auto;
+    min-width: 74px;
+  }
+
+  body > main div.grid:has(> aside[aria-label]):has(#place-picker) > aside[aria-label] > div:first-child h3 {
+    font-size: 11px !important;
+    font-weight: 700 !important;
+    color: var(--sc-muted);
+  }
+
+  body > main div.grid:has(> aside[aria-label]):has(#place-picker) > aside[aria-label] > div:first-child button {
+    display: none !important;
+  }
+
+  /* Even if it was collapsed on step 2, step 3 always shows the compact context bar. */
+  body > main div.grid:has(> aside[aria-label]):has(#place-picker) > aside[aria-label] > div:nth-child(2) {
+    display: grid !important;
+    flex: 1 1 auto;
+    grid-template-columns: 1.05fr 1.35fr 1.5fr .65fr !important;
+    gap: 12px !important;
+    margin-top: 0 !important;
+    min-width: 0;
+  }
+
+  body > main div.grid:has(> aside[aria-label]):has(#place-picker) > aside[aria-label] > div:nth-child(2) > div {
+    min-width: 0;
+    padding-left: 11px;
+    border-left: 1px solid var(--sc-line);
+  }
+
+  body > main div.grid:has(> aside[aria-label]):has(#place-picker) > aside[aria-label] span[class*="text-xs"] {
+    font-size: 10px !important;
+  }
+
+  body > main div.grid:has(> aside[aria-label]):has(#place-picker) > aside[aria-label] strong {
+    overflow: hidden;
+    font-size: 12px !important;
+    line-height: 1.35 !important;
+    text-overflow: ellipsis;
+  }
+
+  body > main div.grid:has(> aside[aria-label]):has(#place-picker) > aside[aria-label] div[class*="flex-wrap"] {
+    max-height: 30px;
+    overflow: hidden;
+  }
+
+  /* ---- Blocking capacity alert: unique visual language ---- */
+  #place-picker + div[aria-busy] [role="status"]:has(a[href="#place-picker"]) {
+    border: 2px solid rgba(192, 57, 43, .55) !important;
+    border-radius: 12px !important;
+    background: rgba(192, 57, 43, .075) !important;
+    padding: 14px !important;
+    box-shadow: 0 8px 22px rgba(192, 57, 43, .10) !important;
+  }
+
+  #place-picker + div[aria-busy] [role="status"]:has(a[href="#place-picker"]) h3,
+  #place-picker + div[aria-busy] [role="status"]:has(a[href="#place-picker"]) p {
+    color: var(--sc-red) !important;
+  }
+
+  #place-picker + div[aria-busy] [role="status"]:has(a[href="#place-picker"]) h3 {
+    font-size: 14px !important;
+    font-weight: 800 !important;
+  }
+
+  #place-picker + div[aria-busy] [role="status"]:has(a[href="#place-picker"]) h3::before {
+    content: "!";
+    display: inline-grid;
+    width: 20px;
+    height: 20px;
+    margin-right: 7px;
+    place-items: center;
+    border-radius: 999px;
+    background: var(--sc-red);
+    color: white;
+    font-size: 12px;
+  }
+
+  #place-picker + div[aria-busy] [role="status"]:has(a[href="#place-picker"]) a[href="#place-picker"] {
+    border-color: var(--sc-red) !important;
+    background: var(--sc-red) !important;
+    color: white !important;
+    font-weight: 700 !important;
+  }
+
+  /* ---- Non-blocking warnings: compact disclosure ---- */
+  [data-stage-warning] {
+    border-color: var(--sc-line) !important;
+    background: white !important;
+    padding: 10px 11px !important;
+    color: var(--sc-text) !important;
+    cursor: pointer;
+  }
+
+  [data-stage-warning] h3 {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--sc-text) !important;
+    font-size: 12px !important;
+  }
+
+  [data-stage-warning] h3::before {
+    content: "⚠";
+    color: var(--sc-orange-text);
+  }
+
+  [data-stage-warning] h3::after {
+    content: attr(data-stage-count) "건  ›";
+    margin-left: auto;
+    color: var(--sc-orange-text);
+    font-size: 11px;
+    font-weight: 600;
+  }
+
+  [data-stage-warning="collapsed"] ul {
+    display: none !important;
+  }
+
+  [data-stage-warning="expanded"] ul {
+    margin-top: 8px !important;
+    color: var(--sc-orange-text) !important;
+    font-size: 11px !important;
+  }
+
+  /* Data-basis prose is intentionally not promoted into a separate UI feature.
+     Keep the itinerary rail focused on itinerary and actionable warnings. */
+  #place-picker + div[aria-busy] > p.rounded-lg.border.bg-sc-subtle,
+  #place-picker + div[aria-busy] > div[class*="space-y"] > div.grid > div:nth-child(2) > p.rounded-lg.border.bg-sc-subtle {
+    display: none !important;
+  }
+
+  /* ---- Bottom utility dock ---- */
+  body:has(#place-picker) main {
+    padding-bottom: 88px;
+  }
+
+  #stage-utility-dock:empty {
+    display: none !important;
+  }
+
+  #stage-utility-dock {
+    position: fixed;
+    left: 50%;
+    bottom: 12px;
+    z-index: 60;
+    display: grid;
+    width: min(780px, calc(100vw - 36px));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 7px;
+    transform: translateX(-50%);
+    padding: 7px;
+    border: 1px solid rgba(203, 211, 224, .9);
+    border-radius: 13px;
+    background: rgba(255,255,255,.96);
+    box-shadow: 0 12px 36px rgba(16,24,40,.16);
+    backdrop-filter: blur(12px);
+  }
+
+  #stage-utility-dock > * {
+    min-width: 0;
+  }
+
+  #stage-utility-dock [data-stage-utility="gateway"] { order: 1; }
+  #stage-utility-dock [data-stage-utility="theme"] { order: 2; }
+  #stage-utility-dock [data-stage-utility="support"] { order: 3; }
+
+  #stage-utility-dock details {
+    position: relative;
+    border-color: transparent !important;
+    background: #f8fafc !important;
+  }
+
+  #stage-utility-dock details > summary {
+    min-height: 48px !important;
+    padding: 7px 10px !important;
+    border-radius: 8px;
+  }
+
+  #stage-utility-dock details > summary:hover {
+    background: var(--sc-blue-soft);
+  }
+
+  #stage-utility-dock details > summary strong {
+    font-size: 12px !important;
+  }
+
+  #stage-utility-dock details > summary span[class*="text-xs"] {
+    font-size: 10px !important;
+  }
+
+  #stage-utility-dock details[open] > div {
+    position: absolute;
+    bottom: calc(100% + 11px);
+    z-index: 2;
+    width: min(440px, calc(100vw - 40px));
+    max-height: min(420px, calc(100dvh - 180px));
+    overflow: auto;
+    border: 1px solid var(--sc-line) !important;
+    border-radius: 12px;
+    background: white;
+    padding: 13px !important;
+    box-shadow: 0 18px 45px rgba(16,24,40,.18);
+  }
+
+  #stage-utility-dock [data-stage-utility="gateway"][open] > div { left: 0; }
+  #stage-utility-dock [data-stage-utility="theme"][open] > div {
+    left: 50%;
+    transform: translateX(-50%);
+  }
+  #stage-utility-dock [data-stage-utility="support"][open] > div { right: 0; }
+
+  #place-picker + div[aria-busy] > div[class*="flex-wrap"][class*="justify-between"] {
+    bottom: 78px !important;
+  }
+}
+
+@media (min-width: 1440px) {
+  #stage-utility-dock {
+    width: min(840px, calc(100vw - 44px));
+  }
+}
