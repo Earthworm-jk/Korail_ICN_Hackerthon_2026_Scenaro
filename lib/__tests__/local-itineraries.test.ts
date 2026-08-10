@@ -230,6 +230,58 @@ describe("깨진 저장소에서 죽지 않는다", () => {
     }
   });
 
+  /**
+   * 표시 이름 스냅샷 (#130) — optional이다.
+   *
+   * 이 필드가 생기기 전 저장분이 이미 브라우저에 있다. 없다고 걸러내면 사용자가 저장했던
+   * 일정이 목록에서 사라진다. 반대로 있는데 모양이 깨졌으면, 화면이 `names[id][locale]`을
+   * 바로 읽으므로 그 자리에서 죽는다.
+   */
+  it("표시 이름 스냅샷이 없어도 기존 저장분은 살아남는다", () => {
+    const storage = memoryStorage();
+    saveLocalItinerary(entry, storage);
+    const [legacy] = listLocalItineraries(storage);
+    expect(legacy.displayNames).toBeUndefined();
+
+    const raw = JSON.stringify({ version: LOCAL_STORAGE_VERSION, data: [legacy] });
+    expect(listLocalItineraries(memoryStorage({ [SAVED_KEY]: raw })).map((r) => r.id)).toEqual([legacy.id]);
+  });
+
+  it("성한 스냅샷이 있으면 그대로 실려 온다", () => {
+    const storage = memoryStorage();
+    const withNames = {
+      ...entry,
+      displayNames: {
+        places: { "place-yeongjin-beach": { ko: "영진해변", en: "Yeongjin Beach" } },
+        stations: { "station-seoul": { ko: "서울역", en: "Seoul Station" } },
+      },
+    };
+    saveLocalItinerary(withNames, storage);
+    const [record] = listLocalItineraries(storage);
+    expect(record.displayNames?.places["place-yeongjin-beach"].ko).toBe("영진해변");
+    expect(record.displayNames?.stations["station-seoul"].en).toBe("Seoul Station");
+  });
+
+  it("스냅샷 모양이 깨진 레코드는 걸러낸다 — 화면이 그 자리에서 죽는다", () => {
+    const storage = memoryStorage();
+    saveLocalItinerary(entry, storage);
+    const [ok] = listLocalItineraries(storage);
+
+    const broken: Record<string, unknown>[] = [
+      { ...ok, id: "names-not-object", displayNames: "이름" },
+      { ...ok, id: "no-stations", displayNames: { places: {} } },
+      { ...ok, id: "place-null", displayNames: { places: { p: null }, stations: {} } },
+      { ...ok, id: "ko-only", displayNames: { places: { p: { ko: "영진해변" } }, stations: {} } },
+      { ...ok, id: "station-not-text", displayNames: { places: {}, stations: { s: "서울역" } } },
+    ];
+
+    for (const record of broken) {
+      const raw = JSON.stringify({ version: LOCAL_STORAGE_VERSION, data: [record, ok] });
+      const list = listLocalItineraries(memoryStorage({ [SAVED_KEY]: raw }));
+      expect(list.map((r) => r.id), String(record.id)).toEqual([ok.id]);
+    }
+  });
+
   it("걸러낸 뒤 남은 레코드는 목록 포맷과 재열람이 실제로 쓸 수 있다", () => {
     const storage = memoryStorage();
     saveLocalItinerary(entry, storage);

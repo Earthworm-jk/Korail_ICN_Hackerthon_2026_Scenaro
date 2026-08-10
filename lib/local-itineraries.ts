@@ -217,6 +217,25 @@ function isGatewayRide(value: unknown): boolean {
   );
 }
 
+/**
+ * 표시 이름 스냅샷 (#130) — optional이다.
+ *
+ * **없으면 통과시킨다.** 이 필드가 생기기 전에 저장한 레코드가 이미 브라우저에 있고,
+ * 그것들을 목록에서 지워 버리면 사용자는 저장했던 일정을 잃는다. 화면은 스냅샷이 없으면
+ * 현지화된 대체 문구로 떨어지므로, 없다고 레코드를 버릴 이유가 없다.
+ *
+ * 반대로 **있는데 모양이 깨졌으면 그 레코드는 버린다.** 화면이 `names[id][locale]`을
+ * 바로 읽기 때문에 `null`이나 한쪽 언어만 있는 값이 들어오면 그 자리에서 죽는다.
+ */
+function isDisplayNameSnapshot(value: unknown): boolean {
+  if (!isObject(value)) return false;
+  const groups = [value.places, value.stations];
+  return groups.every((group) => {
+    if (!isObject(group)) return false;
+    return Object.values(group).every(isLocalizedText);
+  });
+}
+
 /** `CandidateWarning` — 경고 목록이 `placeId`와 `detail`을 문구 키로 쓴다 */
 function isCandidateWarning(value: unknown): boolean {
   return (
@@ -272,6 +291,8 @@ function isUsableRecord(value: unknown): value is SavedItineraryStub {
   if (!isArrayOf(record.context.works, isWorkSummary)) return false;
   // warnings는 optional(#43, PR #44 리뷰 2) — 있으면 원소까지 성해야 한다
   if (record.warnings !== undefined && !isArrayOf(record.warnings, isCandidateWarning)) return false;
+  // displayNames도 optional(#130) — 없으면 화면이 대체 문구로 떨어진다
+  if (record.displayNames !== undefined && !isDisplayNameSnapshot(record.displayNames)) return false;
   return true;
 }
 
