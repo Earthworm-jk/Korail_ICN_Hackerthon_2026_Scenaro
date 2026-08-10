@@ -232,6 +232,116 @@
   #place-picker + div[aria-busy] > div[class*="flex-wrap"][class*="justify-between"] {
     bottom: 78px !important;
   }
+
+  /* ---- #118 P0-1 tablet presentation contract ----
+     The first stage pass used 100 implicit grid rows to keep the side rails tall. At
+     1024x768 that makes the workspace ~1,470px high, so the map and itinerary disappear
+     below a long page scroll. Give the five visible result bands explicit rows instead:
+     heading / description / itinerary / warnings / actions. The left rail and map span
+     those rows while their own contents scroll. */
+  section > div.grid:has(> #place-picker) {
+    height: clamp(372px, calc(100dvh - 384px), 640px);
+    min-height: 0 !important;
+    grid-template-rows: auto auto minmax(0, 1fr) auto auto;
+    align-items: stretch !important;
+  }
+
+  #place-picker {
+    grid-row: 1 / 6 !important;
+    height: 100%;
+    max-height: none !important;
+  }
+
+  #place-picker + div[aria-busy] > div:first-child {
+    grid-row: 1;
+  }
+
+  #place-picker + div[aria-busy] > div:first-child + p {
+    grid-row: 2;
+  }
+
+  #place-picker + div[aria-busy] > div[class*="space-y"] > div.grid > div:first-child {
+    grid-row: 3;
+    height: 100%;
+    min-height: 0;
+    max-height: none !important;
+  }
+
+  #place-picker + div[aria-busy] > div[class*="space-y"] > div.grid > div:nth-child(2) > aside:first-child {
+    grid-row: 1 / 6 !important;
+    height: 100%;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  #place-picker + div[aria-busy] aside:first-child svg[role="img"] {
+    height: clamp(330px, calc(100dvh - 430px), 598px) !important;
+    min-height: 0 !important;
+    max-height: calc(100% - 42px) !important;
+  }
+
+  #place-picker + div[aria-busy] [data-stage-warning] {
+    grid-row: 4;
+  }
+
+  #place-picker + div[aria-busy] > div[class*="flex-wrap"][class*="justify-between"] {
+    grid-row: 5;
+    position: static !important;
+    bottom: auto !important;
+    margin-top: 0 !important;
+  }
+
+  /* Presentation text must remain readable at tablet distance. Metadata may be quieter,
+     but it must not drop to the 10px values from the dense desktop comparison pass. */
+  section:has(#place-picker) .text-sm {
+    font-size: 0.9375rem !important;
+  }
+
+  section:has(#place-picker) .text-xs {
+    font-size: 0.8125rem !important;
+  }
+
+  section:has(#place-picker) > h2 + p {
+    font-size: 0.875rem !important;
+  }
+
+  section:has(#place-picker) > h2 + p + p {
+    font-size: 0.75rem !important;
+  }
+
+  #place-picker > ul > li p.font-medium {
+    font-size: 0.875rem !important;
+  }
+
+  #place-picker button,
+  #place-picker + div[aria-busy] button {
+    min-height: 36px;
+  }
+
+  #place-picker + div[aria-busy] > div:first-child h3 {
+    font-size: 1rem !important;
+  }
+
+  #place-picker + div[aria-busy] > div:first-child + p,
+  #place-picker + div[aria-busy] > div[class*="space-y"] > div.grid > div:first-child > div > div[class*="space-y"] > div[class*="border-l-2"] {
+    font-size: 0.8125rem !important;
+  }
+
+  #place-picker + div[aria-busy] > div[class*="space-y"] > div.grid > div:first-child > div > h3,
+  [data-stage-warning] h3 {
+    font-size: 0.9375rem !important;
+  }
+
+  body > main div.grid:has(> aside[aria-label]):has(#place-picker) > aside[aria-label] > div:first-child h3,
+  body > main div.grid:has(> aside[aria-label]):has(#place-picker) > aside[aria-label] span[class*="text-xs"],
+  #stage-utility-dock details > summary span[class*="text-xs"] {
+    font-size: 0.75rem !important;
+  }
+
+  body > main div.grid:has(> aside[aria-label]):has(#place-picker) > aside[aria-label] strong,
+  #stage-utility-dock details > summary strong {
+    font-size: 0.875rem !important;
+  }
 }
 
 @media (min-width: 1440px) {
