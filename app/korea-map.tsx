@@ -115,7 +115,11 @@ function MapLabels({ labels, unit }: { labels: readonly PlacedLabel[]; unit: num
               />
             )}
             {/* 알약 배경 — 해안선·동선 위에 글씨가 얹히면 읽히지 않는다 (발표자료 라벨 방식).
-                오버레이(권역) 이름은 점선 원과 같은 색·같은 파선으로 묶어 역 이름과 구분한다 */}
+                오버레이(권역) 이름은 색과 굵기로 역 이름과 구분한다.
+
+                파선은 쓰지 않는다. 권역 표식인 점선 원과 짝을 맞추려고 라벨에도 같은 파선을
+                줬었는데, 한 지점에 점선이 둘(원 + 알약 테두리) 겹쳐 표식이 뭘 가리키는지
+                흐려졌다. 파선은 "여기가 권역이다"를 말하는 원 하나에만 남긴다. */}
             <rect
               x={label.left - 3.5 * unit}
               y={label.top}
@@ -124,7 +128,6 @@ function MapLabels({ labels, unit }: { labels: readonly PlacedLabel[]; unit: num
               rx={4 * unit}
               className={overlay ? "fill-sc-surface stroke-sc-blue" : "fill-sc-surface stroke-sc-line"}
               strokeWidth={overlay ? 0.9 * unit : 0.6 * unit}
-              strokeDasharray={overlay ? `${3 * unit} ${2 * unit}` : undefined}
               opacity={0.94}
             />
             <text
