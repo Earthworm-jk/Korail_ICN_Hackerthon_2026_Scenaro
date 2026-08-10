@@ -98,4 +98,29 @@ describe("지도 위 추천 장소 바텀시트", () => {
     expect(markup).toContain('role="img"');
     expect(markup).toContain('aria-label="장소 이미지 준비 중"');
   });
+
+  it("검증된 사진은 장소 설명과 제1유형 원본 링크를 함께 제공한다", () => {
+    const markup = renderToStaticMarkup(createElement(PlaceThumbnail, {
+      label: "장소 이미지 준비 중",
+      locale: "ko",
+      photo: {
+        src: "/place-photos/place-woljeongsa-temple.jpg",
+        alt: { ko: "월정사의 전각과 석등", en: "Temple halls at Woljeongsa" },
+        provider: "한국관광공사 TourAPI",
+        sourcePlaceName: "월정사",
+        sourceUrl: "https://tong.visitkorea.or.kr/cms/resource/54/3304054_image2_1.jpg",
+        license: "공공누리 제1유형",
+        licenseUrl: "https://www.kogl.or.kr/info/licenseType1.do",
+        verifiedAt: "2026-08-10",
+        verificationMethod: "TourAPI 이름·좌표 대조 후 이미지 육안 확인",
+      },
+    }));
+
+    expect(markup).toContain("data-place-photo");
+    expect(markup).toContain('alt="월정사의 전각과 석등"');
+    expect(markup).toContain("KTO · KOGL 1");
+    expect(markup).toContain("tong.visitkorea.or.kr");
+    expect(markup).toContain("월정사 사진 원본 · 한국관광공사 TourAPI · 공공누리 제1유형");
+    expect(markup).not.toContain('role="img"');
+  });
 });

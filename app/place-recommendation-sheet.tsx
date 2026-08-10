@@ -1,7 +1,9 @@
 "use client";
 
+import Image from "next/image";
 import { useState, type ReactNode } from "react";
 import type { MessageKey } from "@/lib/i18n/messages";
+import type { PlacePhoto } from "@/lib/place-photos";
 import styles from "./place-recommendation-sheet.module.css";
 
 type Translator = (key: MessageKey) => string;
@@ -117,7 +119,46 @@ export function PlaceRecommendationSheet({
   );
 }
 
-export function PlaceThumbnail({ label, children }: { label: string; children?: ReactNode }) {
+export function PlaceThumbnail({
+  label,
+  children,
+  photo,
+  locale = "ko",
+}: {
+  label: string;
+  children?: ReactNode;
+  photo?: PlacePhoto | null;
+  locale?: "ko" | "en";
+}) {
+  if (photo) {
+    return (
+      <figure className={styles.thumbnail} data-place-thumbnail data-place-photo>
+        <Image
+          src={photo.src}
+          alt={photo.alt[locale]}
+          fill
+          sizes="82px"
+          unoptimized
+          className={styles.thumbnailImage}
+        />
+        <a
+          href={photo.sourceUrl}
+          target="_blank"
+          rel="noreferrer"
+          className={styles.thumbnailAttribution}
+          title={`${photo.provider} · ${photo.license}`}
+          aria-label={
+            locale === "ko"
+              ? `${photo.sourcePlaceName} 사진 원본 · ${photo.provider} · ${photo.license}`
+              : `Original ${photo.sourcePlaceName} photo · Korea Tourism Organization TourAPI · KOGL Type 1`
+          }
+        >
+          KTO · KOGL 1
+        </a>
+      </figure>
+    );
+  }
+
   return (
     <div
       className={styles.thumbnail}
