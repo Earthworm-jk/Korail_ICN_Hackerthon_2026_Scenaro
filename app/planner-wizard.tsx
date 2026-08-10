@@ -19,12 +19,17 @@ import {
   type PlaceCandidate,
 } from "@/lib/actions/places";
 import { planGatewayAlternatives, planItinerary } from "@/lib/actions/itinerary";
-import { runItineraryCommand } from "@/lib/actions/itinerary-command";
+import {
+  runItineraryCommand,
+  type RouteRecommendation,
+} from "@/lib/actions/itinerary-command";
 import { excludedPlaceIdsFrom, initialCandidateIds } from "@/lib/candidates";
 import { initialPlaceIdsFromItinerary } from "@/lib/initial-place-selection";
 import {
+  commandPanelUnavailable,
   commandResponseIsCurrent,
   selectionAfterCommand,
+  stateAfterRouteRecommendation,
 } from "@/lib/itinerary-command-ui";
 import { sortCandidatePlaces } from "@/lib/place-ranking";
 import { getFlightInfo } from "@/lib/actions/flights";
@@ -630,6 +635,28 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
     }
   }, [candidateData, selectedPlaceIds, saveStub, refreshThemeExperience]);
 
+  /** 동선 추천은 카드를 누른 뒤에만 선택·방문일 선호로 반영한다. */
+  const applyRouteRecommendation = useCallback((
+    recommendation: RouteRecommendation,
+    submittedSequence: number,
+  ) => {
+    if (!candidateData || !candidateData.candidates.some(({ id }) => id === recommendation.placeId)) return;
+    if (!commandResponseIsCurrent(submittedSequence, planSequence.current)) {
+      setAiFeedback({ kind: "cancelled" });
+      return;
+    }
+    ++planSequence.current;
+    const next = stateAfterRouteRecommendation({
+      currentSelectedPlaceIds: selectedPlaceIds,
+      currentPreferredVisitDates: preferredVisitDates,
+      recommendation,
+    });
+    setSelectedPlaceIds(next.selectedPlaceIds);
+    setPreferredVisitDates(next.preferredVisitDates);
+    setAiFeedback(null);
+    saveStub.markDirty();
+  }, [candidateData, selectedPlaceIds, preferredVisitDates, saveStub]);
+
   const submitItineraryCommand = useCallback((sentence: string) => {
     const request = currentConstraints();
     if (!request || !view.result || view.reopened || view.selectedAlt !== null) return;
@@ -661,6 +688,15 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
         }
         if (result.outcome.kind === "explain") {
           setAiFeedback({ kind: "explain", interpretation: result.interpretation });
+          return;
+        }
+        if (result.outcome.kind === "recommendations") {
+          setAiFeedback({
+            kind: "recommendations",
+            interpretation: result.interpretation,
+            outcome: result.outcome,
+            submittedSequence,
+          });
           return;
         }
         const feedback: CommandFeedback = {
@@ -873,6 +909,13 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
     () => displayedSelectionCapacity(view, selectedPlaceIds),
     [selectedPlaceIds, view],
   );
+  const aiCommandDisabled = commandPanelUnavailable({
+    hasCandidates: candidateData !== null,
+    hasPlannedResult: view.result?.status === "planned",
+    reopened: view.reopened !== null,
+    alternativeSelected: view.selectedAlt !== null,
+    requiresSelectionAdjustment: selectionCapacity?.requiresAdjustment === true,
+  });
 
   const chooseAlternative = useCallback((alt: SelectableAlternative | null) => {
     setLastItineraryDiff(null);
@@ -947,6 +990,14 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
     // #48 정렬 연결 — 서버가 파생한 aiRank(선택 관련 작품 범위)만 사용, 없으면 관계·출처·ID 폴백
     return sortCandidatePlaces(candidateData.candidates, sortBy === "relevance" ? "relevance" : "official_sources");
   }, [candidateData, sortBy]);
+  const routeRecommendationFeedback = aiFeedback?.kind === "recommendations" ? aiFeedback : null;
+  const routeRecommendationIds = useMemo(
+    () => new Set(routeRecommendationFeedback?.outcome.recommendations.map(({ placeId }) => placeId) ?? []),
+    [routeRecommendationFeedback],
+  );
+  const regularCandidates = routeRecommendationIds.size > 0
+    ? sortedCandidates.filter(({ id }) => !routeRecommendationIds.has(id))
+    : sortedCandidates;
 
   // #14 v0.6 지도 — 좌표가 확인된 장소만 찍는다. 좌표 없는 장소(라라무리·오크밸리)는
   // 임의 위치나 역 위치로 대체하지 않고 표시에서 빼되(A3), 몇 곳이 빠졌는지 지도 옆에 밝힌다.
@@ -1336,7 +1387,7 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
             updated={lastItineraryDiff?.changed === true && !updating}
             sortBy={sortBy}
             onSortChange={setSortBy}
-            remainingCount={Math.max(0, sortedCandidates.length - visibleCount)}
+            remainingCount={Math.max(0, regularCandidates.length - visibleCount)}
             onShowMore={() => setVisibleCount((n) => n + PLACES_PAGE_SIZE)}
             onBack={() => setStep(2)}
             tr={tr}
@@ -1359,6 +1410,29 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
                 }
               />
             ) : null}
+            routeRecommendations={routeRecommendationFeedback
+              && routeRecommendationFeedback.outcome.recommendations.length > 0
+              && candidateData
+              ? routeRecommendationFeedback.outcome.recommendations.map((recommendation) => {
+                const candidate = candidateData.candidates.find(({ id }) => id === recommendation.placeId);
+                return candidate ? (
+                  <RouteRecommendationCard
+                    key={recommendation.placeId}
+                    candidate={candidate}
+                    recommendation={recommendation}
+                    locale={locale}
+                    stationName={stationName}
+                    placeName={placeName}
+                    workTitles={workTitles}
+                    onAdd={() => applyRouteRecommendation(
+                      recommendation,
+                      routeRecommendationFeedback.submittedSequence,
+                    )}
+                    tr={tr}
+                  />
+                ) : null;
+              })
+              : undefined}
           >
           {candidateData ? (
           <>
@@ -1368,7 +1442,7 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
             </li>
           )}
           {/* #43 확정: 미확인 후보도 같은 목록에서 선택 가능 — 카드에 경고 배지 */}
-          {sortedCandidates.slice(0, visibleCount).map((c) => (
+          {regularCandidates.slice(0, visibleCount).map((c) => (
             <PlaceCard key={c.id} candidate={c} locale={locale} tr={tr}
               selected={selectedPlaceIds.has(c.id)}
               stationName={stationName} workTitles={workTitles}
@@ -1459,12 +1533,10 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
           <ItineraryCommandPanel
             value={aiSentence}
             pending={aiPending}
-            disabled={
-              candidateData === null ||
-              view.result?.status !== "planned" ||
-              view.reopened !== null ||
-              view.selectedAlt !== null
-            }
+            disabled={aiCommandDisabled}
+            disabledMessage={selectionCapacity?.requiresAdjustment
+              ? "ai.disabledOverselection"
+              : "ai.disabled"}
             feedback={aiFeedback}
             lastDiff={lastItineraryDiff}
             onChange={setAiSentence}
@@ -1816,6 +1888,81 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
         />
       )}
     </div>
+  );
+}
+
+function RouteRecommendationCard({
+  candidate,
+  recommendation,
+  locale,
+  stationName,
+  placeName,
+  workTitles,
+  onAdd,
+  tr,
+}: {
+  candidate: PlaceCandidate;
+  recommendation: RouteRecommendation;
+  locale: Locale;
+  stationName: (id: string) => string;
+  placeName: (id: string) => string;
+  workTitles: (ids: string[]) => string;
+  onAdd: () => void;
+  tr: (key: MessageKey) => string;
+}) {
+  const travelImpact = recommendation.travelMinutesDelta > 0
+    ? tr("ai.recommendTravelAdded").replace("{n}", String(recommendation.travelMinutesDelta))
+    : recommendation.travelMinutesDelta < 0
+      ? tr("ai.recommendTravelReduced").replace("{n}", String(Math.abs(recommendation.travelMinutesDelta)))
+      : tr("ai.recommendTravelSame");
+  const matchedWorks = workTitles(recommendation.matchedWorkIds);
+
+  return (
+    <li className="rounded-lg border border-sc-blue/25 bg-sc-surface p-3" data-route-recommendation-card>
+      <div className="flex items-start gap-2">
+        <PlaceThumbnail
+          label={tr("step3.photoPlaceholder")}
+          photo={placePhoto(candidate.id)}
+          locale={locale}
+        >
+          <PlaceTypeIcon placeType={candidate.placeType} />
+        </PlaceThumbnail>
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-semibold text-sc-text">{candidate.name[locale]}</p>
+          <p className="mt-1 text-xs text-sc-muted">
+            {stationName(candidate.nearestStationId)} · {tr(
+              recommendation.routeMatch === "same_station"
+                ? "ai.recommendSameStation"
+                : "ai.recommendSameRegion",
+            )}
+          </p>
+          <p className="mt-1 text-xs font-medium text-sc-blue">{travelImpact}</p>
+          {matchedWorks && (
+            <p className="mt-1 text-xs text-sc-muted">
+              {tr("ai.recommendWorkMatch").replace("{works}", matchedWorks)}
+            </p>
+          )}
+          {recommendation.displacedPlaceIds.map((placeId) => (
+            <p key={`drop-${placeId}`} className="mt-1 text-xs text-sc-orange-text">
+              {tr("ai.recommendDisplaces").replace("{place}", placeName(placeId))}
+            </p>
+          ))}
+          {recommendation.movedPlaceIds.map((placeId) => (
+            <p key={`move-${placeId}`} className="mt-1 text-xs text-sc-orange-text">
+              {tr("ai.recommendMoves").replace("{place}", placeName(placeId))}
+            </p>
+          ))}
+        </div>
+        <button
+          type="button"
+          className="min-h-10 shrink-0 rounded-lg bg-sc-blue px-3 text-xs font-semibold text-white"
+          onClick={onAdd}
+          aria-label={tr("step3.addPlace").replace("{place}", candidate.name[locale])}
+        >
+          {tr("ai.recommendAdd")}
+        </button>
+      </div>
+    </li>
   );
 }
 

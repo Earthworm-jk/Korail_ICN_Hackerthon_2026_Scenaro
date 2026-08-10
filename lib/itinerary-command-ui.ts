@@ -9,6 +9,20 @@ export function commandResponseIsCurrent(submitted: number, current: number): bo
   return submitted === current;
 }
 
+export function commandPanelUnavailable(input: {
+  hasCandidates: boolean;
+  hasPlannedResult: boolean;
+  reopened: boolean;
+  alternativeSelected: boolean;
+  requiresSelectionAdjustment: boolean;
+}): boolean {
+  return !input.hasCandidates
+    || !input.hasPlannedResult
+    || input.reopened
+    || input.alternativeSelected
+    || input.requiresSelectionAdjustment;
+}
+
 export function selectionAfterCommand(input: {
   candidatePlaceIds: readonly string[];
   currentSelectedPlaceIds: ReadonlySet<string>;
@@ -22,4 +36,26 @@ export function selectionAfterCommand(input: {
       && !input.displacedPlaceIds.has(placeId)
     )
   )));
+}
+
+export function stateAfterRouteRecommendation(input: {
+  currentSelectedPlaceIds: ReadonlySet<string>;
+  currentPreferredVisitDates: Readonly<Record<string, string>>;
+  recommendation: {
+    placeId: string;
+    targetDate: string;
+    displacedPlaceIds: readonly string[];
+  };
+}): { selectedPlaceIds: Set<string>; preferredVisitDates: Record<string, string> } {
+  const selectedPlaceIds = new Set(input.currentSelectedPlaceIds);
+  const preferredVisitDates = {
+    ...input.currentPreferredVisitDates,
+    [input.recommendation.placeId]: input.recommendation.targetDate,
+  };
+  for (const placeId of input.recommendation.displacedPlaceIds) {
+    selectedPlaceIds.delete(placeId);
+    delete preferredVisitDates[placeId];
+  }
+  selectedPlaceIds.add(input.recommendation.placeId);
+  return { selectedPlaceIds, preferredVisitDates };
 }

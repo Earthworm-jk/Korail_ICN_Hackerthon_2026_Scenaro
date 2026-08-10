@@ -12,6 +12,7 @@ import { impactLinesOf } from "@/lib/itinerary-command-messages";
 
 type SuccessfulResult = Extract<CommandActionResult, { ok: true }>;
 export type ProposalOutcome = Extract<SuccessfulResult["outcome"], { kind: "proposal" }>;
+export type RecommendationOutcome = Extract<SuccessfulResult["outcome"], { kind: "recommendations" }>;
 
 export type CommandFeedback =
   | { kind: "clarify"; interpretation: CommandActionInterpretation; clarification: Clarification }
@@ -23,6 +24,12 @@ export type CommandFeedback =
       submittedSequence: number;
     }
   | { kind: "explain"; interpretation: CommandActionInterpretation }
+  | {
+      kind: "recommendations";
+      interpretation: CommandActionInterpretation;
+      outcome: RecommendationOutcome;
+      submittedSequence: number;
+    }
   | { kind: "cancelled" }
   | { kind: "error" };
 
@@ -30,6 +37,7 @@ type Props = {
   value: string;
   pending: boolean;
   disabled: boolean;
+  disabledMessage?: MessageKey;
   feedback: CommandFeedback | null;
   lastDiff: ItineraryDiff | null;
   onChange: (value: string) => void;
@@ -111,6 +119,7 @@ export function ItineraryCommandPanel({
   value,
   pending,
   disabled,
+  disabledMessage = "ai.disabled",
   feedback,
   lastDiff,
   onChange,
@@ -125,9 +134,11 @@ export function ItineraryCommandPanel({
     feedback.kind === "clarify"
     || feedback.kind === "proposal"
     || feedback.kind === "explain"
+    || feedback.kind === "recommendations"
   ) ? feedback.interpretation : null;
   const source = interpretation ? sourceLabel(interpretation, tr) : null;
   const addExample = tr("ai.exampleAdd");
+  const recommendExample = tr("ai.exampleRecommend");
   const explainExample = tr("ai.exampleExplain");
 
   return (
@@ -174,7 +185,7 @@ export function ItineraryCommandPanel({
       </form>
 
       <div className="mt-2 flex flex-wrap gap-1.5">
-        {[addExample, explainExample].map((example) => (
+        {[addExample, recommendExample, explainExample].map((example) => (
           <button
             key={example}
             type="button"
@@ -187,7 +198,13 @@ export function ItineraryCommandPanel({
         ))}
       </div>
 
-      {disabled && <p className="mt-2 text-xs text-sc-muted">{tr("ai.disabled")}</p>}
+      {pending && (
+        <p className="mt-2 text-xs text-sc-blue" role="status" aria-live="polite">
+          {tr("ai.pendingDetail")}
+        </p>
+      )}
+
+      {disabled && <p className="mt-2 text-xs text-sc-muted">{tr(disabledMessage)}</p>}
 
       {feedback && (
         <div className="mt-3 rounded-lg border border-sc-blue/15 bg-sc-surface/90 p-3 text-sm" role="status" aria-live="polite">
@@ -209,6 +226,19 @@ export function ItineraryCommandPanel({
 
           {feedback.kind === "explain" && (
             <p className="mt-1 text-sc-text">{diffExplanation(lastDiff, tr)}</p>
+          )}
+
+          {feedback.kind === "recommendations" && (
+            <p className="mt-1 text-sc-text">
+              {feedback.outcome.recommendations.length > 0
+                ? withValues(tr(`ai.recommendReady.${
+                  feedback.outcome.recommendations.length === 1 ? "one" : "other"
+                }` as MessageKey), {
+                  count: feedback.outcome.recommendations.length,
+                  date: feedback.outcome.targetDate,
+                })
+                : tr("ai.recommendEmpty")}
+            </p>
           )}
 
           {feedback.kind === "proposal" && (
