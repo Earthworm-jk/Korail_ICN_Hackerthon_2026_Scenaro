@@ -241,14 +241,14 @@
      below a long page scroll. Give the five visible result bands explicit rows instead:
      heading / description / itinerary / warnings / actions. The left rail and map span
      those rows while their own contents scroll. */
-  section > div.grid:has(> #place-picker) {
+  html body main section > div.grid:has(> div#place-picker[data-place-sheet]) {
     height: clamp(372px, calc(100dvh - 384px), 640px);
     min-height: 0 !important;
     grid-template-rows: auto auto minmax(0, 1fr) auto auto;
     align-items: stretch !important;
   }
 
-  #place-picker {
+  div#place-picker[data-place-sheet] {
     grid-row: 1 / 6 !important;
     height: 100%;
     max-height: none !important;
@@ -350,4 +350,71 @@
   #stage-utility-dock {
     width: min(840px, calc(100vw - 44px));
   }
+}
+
+/* ---- #118 P0-4 map + recommendation bottom sheet ----
+   The route map is already the single source of truth for selected places and the rebuilt
+   route. Reuse that center stage and dock the candidate picker over its lower edge instead
+   of maintaining a separate left list/map. The itinerary remains an independent right rail. */
+@layer components {
+@media (min-width: 1024px) {
+  body:has(div#place-picker[data-place-sheet]) main {
+    padding-bottom: 0 !important;
+  }
+
+  html body main section > div.grid:has(> div#place-picker[data-place-sheet]) {
+    position: relative;
+    grid-template-columns: minmax(560px, 1fr) minmax(285px, 340px) !important;
+    column-gap: 18px !important;
+  }
+
+  div#place-picker[data-place-sheet] {
+    grid-column: 1 !important;
+    grid-row: 1 / 6 !important;
+    align-self: end !important;
+    position: relative !important;
+    top: auto !important;
+    z-index: 12;
+    width: calc(100% - 20px) !important;
+    height: auto !important;
+    max-height: 238px !important;
+    margin: 0 10px 10px !important;
+    overflow: hidden !important;
+    border-radius: 14px !important;
+    padding: 0 !important;
+    box-shadow: 0 16px 40px rgba(16, 24, 40, .18) !important;
+  }
+
+  div#place-picker[data-place-sheet][data-sheet-expanded="false"] {
+    max-height: 62px !important;
+  }
+
+  /* All result prose and the itinerary rail move from the old third column to the right. */
+  div#place-picker[data-place-sheet] + div[aria-busy] > *,
+  div#place-picker[data-place-sheet] + div[aria-busy] > div[class*="space-y"] > section,
+  div#place-picker[data-place-sheet] + div[aria-busy] > div[class*="space-y"] > div.grid > div:first-child,
+  div#place-picker[data-place-sheet] + div[aria-busy] > div[class*="space-y"] > div.grid > div:nth-child(2) > :not(aside:first-child),
+  div#place-picker[data-place-sheet] + div[aria-busy] > div[class*="flex-wrap"][class*="justify-between"] {
+    grid-column: 2 !important;
+  }
+
+  /* The existing route map becomes the common map behind the recommendation sheet. */
+  div#place-picker[data-place-sheet] + div[aria-busy] > div[class*="space-y"] > div.grid > div:nth-child(2) > aside:first-child {
+    grid-column: 1 !important;
+    grid-row: 1 / 6 !important;
+    z-index: 2;
+    padding-bottom: 4px !important;
+  }
+
+  div#place-picker[data-place-sheet] + div[aria-busy] > div[class*="space-y"] > div.grid > div:first-child {
+    grid-row: 3;
+  }
+}
+
+@media (min-width: 1280px) {
+  html body main section > div.grid:has(> div#place-picker[data-place-sheet]) {
+    grid-template-columns: minmax(720px, 1fr) minmax(320px, 370px) !important;
+    column-gap: 22px !important;
+  }
+}
 }
