@@ -14,7 +14,7 @@
  * 커져서 겹침이 조금도 풀리지 않는다. 겹쳐 읽히던 점을 떼어 놓는 건 확대 자체가 아니라
  * "확대하되 표시 요소는 화면에서 같은 크기로 두는 것"이다. `screenUnit()`이 그 나눗셈이다.
  */
-import { VIEW_BOX_BOUNDS } from "./korea-map-projection";
+import { VIEW_BOX_BOUNDS, groundKmPerUnit } from "./korea-map-projection";
 
 export type Viewport = { x: number; y: number; width: number; height: number };
 
@@ -29,14 +29,32 @@ export const BASE_VIEWPORT: Viewport = {
 /** 축소 하한 = 기본 창. 이보다 더 빼면 남한 둘레에 빈 바다만 늘어난다 */
 export const MIN_SCALE = 1;
 /**
- * 확대 상한.
+ * 해안선이 버티는 배율.
  *
  * 해안선(lib/korea-outline.ts)은 Natural Earth 1:50m을 구운 꼭짓점 260개짜리 폴리곤이고,
  * 변 길이 중앙값이 2.94 표시단위다. 지도 폭이 화면에서 대략 390px(=194단위)이므로 배율 1에서
- * 한 변은 약 6px, 배율 5에서 약 29px이다. 이보다 더 키우면 곡선이 아니라 꺾은선으로 읽힌다 —
- * 원천 해상도가 감당하는 만큼까지만 확대한다.
+ * 한 변은 약 6px, 배율 5에서 약 29px이다. 이보다 더 키우면 곡선이 아니라 꺾은선으로 읽힌다.
+ *
+ * 예전에는 이 값이 확대 상한 자체였다. 지금은 상한이 아니라 **해안선을 물리는 지점**이다 —
+ * 원천 해상도를 넘어선 배율에서 해안선을 계속 진하게 그리면, 실제로는 1:50m 정확도인 선이
+ * 시내 지도처럼 읽힌다. 가진 근거보다 정밀해 보이는 표시를 만들지 않는다.
  */
-export const MAX_SCALE = 5;
+export const COASTLINE_DETAIL_SCALE = 5;
+/**
+ * 확대 상한.
+ *
+ * 배율 5(옛 상한)에서 화면 폭은 약 100km다. 그 배율에서 서로 다른 촬영지가 한 점으로 겹친다 —
+ * 시드의 `영풍문고 종로본점`과 `보신각터`는 실거리 약 130m라 화면에서 0.5px 떨어져 있고,
+ * 사용자가 "이 두 곳이 붙어 있다"는 것조차 볼 수 없다.
+ *
+ * 200이면 화면 폭이 약 2.5km — 도심 한 구역이 화면을 채우는 크기이고, 위 두 곳이 약 20px로
+ * 떨어진다. 배경은 이 배율을 감당하지 못하므로 COASTLINE_DETAIL_SCALE 위에서 물러나고,
+ * 대신 거리 눈금(scaleBarOf)이 지금 화면이 몇 km인지를 알려준다.
+ *
+ * 이 지도에는 도로·건물 데이터가 없다. 확대가 보여주는 것은 실제 위경도로 찍힌 지점들의
+ * 상대 배치이지 시내 지도가 아니다 (#14 6절 — 보조 시각화).
+ */
+export const MAX_SCALE = 200;
 /** 버튼 한 번 / 휠 한 칸의 배율 변화 */
 export const ZOOM_STEP = 1.5;
 
@@ -196,6 +214,34 @@ export function contains(view: Viewport, point: { x: number; y: number }): boole
     point.y >= view.y &&
     point.y <= view.y + view.height
   );
+}
+
+/**
+ * 거리 눈금이 고르는 값 (km). 사람이 읽는 숫자만 남긴다 — `1 km`는 읽히고 `1.37 km`는 안 읽힌다.
+ */
+const NICE_DISTANCES_KM = [0.05, 0.1, 0.2, 0.5, 1, 2, 5, 10, 20, 50, 100, 200] as const;
+
+/**
+ * 거리 눈금 — 지금 화면이 실제로 몇 km인지.
+ *
+ * 배경이 물러난 배율에서 사용자가 축척을 읽을 근거가 이것뿐이다. 해안선이 흐려지면 "얼마나
+ * 확대됐는지"를 알려주는 다른 단서가 화면에 없다.
+ *
+ * 길이는 창 폭의 4분의 1을 넘지 않는 가장 큰 눈금값으로 잡는다. 위도에 따라 표시단위당 실거리가
+ * 달라지므로(`groundKmPerUnit`) 창 한가운데 위도에서 계산한다.
+ */
+export function scaleBarOf(view: Viewport): { km: number; units: number; label: string } {
+  const kmPerUnit = groundKmPerUnit(view.y + view.height / 2);
+  const target = view.width * 0.25 * kmPerUnit;
+  const km = NICE_DISTANCES_KM.reduce(
+    (best, candidate) => (candidate <= target ? candidate : best),
+    NICE_DISTANCES_KM[0],
+  );
+  return {
+    km,
+    units: km / kmPerUnit,
+    label: km >= 1 ? `${km} km` : `${Math.round(km * 1000)} m`,
+  };
 }
 
 /** SVG viewBox 속성 문자열. 소수 셋째 자리까지 — 팬이 픽셀 단위로 튀지 않게 */
