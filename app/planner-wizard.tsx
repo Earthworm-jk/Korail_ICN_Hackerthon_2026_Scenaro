@@ -21,12 +21,14 @@ import {
 import { planGatewayAlternatives, planItinerary } from "@/lib/actions/itinerary";
 import {
   runItineraryCommand,
+  runVisitDateEdit,
   type RouteRecommendation,
 } from "@/lib/actions/itinerary-command";
 import { excludedPlaceIdsFrom, initialCandidateIds } from "@/lib/candidates";
 import { initialPlaceIdsFromItinerary } from "@/lib/initial-place-selection";
 import {
   commandPanelUnavailable,
+  canEditVisitDate,
   commandResponseIsCurrent,
   selectionAfterCommand,
   stateAfterRouteRecommendation,
@@ -45,6 +47,7 @@ import {
 import {
   banner,
   displayedSelectionCapacity,
+  type ItineraryView,
   displayedDays as deriveDisplayedDays,
   initialItineraryView,
   itineraryWarnings as deriveWarnings,
@@ -85,6 +88,7 @@ import type { StationFacilitiesSnapshotT } from "@/lib/station-facilities";
 import type { StationCoordinatesSnapshotT } from "@/lib/station-coordinates";
 import type { RailGeometrySnapshotT } from "@/lib/rail-geometry";
 import type { DayPlan } from "@/lib/engine/types";
+import { undoPointOf, type UndoPoint } from "@/lib/itinerary-undo";
 
 const KST = "Asia/Seoul";
 
@@ -254,6 +258,18 @@ function SummarySidebar({ arrivalAt, departureAt, readyAt, deadlineAt, actors, w
   );
 }
 
+/** 그 장소가 지금 배치된 날짜 — 같은 날 드롭을 걸러내는 데 쓴다 (#109) */
+function dateOfPlace(days: DayPlan[] | null, placeId: string): string | undefined {
+  return days?.find((day) => day.items.some((item) => item.placeId === placeId))?.date;
+}
+
+function withValues(template: string, values: Record<string, string>): string {
+  return Object.entries(values).reduce(
+    (text, [key, value]) => text.replaceAll(`{${key}}`, value),
+    template,
+  );
+}
+
 export default function PlannerWizard({ stationFacilities, stationCoordinates, railGeometry }: {
   stationFacilities: StationFacilitiesSnapshotT;
   stationCoordinates: StationCoordinatesSnapshotT;
@@ -339,6 +355,19 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
   const [lastItineraryDiff, setLastItineraryDiff] = useState<ItineraryDiff | null>(null);
   const [aiSentence, setAiSentence] = useState("");
   const [aiFeedback, setAiFeedback] = useState<CommandFeedback | null>(null);
+  // #109 드래그 — 잡고 있는 장소와 올라가 있는 날짜. 표시 전용 상태다
+  const [draggingPlaceId, setDraggingPlaceId] = useState<string | null>(null);
+  const [dragOverDate, setDragOverDate] = useState<string | null>(null);
+  /**
+   * 부작용 없는 변경을 즉시 적용한 직후의 되돌리기 지점 (#145 · PR #150 리뷰 2번).
+   *
+   * 원래 날짜 버튼을 다시 누르는 것은 실행 취소가 아니다 — 소프트 선호와 전체 재계산 탓에
+   * 역방향 명령이 원래 일정과 같은 결과를 보장하지 않는다. **명령 직전 상태를 통째로**
+   * 들고 있다가 복원한다.
+   */
+  const [undoPoint, setUndoPoint] = useState<
+    UndoPoint<ItineraryView["selectedAlt"], typeof saveStub.saveStatus> | null
+  >(null);
   const [aiPending, startAiTransition] = useTransition();
   const planSequence = useRef(0); // 늦게 도착한 이전 요청의 공항버스 대안이 새 결과를 덮지 않게 한다.
   // 계산이 끝난(성공·무효·실패 모두) 마지막 선택. 지금 선택과 다르면 화면은 아직 옛 결론이다.
@@ -586,6 +615,18 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
       setAiFeedback({ kind: "cancelled" });
       return;
     }
+    // 되돌리기 지점은 화면을 바꾸기 **전에** 잡는다. 담는 필드는 lib에 모아 뒀다
+    setUndoPoint(undoPointOf({
+      selectedPlaceIds,
+      preferredVisitDates,
+      result: view.result,
+      selectedAlt: view.selectedAlt,
+      diff: lastItineraryDiff,
+      settledSelectionKey,
+      saveStatus: saveStub.saveStatus,
+      themeExperience,
+      themeMapVisible,
+    }));
     const sequence = ++planSequence.current;
     const scheduledPlaceIds = new Set(
       outcome.nextResult.status === "planned"
@@ -633,7 +674,12 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
       }
       void refreshThemeExperience(outcome.nextResult.days, appliedRequest.selectedWorkIds);
     }
-  }, [candidateData, selectedPlaceIds, saveStub, refreshThemeExperience]);
+  }, [
+    candidateData, selectedPlaceIds, saveStub, refreshThemeExperience,
+    // 되돌리기 지점이 오래된 값을 잡지 않도록 스냅샷이 읽는 상태를 모두 넣는다
+    view.result, view.selectedAlt, preferredVisitDates, lastItineraryDiff, settledSelectionKey,
+    themeExperience, themeMapVisible,
+  ]);
 
   /** 동선 추천은 카드를 누른 뒤에만 선택·방문일 선호로 반영한다. */
   const applyRouteRecommendation = useCallback((
@@ -656,6 +702,7 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
     setAiFeedback(null);
     saveStub.markDirty();
   }, [candidateData, selectedPlaceIds, preferredVisitDates, saveStub]);
+
 
   const submitItineraryCommand = useCallback((sentence: string) => {
     const request = currentConstraints();
@@ -916,6 +963,84 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
     alternativeSelected: view.selectedAlt !== null,
     requiresSelectionAdjustment: selectionCapacity?.requiresAdjustment === true,
   });
+
+  /**
+   * 날짜 편집을 지금 허용해도 되는가 (PR #150 리뷰 1번).
+   *
+   * 표시 중인 일정과 입력 상태가 어긋난 구간에는 편집을 막는다. AI 입력의 비활성 조건과
+   * 별개로 계산해, 버튼·드래그·핸들러가 **같은 기준**을 본다.
+   */
+  const visitDateEditable = canEditVisitDate({
+    updating,
+    commandDisabled: aiCommandDisabled,
+    hasDisplayedDays: displayedDays !== null && displayedDays.length > 0,
+    needsSelection,
+    requiresAdjustment: selectionCapacity?.requiresAdjustment === true,
+  });
+
+  /**
+   * 날짜 선택 버튼·드래그 (#109).
+   *
+   * 자연어와 **같은 실행기·같은 판정·같은 적용 경로**를 쓴다. 해석 단계만 없다.
+   * `ready`면 바로 반영하고, 요청 밖 부작용이 있으면 확인 창을 띄운다 — 규칙이 갈리면
+   * 같은 변경인데 조작 방법에 따라 다르게 확정되는 일이 생긴다.
+   */
+  /** 즉시 적용을 한 번에 되돌린다 — 역방향 명령이 아니라 상태 복원이다 (#145) */
+  const undoLastCommand = useCallback(() => {
+    if (!undoPoint) return;
+    ++planSequence.current;
+    // 적용 때 시작한 테마 조회가 늦게 끝나 되돌린 일정 위에 덮이지 않게 무효화한다
+    ++themeRequestRef.current;
+    setSelectedPlaceIds(undoPoint.selectedPlaceIds);
+    setPreferredVisitDates(undoPoint.preferredVisitDates);
+    setSettledSelectionKey(undoPoint.settledSelectionKey);
+    setLastItineraryDiff(undoPoint.diff);
+    setThemeExperience(undoPoint.themeExperience as ThemeExperienceResult | null);
+    setThemeMapVisible(undoPoint.themeMapVisible);
+    dispatchView({ type: "PLAN_SUCCESS", result: undoPoint.result });
+    dispatchView({ type: "SELECT_ALT", alt: undoPoint.selectedAlt });
+    // markDirty로는 못 되돌린다 — 저장된 일정을 바꿨다 취소하면 dirty로 남는다
+    saveStub.restoreSaveStatus(undoPoint.saveStatus);
+    setUndoPoint(null);
+    setAiFeedback({ kind: "undone" });
+  }, [undoPoint, saveStub]);
+
+  const submitVisitDateEdit = useCallback((placeId: string, targetDate: string) => {
+    const request = currentConstraints();
+    // UI 비활성만으로는 서버 호출 경계를 막지 못한다 — 같은 기준으로 한 번 더 본다
+    if (!request || !visitDateEditable) return;
+    const submittedSequence = ++planSequence.current;
+    setAiFeedback(null);
+    startAiTransition(async () => {
+      try {
+        const result = await runVisitDateEdit({ placeId, targetDate, request });
+        if (!commandResponseIsCurrent(submittedSequence, planSequence.current)) {
+          setAiFeedback({ kind: "cancelled" });
+          return;
+        }
+        if (!result.ok) {
+          setAiFeedback({ kind: "error" });
+          return;
+        }
+        setAiFeedback({
+          kind: "proposal",
+          outcome: result.outcome,
+          applied: false,
+          submittedSequence,
+        });
+        if (result.outcome.proposal.decision === "ready") {
+          applyCommandOutcome(result.outcome, submittedSequence);
+        }
+      } catch {
+        // 늦게 도착한 실패가 현재 화면에 옛 오류를 띄우지 않게 한다
+        if (!commandResponseIsCurrent(submittedSequence, planSequence.current)) {
+          setAiFeedback({ kind: "cancelled" });
+          return;
+        }
+        setAiFeedback({ kind: "error" });
+      }
+    });
+  }, [currentConstraints, visitDateEditable, applyCommandOutcome]);
 
   const chooseAlternative = useCallback((alt: SelectableAlternative | null) => {
     setLastItineraryDiff(null);
@@ -1543,6 +1668,8 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
             onSubmit={() => submitItineraryCommand(aiSentence)}
             onExample={submitItineraryCommand}
             onApply={applyCommandOutcome}
+            onUndo={undoLastCommand}
+            canUndo={undoPoint !== null}
             onDismiss={() => setAiFeedback(null)}
             placeName={placeName}
             tr={tr}
@@ -1623,15 +1750,66 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
               {displayedDays.map((day) => {
                 const baseDay = baseDays?.find((d) => d.date === day.date);
                 return (
-                  <div key={day.date} className="rounded-lg border p-4">
+                  <div
+                    key={day.date}
+                    className={`rounded-lg border p-4 ${dragOverDate === day.date ? "border-sc-blue bg-sc-blue-soft/40" : ""}`}
+                    onDragOver={(event) => {
+                      if (!draggingPlaceId || !visitDateEditable) return;
+                      event.preventDefault();
+                      setDragOverDate(day.date);
+                    }}
+                    onDragLeave={() => setDragOverDate((current) => (current === day.date ? null : current))}
+                    onDrop={(event) => {
+                      event.preventDefault();
+                      setDragOverDate(null);
+                      const placeId = draggingPlaceId ?? event.dataTransfer.getData("text/plain");
+                      setDraggingPlaceId(null);
+                      // 같은 날로 떨어뜨리면 바뀌는 것이 없다 — 재계산을 부르지 않는다
+                      if (!placeId || dateOfPlace(displayedDays, placeId) === day.date) return;
+                      submitVisitDateEdit(placeId, day.date);
+                    }}
+                  >
                     <h3 className="font-medium">{day.date}</h3>
                     <ul className="mt-2 space-y-1 text-sm">
                       {/* #14: 장소 단위 시각 미표기 — 역 단위 활용시간은 regionWindows로 표시 (#33) */}
                       {day.items.map((item) => (
-                        <li key={item.placeId} className="flex items-center text-sc-text/80">
+                        <li
+                          key={item.placeId}
+                          draggable={visitDateEditable}
+                          onDragStart={(event) => {
+                            setDraggingPlaceId(item.placeId);
+                            event.dataTransfer.setData("text/plain", item.placeId);
+                            event.dataTransfer.effectAllowed = "move";
+                          }}
+                          onDragEnd={() => { setDraggingPlaceId(null); setDragOverDate(null); }}
+                          className={`flex flex-wrap items-center gap-x-1 gap-y-1 rounded text-sc-text/80 ${draggingPlaceId === item.placeId ? "opacity-50" : ""}`}
+                        >
                           <MapPin aria-hidden="true" className="mr-1 size-3.5 shrink-0 text-sc-blue" />
                           {placeName(item.placeId)}
-                          <span className="ml-2 text-xs text-sc-muted">{accessLabel(item.accessMinutes)}</span>
+                          <span className="ml-1 text-xs text-sc-muted">{accessLabel(item.accessMinutes)}</span>
+                          {/* 날짜 선택 버튼이 기준 조작이고 드래그는 같은 액션의 다른 표현이다
+                              (#14 안건 ⑩ · #139 9-1). 키보드만으로도 같은 편집이 가능하다. */}
+                          <span className="ml-auto flex items-center gap-1">
+                            {(displayedDays ?? []).map((target, index) => (
+                              <button
+                                key={target.date}
+                                type="button"
+                                disabled={!visitDateEditable || target.date === day.date}
+                                onClick={() => submitVisitDateEdit(item.placeId, target.date)}
+                                aria-label={withValues(tr("step4.moveToDay"), {
+                                  place: placeName(item.placeId), day: String(index + 1),
+                                })}
+                                aria-current={target.date === day.date ? "true" : undefined}
+                                className={`min-h-7 min-w-7 rounded border px-1.5 text-xs ${
+                                  target.date === day.date
+                                    ? "border-sc-blue bg-sc-blue text-white"
+                                    : "border-sc-blue/30 text-sc-blue hover:bg-sc-blue-soft disabled:opacity-40"
+                                }`}
+                              >
+                                {index + 1}
+                              </button>
+                            ))}
+                          </span>
                         </li>
                       ))}
                     </ul>

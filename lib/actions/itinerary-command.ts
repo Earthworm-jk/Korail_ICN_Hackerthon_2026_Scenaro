@@ -15,6 +15,7 @@ import type { ItineraryResult } from "../engine/types";
 import { diffItineraries, type ItineraryDiff } from "../itinerary-diff";
 import { parseCommand } from "../itinerary-command-fallback";
 import { resolveCommand, type Clarification } from "../itinerary-command-resolver";
+import type { VisitDateCommand } from "../itinerary-command";
 import {
   changeSummaryOf,
   isExplainCommand,
@@ -57,6 +58,20 @@ export type RouteRecommendation = {
   movedPlaceIds: string[];
 };
 
+export type ProposalOutcomePayload = {
+  kind: "proposal";
+  proposal: CommandProposal;
+  nextRequest: PlanRequest;
+  nextResult: ItineraryResult;
+  diff: ItineraryDiff;
+  summary: ReturnType<typeof changeSummaryOf>;
+};
+
+/** 버튼·드래그 결과 — 해석 단계가 없어 `interpretation`이 없다 (#109) */
+export type VisitDateEditResult =
+  | { ok: false; code: "INVALID_REQUEST"; fieldErrors: Record<string, string> }
+  | { ok: true; outcome: ProposalOutcomePayload };
+
 export type CommandActionResult =
   | { ok: false; code: "INVALID_REQUEST"; fieldErrors: Record<string, string> }
   | {
@@ -70,15 +85,15 @@ export type CommandActionResult =
             targetDate: string;
             recommendations: RouteRecommendation[];
           }
-        | {
-            kind: "proposal";
-            proposal: CommandProposal;
-            nextRequest: PlanRequest;
-            nextResult: ItineraryResult;
-            diff: ItineraryDiff;
-            summary: ReturnType<typeof changeSummaryOf>;
-          };
+        | ProposalOutcomePayload;
     };
+
+/** 버튼·드래그 입력 — 자연어와 달리 장소·날짜가 이미 정해져 온다 (#109) */
+const VisitDateEditSchema = z.object({
+  placeId: z.string().min(1),
+  targetDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  request: PlanRequestSchema,
+});
 
 function fieldErrorsOf(error: z.ZodError): Record<string, string> {
   const errors: Record<string, string> = {};
@@ -177,6 +192,7 @@ async function routeRecommendations(params: {
       displacedPlaceIds: diff.places.dropped.map(({ placeId }) => placeId).sort((a, b) => a.localeCompare(b, "en")),
       movedPlaceIds: diff.places.moved.map(({ placeId }) => placeId).sort((a, b) => a.localeCompare(b, "en")),
     });
+
   }
 
   return recommendations
@@ -193,6 +209,50 @@ async function routeRecommendations(params: {
  * 이 함수는 어떤 결과도 저장하거나 확정하지 않는다. `needs_confirmation`은 호출 화면이
  * 명시적으로 적용하기 전까지 현재 일정을 유지한다.
  */
+/**
+ * 명령 하나를 재계산하고 제안으로 만든다 — 자연어·버튼·드래그가 공유하는 마지막 구간.
+ *
+ * 여기서 갈라지면 세 표현이 서로 다른 확정 규칙을 갖게 된다. #118 결정 2의
+ * `별도 엔진을 만들지 않고 동일한 재계산 액션을 사용한다`가 이 함수다.
+ */
+async function buildProposalOutcome(
+  command: VisitDateCommand,
+  request: PlanRequest,
+  before: ItineraryResult,
+): Promise<ProposalOutcomePayload | { invalid: Record<string, string> }> {
+  const proposedRequest = planRequestFor(command, request);
+  const afterAction = await planItinerary(proposedRequest);
+  if (!afterAction.ok) return { invalid: afterAction.fieldErrors };
+  const proposal = proposalFor(command, before, afterAction.result);
+  // 확인 창에서 고지한 displaced 장소를 사용자가 승인하면 그 장소는 선택에서도 빠진다.
+  // 승인 직후 화면에 rejectedPlaces가 남지 않도록, 실제 적용용 결과는 해당 장소를 명시적으로
+  // 제외한 요청으로 한 번 더 검증한다. proposal 자체는 첫 결과를 기준으로 유지해 무엇이
+  // 제외되는지 사용자에게 그대로 설명한다.
+  let nextRequest = proposedRequest;
+  let nextResult = afterAction.result;
+  if (proposal.decision !== "impossible" && proposal.displaced.length > 0) {
+    nextRequest = {
+      ...proposedRequest,
+      excludedPlaceIds: [
+        ...new Set([
+          ...proposedRequest.excludedPlaceIds,
+          ...proposal.displaced.map(({ placeId }) => placeId),
+        ]),
+      ],
+    };
+    const acceptedAction = await planItinerary(nextRequest);
+    if (acceptedAction.ok) nextResult = acceptedAction.result;
+  }
+  return {
+    kind: "proposal",
+    proposal,
+    nextRequest,
+    nextResult,
+    diff: diffItineraries(before, nextResult),
+    summary: changeSummaryOf(before, nextResult),
+  };
+}
+
 export async function runItineraryCommand(input: {
   sentence: string;
   request: PlanRequest;
@@ -273,42 +333,42 @@ export async function runItineraryCommand(input: {
     };
   }
 
-  const proposedRequest = planRequestFor(resolved.command, request);
-  const afterAction = await planItinerary(proposedRequest);
-  if (!afterAction.ok) {
-    return { ok: false, code: "INVALID_REQUEST", fieldErrors: afterAction.fieldErrors };
+  const outcome = await buildProposalOutcome(resolved.command, request, beforeAction.result);
+  if ("invalid" in outcome) {
+    return { ok: false, code: "INVALID_REQUEST", fieldErrors: outcome.invalid };
   }
-  const proposal = proposalFor(resolved.command, beforeAction.result, afterAction.result);
-  // 확인 창에서 고지한 displaced 장소를 사용자가 승인하면 그 장소는 선택에서도 빠진다.
-  // 승인 직후 화면에 rejectedPlaces가 남지 않도록, 실제 적용용 결과는 해당 장소를 명시적으로
-  // 제외한 요청으로 한 번 더 검증한다. proposal 자체는 첫 결과를 기준으로 유지해 무엇이
-  // 제외되는지 사용자에게 그대로 설명한다.
-  let nextRequest = proposedRequest;
-  let nextResult = afterAction.result;
-  if (proposal.decision !== "impossible" && proposal.displaced.length > 0) {
-    nextRequest = {
-      ...proposedRequest,
-      excludedPlaceIds: [
-        ...new Set([
-          ...proposedRequest.excludedPlaceIds,
-          ...proposal.displaced.map(({ placeId }) => placeId),
-        ]),
-      ],
-    };
-    const acceptedAction = await planItinerary(nextRequest);
-    if (acceptedAction.ok) nextResult = acceptedAction.result;
+  return { ok: true, interpretation, outcome };
+}
+
+/**
+ * 날짜 선택 버튼·드래그의 진입점 (#109).
+ *
+ * 자연어와 **같은 명령·같은 실행기·같은 판정**을 쓴다. 해석 단계만 없다 — 사용자가
+ * 이미 장소와 날짜를 직접 골랐으므로 LLM도 파서도 부를 이유가 없다.
+ */
+export async function runVisitDateEdit(input: {
+  placeId: string;
+  targetDate: string;
+  request: PlanRequest;
+}): Promise<VisitDateEditResult> {
+  const parsed = VisitDateEditSchema.safeParse(input);
+  if (!parsed.success) {
+    return { ok: false, code: "INVALID_REQUEST", fieldErrors: fieldErrorsOf(parsed.error) };
   }
-  const diff = diffItineraries(beforeAction.result, nextResult);
-  return {
-    ok: true,
-    interpretation,
-    outcome: {
-      kind: "proposal",
-      proposal,
-      nextRequest,
-      nextResult,
-      diff,
-      summary: changeSummaryOf(beforeAction.result, nextResult),
-    },
-  };
+  const { placeId, targetDate, request } = parsed.data;
+  const beforeAction = await planItinerary(request);
+  if (!beforeAction.ok) {
+    return { ok: false, code: "INVALID_REQUEST", fieldErrors: beforeAction.fieldErrors };
+  }
+  // 일정에 이미 있으면 이동, 없으면 추가 — resolver와 같은 규칙이다
+  const intent = scheduledPlaceIds(beforeAction.result).has(placeId) ? "move_place" : "add_place";
+  const outcome = await buildProposalOutcome(
+    { intent, placeId, targetDate },
+    request,
+    beforeAction.result,
+  );
+  if ("invalid" in outcome) {
+    return { ok: false, code: "INVALID_REQUEST", fieldErrors: outcome.invalid };
+  }
+  return { ok: true, outcome };
 }

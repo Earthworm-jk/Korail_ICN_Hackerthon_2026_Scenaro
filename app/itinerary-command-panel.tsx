@@ -18,7 +18,8 @@ export type CommandFeedback =
   | { kind: "clarify"; interpretation: CommandActionInterpretation; clarification: Clarification }
   | {
       kind: "proposal";
-      interpretation: CommandActionInterpretation;
+      /** 버튼·드래그에는 해석 단계가 없다 — 없으면 출처 줄을 그리지 않는다 (#109) */
+      interpretation?: CommandActionInterpretation;
       outcome: ProposalOutcome;
       applied: boolean;
       submittedSequence: number;
@@ -31,6 +32,7 @@ export type CommandFeedback =
       submittedSequence: number;
     }
   | { kind: "cancelled" }
+  | { kind: "undone" }
   | { kind: "error" };
 
 type Props = {
@@ -44,6 +46,8 @@ type Props = {
   onSubmit: () => void;
   onExample: (value: string) => void;
   onApply: (outcome: ProposalOutcome, submittedSequence: number) => void;
+  onUndo: () => void;
+  canUndo: boolean;
   onDismiss: () => void;
   placeName: (placeId: string) => string;
   tr: (key: MessageKey) => string;
@@ -126,6 +130,8 @@ export function ItineraryCommandPanel({
   onSubmit,
   onExample,
   onApply,
+  onUndo,
+  canUndo,
   onDismiss,
   placeName,
   tr,
@@ -135,7 +141,7 @@ export function ItineraryCommandPanel({
     || feedback.kind === "proposal"
     || feedback.kind === "explain"
     || feedback.kind === "recommendations"
-  ) ? feedback.interpretation : null;
+  ) ? feedback.interpretation ?? null : null;
   const source = interpretation ? sourceLabel(interpretation, tr) : null;
   const addExample = tr("ai.exampleAdd");
   const recommendExample = tr("ai.exampleRecommend");
@@ -220,6 +226,10 @@ export function ItineraryCommandPanel({
             <p className="text-sc-muted">{tr("ai.cancelled")}</p>
           )}
 
+          {feedback.kind === "undone" && (
+            <p className="text-sc-muted">{tr("ai.undone")}</p>
+          )}
+
           {feedback.kind === "clarify" && (
             <p className="mt-1 text-sc-text">{clarificationText(feedback.clarification, placeName, tr)}</p>
           )}
@@ -250,12 +260,24 @@ export function ItineraryCommandPanel({
                   })}
                 </p>
               ) : feedback.applied ? (
-                <p className="mt-1 font-medium text-sc-blue">
-                  {withValues(tr("ai.applied"), {
-                    place: placeName(feedback.outcome.proposal.placeId),
-                    date: feedback.outcome.proposal.scheduledDate ?? feedback.outcome.proposal.requestedDate,
-                  })}
-                </p>
+                <>
+                  <p className="mt-1 font-medium text-sc-blue">
+                    {withValues(tr("ai.applied"), {
+                      place: placeName(feedback.outcome.proposal.placeId),
+                      date: feedback.outcome.proposal.scheduledDate ?? feedback.outcome.proposal.requestedDate,
+                    })}
+                  </p>
+                  {/* 부작용 없는 변경은 즉시 적용하되 한 번에 되돌릴 수 있어야 한다 (#145) */}
+                  {canUndo && (
+                    <button
+                      type="button"
+                      onClick={onUndo}
+                      className="mt-2 min-h-9 rounded-lg border px-3 py-1.5 text-xs font-medium"
+                    >
+                      {tr("ai.undo")}
+                    </button>
+                  )}
+                </>
               ) : (
                 <>
                   <p className="mt-1 font-medium text-sc-text">{tr("ai.confirmTitle")}</p>
