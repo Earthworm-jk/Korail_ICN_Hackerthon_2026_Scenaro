@@ -275,6 +275,7 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
   // step 3 — 후보·선택
   const [candidateData, setCandidateData] = useState<CandidateResponse | null>(null);
   const [selectedPlaceIds, setSelectedPlaceIds] = useState<Set<string>>(new Set());
+  const [reopenCandidateStatus, setReopenCandidateStatus] = useState<"loading" | "failed" | null>(null);
   const [sortBy, setSortBy] = useState<"relevance" | "official">("relevance");
   // 후보 목록은 5곳씩 — 한 화면에 다 쏟으면 무엇을 고를지가 안 보인다. 표시 개수만 늘린다
   const [visibleCount, setVisibleCount] = useState(PLACES_PAGE_SIZE);
@@ -327,17 +328,31 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
     setAirportDeadline({ at: inputs.airportArrivalDeadline, touched: true });
     setSelectedActors(record.context.actors);
     setSelectedWorks(record.context.works);
-    const data = await getCandidatePlaces({
-      selectedActorIds: c.selectedActorIds,
-      selectedWorkIds: c.selectedWorkIds,
-    });
-    setCandidateData(data);
-    const excluded = new Set(c.excludedPlaceIds);
-    // 재열람은 현재 엄격 후보 중 저장 당시 excluded의 여집합을 복원한다.
-    setSelectedPlaceIds(new Set(initialCandidateIds(data.candidates).filter((id) => !excluded.has(id))));
+
+    // 저장 레코드의 일정은 후보 재조회와 무관하게 먼저 연다. 발표장 네트워크가 끊겨도
+    // 저장된 days와 조건만으로 결과를 복원할 수 있으며, 자동 재계산도 reopened에서 멈춘다.
+    setCandidateData(null);
+    setSelectedPlaceIds(new Set());
+    setReopenCandidateStatus("loading");
     dispatchView({ type: "REOPEN", record });
-    void refreshThemeExperience(record.days, c.selectedWorkIds);
     setStep(3); // #85 — 결과는 3단계 우측 열에서 보여준다
+
+    try {
+      const data = await getCandidatePlaces({
+        selectedActorIds: c.selectedActorIds,
+        selectedWorkIds: c.selectedWorkIds,
+      });
+      setCandidateData(data);
+      const excluded = new Set(c.excludedPlaceIds);
+      // 재열람은 현재 엄격 후보 중 저장 당시 excluded의 여집합을 복원한다.
+      setSelectedPlaceIds(new Set(initialCandidateIds(data.candidates).filter((id) => !excluded.has(id))));
+      setReopenCandidateStatus(null);
+    } catch {
+      // 후보 편집만 비활성화하고, 먼저 연 저장 일정과 조건은 그대로 유지한다 (#118 P0-4).
+      setReopenCandidateStatus("failed");
+    }
+
+    void refreshThemeExperience(record.days, c.selectedWorkIds);
   }, [refreshThemeExperience]);
 
   const saveStub = useSaveStub((record) => {
@@ -1000,7 +1015,7 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
         </section>
       )}
 
-      {step === 3 && candidateData && (
+      {step === 3 && (candidateData || view.reopened) && (
         <section>
           <h2 className="text-lg font-semibold">{tr("step3.title")}</h2>
           <p className="text-sm text-sc-muted">{tr("step3.subtitle")}</p>
@@ -1010,6 +1025,8 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
           {/* #85 — 좌: 후보 선택 / 우: 계산 결과. 왕복 없이 같은 화면에서 판단한다 */}
           <div className="mt-3 grid gap-[18px] lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
           <div className="min-w-0" id="place-picker">
+          {candidateData ? (
+          <>
           <div className="flex gap-2 text-sm">
             {(["relevance", "official"] as const).map((mode) => (
               <button
@@ -1080,6 +1097,12 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
           <div className="mt-4">
             <button className="rounded border px-4 py-2 text-sm" onClick={() => setStep(2)}>{tr("common.back")}</button>
           </div>
+          </>
+          ) : (
+            <p className="rounded border border-sc-orange/30 bg-sc-orange-soft p-3 text-sm text-sc-orange-text" role="status">
+              {tr(reopenCandidateStatus === "failed" ? "trips.reopenCandidatesFailed" : "common.loading")}
+            </p>
+          )}
           </div>
 
           {/* 우측 열 — 계산 결과. 장소를 켜고 끄면 여기서 바로 갱신된다 */}
