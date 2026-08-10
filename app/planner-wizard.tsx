@@ -54,6 +54,7 @@ import { gatewayPlanningBaselineOf } from "@/lib/engine/gateway-baseline";
 import { AlternativeTimetables } from "./alternative-timetables";
 import { AuthModal, TripsModal, useSaveStub, type SaveStatus } from "./save-stub";
 import { ExecutionSupport } from "./execution-support";
+import { FinalItineraryPage } from "./final-itinerary-page";
 import { GatewayAlternatives } from "./gateway-alternatives";
 import { ItineraryChangeSummary } from "./itinerary-change-summary";
 import { ItineraryRouteMap, KoreaMapPanel, type MapPlace, type MapStation } from "./korea-map";
@@ -240,6 +241,7 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
 }) {
   const [locale, setLocale] = useState<Locale>("ko");
   const [step, setStep] = useState(1);
+  const [showFinalItinerary, setShowFinalItinerary] = useState(false);
   // 요약 사이드바 접기 — 접으면 본문(지도·일정)이 220px을 더 쓴다
   const [summaryCollapsed, setSummaryCollapsed] = useState(false);
   const tr = useCallback((key: MessageKey) => t(locale, key), [locale]);
@@ -336,6 +338,7 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
     setReopenCandidateStatus("loading");
     dispatchView({ type: "REOPEN", record });
     setStep(3); // #85 — 결과는 3단계 우측 열에서 보여준다
+    setShowFinalItinerary(true); // 저장 목록의 "다시 열기"는 저장했던 최종 조망 화면으로 복귀한다.
 
     try {
       const data = await getCandidatePlaces({
@@ -399,6 +402,7 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
   }, [query]);
 
   const loadCandidates = useCallback(async () => {
+    setShowFinalItinerary(false);
     const actorIds = selectedActors.map((a) => a.id);
     const workIds = selectedWorks.map((w) => w.id);
     const data = await getCandidatePlaces({
@@ -807,7 +811,7 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
         </div>
       </header>
 
-      <nav className="grid grid-cols-3 border-b bg-sc-subtle text-center text-sm">
+      {!showFinalItinerary && <nav className="grid grid-cols-3 border-b bg-sc-subtle text-center text-sm">
         {STEPS.map((key, i) => (
           <div
             key={key}
@@ -818,11 +822,11 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
             <span className="truncate">{tr(key)}</span>
           </div>
         ))}
-      </nav>
+      </nav>}
 
       {/* #14 v0.6 sc-layout — 좌측 선택 요약 + 본문 (md 미만은 상단 밴드) */}
-      <div className={`grid ${summaryCollapsed ? "md:grid-cols-[64px_minmax(0,1fr)]" : "md:grid-cols-[220px_minmax(0,1fr)]"}`}>
-      <SummarySidebar
+      <div className={showFinalItinerary ? "block" : `grid ${summaryCollapsed ? "md:grid-cols-[64px_minmax(0,1fr)]" : "md:grid-cols-[220px_minmax(0,1fr)]"}`}>
+      {!showFinalItinerary && <SummarySidebar
         arrivalAt={arrival.at}
         departureAt={departure.at}
         readyAt={airportReady.at}
@@ -834,8 +838,27 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
         tr={tr}
         collapsed={summaryCollapsed}
         onToggle={() => setSummaryCollapsed((on) => !on)}
-      />
+      />}
       <div className="min-w-0 p-5 sm:p-6">
+
+      {showFinalItinerary && displayedDays && (
+        <FinalItineraryPage
+          days={displayedDays}
+          locale={locale}
+          placeName={placeName}
+          stationName={stationName}
+          warnings={viewWarnings}
+          warningLabel={(detail) => tr(`reason.${detail}` as MessageKey)}
+          saveStatus={saveStub.saveStatus}
+          saveStatusLabel={tr(SAVE_STATUS_KEY[saveStub.saveStatus])}
+          onBackToAdjust={() => setShowFinalItinerary(false)}
+          onSave={() => {
+            const entry = savedEntry();
+            if (entry) saveStub.requestSave(entry);
+          }}
+          tr={tr}
+        />
+      )}
 
       {step === 1 && (
         <section>
@@ -1015,7 +1038,7 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
         </section>
       )}
 
-      {step === 3 && (candidateData || view.reopened) && (
+      {!showFinalItinerary && step === 3 && (candidateData || view.reopened) && (
         <section>
           <h2 className="text-lg font-semibold">{tr("step3.title")}</h2>
           <p className="text-sm text-sc-muted">{tr("step3.subtitle")}</p>
@@ -1205,35 +1228,6 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
                   <div key={day.date} className="rounded-lg border p-4">
                     <h3 className="font-medium">{day.date}</h3>
                     <ul className="mt-2 space-y-1 text-sm">
-                      {(day.gatewayLegs ?? []).map((leg) => (
-                        <li key={leg.id} className="text-sc-text/80">
-                          🚌 {fmtTime(leg.departAt)} {leg.fromName[locale]} → {fmtTime(leg.arriveAt)} {leg.toName[locale]}
-                          <span className="ml-2 text-xs text-sc-muted/70">{leg.serviceName[locale]} · {leg.operator[locale]}</span>
-                        </li>
-                      ))}
-                      {/* 시간 정보는 전부 이 줄에 있다 — 소요시간까지 여기서 읽는다 (인수인계 G).
-                          누르면 그 구간의 안내·출처가 팝업으로 열린다. 점선 밑줄이 눌린다는 표시. */}
-                      {day.rides.map((ride) => (
-                        <li key={`${ride.trainNo}-${ride.departAt}`}>
-                          <button
-                            type="button"
-                            className="-mx-1 w-full rounded border border-transparent px-1 py-0.5 text-left text-sc-text/80 hover:border-sc-blue"
-                            onClick={() => setOpenTrainLeg({
-                              trainNo: ride.trainNo,
-                              fromName: stationName(ride.fromStationId),
-                              toName: stationName(ride.toStationId),
-                              departAt: ride.departAt,
-                              arriveAt: ride.arriveAt,
-                            })}
-                          >
-                            🚆 {fmtTime(ride.departAt)} {stationName(ride.fromStationId)} → {fmtTime(ride.arriveAt)} {stationName(ride.toStationId)}
-                            {" · "}{legDurationLabel(ride.departAt, ride.arriveAt, tr)}
-                            <span className="ml-2 text-xs text-sc-muted/70 underline decoration-dotted underline-offset-2">
-                              {tr("step4.train")} {ride.trainNo}
-                            </span>
-                          </button>
-                        </li>
-                      ))}
                       {/* #14: 장소 단위 시각 미표기 — 역 단위 활용시간은 regionWindows로 표시 (#33) */}
                       {day.items.map((item) => (
                         <li key={item.placeId} className="text-sc-text/80">
@@ -1242,6 +1236,50 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
                         </li>
                       ))}
                     </ul>
+                    {day.rides.length + (day.gatewayLegs?.length ?? 0) > 0 && (
+                      <details className="mt-3 rounded-lg border bg-sc-subtle/60" data-planning-transport>
+                        <summary className="flex min-h-10 list-none items-center justify-between gap-2 px-3 py-2 text-sm font-medium">
+                          <span>
+                            {tr("step4.transportSummary").replace(
+                              "{n}",
+                              String(day.rides.length + (day.gatewayLegs?.length ?? 0)),
+                            )}
+                          </span>
+                          <span className="text-xs text-sc-muted">{tr("step4.transportHint")}</span>
+                        </summary>
+                        <ul className="space-y-1 border-t px-3 py-2 text-sm">
+                          {(day.gatewayLegs ?? []).map((leg) => (
+                            <li key={leg.id} className="text-sc-text/80">
+                              {fmtTime(leg.departAt)} {leg.fromName[locale]} → {fmtTime(leg.arriveAt)} {leg.toName[locale]}
+                              <span className="ml-2 text-xs text-sc-muted/70">{leg.serviceName[locale]} · {leg.operator[locale]}</span>
+                            </li>
+                          ))}
+                          {/* 조율 중에는 장소가 주정보다. 열차 번호·소요시간은 사용자가 펼쳤을 때만
+                              기존 상세 모달 계약과 함께 제공한다 (#118 P0-3). */}
+                          {day.rides.map((ride) => (
+                            <li key={`${ride.trainNo}-${ride.departAt}`}>
+                              <button
+                                type="button"
+                                className="-mx-1 w-full rounded border border-transparent px-1 py-0.5 text-left text-sc-text/80 hover:border-sc-blue"
+                                onClick={() => setOpenTrainLeg({
+                                  trainNo: ride.trainNo,
+                                  fromName: stationName(ride.fromStationId),
+                                  toName: stationName(ride.toStationId),
+                                  departAt: ride.departAt,
+                                  arriveAt: ride.arriveAt,
+                                })}
+                              >
+                                {fmtTime(ride.departAt)} {stationName(ride.fromStationId)} → {fmtTime(ride.arriveAt)} {stationName(ride.toStationId)}
+                                {" · "}{legDurationLabel(ride.departAt, ride.arriveAt, tr)}
+                                <span className="ml-2 text-xs text-sc-muted/70 underline decoration-dotted underline-offset-2">
+                                  {tr("step4.train")} {ride.trainNo}
+                                </span>
+                              </button>
+                            </li>
+                          ))}
+                        </ul>
+                      </details>
+                    )}
                     {/* #33 — 엔진 값 포맷만, 경계·시각 재해석 금지 */}
                     {day.regionWindows.length > 0 && (
                       <div className="mt-2 space-y-1">
@@ -1409,24 +1447,15 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
               <button className="rounded border px-3 py-2 text-sm" onClick={() => setStep(1)}>{tr("step4.editFlights")}</button>
               <button className="rounded border px-3 py-2 text-sm" onClick={plan}>{tr("step4.recalculate")}</button>
             </div>
-            <div className="flex items-center gap-2">
-              <span
-                className={`text-xs ${saveStub.saveStatus === "saved" ? "text-sc-green" : saveStub.saveStatus === "error" ? "text-sc-red" : "text-sc-muted"}`}
-                role="status"
-              >
-                {tr(SAVE_STATUS_KEY[saveStub.saveStatus])}
-              </span>
-              <button
-                className="rounded bg-sc-blue px-4 py-2 text-sm text-white disabled:opacity-40"
-                disabled={!displayedDays || needsSelection || selectionCapacity?.requiresAdjustment}
-                onClick={() => {
-                  const entry = savedEntry();
-                  if (entry) saveStub.requestSave(entry);
-                }}
-              >
-                ♡ {tr("step4.save")}
-              </button>
-            </div>
+            <button
+              type="button"
+              className="rounded bg-sc-blue px-4 py-2 text-sm font-semibold text-white disabled:opacity-40"
+              disabled={!displayedDays || updating || needsSelection || selectionCapacity?.requiresAdjustment}
+              onClick={() => setShowFinalItinerary(true)}
+              data-open-final
+            >
+              {tr("step4.openFinal")}
+            </button>
           </div>
           </div>
           </div>
