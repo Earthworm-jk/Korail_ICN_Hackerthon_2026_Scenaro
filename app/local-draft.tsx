@@ -84,7 +84,11 @@ export function useLocalDraft({ enabled, onRestore, ...input }: UseLocalDraftOpt
     if (initialDraft === null || restoreStarted.current) return;
     restoreStarted.current = true;
     lastWritten.current = initialDraft; // 방금 되살린 내용을 곧바로 다시 쓰지 않는다
-    void Promise.resolve(onRestoreRef.current(initialDraft))
+    // 콜백을 then 안에서 부른다 — `Promise.resolve(fn())`는 인자가 먼저 평가돼서,
+    // async가 아닌 콜백이 동기적으로 던지면 Promise가 만들어지기 전에 예외가 effect 밖으로
+    // 나가고 catch가 못 잡는다 (PR #127 3차 리뷰 비차단). 동기 예외도 failed로 받는다.
+    void Promise.resolve()
+      .then(() => onRestoreRef.current(initialDraft))
       .then(() => setRestoreState("restored"))
       .catch(() => setRestoreState("failed")); // 원본 초안 유지 + 이번 마운트 저장 보류
   }, [initialDraft]);
