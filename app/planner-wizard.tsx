@@ -1052,7 +1052,7 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
             selectedCount={selectedPlaceIds.size}
             totalCount={sortedCandidates.length}
             updating={updating}
-            updated={lastItineraryDiff !== null && !updating}
+            updated={lastItineraryDiff?.changed === true && !updating}
             sortBy={sortBy}
             onSortChange={setSortBy}
             remainingCount={Math.max(0, sortedCandidates.length - visibleCount)}

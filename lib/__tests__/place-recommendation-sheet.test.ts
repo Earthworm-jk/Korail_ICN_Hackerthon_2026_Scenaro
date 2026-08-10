@@ -49,7 +49,7 @@ describe("지도 위 추천 장소 바텀시트", () => {
     expect(markup).toContain("data-test-map");
   });
 
-  it("재계산 중에는 선택 수 대신 일정과 경로가 함께 갱신됨을 알린다", () => {
+  it("재계산 중에도 선택 수를 유지하며 일정과 경로가 함께 갱신됨을 알린다", () => {
     const markup = renderToStaticMarkup(createElement(PlaceRecommendationSheet, {
       selectedCount: 2,
       totalCount: 8,
@@ -65,7 +65,26 @@ describe("지도 위 추천 장소 바텀시트", () => {
     }));
 
     expect(markup).toContain("일정·경로 다시 그리는 중");
-    expect(markup).not.toContain("2/8곳 선택");
+    expect(markup).toContain("2/8곳 선택");
+  });
+
+  it("실제 일정이 변경된 뒤에도 선택 수와 반영 완료 상태를 함께 보여준다", () => {
+    const markup = renderToStaticMarkup(createElement(PlaceRecommendationSheet, {
+      selectedCount: 2,
+      totalCount: 8,
+      updating: false,
+      updated: true,
+      sortBy: "official",
+      onSortChange: () => undefined,
+      remainingCount: 0,
+      onShowMore: () => undefined,
+      onBack: () => undefined,
+      map: null,
+      tr,
+    }));
+
+    expect(markup).toContain("2/8곳 선택");
+    expect(markup).toContain("새 일정·경로 반영 완료");
   });
 
   it("실제 사진이 없는 카드에 공통 플레이스홀더임을 명시한다", () => {

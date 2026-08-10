@@ -34,13 +34,14 @@ export function PlaceRecommendationSheet({
   tr: Translator;
 }) {
   const [expanded, setExpanded] = useState(true);
-  const status = updating
+  const selectedCountLabel = tr("step3.selectedCount")
+    .replace("{selected}", String(selectedCount))
+    .replace("{total}", String(totalCount));
+  const routeStatus = updating
     ? tr("step3.routeUpdating")
     : updated
       ? tr("step3.routeUpdated")
-      : tr("step3.selectedCount")
-          .replace("{selected}", String(selectedCount))
-          .replace("{total}", String(totalCount));
+      : null;
 
   return (
     <div
@@ -54,9 +55,12 @@ export function PlaceRecommendationSheet({
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
             <h3 className="font-semibold">{tr("step3.sheetTitle")}</h3>
-            <span className="text-xs text-sc-muted" role="status" aria-live="polite">
-              {status}
-            </span>
+            <span className="text-xs text-sc-muted">{selectedCountLabel}</span>
+            {routeStatus && (
+              <span className="text-xs text-sc-muted" role="status" aria-live="polite">
+                {routeStatus}
+              </span>
+            )}
           </div>
           <p className="mt-0.5 text-xs text-sc-muted">{tr("step3.sheetSubtitle")}</p>
         </div>
