@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import "./stage.css";
 import "./stage-v2.css";
+import "./stage-v3.css";
 import { StepNavController } from "./step-nav-controller";
 
 const geistSans = Geist({
