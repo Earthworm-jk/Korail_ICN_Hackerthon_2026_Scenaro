@@ -72,6 +72,15 @@ export function PlaceRecommendationSheet({
           <select
             aria-label={tr("step3.sortLabel")}
             value={sortBy}
+            onPointerDown={(event) => {
+              event.currentTarget.dataset.pointerFocus = "true";
+            }}
+            onKeyDown={(event) => {
+              delete event.currentTarget.dataset.pointerFocus;
+            }}
+            onBlur={(event) => {
+              delete event.currentTarget.dataset.pointerFocus;
+            }}
             onChange={(event) => onSortChange(event.target.value as "relevance" | "official")}
           >
             <option value="relevance">{tr("step3.sortRelevance")}</option>

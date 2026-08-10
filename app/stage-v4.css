@@ -139,7 +139,7 @@
 
   /* ---- Bottom utility dock ---- */
   body:has(#place-picker) main {
-    padding-bottom: 88px;
+    padding-bottom: calc(var(--sc-dock-h, 0px) + 24px);
   }
 
   #stage-utility-dock:empty {
@@ -361,7 +361,7 @@
   body:has(div#place-picker[data-place-sheet]) main {
     /* The fixed utility row still needs real document space. Without it the
        final action row reaches the viewport edge and cannot be scrolled clear. */
-    padding-bottom: 88px !important;
+    padding-bottom: calc(var(--sc-dock-h, 0px) + 24px) !important;
   }
 
   html body main section > div.grid:has(> div#place-picker[data-place-sheet]) {
@@ -379,12 +379,13 @@
     z-index: 12;
     width: calc(100% - 20px) !important;
     height: auto !important;
-    max-height: 268px !important;
+    max-height: 270px !important;
     margin: 0 10px 10px !important;
-    overflow: hidden !important;
+    overflow-y: auto !important;
     border-radius: 14px !important;
     padding: 0 !important;
     box-shadow: 0 16px 40px rgba(16, 24, 40, .18) !important;
+    transform: translateY(calc(-1 * var(--sc-sheet-dock-offset, 0px)));
   }
 
   /* Reset the legacy sticky left-rail header from stage-v2. Its negative margin
@@ -428,7 +429,7 @@
 @media (min-width: 1024px) and (max-width: 1279px) {
   div#place-picker[data-place-sheet] {
     margin-bottom: 10px !important;
-    max-height: 268px !important;
+    max-height: 270px !important;
   }
 }
 
@@ -437,7 +438,7 @@
 @media (min-width: 1024px) and (max-height: 740px) {
   div#place-picker[data-place-sheet] {
     margin-bottom: 44px !important;
-    max-height: 268px !important;
+    max-height: 270px !important;
   }
 }
 

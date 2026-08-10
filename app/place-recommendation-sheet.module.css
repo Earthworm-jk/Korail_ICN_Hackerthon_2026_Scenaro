@@ -40,9 +40,12 @@
 }
 
 .toggle:hover,
-.more:hover,
-.sortControl:hover {
+.more:hover {
   border-color: var(--sc-blue);
+  color: var(--sc-blue);
+}
+
+.sortControl:hover {
   color: var(--sc-blue);
 }
 
@@ -60,11 +63,6 @@
   color: var(--sc-text);
 }
 
-.sortControl:focus-within {
-  border-color: var(--sc-blue);
-  box-shadow: 0 0 0 2px var(--sc-blue-soft);
-}
-
 .sortControl select {
   min-width: 0;
   max-width: 132px;
@@ -74,6 +72,12 @@
   color: inherit;
   font: inherit;
   outline: 0;
+}
+
+.sortControl select:focus-visible:not([data-pointer-focus="true"]) {
+  border-radius: 4px;
+  outline: 2px solid var(--sc-blue);
+  outline-offset: 2px;
 }
 
 .body {

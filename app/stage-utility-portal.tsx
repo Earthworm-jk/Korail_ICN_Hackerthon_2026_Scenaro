@@ -34,6 +34,47 @@ export function StageUtilityDockController() {
     const host = document.getElementById("stage-utility-dock");
     if (!host) return;
 
+    const root = document.documentElement;
+    let observedSheet: HTMLElement | null = null;
+    let geometryFrame = 0;
+
+    const syncGeometry = () => {
+      geometryFrame = 0;
+      const dockHeight = host.offsetHeight;
+      root.style.setProperty("--sc-dock-h", `${dockHeight}px`);
+
+      const sheet = document.querySelector<HTMLElement>("#place-picker[data-place-sheet]");
+      if (sheet !== observedSheet) {
+        if (observedSheet) geometryObserver.unobserve(observedSheet);
+        observedSheet?.style.removeProperty("--sc-sheet-dock-offset");
+        observedSheet = sheet;
+        if (sheet) geometryObserver.observe(sheet);
+      }
+      if (!sheet || dockHeight === 0) {
+        sheet?.style.setProperty("--sc-sheet-dock-offset", "0px");
+        return;
+      }
+
+      // getBoundingClientRect includes the previous translation. Add it back before
+      // calculating the next value so repeated ResizeObserver passes converge.
+      const previousOffset = Number.parseFloat(
+        sheet.style.getPropertyValue("--sc-sheet-dock-offset"),
+      ) || 0;
+      const unshiftedSheetBottom = sheet.getBoundingClientRect().bottom + previousOffset;
+      const dockTop = host.getBoundingClientRect().top;
+      const nextOffset = Math.max(0, Math.ceil(unshiftedSheetBottom - dockTop + 12));
+      sheet.style.setProperty("--sc-sheet-dock-offset", `${nextOffset}px`);
+    };
+
+    const scheduleGeometrySync = () => {
+      if (geometryFrame) cancelAnimationFrame(geometryFrame);
+      geometryFrame = requestAnimationFrame(syncGeometry);
+    };
+
+    const geometryObserver = new ResizeObserver(scheduleGeometrySync);
+    geometryObserver.observe(host);
+    window.addEventListener("resize", scheduleGeometrySync);
+
     const closeOpenUtilities = () => {
       host.querySelectorAll<HTMLDetailsElement>("details[open]").forEach((details) => {
         details.open = false;
@@ -79,6 +120,7 @@ export function StageUtilityDockController() {
           if (node.querySelector('a[href="#place-picker"]')) return;
           bindWarning(node);
         });
+      scheduleGeometrySync();
     };
 
     markWarnings();
@@ -87,7 +129,12 @@ export function StageUtilityDockController() {
 
     return () => {
       document.removeEventListener("keydown", onKeyDown);
+      window.removeEventListener("resize", scheduleGeometrySync);
       observer.disconnect();
+      geometryObserver.disconnect();
+      if (geometryFrame) cancelAnimationFrame(geometryFrame);
+      root.style.removeProperty("--sc-dock-h");
+      observedSheet?.style.removeProperty("--sc-sheet-dock-offset");
     };
   }, []);
 
