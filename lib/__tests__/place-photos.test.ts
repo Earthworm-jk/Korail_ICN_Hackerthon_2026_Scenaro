@@ -1,4 +1,4 @@
-import { existsSync } from "node:fs";
+import { existsSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { loadRepositories } from "../repositories/json";
@@ -26,6 +26,20 @@ describe("TourAPI 장소 사진", () => {
         placeId,
       ).toBe(true);
     }
+  });
+
+  it("카드용 로컬 사진은 발표장 초기 전송량을 위해 썸네일 크기로 유지한다", () => {
+    let totalBytes = 0;
+
+    for (const [placeId, photo] of Object.entries(PLACE_PHOTOS)) {
+      const bytes = statSync(
+        join(process.cwd(), "public", photo.src.replace(/^\//, "")),
+      ).size;
+      totalBytes += bytes;
+      expect(bytes, placeId).toBeLessThanOrEqual(64 * 1024);
+    }
+
+    expect(totalBytes).toBeLessThanOrEqual(500 * 1024);
   });
 
   it("다른 하위 시설 사진으로 확인된 두 장소는 플레이스홀더를 유지한다", () => {

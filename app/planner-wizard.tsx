@@ -6,6 +6,7 @@
  * - 대안 시간표는 mock(#14 ⑨ 선행), 저장·내 일정은 in-memory 스텁(#25 선행) — 엔진·Supabase 연결 시 교체
  */
 import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from "react";
+import { MapPin, Sparkles, TriangleAlert } from "lucide-react";
 import {
   searchEntities,
   type ActorSummary,
@@ -49,8 +50,8 @@ import { fromKstLocalInput as fromLocalInput, toKstLocalInput as toLocalInput } 
 import { formatFlightStatus } from "@/lib/flight-status";
 import { formatEpisodeLabel } from "@/lib/episode-label";
 import { splitSourceLink } from "@/lib/source-link";
-import { placeTypeIcon } from "@/lib/place-type-icon";
 import { placePhoto } from "@/lib/place-photos";
+import { PlaceTypeIcon } from "./place-type-icon";
 import { diffItineraries, type ItineraryDiff } from "@/lib/itinerary-diff";
 import { gatewayPlanningBaselineOf } from "@/lib/engine/gateway-baseline";
 import { AlternativeTimetables } from "./alternative-timetables";
@@ -1028,9 +1029,10 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
           {searched && results.interpretedByAi && (
             <p
               aria-live="polite"
-              className="mt-3 rounded border border-sc-airport/30 bg-sc-airport-soft p-3 text-sm text-sc-airport-text"
+              className="mt-3 flex items-center gap-1.5 rounded border border-sc-airport/30 bg-sc-airport-soft p-3 text-sm text-sc-airport-text"
             >
-              ✨ {tr("step2.aiInterpreted")}
+              <Sparkles aria-hidden="true" className="size-4 shrink-0" />
+              {tr("step2.aiInterpreted")}
             </p>
           )}
           {searched && results.actors.length === 0 && results.works.length === 0 && (
@@ -1271,8 +1273,9 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
                     <ul className="mt-2 space-y-1 text-sm">
                       {/* #14: 장소 단위 시각 미표기 — 역 단위 활용시간은 regionWindows로 표시 (#33) */}
                       {day.items.map((item) => (
-                        <li key={item.placeId} className="text-sc-text/80">
-                          📍 {placeName(item.placeId)}
+                        <li key={item.placeId} className="flex items-center text-sc-text/80">
+                          <MapPin aria-hidden="true" className="mr-1 size-3.5 shrink-0 text-sc-blue" />
+                          {placeName(item.placeId)}
                           <span className="ml-2 text-xs text-sc-muted">{accessLabel(item.accessMinutes)}</span>
                         </li>
                       ))}
@@ -1402,8 +1405,9 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
                   <h3 className="text-sm font-medium text-sc-orange-text">{tr("step4.warningsTitle")}</h3>
                   <ul className="mt-2 space-y-1 text-sm text-sc-orange-text">
                     {viewWarnings.map((warning) => (
-                      <li key={warning.placeId}>
-                        ⚠️ {placeName(warning.placeId)} — {tr(`reason.${warning.detail}` as MessageKey)}
+                      <li key={warning.placeId} className="flex items-start gap-1.5">
+                        <TriangleAlert aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
+                        <span>{placeName(warning.placeId)} — {tr(`reason.${warning.detail}` as MessageKey)}</span>
                       </li>
                     ))}
                   </ul>
@@ -1571,13 +1575,13 @@ function PlaceCard({ candidate, locale, tr, selected, onToggle, stationName, wor
     >
       <div className="flex items-start justify-between gap-2">
         {/* 이름·좌표·이미지를 검증한 TourAPI 제1유형 사진만 쓴다. 나머지는 추정 사진
-            대신 동일한 플레이스홀더 프레임과 장소 유형 표식을 유지한다. */}
+            대신 동일한 플레이스홀더 프레임과 Lucide 장소 유형 표식을 유지한다. */}
         <PlaceThumbnail
           label={tr("step3.photoPlaceholder")}
           photo={photo}
           locale={locale}
         >
-          {placeTypeIcon(candidate.placeType)}
+          <PlaceTypeIcon placeType={candidate.placeType} />
         </PlaceThumbnail>
         <div className="min-w-0 flex-1 text-sm">
           <p className="font-medium">
@@ -1599,8 +1603,9 @@ function PlaceCard({ candidate, locale, tr, selected, onToggle, stationName, wor
             {hoursLabel ? (
               <span>· {hoursLabel}</span>
             ) : (
-              <span className="rounded bg-sc-orange-soft px-1.5 py-0.5 text-sc-orange-text">
-                ⚠️ {tr("step3.hoursUnverified")}
+              <span className="inline-flex items-center gap-1 rounded bg-sc-orange-soft px-1.5 py-0.5 text-sc-orange-text">
+                <TriangleAlert aria-hidden="true" className="size-3.5 shrink-0" />
+                {tr("step3.hoursUnverified")}
               </span>
             )}
           </p>
@@ -1636,8 +1641,9 @@ function PlaceCard({ candidate, locale, tr, selected, onToggle, stationName, wor
               )}
               {/* #48 — 검토된 항목의 관련 이유만 ko/en 표시, 내부 점수는 노출하지 않는다 */}
               {aiReason && (
-                <p className="mt-0.5 text-xs text-sc-airport-text">
-                  ✨ {tr("step3.aiReasonLabel")}: {aiReason[locale]}
+                <p className="mt-0.5 flex items-start gap-1 text-xs text-sc-airport-text">
+                  <Sparkles aria-hidden="true" className="mt-0.5 size-3.5 shrink-0" />
+                  <span>{tr("step3.aiReasonLabel")}: {aiReason[locale]}</span>
                 </p>
               )}
               {sourceLabel && (

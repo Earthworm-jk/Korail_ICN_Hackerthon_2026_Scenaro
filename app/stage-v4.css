@@ -119,11 +119,6 @@
     font-size: 12px !important;
   }
 
-  [data-stage-warning] h3::before {
-    content: "⚠";
-    color: var(--sc-orange-text);
-  }
-
   [data-stage-warning] h3::after {
     content: attr(data-stage-count) "건  ›";
     margin-left: auto;

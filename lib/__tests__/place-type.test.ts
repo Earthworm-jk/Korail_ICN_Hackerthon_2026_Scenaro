@@ -1,7 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { loadRepositories } from "../repositories/json";
 import { PlaceType, type PlaceTypeT } from "../types/schema";
-import { PLACE_TYPE_ICON, PLACE_TYPE_FALLBACK_ICON, placeTypeIcon } from "../place-type-icon";
+import {
+  PLACE_TYPE_FALLBACK_ICON_KEY,
+  PLACE_TYPE_ICON_KEY,
+  placeTypeIconKey,
+} from "../place-type-icon";
 
 /**
  * 장소 유형·아이콘 계약 (#83 §F)
@@ -53,41 +57,28 @@ describe("장소 유형 시드", () => {
 describe("유형 아이콘 매핑", () => {
   it("모든 유형에 매핑이 있다 — 새 유형을 추가하고 아이콘을 빠뜨릴 수 없다", () => {
     for (const type of PlaceType.options) {
-      expect(Object.keys(PLACE_TYPE_ICON), type).toContain(type);
+      expect(Object.keys(PLACE_TYPE_ICON_KEY), type).toContain(type);
     }
   });
 
   it("유형이 없으면 기본 아이콘으로 떨어진다 — 조용한 빈칸을 만들지 않는다", () => {
-    expect(placeTypeIcon(undefined)).toBe(PLACE_TYPE_FALLBACK_ICON);
-    expect(PLACE_TYPE_FALLBACK_ICON).not.toBe("");
+    expect(placeTypeIconKey(undefined)).toBe(PLACE_TYPE_FALLBACK_ICON_KEY);
+    expect(PLACE_TYPE_FALLBACK_ICON_KEY).toBe("map-pin");
   });
 
-  /**
-   * heritage의 빈 문자열은 누락이 아니라 의도다. 유니코드에 한국 사찰·전각 글리프가 없고,
-   * 형태가 가까운 ⛩️(일본 신사)·🏯(일본 성)·🛕(힌두 사원)는 K-컬처 제품에서 쓸 수 없다.
-   * 틀린 아이콘이 "빈칸을 채운다"는 이유로 들어오는 것을 이 테스트가 막는다.
-   */
-  it("heritage는 의도적으로 비어 있고, 다른 문화의 기호로 채우지 않는다", () => {
-    expect(PLACE_TYPE_ICON.heritage).toBe("");
-    const 금지기호 = ["⛩️", "⛩", "🏯", "🛕", "🏛️", "🏛"];
-    for (const [type, icon] of Object.entries(PLACE_TYPE_ICON)) {
-      expect(금지기호, type).not.toContain(icon);
-    }
+  it("heritage는 특정 문화권 건축물 대신 중립적인 history 아이콘을 쓴다", () => {
+    expect(PLACE_TYPE_ICON_KEY.heritage).toBe("history");
   });
 
-  it("heritage 외에는 모두 아이콘이 있다", () => {
-    for (const [type, icon] of Object.entries(PLACE_TYPE_ICON)) {
-      if (type === "heritage") continue;
+  it("모든 유형이 이모지나 빈 문자열 대신 아이콘 키를 가진다", () => {
+    const emoji = /\p{Extended_Pictographic}/u;
+    for (const [type, icon] of Object.entries(PLACE_TYPE_ICON_KEY)) {
       expect(icon, type).not.toBe("");
+      expect(emoji.test(icon), type).toBe(false);
     }
   });
 
-  /**
-   * 빈 박스(heritage)와 기본 아이콘(미분류)은 다른 상태를 뜻한다 —
-   * "유형은 아는데 아이콘이 없다" vs "유형을 확인하지 못했다".
-   * 같은 표시가 되면 확인한 것과 확인 못 한 것이 화면에서 구별되지 않는다.
-   */
-  it("빈 박스와 미분류 표시가 서로 구별된다", () => {
-    expect(placeTypeIcon("heritage")).not.toBe(placeTypeIcon(undefined));
+  it("분류된 문화유산과 미분류 장소의 표시가 서로 구별된다", () => {
+    expect(placeTypeIconKey("heritage")).not.toBe(placeTypeIconKey(undefined));
   });
 });
