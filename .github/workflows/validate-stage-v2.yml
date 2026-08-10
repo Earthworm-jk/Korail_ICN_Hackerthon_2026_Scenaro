@@ -1,0 +1,45 @@
+name: Validate stage v2
+
+on:
+  push:
+    branches:
+      - agent/ui-stage-workspace-v2
+    paths:
+      - .github/workflows/validate-stage-v2.yml
+
+permissions:
+  contents: write
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/ui-stage-workspace-v2
+          fetch-depth: 0
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24.x
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm lint
+      - run: pnpm typecheck
+      - run: pnpm test
+      - run: python3 -m unittest scripts.test_build_train_snapshot scripts.test_verify_stay_sources -v
+      - run: pnpm build
+
+      - name: Remove one-shot validation workflow
+        if: success()
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm .github/workflows/validate-stage-v2.yml
+          git commit -m "chore: remove one-shot stage validation workflow"
+          git push origin HEAD:agent/ui-stage-workspace-v2
