@@ -416,10 +416,11 @@ export function loadDraft(storage: Storage | null = defaultStorage()): LocalDraf
   if (!isArrayOf(context.works, isWorkSummary)) return null;
 
   if (!isStringArray(data.selectedPlaceIds)) return null;
-  // v1 초안과 하위 호환한다. 필드 추가 전 초안은 선호가 없었던 것으로 복구하고,
-  // 필드가 있다면 엔진 계약과 같은 YYYY-MM-DD 레코드만 허용한다.
-  const preferredVisitDates = data.preferredVisitDates ?? {};
-  if (!isVisitDateRecord(preferredVisitDates)) return null;
+  // v1 초안과 하위 호환한다. 필드 추가 전이거나 이 보조 필드만 손상됐으면 선호만 비우고
+  // 여행 조건·콘텐츠·장소 선택은 살린다. 핵심 초안 전체를 보조 메타 하나와 함께 버리지 않는다.
+  const preferredVisitDates = isVisitDateRecord(data.preferredVisitDates)
+    ? data.preferredVisitDates
+    : {};
   return { ...data, preferredVisitDates } as LocalDraft;
 }
 

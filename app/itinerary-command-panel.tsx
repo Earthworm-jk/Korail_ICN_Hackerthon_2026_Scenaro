@@ -14,8 +14,15 @@ export type ProposalOutcome = Extract<SuccessfulResult["outcome"], { kind: "prop
 
 export type CommandFeedback =
   | { kind: "clarify"; interpretation: CommandActionInterpretation; clarification: Clarification }
-  | { kind: "proposal"; interpretation: CommandActionInterpretation; outcome: ProposalOutcome; applied: boolean }
+  | {
+      kind: "proposal";
+      interpretation: CommandActionInterpretation;
+      outcome: ProposalOutcome;
+      applied: boolean;
+      submittedSequence: number;
+    }
   | { kind: "explain"; interpretation: CommandActionInterpretation }
+  | { kind: "cancelled" }
   | { kind: "error" };
 
 type Props = {
@@ -27,7 +34,7 @@ type Props = {
   onChange: (value: string) => void;
   onSubmit: () => void;
   onExample: (value: string) => void;
-  onApply: (outcome: ProposalOutcome) => void;
+  onApply: (outcome: ProposalOutcome, submittedSequence: number) => void;
   onDismiss: () => void;
   placeName: (placeId: string) => string;
   tr: (key: MessageKey) => string;
@@ -113,7 +120,11 @@ export function ItineraryCommandPanel({
   placeName,
   tr,
 }: Props) {
-  const interpretation = feedback && feedback.kind !== "error" ? feedback.interpretation : null;
+  const interpretation = feedback && (
+    feedback.kind === "clarify"
+    || feedback.kind === "proposal"
+    || feedback.kind === "explain"
+  ) ? feedback.interpretation : null;
   const source = interpretation ? sourceLabel(interpretation, tr) : null;
   const addExample = tr("ai.exampleAdd");
   const explainExample = tr("ai.exampleExplain");
@@ -187,6 +198,10 @@ export function ItineraryCommandPanel({
 
           {feedback.kind === "error" && <p className="text-sc-red">{tr("ai.error")}</p>}
 
+          {feedback.kind === "cancelled" && (
+            <p className="text-sc-muted">{tr("ai.cancelled")}</p>
+          )}
+
           {feedback.kind === "clarify" && (
             <p className="mt-1 text-sc-text">{clarificationText(feedback.clarification, placeName, tr)}</p>
           )}
@@ -235,7 +250,7 @@ export function ItineraryCommandPanel({
                   <div className="mt-3 flex gap-2">
                     <button
                       type="button"
-                      onClick={() => onApply(feedback.outcome)}
+                      onClick={() => onApply(feedback.outcome, feedback.submittedSequence)}
                       className="rounded-lg bg-sc-blue px-3 py-2 text-xs font-semibold text-white"
                     >
                       {tr("ai.apply")}

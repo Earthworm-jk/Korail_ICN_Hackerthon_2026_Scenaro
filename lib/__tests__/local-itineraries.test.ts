@@ -420,7 +420,6 @@ describe("조율 중 초안", () => {
       { ...ok, context: { actors: [{ id: "a" }], works: [] } },
       { ...ok, context: { actors: [], works: [{ id: "w", name: { ko: "도깨비", en: "Goblin" } }] } },
       { ...ok, selectedPlaceIds: [1] },
-      { ...ok, preferredVisitDates: { "place-yeongjin-beach": "둘째 날" } },
     ];
 
     for (const [i, value] of broken.entries()) {
@@ -449,6 +448,18 @@ describe("조율 중 초안", () => {
     const raw = JSON.stringify({ version: LOCAL_STORAGE_VERSION, data: legacy });
     expect(loadDraft(memoryStorage({ [DRAFT_KEY]: raw }))).toEqual({
       ...legacy,
+      preferredVisitDates: {},
+    });
+  });
+
+  it("방문일 선호만 손상됐으면 그 필드만 비우고 핵심 초안은 살린다", () => {
+    const damaged = {
+      ...draft,
+      preferredVisitDates: { "place-yeongjin-beach": "둘째 날" },
+    };
+    const raw = JSON.stringify({ version: LOCAL_STORAGE_VERSION, data: damaged });
+    expect(loadDraft(memoryStorage({ [DRAFT_KEY]: raw }))).toEqual({
+      ...draft,
       preferredVisitDates: {},
     });
   });

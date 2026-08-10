@@ -573,15 +573,14 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
   }, [candidateData, selectedPlaceIds, preferredVisitDates, arrival.at, departure.at, airportReady.at, airportDeadline.at, selectedActors, selectedWorks]);
 
   /** 서버가 돌려준 제안을 실제 화면 상태에 반영한다. 확인 전에는 절대 호출하지 않는다. */
-  const applyCommandOutcome = useCallback((outcome: ProposalOutcome, submittedSequence?: number) => {
+  const applyCommandOutcome = useCallback((outcome: ProposalOutcome, submittedSequence: number) => {
     if (!candidateData || outcome.proposal.decision === "impossible") return;
-    // 자동 적용(ready)은 제출 당시 화면에만 유효하다. LLM 응답을 기다리는 동안 사용자가
-    // 장소를 토글했다면 그 새 선택을 늦은 응답으로 덮지 않는다. 수동 확인 경로는 토글 시
-    // aiFeedback 자체가 사라지므로 sequence를 넘기지 않아도 같은 안전 경계를 갖는다.
-    if (
-      submittedSequence !== undefined
-      && !commandResponseIsCurrent(submittedSequence, planSequence.current)
-    ) return;
+    // 자동·수동 적용 모두 제출 당시 화면에만 유효하다. 응답 뒤 다시 계산하거나 항공 시각을
+    // 바꾼 경우에도 옛 nextResult를 새 입력 위에 덮지 않고 취소 이유를 사용자에게 알린다.
+    if (!commandResponseIsCurrent(submittedSequence, planSequence.current)) {
+      setAiFeedback({ kind: "cancelled" });
+      return;
+    }
     const sequence = ++planSequence.current;
     const scheduledPlaceIds = new Set(
       outcome.nextResult.status === "planned"
@@ -644,7 +643,10 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
     startAiTransition(async () => {
       try {
         const result = await runItineraryCommand({ sentence: normalized, request });
-        if (!commandResponseIsCurrent(submittedSequence, planSequence.current)) return;
+        if (!commandResponseIsCurrent(submittedSequence, planSequence.current)) {
+          setAiFeedback({ kind: "cancelled" });
+          return;
+        }
         if (!result.ok) {
           setAiFeedback({ kind: "error" });
           return;
@@ -666,13 +668,17 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
           interpretation: result.interpretation,
           outcome: result.outcome,
           applied: false,
+          submittedSequence,
         };
         setAiFeedback(feedback);
         if (result.outcome.proposal.decision === "ready") {
           applyCommandOutcome(result.outcome, submittedSequence);
         }
       } catch {
-        if (!commandResponseIsCurrent(submittedSequence, planSequence.current)) return;
+        if (!commandResponseIsCurrent(submittedSequence, planSequence.current)) {
+          setAiFeedback({ kind: "cancelled" });
+          return;
+        }
         setAiFeedback({ kind: "error" });
       }
     });
