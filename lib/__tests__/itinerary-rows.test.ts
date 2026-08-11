@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { airportLegsOf, itineraryRowsOf, rowKey, shouldNoteAirportRail, stationIdsOf } from "../itinerary-rows";
+import {
+  airportLegsOf,
+  itineraryRowsOf,
+  regionWindowPresentationOf,
+  rowKey,
+  shouldNoteAirportRail,
+  stationIdsOf,
+} from "../itinerary-rows";
 import type { DayPlan, GatewayRide, RegionWindow } from "../engine/types";
 
 /** #146 2절 — 하루를 시각순 줄로 펼친다 */
@@ -127,6 +134,57 @@ describe("#155 리뷰 1 — 그 날 거치는 역", () => {
     expect(stationIdsOf(d)).toEqual(["s1", "s2", "ST-AIRPORT"]);
   });
 
+});
+
+describe("#101 — 권역 창 화면 표시", () => {
+  const transferWindow: RegionWindow = {
+    stationId: "s1",
+    regionId: "r1",
+    startAt: "2026-08-12T11:30:00.000Z",
+    endAt: "2026-08-12T13:00:00.000Z",
+    // 활동 시간대는 21:00 KST(12:00Z)에 끝나므로 30분만 남는다.
+    availableMinutes: 30,
+    startBoundary: "TRAIN_ARRIVAL",
+    endBoundary: "TRAIN_DEPARTURE",
+  };
+  const rides = [
+    {
+      ...ride("T1", "10:00", "s0", "s1"),
+      arriveAt: transferWindow.startAt,
+    },
+    {
+      ...ride("T2", "13:00", "s1", "s2"),
+      departAt: transferWindow.endAt,
+    },
+  ];
+
+  it("환승에는 활동시간으로 잘리지 않은 실제 다음 열차 간격을 표시한다", () => {
+    expect(regionWindowPresentationOf(transferWindow, day({ rides }), rides)).toEqual({
+      kind: "transfer_wait",
+      minutes: 90,
+    });
+  });
+
+  it("일반 체류에는 엔진의 보수 활동 가능 시간을 그대로 표시한다", () => {
+    const stayWindow = { ...transferWindow, startBoundary: "DAY_START" as const };
+    expect(regionWindowPresentationOf(stayWindow, day({ rides }), rides)).toEqual({
+      kind: "stay",
+      minutes: 30,
+    });
+  });
+
+  it("같은 열차의 연속 구간은 환승이 아니라 통과 정차로 표시한다", () => {
+    const sameTrain = rides.map((item) => ({ ...item, trainNo: "T1" }));
+    const presentation = regionWindowPresentationOf(
+      transferWindow,
+      day({ rides: sameTrain }),
+      sameTrain,
+    );
+    expect(presentation).toEqual({
+      kind: "through_stop",
+      minutes: 90,
+    });
+  });
 });
 
 describe("#146 — 공항철도 이용 명시", () => {

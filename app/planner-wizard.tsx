@@ -89,7 +89,14 @@ import { ItineraryRouteMap, type MapPlace, type MapStation } from "./korea-map";
 import { PlaceRecommendationSheet, PlaceThumbnail } from "./place-recommendation-sheet";
 import { PlaceBrowser } from "./place-browser";
 import sheetStyles from "./place-recommendation-sheet.module.css";
-import { airportLegsOf, itineraryRowsOf, rowKey, shouldNoteAirportRail, stationIdsOf } from "@/lib/itinerary-rows";
+import {
+  airportLegsOf,
+  itineraryRowsOf,
+  regionWindowPresentationOf,
+  rowKey,
+  shouldNoteAirportRail,
+  stationIdsOf,
+} from "@/lib/itinerary-rows";
 import { MoveRow } from "./move-row";
 import { ThemeExperienceChip, ThemeExperienceMapOverlay } from "./theme-experience";
 import { TrainLegModal, legDurationLabel, type TrainLegDetail } from "./train-leg-modal";
@@ -1259,17 +1266,17 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
   /**
    * 체류 시간 포맷 (#33 — 엔진 값 포맷 전용, 재계산 금지).
    *
-   * 옛 문구는 `약 2시간 2분 활용 가능`이었다. 카드 폭이 240px이라 "활용 가능"까지
-   * 넣으면 두 줄이 되고, 제목이 이미 `체류 시간`이라 매 칸마다 되풀이할 이유가 없다.
+   * 카드 폭이 240px이라 짧은 단위를 사용한다. 환승 대기는 이 보수 활동시간이 아니라
+   * 실제 창 길이를 같은 포맷으로 표시한다 (#101).
    */
-  const stayLabel = (minutes: number) => {
+  const durationLabel = (minutes: number) => {
     const hours = Math.floor(minutes / 60);
     const mins = minutes % 60;
-    const duration = hours > 0
+    return hours > 0
       ? `${hours}${tr("region.hours")}${mins > 0 ? ` ${mins}${tr("region.minutes")}` : ""}`
       : `${mins}${tr("region.minutes")}`;
-    return `${tr("region.about")} ${duration}`;
   };
+  const stayLabel = (minutes: number) => `${tr("region.about")} ${durationLabel(minutes)}`;
 
   // 3단계 시트 안의 촬영지 위치 지도와 "선택한 장소만 보기" 토글은 지웠다 (#146).
   // 화면에 전체 이동 동선 지도가 이미 있어 같은 것을 두 벌 그리고 있었다.
@@ -2364,29 +2371,67 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
                       <div className="mt-3">
                         <h4 className="text-xs font-medium text-sc-muted">{tr("step4.stayTitle")}</h4>
                         <ul className="mt-2 space-y-1.5 text-sm" data-day-rows data-day-stays>
-                          {day.regionWindows.map((window) => (
-                            <li
-                              key={window.startAt}
-                              className="rounded-lg border border-sc-orange/40 bg-sc-orange-soft/70 px-2 py-1.5"
-                              data-itinerary-row="stay"
-                              style={{ gridColumnStart: stayColumn(window.startAt) }}
-                            >
-                              <span className="block tabular-nums text-xs text-sc-muted" data-row-time>
-                                {fmtTime(window.startAt)}
-                              </span>
-                              <span className="mt-1 flex items-start gap-2" data-row-main>
-                                <span className="grid size-7 shrink-0 place-items-center rounded-md bg-sc-orange-soft text-sc-orange-text">
-                                  <Hourglass aria-hidden="true" className="size-4" />
+                          {day.regionWindows.map((window) => {
+                            const presentation = regionWindowPresentationOf(
+                              window,
+                              day,
+                            );
+                            const transfer = presentation.kind === "transfer_wait";
+                            const through = presentation.kind === "through_stop";
+                            const title = transfer
+                              ? `${stationName(window.stationId)} ${tr("region.transfer")}`
+                              : through
+                                ? `${stationName(window.stationId)} ${tr("region.throughStop")}`
+                                : `${stationName(window.stationId)} ${tr("region.block")}`;
+                            const detail = transfer
+                              ? tr("region.nextTrainIn").replace(
+                                "{duration}",
+                                durationLabel(presentation.minutes),
+                              )
+                              : through
+                                ? tr("region.sameTrainContinues")
+                                : stayLabel(presentation.minutes);
+                            return (
+                              <li
+                                key={window.startAt}
+                                className={transfer
+                                  ? "rounded-lg border border-sc-blue/40 bg-sc-blue-soft/70 px-2 py-1.5"
+                                  : through
+                                    ? "rounded-lg border border-sc-line bg-sc-subtle px-2 py-1.5"
+                                    : "rounded-lg border border-sc-orange/40 bg-sc-orange-soft/70 px-2 py-1.5"}
+                                data-itinerary-row={presentation.kind}
+                                style={{ gridColumnStart: stayColumn(window.startAt) }}
+                              >
+                                <span className="block tabular-nums text-xs text-sc-muted" data-row-time>
+                                  {fmtTime(window.startAt)}
                                 </span>
-                                <span className="min-w-0 flex-1 text-sc-text/90" data-row-name>
-                                  {stationName(window.stationId)} {tr("region.block")}
+                                <span className="mt-1 flex items-start gap-2" data-row-main>
+                                  <span className={transfer
+                                    ? "grid size-7 shrink-0 place-items-center rounded-md bg-sc-blue-soft text-sc-blue"
+                                    : through
+                                      ? "grid size-7 shrink-0 place-items-center rounded-md bg-sc-surface text-sc-muted"
+                                      : "grid size-7 shrink-0 place-items-center rounded-md bg-sc-orange-soft text-sc-orange-text"}
+                                  >
+                                    {presentation.kind === "stay"
+                                      ? <Hourglass aria-hidden="true" className="size-4" />
+                                      : <TrainFront aria-hidden="true" className="size-4" />}
+                                  </span>
+                                  <span className="min-w-0 flex-1 text-sc-text/90" data-row-name>
+                                    {title}
+                                  </span>
                                 </span>
-                              </span>
-                              <span className="mt-auto block pt-1 text-xs text-sc-orange-text" data-row-meta>
-                                {stayLabel(window.availableMinutes)}
-                              </span>
-                            </li>
-                          ))}
+                                <span className={transfer
+                                  ? "mt-auto block pt-1 text-xs text-sc-blue"
+                                  : through
+                                    ? "mt-auto block pt-1 text-xs text-sc-muted"
+                                    : "mt-auto block pt-1 text-xs text-sc-orange-text"}
+                                  data-row-meta
+                                >
+                                  {detail}
+                                </span>
+                              </li>
+                            );
+                          })}
                         </ul>
                       </div>
                     )}
