@@ -14,7 +14,7 @@
  */
 import { NextResponse } from "next/server";
 import { MAX_TILE_ZOOM, MIN_TILE_ZOOM, tileServesMap } from "@/lib/map-tiles";
-import { overRateLimit, secondsUntilReset } from "@/lib/map-tile-rate-limit";
+import { checkRateLimit } from "@/lib/map-tile-rate-limit";
 import { readTile, writeTile } from "@/lib/map-tile-cache";
 import { TILE_CACHE_ENABLED, activeTileSource } from "@/lib/map-tile-source";
 
@@ -88,7 +88,8 @@ export async function GET(
   if (!tileServesMap(zoom, x, y)) return noTile();
 
   // 여기까지가 "부를 수 있는 요청"이다. 얼마나 자주 부르는지는 그다음 문제다
-  if (overRateLimit(request)) return tooMany(secondsUntilReset(request));
+  const rate = checkRateLimit(request);
+  if (!rate.allowed) return tooMany(rate.retryAfterSeconds);
 
   const source = activeTileSource();
   const cached = TILE_CACHE_ENABLED ? await readTile(source.id, zoom, x, y) : null;
