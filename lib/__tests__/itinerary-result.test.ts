@@ -51,6 +51,7 @@ const planned: ItineraryResult = {
     selectedUnionPlaceCount: 1,
     activityWarningCount: 1,
     preferredDateMismatchCount: 0,
+    preferredOrderMismatchCount: 0,
     totalTravelMinutes: 168,
     transferCount: 0,
     slackSatisfied: true,

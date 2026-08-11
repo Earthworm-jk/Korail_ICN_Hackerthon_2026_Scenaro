@@ -103,6 +103,56 @@ describe("확대 후보 결정성·성능 (#56 A+B)", () => {
     }, 180000);
   });
 
+  /**
+   * 순서 선호가 붙은 확대 fixture (#145).
+   *
+   * 방문일(#139)과 같은 축이라 같은 세 계약을 잰다. 순서는 후보 생성이 없어 더 쌀 것으로
+   * 봤는데(#145 5절), 실제로 그런지는 여기서 확인한다.
+   */
+  describe("순서 선호가 붙은 확대 fixture (#145)", () => {
+    const PAIRS: Array<[string, ReadonlyArray<readonly [string, string]>]> = [
+      ["순서 0쌍", []],
+      ["순서 1쌍", [["place-gwanghwamun-gate", "place-seoullo-7017"]]],
+      ["순서 다수", [
+        ["place-gwanghwamun-gate", "place-seoullo-7017"],
+        ["place-sowol-ro", "place-gwanghwamun-square"],
+        ["place-seoullo-7017", "place-sowol-ro"],
+      ]],
+    ];
+
+    const expanded = expandedRepositories(50);
+    let cachedBaseline: ReturnType<typeof generateItinerary> | null = null;
+    const baseline = () => (cachedBaseline ??= generateItinerary(BASE_CONSTRAINTS, expanded));
+
+    it("순서 0쌍은 순서 필드를 주지 않은 것과 완전히 같은 결과다", () => {
+      const withEmpty = generateItinerary({ ...BASE_CONSTRAINTS, preferredOrder: [] }, expanded);
+      expect(JSON.stringify(withEmpty)).toBe(JSON.stringify(baseline()));
+    }, 120000);
+
+    it.each(PAIRS)("%s — 2초·결정성·장소 수 보존", (_label, preferredOrder) => {
+      const constraints = { ...BASE_CONSTRAINTS, preferredOrder };
+      const outputs: string[] = [];
+      let best = Number.POSITIVE_INFINITY;
+      for (let run = 0; run < 3; run += 1) {
+        const startedAt = performance.now();
+        const result = generateItinerary(constraints, expanded);
+        best = Math.min(best, performance.now() - startedAt);
+        outputs.push(JSON.stringify(result));
+      }
+      expect(best).toBeLessThan(2000); // NFR-PERF-001
+      expect(outputs[1]).toBe(outputs[0]);
+      expect(outputs[2]).toBe(outputs[0]);
+
+      const result = JSON.parse(outputs[0]);
+      const base = baseline();
+      expect(result.status).toBe("planned");
+      if (base.status !== "planned") return;
+      // 실험 결과: 순서 요청으로 장소 수가 준 시행이 0건이었다. 그 성질을 확대 fixture에서도 건다
+      expect(result.comparisonKeys.selectedUnionPlaceCount)
+        .toBeGreaterThanOrEqual(base.comparisonKeys.selectedUnionPlaceCount);
+    }, 180000);
+  });
+
   it("실시드 전체 요청 결과가 최적화 전과 동일한 회귀 기준을 유지한다", () => {
     // 안전망: 파생 캐시·시간 메모가 실시드 대표 요청의 산출 구조를 바꾸지 않는다
     const result = generateItinerary(BASE_CONSTRAINTS, loadRepositories());

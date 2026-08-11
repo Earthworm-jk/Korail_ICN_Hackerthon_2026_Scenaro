@@ -7,14 +7,56 @@
  */
 import type { Repositories } from "../repositories/json";
 import type { ItineraryResult, TripConstraints } from "./types";
-import { planItinerary, preferredVisitDateErrors, tripDatesForWindow } from "./planner";
+import { planItinerary, preferredVisitDateErrors,
+  preferredOrderErrors, tripDatesForWindow } from "./planner";
 import { buildGatewayAlternatives } from "./gateway-alternatives";
 import { gatewayPlanningBaselineOf, type GatewayPlanningBaseline } from "./gateway-baseline";
 import { z } from "zod";
 
 // PR #30 리뷰 ③: Server Action 경계가 같은 계약을 safeParse해 잘못된 요청을
 // throw 없이 INVALID_REQUEST로 반환할 수 있도록 내보낸다
-export { preferredVisitDateErrors, tripDatesForWindow };
+export { preferredVisitDateErrors, preferredOrderErrors, tripDatesForWindow };
+
+/**
+ * 순서 쌍 그래프의 첫 순환 (#145 · PR #153 리뷰 3번).
+ *
+ * precedence는 `먼저 → 나중` 방향 간선이다. 순환이 있으면 그 안의 쌍은 어떤 배치로도 전부
+ * 지킬 수 없으므로 입력 자체가 모순이다. 길이 2(직접 역쌍)도 이 검사에 함께 걸린다.
+ *
+ * 깊이 우선으로 훑으며 현재 경로에 다시 닿으면 그 구간을 돌려준다 — 어떤 쌍이 문제인지
+ * 사용자에게 말해 주려면 순환 여부만으로는 부족하다.
+ */
+function firstOrderCycle(pairs: readonly (readonly [string, string])[]): string[] | null {
+  const next = new Map<string, string[]>();
+  for (const [first, second] of pairs) {
+    next.set(first, [...(next.get(first) ?? []), second]);
+  }
+  const done = new Set<string>();
+  const path: string[] = [];
+  const onPath = new Set<string>();
+
+  const walk = (node: string): string[] | null => {
+    if (onPath.has(node)) return [...path.slice(path.indexOf(node)), node];
+    if (done.has(node)) return null;
+    onPath.add(node);
+    path.push(node);
+    for (const child of next.get(node) ?? []) {
+      const found = walk(child);
+      if (found !== null) return found;
+    }
+    path.pop();
+    onPath.delete(node);
+    done.add(node);
+    return null;
+  };
+
+  // 시작점은 입력 순서를 따른다 — 같은 입력이면 같은 순환을 돌려주기 위해서다
+  for (const [first] of pairs) {
+    const found = walk(first);
+    if (found !== null) return found;
+  }
+  return null;
+}
 
 export const TripConstraintsSchema = z.object({
   arrivalAt: z.iso.datetime({ offset: true }),
@@ -35,7 +77,59 @@ export const TripConstraintsSchema = z.object({
     z.string().min(1),
     z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "preferredVisitDates must be YYYY-MM-DD"),
   ).optional(),
+  /**
+   * `[먼저, 나중]` 쌍 배열 (#145). 아래 superRefine이 **모순된 입력을 여기서 막는다** —
+   * 엔진 안에서 조용히 무시하면 사용자는 요청이 사라진 이유를 알 수 없다.
+   */
+  preferredOrder: z.array(
+    z.tuple([z.string().min(1), z.string().min(1)]),
+  ).optional(),
 }).superRefine((constraints, context) => {
+  /**
+   * 의미 검사는 **제외를 먼저 걷어낸 쌍**에만 건다 (PR #153 리뷰 — 제외 우선 경계).
+   *
+   * 엔진 계약이 `제외한 장소가 낀 쌍은 버린다 — 제외가 선호보다 우선`인데, 스키마가 먼저
+   * 순환을 잡아 거부하면 그 계약이 뒤집힌다. 순서를 조율한 뒤 장소를 선택 해제하는 실제
+   * 흐름에서, 이미 무효가 된 선호 때문에 재계산이 통째로 실패한다.
+   *
+   * 인덱스는 원본 기준으로 유지한다 — 오류 경로가 사용자가 보낸 자리를 가리켜야 한다.
+   */
+  const excluded = new Set(constraints.excludedPlaceIds);
+  const pairs = (constraints.preferredOrder ?? [])
+    .map((pair, index) => ({ pair, index }))
+    .filter(({ pair: [first, second] }) => !excluded.has(first) && !excluded.has(second));
+  const seen = new Set<string>();
+  pairs.forEach(({ pair: [first, second], index }) => {
+    if (first === second) {
+      context.addIssue({
+        code: "custom",
+        path: ["preferredOrder", index],
+        message: "preferredOrder pair must reference two different places",
+      });
+      return;
+    }
+    const key = `${first}|${second}`;
+    if (seen.has(key)) {
+      context.addIssue({
+        code: "custom",
+        path: ["preferredOrder", index],
+        message: `duplicate preferredOrder pair: ${key}`,
+      });
+    }
+    seen.add(key);
+  });
+
+  // 순환은 길이 2뿐 아니라 3 이상도 모순이다 — `A→B, B→C, C→A`는 동시에 만족할 수 없다.
+  // 드래그를 여러 번 하면 이런 쌍이 쌓일 수 있고, 조용히 일부를 `adjusted`로 돌려주면
+  // 사용자의 모순된 요청을 그대로 받아 버린다 (PR #153 리뷰 3번).
+  const cycle = firstOrderCycle(pairs.map(({ pair }) => pair));
+  if (cycle !== null) {
+    context.addIssue({
+      code: "custom",
+      path: ["preferredOrder"],
+      message: `contradictory preferredOrder cycle: ${cycle.join(" → ")}`,
+    });
+  }
   if (Date.parse(constraints.arrivalAt) >= Date.parse(constraints.departureAt)) {
     context.addIssue({
       code: "custom",

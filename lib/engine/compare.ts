@@ -26,6 +26,10 @@ export function compareCandidates(a: Candidate, b: Candidate): number {
   // 선호 날짜 불일치는 경고 뒤·이동시간 앞 (#139 5절 2번, 지영님 동의)
   if (a.keys.preferredDateMismatchCount !== b.keys.preferredDateMismatchCount)
     return a.keys.preferredDateMismatchCount - b.keys.preferredDateMismatchCount;
+  // #145 — 순서는 방문일 뒤·이동시간 앞. 방문일과 합치지 않는다: 하나로 합치면 엔진이
+  // 방문일 하나를 어기고 순서 하나를 지키는 식으로 맞바꿀 수 있는데 둘은 같은 무게가 아니다
+  if (a.keys.preferredOrderMismatchCount !== b.keys.preferredOrderMismatchCount)
+    return a.keys.preferredOrderMismatchCount - b.keys.preferredOrderMismatchCount;
   if (a.keys.totalTravelMinutes !== b.keys.totalTravelMinutes)
     return a.keys.totalTravelMinutes - b.keys.totalTravelMinutes;
   if (a.keys.transferCount !== b.keys.transferCount)

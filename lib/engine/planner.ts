@@ -15,6 +15,7 @@ import type {
   ItineraryItem,
   ItineraryResult,
   PreferredDateOutcome,
+  PreferredOrderOutcome,
   RegionWindow,
   SelectionGroupSummary,
   TrainRide,
@@ -55,6 +56,11 @@ type DerivedState = {
   // 한 실행 안에서 총 선호 수가 상수라 (mismatch 오름차순) ≡ (honored 내림차순)이고,
   // beam 단계에서는 총량 없이 이 값만으로 최종 비교와 같은 방향을 만들 수 있다.
   preferredHonoredCount: number;
+  /**
+   * 지킨 순서 쌍 수 (#145). 장소 `P`를 이어 붙일 때 쌍 `(A, P)`는 **`A`가 이미 방문에 있으면
+   * 지킨 것**이다. 뒤에 무엇이 오든 이 판정은 바뀌지 않으므로 증분으로 셀 수 있고, 결정적이다.
+   */
+  preferredOrderHonoredCount: number;
   actorGroupCovered: boolean;
   workGroupCovered: boolean;
 };
@@ -116,6 +122,10 @@ type PlanContext = {
   preferredDateOf: (placeId: string) => string | undefined;
   /** 유효한 선호 입력 수. mismatch = preferredCount - 지킨 수 (총량이 상수라 단조 관계) */
   preferredCount: number;
+  /** placeId를 `나중`으로 갖는 쌍들의 `먼저` 장소 목록 (#145) */
+  orderPredecessorsOf: (placeId: string) => readonly string[];
+  /** 유효한 순서 선호 쌍 수. mismatch = preferredOrderCount - 지킨 수 */
+  preferredOrderCount: number;
 };
 
 const DAY_MS = 24 * 60 * MINUTE_MS;
@@ -126,7 +136,12 @@ function buildPlanContext(
   availableAt: number,
   deadline: number,
   preferredVisitDates: ReadonlyMap<string, string>,
+  preferredOrder: readonly (readonly [string, string])[],
 ): PlanContext {
+  const predecessors = new Map<string, string[]>();
+  for (const [first, second] of preferredOrder) {
+    predecessors.set(second, [...(predecessors.get(second) ?? []), first]);
+  }
   const dayCache = new Map<number, string>();
   const timeCache = new Map<string, number>();
   const rangeCache = new Map<string, readonly string[]>();
@@ -169,6 +184,8 @@ function buildPlanContext(
     placeOrdinalOf: () => -1,
     preferredDateOf: (placeId) => preferredVisitDates.get(placeId),
     preferredCount: preferredVisitDates.size,
+    orderPredecessorsOf: (placeId) => predecessors.get(placeId) ?? [],
+    preferredOrderCount: preferredOrder.length,
   };
   const placeOrdinals = new Map(
     [...places].map(({ id }) => id).sort().map((id, ordinal) => [id, ordinal] as const),
@@ -217,6 +234,7 @@ function initialDerived(ctx: PlanContext): DerivedState {
     dateCountsKey: dateCountsKeyOf(ctx.tripDates.map(() => 0)),
     warningCount: 0,
     preferredHonoredCount: 0,
+    preferredOrderHonoredCount: 0,
     actorGroupCovered: false,
     workGroupCovered: false,
   };
@@ -241,6 +259,7 @@ function appendDerived(
   route: TrainLegT[],
   dateCounts: readonly number[],
   honorsPreference: boolean,
+  visitedPlaceIds: ReadonlySet<string>,
 ): DerivedState {
   const ordinal = ctx.placeOrdinalOf(placeId);
   const sortedVisitOrdinals = [...parent.sortedVisitOrdinals];
@@ -260,6 +279,8 @@ function appendDerived(
     dateCountsKey: dateCountsKeyOf(dateCounts),
     warningCount: parent.warningCount + (warning !== null ? 1 : 0),
     preferredHonoredCount: parent.preferredHonoredCount + (honorsPreference ? 1 : 0),
+    preferredOrderHonoredCount: parent.preferredOrderHonoredCount
+      + ctx.orderPredecessorsOf(placeId).filter((first) => visitedPlaceIds.has(first)).length,
     actorGroupCovered: parent.actorGroupCovered || selectionGroups.includes("actor"),
     workGroupCovered: parent.workGroupCovered || selectionGroups.includes("work"),
   };
@@ -284,6 +305,11 @@ function recomputeDerived(state: PlannerState, ctx: PlanContext): DerivedState {
     // 원본 재계산: 방문 기록의 visitStart 날짜와 선호 입력을 직접 대조한다 (증분 값 신뢰 안 함)
     preferredHonoredCount: state.visits.filter(({ place, visitStart }) =>
       ctx.preferredDateOf(place.id) === koreaDate(visitStart)).length,
+    // 원본 재계산: 방문 순서에서 쌍을 다시 센다
+    preferredOrderHonoredCount: state.visits.reduce((total, { place }, index) => {
+      const earlier = new Set(state.visits.slice(0, index).map((v) => v.place.id));
+      return total + ctx.orderPredecessorsOf(place.id).filter((f) => earlier.has(f)).length;
+    }, 0),
     actorGroupCovered: state.visits.some(({ selectionGroups }) => selectionGroups.includes("actor")),
     workGroupCovered: state.visits.some(({ selectionGroups }) => selectionGroups.includes("work")),
   };
@@ -300,6 +326,7 @@ function assertDerivedIntegrity(states: PlannerState[], ctx: PlanContext): void 
       || actual.dateCountsKey !== expected.dateCountsKey
       || actual.warningCount !== expected.warningCount
       || actual.preferredHonoredCount !== expected.preferredHonoredCount
+      || actual.preferredOrderHonoredCount !== expected.preferredOrderHonoredCount
       || actual.actorGroupCovered !== expected.actorGroupCovered
       || actual.workGroupCovered !== expected.workGroupCovered) {
       throw new Error(
@@ -365,8 +392,10 @@ export function planItinerary(
   const departureAt = Date.parse(constraints.departureAt);
   const deadline = Date.parse(constraints.airportArrivalDeadline);
   const preferredVisitDates = preferredDateIndex(constraints, candidates, excludedPlaceIds);
+  const preferredOrder = preferredOrderIndex(constraints, candidates, excludedPlaceIds);
   const ctx = buildPlanContext(
     repos.trainLegs, repos.places, availableAt, deadline, preferredVisitDates,
+    preferredOrder,
   );
   assertPreferredDatesInRange(preferredVisitDates, ctx);
   const initial: PlannerState = {
@@ -519,6 +548,9 @@ export function planItinerary(
         ),
       }
       : {}),
+    ...(preferredOrder.length > 0
+      ? { preferredOrderOutcomes: preferredOrderOutcomesOf(preferredOrder, best.state.visits) }
+      : {}),
     metrics: {
       totalTravelMinutes:
         totalRailMinutes + best.state.localTravelMinutes,
@@ -663,6 +695,7 @@ function appendVisit(
         // 선호를 지켰는지는 요청한 날짜와 실제 배치 날짜만으로 판정한다 —
         // onlyDate 전이가 아니어도 기본 배치가 우연히 선호 날짜면 지킨 것이다 (#139 6-1 중복 제거)
         ctx.preferredDateOf(place.id) === date,
+        new Set(state.visits.map((visit) => visit.place.id)),
       ),
     },
   };
@@ -778,6 +811,8 @@ function completeSchedule(
       activityWarningCount: activityWarningCountOf(state), // #43 결정 3 — 방문 수와 이동시간 사이
       // #139: 일정에 못 들어간 선호도 불일치 1로 센다 — 총 선호 수에서 지킨 수를 뺀다
       preferredDateMismatchCount: ctx.preferredCount - state.derived.preferredHonoredCount,
+      preferredOrderMismatchCount:
+        ctx.preferredOrderCount - state.derived.preferredOrderHonoredCount,
       totalTravelMinutes: totalRailMinutes + state.localTravelMinutes,
       transferCount: totalTransfers,
       slackSatisfied: hasDailySlack(
@@ -926,6 +961,45 @@ function preferredDateIndex(
  * 만든다. 판정 기준은 엔진과 같은 코드다 — 후보 집합은 `deriveStrictSelectionMemberships`,
  * 날짜 집합은 `tripDatesOf`로 한 군데서만 나온다.
  */
+/**
+ * 순서 선호의 공개 Action 경계 검사 (#145 · PR #153 리뷰 2번).
+ *
+ * `preferredOrderIndex`는 비후보 ID에 `RangeError`를 던진다. 그건 내부 호출의 빠른 실패로
+ * 두고, 공개 Action은 여기서 필드 오류로 정규화한다 — 판정 기준은 방문일과 같은 코드
+ * (`deriveStrictSelectionMemberships`)를 쓴다.
+ */
+export function preferredOrderErrors(
+  constraints: TripConstraints,
+  repos: Repositories,
+): Record<string, string> {
+  const pairs = constraints.preferredOrder ?? [];
+  if (pairs.length === 0) return {};
+  const actorIds = new Set([
+    ...(constraints.selectedActorIds ?? []),
+    ...(constraints.selectedActorId ? [constraints.selectedActorId] : []),
+  ]);
+  const memberships = deriveStrictSelectionMemberships(
+    repos.workPlaceRelations,
+    actorIds,
+    new Set(constraints.selectedWorkIds),
+  );
+  const knownPlaceIds = new Set(repos.places.map(({ id }) => id));
+  const excluded = new Set(constraints.excludedPlaceIds);
+
+  for (const [first, second] of pairs) {
+    for (const placeId of [first, second]) {
+      if (excluded.has(placeId)) continue; // 제외가 선호보다 우선 — 오류가 아니라 무시다
+      if (!knownPlaceIds.has(placeId)) {
+        return { preferredOrder: `unknown place id: ${placeId}` };
+      }
+      if (!memberships.has(placeId)) {
+        return { preferredOrder: `not a candidate place id: ${placeId}` };
+      }
+    }
+  }
+  return {};
+}
+
 export function preferredVisitDateErrors(
   constraints: TripConstraints,
   repos: Repositories,
@@ -990,6 +1064,61 @@ function preferredDateOutcomesOf(
     return scheduledDate === requestedDate
       ? { placeId, requestedDate, outcome: "honored" as const }
       : { placeId, requestedDate, outcome: "adjusted" as const, scheduledDate };
+  });
+}
+
+/**
+ * 순서 선호를 실제로 쓸 수 있는 형태로 좁힌다 (#145 · #139 7절과 같은 규칙).
+ *
+ * - 두 장소 중 하나라도 제외됐으면 그 쌍을 버린다 — **제외가 선호보다 우선**이다
+ * - 현재 엄격 후보가 아닌 장소 ID는 거부한다(RangeError)
+ * - `[먼저, 나중]` 사전순으로 담아 같은 입력이 같은 순서가 되게 한다
+ *
+ * 제외로 버려진 쌍은 mismatch에도 결과 목록에도 넣지 않는다. 사용자가 스스로 뺀 장소를
+ * "요청을 못 지켰다"고 되돌려 주면 안 된다.
+ */
+function preferredOrderIndex(
+  constraints: TripConstraints,
+  candidates: readonly CandidatePlace[],
+  excludedPlaceIds: ReadonlySet<string>,
+): readonly (readonly [string, string])[] {
+  const pairs = constraints.preferredOrder ?? [];
+  if (pairs.length === 0) return [];
+  const candidateIds = new Set(candidates.map(({ place }) => place.id));
+  const kept: (readonly [string, string])[] = [];
+  for (const [first, second] of pairs) {
+    for (const placeId of [first, second]) {
+      if (excludedPlaceIds.has(placeId)) continue;
+      if (!candidateIds.has(placeId)) {
+        throw new RangeError(`preferred order for a non-candidate place: ${placeId}`);
+      }
+    }
+    if (excludedPlaceIds.has(first) || excludedPlaceIds.has(second)) continue;
+    kept.push([first, second] as const);
+  }
+  return kept.sort((a, b) => a[0].localeCompare(b[0], "en") || a[1].localeCompare(b[1], "en"));
+}
+
+/**
+ * 순서 선호 하나하나의 반영 결과 (#145). 방문일과 같은 세 갈래이고, 실패 분기를 만들지 않는다.
+ *
+ * 판정은 **전체 방문 순서**의 자리 비교다. 둘 다 배치됐고 `먼저`가 앞이면 `honored`,
+ * 배치는 됐는데 뒤집혔으면 `adjusted`, 하나라도 못 들어갔으면 `unplaced`.
+ */
+function preferredOrderOutcomesOf(
+  preferredOrder: readonly (readonly [string, string])[],
+  visits: readonly ScheduledVisit[],
+): PreferredOrderOutcome[] {
+  const positionOf = new Map(visits.map(({ place }, index) => [place.id, index] as const));
+  return preferredOrder.map(([firstPlaceId, secondPlaceId]) => {
+    const first = positionOf.get(firstPlaceId);
+    const second = positionOf.get(secondPlaceId);
+    if (first === undefined || second === undefined) {
+      return { firstPlaceId, secondPlaceId, outcome: "unplaced" as const };
+    }
+    return first < second
+      ? { firstPlaceId, secondPlaceId, outcome: "honored" as const }
+      : { firstPlaceId, secondPlaceId, outcome: "adjusted" as const };
   });
 }
 
@@ -1065,7 +1194,7 @@ function pruneStates(states: PlannerState[], ctx: PlanContext): PlannerState[] {
   }
   const merged = [...bestBySignature.values()];
   const byExistingOrder = [...merged].sort(compareBeam).slice(0, MAX_BEAM_SIZE);
-  if (ctx.preferredCount === 0) return byExistingOrder;
+  if (ctx.preferredCount === 0 && ctx.preferredOrderCount === 0) return byExistingOrder;
 
   // #139 6-2: 선호를 지킨 상태는 최종 비교에 닿기 전에 잘리면 안 된다. 그렇다고 기존 자리를
   // 밀어내서도 안 된다 — 밀려난 상태가 더 깊은 탐색으로 이어지던 경우 **방문 장소 수가 준다.**
@@ -1096,6 +1225,7 @@ function compareBeamPreferred(a: PlannerState, b: PlannerState): number {
   return coverageOf(b) - coverageOf(a)
     || activityWarningCountOf(a) - activityWarningCountOf(b)
     || b.derived.preferredHonoredCount - a.derived.preferredHonoredCount
+    || b.derived.preferredOrderHonoredCount - a.derived.preferredOrderHonoredCount
     || a.readyAt - b.readyAt
     || a.derived.stableKey.localeCompare(b.derived.stableKey, "en");
 }
@@ -1109,6 +1239,7 @@ function compareBeamPreferred(a: PlannerState, b: PlannerState): number {
 function comparePruned(a: PlannerState, b: PlannerState): number {
   return activityWarningCountOf(a) - activityWarningCountOf(b)
     || b.derived.preferredHonoredCount - a.derived.preferredHonoredCount
+    || b.derived.preferredOrderHonoredCount - a.derived.preferredOrderHonoredCount
     || a.readyAt - b.readyAt
     || a.railMinutes - b.railMinutes;
 }
