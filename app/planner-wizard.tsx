@@ -74,6 +74,7 @@ import { AuthModal, TripsModal, useSaveStub, type SaveStatus } from "./save-stub
 import { ExecutionSupport } from "./execution-support";
 import { FinalItineraryPage } from "./final-itinerary-page";
 import { GatewayAlternatives } from "./gateway-alternatives";
+import { DayStationFacilities } from "./day-context";
 import { ItineraryChangeSummary } from "./itinerary-change-summary";
 import {
   ItineraryCommandPanel,
@@ -83,7 +84,7 @@ import {
 import { ItineraryRouteMap, KoreaMapPanel, type MapPlace, type MapStation } from "./korea-map";
 import { PlaceRecommendationSheet, PlaceThumbnail } from "./place-recommendation-sheet";
 import sheetStyles from "./place-recommendation-sheet.module.css";
-import { itineraryRowsOf, rowKey } from "@/lib/itinerary-rows";
+import { allStationIdsOf, itineraryRowsOf, rowKey, stationIdsOf } from "@/lib/itinerary-rows";
 import { MoveRow } from "./move-row";
 import { ThemeExperienceCard, ThemeExperienceMapOverlay } from "./theme-experience";
 import { TrainLegModal, legDurationLabel, type TrainLegDetail } from "./train-leg-modal";
@@ -1834,6 +1835,15 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
                     {/* #146 2절 — DAY 헤더 오른쪽에 그 날 전체에 걸리는 맥락을 둔다 */}
                   <div className="flex flex-wrap items-center gap-2">
                     <h3 className="font-medium">{day.date}</h3>
+                    {/* 그 날 거치는 역만 — 지금은 화면 맨 아래에 일정 전체 역이 뭉쳐 있어
+                        어느 날 어느 역 이야기인지 알 수 없다 (#146 2절) */}
+                    <DayStationFacilities
+                      snapshot={stationFacilities}
+                      stationIds={stationIdsOf(day)}
+                      stationName={stationName}
+                      date={day.date}
+                      tr={tr}
+                    />
                   </div>
 
                   {/* 장소 목록과 이동 구간을 따로 그리면 "몇 시에 어디로 이동해 무엇을 보는가"라는
@@ -1886,7 +1896,7 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
                                     place: placeName(item.placeId), day: String(index + 1),
                                   })}
                                   aria-current={target.date === day.date ? "true" : undefined}
-                                  className={`min-h-7 min-w-7 rounded border px-1.5 text-xs ${
+                                  className={`min-h-10 min-w-10 rounded border px-1.5 text-xs ${
                                     target.date === day.date
                                       ? "border-sc-blue bg-sc-blue text-white"
                                       : "border-sc-blue/30 text-sc-blue hover:bg-sc-blue-soft disabled:opacity-40"
@@ -2074,11 +2084,7 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
               {/* #24 A5 — 역 시설·짐 보관: 일정에 등장하는 역만, 스냅샷 수록분만 안내 */}
               <ExecutionSupport
                 snapshot={stationFacilities}
-                stationIds={[...new Set(displayedDays.flatMap((day) => [
-                  ...day.rides.flatMap((ride) => [ride.fromStationId, ride.toStationId]),
-                  ...(day.gatewayLegs ?? []).flatMap((leg) => [leg.fromStationId, leg.toStationId]),
-                  ...day.regionWindows.map((window) => window.stationId),
-                ]))]}
+                stationIds={allStationIdsOf(displayedDays)}
                 stationName={stationName}
                 tr={tr}
               />

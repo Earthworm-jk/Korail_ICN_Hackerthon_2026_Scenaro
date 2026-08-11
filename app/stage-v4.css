@@ -316,8 +316,13 @@
     font-size: 0.875rem !important;
   }
 
-  #place-picker button,
-  #place-picker + div[aria-busy] button {
+  /* 레거시 조작부의 높이 하한.
+     `:not([class*="min-h-"])`가 핵심이다 — 이 규칙은 ID 선택자라 Tailwind 유틸리티를
+     명시도로 이긴다. 그래서 컴포넌트가 `min-h-10`으로 40px를 요구해도 조용히 36px로
+     대체됐고, 터치 영역 계약이 화면에서 무효가 됐다. 스스로 높이를 선언한 버튼은
+     비켜 가고, 아무 선언이 없는 레거시 버튼에만 하한을 준다. */
+  #place-picker button:not([class*="min-h-"]),
+  #place-picker + div[aria-busy] button:not([class*="min-h-"]) {
     min-height: 36px;
   }
 
