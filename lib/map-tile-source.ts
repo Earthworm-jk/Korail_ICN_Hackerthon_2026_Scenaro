@@ -50,11 +50,20 @@ const VWORLD_LAYER = "Base";
  */
 export const VWORLD_REFERER = "http://localhost:3000/";
 
+/**
+ * 타일 캐시 스위치 — **지금은 꺼 둔다** (2026-08-11 팀 결정).
+ *
+ * 캐시가 있으면 오프라인 시연이 되고 요청 수도 줄지만, VWorld 타일을 우리 디스크에 두고
+ * 다시 내보내는 것이 이용 약관상 되는지 확인 전이다. 확인되면 이 값만 켜면 된다 —
+ * 캐시 코드(`map-tile-cache.ts`)는 지우지 않고 남겨 둔다.
+ */
+export const TILE_CACHE_ENABLED = false;
+
 export function vworldSource(axisOrder: TileAxisOrder = "zyx"): TileSource {
   const key = env.VWORLD_API_KEY;
   return {
     id: "vworld",
-    attribution: "국토교통부 국토지리정보원 VWorld",
+    attribution: "공간정보 오픈플랫폼(VWorld)",
     axisOrder,
     urlOf: (zoom, x, y) => {
       if (!key) return null;
