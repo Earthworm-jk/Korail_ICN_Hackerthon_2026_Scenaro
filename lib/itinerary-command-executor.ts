@@ -226,11 +226,21 @@ export function proposalForOrder(
       rejection: rejectionOf(after, firstPlaceId) };
   }
 
-  // 요청 대상 자신의 이동은 의도한 것이라 요청 밖 변화에서 뺀다
-  const targets = new Set([firstPlaceId, secondPlaceId]);
+  /*
+   * **빠진 장소는 요청 대상이라도 손실이다** (PR #170 리뷰 2).
+   *
+   * 앞서 두 대상을 `dropped`에서 통째로 뺐다 - "요청한 장소의 이동은 의도한 것"이라는
+   * 이유였는데, 이동과 소멸은 다르다. `firstPlaceId`가 빠진 경우는 위에서 `impossible`로
+   * 잡지만 `secondPlaceId`가 빠지면 어디에도 안 걸려 사유가 없어지고, **사용자가 고른
+   * 카드가 사라졌는데 확인 없이 적용됐다.**
+   *
+   * 날짜가 바뀐 것(`moved`)도 빼지 않는다. 순서는 같은 날 안의 요청이라 대상이 다른 날로
+   * 넘어갔다면 요청한 적 없는 변화다. 같은 날 안에서 자리만 바뀌면 날짜가 그대로라
+   * `moved`에 잡히지 않으므로, 정상적인 순서 변경이 이 때문에 확인을 받지는 않는다.
+   */
   const diff = diffItineraries(before, after).places;
-  const displaced = diff.dropped.filter((entry) => !targets.has(entry.placeId));
-  const moved = diff.moved.filter((entry) => !targets.has(entry.placeId));
+  const displaced = diff.dropped;
+  const moved = diff.moved;
   const impact = impactOf(before, after);
 
   const outcome = (after.preferredOrderOutcomes ?? []).find(

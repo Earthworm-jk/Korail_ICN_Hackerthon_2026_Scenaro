@@ -238,7 +238,33 @@ describe("판정 — 요청 밖 손실", () => {
     expect(proposal.reasons).toEqual([]);
   });
 
-  /** 요청 대상 자신의 이동은 의도한 것이라 요청 밖 변화로 세지 않는다 */
+  /**
+   * PR #170 리뷰 2가 막은 결함이다.
+   *
+   * 두 대상을 `dropped`에서 통째로 뺐더니 `secondPlaceId`가 빠진 경우가 어디에도
+   * 안 걸렸다 — `firstPlaceId`는 위에서 `impossible`로 잡히지만 두 번째는 사유가
+   * 없어져 `ready`가 되고, **사용자가 고른 카드가 사라졌는데 확인 없이 적용된다.**
+   */
+  it("순서 요청의 두 번째 대상이 빠지면 확인을 받는다", () => {
+    const before = planned([day("2026-08-13", ["a", "b", "c"])]);
+    const after = planned([day("2026-08-13", ["a", "c"])]); // b(두 번째 대상)가 빠졌다
+    const proposal = proposalForOrder("a", "b", before, after);
+
+    expect(proposal.decision).toBe("needs_confirmation");
+    expect(proposal.reasons).toContain("places_displaced");
+    expect(proposal.displaced.map(({ placeId }) => placeId)).toContain("b");
+  });
+
+  /** 첫 대상이 빠지면 요청 자체가 성립하지 않는다 — 그건 위에서 `impossible`이다 */
+  it("첫 대상이 빠지면 불가능이다", () => {
+    const before = planned([day("2026-08-13", ["a", "b"])]);
+    const after = planned([day("2026-08-13", ["b"])]);
+    const proposal = proposalForOrder("a", "b", before, after);
+
+    expect(proposal.decision).toBe("impossible");
+  });
+
+  /** 같은 날 안에서 자리만 바뀌면 날짜가 그대로라 `moved`에 잡히지 않는다 */
   it("요청한 두 장소가 움직인 것은 사유가 아니다", () => {
     const before = planned([day("2026-08-13", ["a", "b"]), day("2026-08-14", ["c"])]);
     const after = planned([day("2026-08-13", ["b", "a"]), day("2026-08-14", ["c"])]);
