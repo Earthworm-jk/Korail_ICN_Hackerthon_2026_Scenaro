@@ -391,7 +391,6 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
   /** #151 — 조율 패널은 기본적으로 접혀 있고 아이콘으로 연다 */
   const [aiPanelOpen, setAiPanelOpen] = useState(false);
   /** 발견성 보완 라벨. 한 번 열면 다시 보여 주지 않는다 */
-  const [aiHintDismissed, setAiHintDismissed] = useState(false);
   const aiTriggerRef = useRef<HTMLButtonElement>(null);
   const [undoPoint, setUndoPoint] = useState<
     UndoPoint<ItineraryView["selectedAlt"], typeof saveStub.saveStatus> | null
@@ -2015,7 +2014,6 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
               aria-controls="itinerary-ai-panel"
               aria-label={tr("ai.entryLabel")}
               onClick={() => {
-                setAiHintDismissed(true);
                 if (aiPanelOpen) closeAiPanel();
                 else setAiPanelOpen(true);
               }}
@@ -2025,13 +2023,10 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
                   : "border-sc-blue/40 text-sc-blue hover:bg-sc-blue-soft"
               } disabled:opacity-40`}
             >
-              <Sparkles aria-hidden="true" className="size-4" />
+              {/* 반짝임 아이콘은 "AI"로 읽히지 않았다 (#146) — 글자로 적는다.
+                  옆 배지 `AI로 일정 조율`도 같은 말을 되풀이하던 것이라 걷었다 */}
+              <span aria-hidden="true" className="text-xs font-bold tracking-tight">AI</span>
             </button>
-            {!aiPanelOpen && !aiHintDismissed && (
-              <span className="rounded-full bg-sc-blue-soft px-2 py-0.5 text-xs text-sc-blue">
-                {tr("ai.entryHint")}
-              </span>
-            )}
             <div
               id="itinerary-info-popover"
               popover="auto"
