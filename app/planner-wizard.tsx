@@ -787,11 +787,13 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
     // 제출 시점의 입력 상태를 식별한다. 이후 카드 토글·재계산이 이 값을 올리면 도착한
     // 응답은 현재 화면을 대상으로 한 것이 아니므로 feedback과 자동 적용을 모두 버린다.
     const submittedSequence = ++planSequence.current;
+    // 직전 재질문에서 확보한 조각 — 비우기 전에 집어 든다 (#171)
+    const pendingSlots = aiFeedback?.kind === "clarify" ? aiFeedback.pendingSlots : null;
     setAiSentence(normalized);
     setAiFeedback(null);
     startAiTransition(async () => {
       try {
-        const result = await runItineraryCommand({ sentence: normalized, request });
+        const result = await runItineraryCommand({ sentence: normalized, request, pendingSlots });
         if (!commandResponseIsCurrent(submittedSequence, planSequence.current)) {
           setAiFeedback({ kind: "cancelled" });
           return;
@@ -805,6 +807,7 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
             kind: "clarify",
             interpretation: result.interpretation,
             clarification: result.outcome.clarification,
+            pendingSlots: result.outcome.pendingSlots,
           });
           return;
         }
@@ -840,7 +843,7 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
         setAiFeedback({ kind: "error" });
       }
     });
-  }, [currentConstraints, view.result, view.reopened, view.selectedAlt, applyCommandOutcome]);
+  }, [currentConstraints, view.result, view.reopened, view.selectedAlt, applyCommandOutcome, aiFeedback]);
 
   /** 지금 고른 장소 집합의 지문 — 구분자는 `|`, 장소 ID는 kebab-case라 충돌하지 않는다 */
   const selectionKey = useMemo(() => [...selectedPlaceIds].sort().join("|"), [selectedPlaceIds]);

@@ -14,6 +14,11 @@ import { tripDatesForWindow } from "../engine";
 import type { ItineraryResult } from "../engine/types";
 import { diffItineraries, type ItineraryDiff } from "../itinerary-diff";
 import { parseCommand } from "../itinerary-command-fallback";
+import {
+  completeWithSlots,
+  pendingSlotsFrom,
+  type PendingCommandSlots,
+} from "@/lib/itinerary-command-slots";
 import { resolveCommand, type Clarification } from "../itinerary-command-resolver";
 import type { VisitDateCommand } from "../itinerary-command";
 import {
@@ -82,7 +87,7 @@ export type CommandActionResult =
       ok: true;
       interpretation: CommandActionInterpretation;
       outcome:
-        | { kind: "clarify"; clarification: Clarification }
+        | { kind: "clarify"; clarification: Clarification; pendingSlots: PendingCommandSlots | null }
         | { kind: "explain" }
         | {
             kind: "recommendations";
@@ -277,6 +282,11 @@ async function buildProposalOutcome(
 export async function runItineraryCommand(input: {
   sentence: string;
   request: PlanRequest;
+  /**
+   * 직전 재질문에서 확보한 조각 (#171). 없으면 지금까지와 똑같이 동작한다 —
+   * 화면이 이 값을 안 넘기면 단발 문장 해석 그대로다.
+   */
+  pendingSlots?: PendingCommandSlots | null;
 }): Promise<CommandActionResult> {
   const parsedSentence = SentenceSchema.safeParse(input.sentence);
   const parsedRequest = PlanRequestSchema.safeParse(input.request);
@@ -308,10 +318,22 @@ export async function runItineraryCommand(input: {
     return { ok: false, code: "INVALID_REQUEST", fieldErrors: beforeAction.fieldErrors };
   }
 
-  const interpreted: CommandInterpretation = await interpretCommand(
+  const interpretedRaw: CommandInterpretation = await interpretCommand(
     parsedSentence.data,
     { apiKey: env.OPENAI_API_KEY },
   );
+  /**
+   * 이번 해석이 실패했고 직전에 우리가 물어본 조각이 있으면 합친다 (#171).
+   * 이번 문장만으로 읽혔다면 그것이 새 요청이므로 옛 조각은 끼어들지 않는다.
+   */
+  const interpreted: CommandInterpretation = {
+    ...interpretedRaw,
+    command: completeWithSlots(
+      input.pendingSlots ?? null,
+      interpretedRaw.command,
+      parsedSentence.data,
+    ),
+  };
   const interpretation: CommandActionInterpretation = {
     source: interpreted.source,
     ...(interpreted.fallbackReason ? { fallbackReason: interpreted.fallbackReason } : {}),
@@ -331,7 +353,12 @@ export async function runItineraryCommand(input: {
     return {
       ok: true,
       interpretation,
-      outcome: { kind: "clarify", clarification: resolved.clarification },
+      outcome: {
+        kind: "clarify",
+        clarification: resolved.clarification,
+        // 다음 발화에 이어 붙일 조각 — 화면이 들고 있다가 되돌려준다
+        pendingSlots: pendingSlotsFrom(interpreted.command),
+      },
     };
   }
   if (isExplainCommand(resolved.command)) {

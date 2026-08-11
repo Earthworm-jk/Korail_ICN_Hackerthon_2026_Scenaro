@@ -50,6 +50,11 @@ export const UnknownClarificationSchema = z.discriminatedUnion("source", [
     reason: UnknownReasonSchema,
     /** `DAY_MISSING`처럼 문장에 되쓸 조각이 있으면 함께 준다 */
     placeName: PlaceNameSchema.optional(),
+    /**
+     * 옮기기인지 넣기인지 (#171). 되물을 때는 문구가 같아도 다음 턴에 완성할 명령이 다르다 —
+     * 이 조각이 없으면 "넣어줘"라고 한 요청이 옮기기로 완성된다.
+     */
+    intent: z.enum(["move_place", "add_place"]).optional(),
   }),
   z.object({
     source: z.literal("llm"),

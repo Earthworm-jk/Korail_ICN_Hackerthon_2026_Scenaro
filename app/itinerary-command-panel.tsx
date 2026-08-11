@@ -10,6 +10,7 @@ import type {
 import { withValues, type MessageKey } from "@/lib/i18n/messages";
 import type { ItineraryDiff } from "@/lib/itinerary-diff";
 import type { Clarification } from "@/lib/itinerary-command-resolver";
+import type { PendingCommandSlots } from "@/lib/itinerary-command-slots";
 import type { CommandProposal } from "@/lib/itinerary-command-executor";
 import { impactLinesOf } from "@/lib/itinerary-command-messages";
 
@@ -18,7 +19,17 @@ export type ProposalOutcome = Extract<SuccessfulResult["outcome"], { kind: "prop
 export type RecommendationOutcome = Extract<SuccessfulResult["outcome"], { kind: "recommendations" }>;
 
 export type CommandFeedback =
-  | { kind: "clarify"; interpretation: CommandActionInterpretation; clarification: Clarification }
+  | {
+      kind: "clarify";
+      interpretation: CommandActionInterpretation;
+      clarification: Clarification;
+      /**
+       * 다음 발화에 이어 붙일 조각 (#171). **피드백에 붙여 둔다** — 별도 상태로 두면
+       * 선택 변경·재계산 때 지우는 곳을 빠뜨려 낡은 조각이 살아남는다. 피드백은 이미
+       * 그 사건마다 비워지므로 여기 붙이면 무효화가 따라온다.
+       */
+      pendingSlots: PendingCommandSlots | null;
+    }
   | {
       kind: "proposal";
       /** 버튼·드래그에는 해석 단계가 없다 — 없으면 출처 줄을 그리지 않는다 (#109) */
