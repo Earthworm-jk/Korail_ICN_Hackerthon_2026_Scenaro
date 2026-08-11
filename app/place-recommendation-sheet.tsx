@@ -23,6 +23,7 @@ export function PlaceRecommendationSheet({
   children,
   routeRecommendations,
   onBrowseAll,
+  initialExpanded = true,
   map,
   onBack,
   tr,
@@ -54,11 +55,22 @@ export function PlaceRecommendationSheet({
   routeRecommendations?: ReactNode;
   /** 후보 수와 무관하게 항상 같은 자리에 둔다 (#146 ①) */
   onBrowseAll: () => void;
+  /**
+   * 펼친 채로 시작할지 (#146 9번).
+   *
+   * 기본은 펼침이다 — 후보 선택이 이 단계의 주 작업이라 처음부터 숨기지 않는다.
+   * `false`면 compact 바로 시작해 지도를 가리지 않는다. 지금 펼친 시트는 지도 338px 중
+   * 270px을 덮어 **실제로 보이는 지도가 68px**뿐인데, 접힌 바는 62px만 덮는다.
+   *
+   * **하드코딩하지 않고 호출부가 정한다.** 데모와 P1 실험이 같은 컴포넌트를 쓰면서
+   * 시작 상태만 달리할 수 있어야 한다.
+   */
+  initialExpanded?: boolean;
   map: ReactNode;
   onBack: () => void;
   tr: Translator;
 }) {
-  const [expanded, setExpanded] = useState(true);
+  const [expanded, setExpanded] = useState(initialExpanded);
   const selectedCountLabel = tr("step3.selectedCount")
     .replace("{selected}", String(selectedCount))
     .replace("{total}", String(totalCount));
