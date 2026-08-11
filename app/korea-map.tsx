@@ -53,6 +53,7 @@ import {
   type Viewport,
 } from "@/lib/map-viewport";
 import { KOREA_OUTLINE_PATH } from "@/lib/korea-outline";
+import { tileZoomFor, tilesForView } from "@/lib/map-tiles";
 import {
   railRouteSegments,
   routePairKey,
@@ -177,6 +178,45 @@ const ROUTE_DRAW_SECONDS = 0.7;
  * 바뀌면서 애니메이션이 붙으므로, 보이는 결과는 달라지지 않는다.
  */
 const REDUCED_MOTION_QUERY = "(prefers-reduced-motion: reduce)";
+
+/**
+ * 지도가 화면에서 차지하는 가로 픽셀의 어림값 — 어느 줌의 타일을 받을지 정하는 데만 쓴다.
+ *
+ * 패널 폭은 화면마다 다르지만 줌 선택은 2배마다 한 단계라 어림값으로 충분하다. 태블릿에서
+ * 흐려 보이면 이 값이 아니라 `@2x`(레티나) 타일로 푸는 것이 맞다 — 지금은 1x로 둔다(#162).
+ */
+const BASEMAP_RENDER_PIXELS = 720;
+
+/**
+ * 배경 지도 타일 (#118 · #162).
+ *
+ * **없어도 되는 계층이다.** 장소·역·경로·라벨은 전부 우리 데이터를 `project()`한 것이고,
+ * 이 타일은 도로·지명 맥락을 더할 뿐이다. 그래서 정적 지도 위에 덮어 그린다 — 프록시가
+ * 키 없음·공급자 실패에 204로 답하면 `<image>`는 아무것도 그리지 않고, 밑에 이미 그려둔
+ * 한반도 폴리곤이 그대로 남는다. 실패를 처리하는 코드가 따로 필요 없다.
+ *
+ * `key`에 줌을 넣는 이유: 같은 줌에서 이동하면 화면에 남는 타일은 노드가 그대로 재사용돼
+ * 다시 받지 않는다. 줌이 바뀌면 격자 자체가 달라지므로 새로 받는 것이 맞다.
+ */
+function BasemapTiles({ view, onShown }: { view: Viewport; onShown: () => void }) {
+  const zoom = tileZoomFor(view, BASEMAP_RENDER_PIXELS);
+  return (
+    <g aria-hidden="true" data-basemap="tiles">
+      {tilesForView(view, zoom).map((tile) => (
+        <image
+          key={`${zoom}/${tile.x}/${tile.y}`}
+          href={`/api/map-tiles/${zoom}/${tile.x}/${tile.y}`}
+          x={tile.left}
+          y={tile.top}
+          width={tile.size}
+          height={tile.size}
+          preserveAspectRatio="none"
+          onLoad={onShown}
+        />
+      ))}
+    </g>
+  );
+}
 
 function subscribeReducedMotion(onChange: () => void): () => void {
   if (typeof window === "undefined" || !window.matchMedia) return () => {};
@@ -743,6 +783,16 @@ export function KoreaMapPanel({
         );
   const scaleBar = scaleBarOf(view);
 
+  /**
+   * 배경 타일이 실제로 한 장이라도 떴는가 — **출처 표기에만 쓴다.**
+   *
+   * 표기는 이용 조건이지만, 한 장도 못 받은 화면에 공급자 이름을 적으면 쓰지도 않은 자료를
+   * 출처로 적는 것이 된다. 화면 배치는 이 값에 걸지 않는다 — 걸면 배경 실패가 레이아웃
+   * 변화로 드러나서, "실패는 조용한 정상 상태"라는 계약이 깨진다.
+   */
+  const [basemapShown, setBasemapShown] = useState(false);
+  const showBasemap = useCallback(() => setBasemapShown(true), []);
+
   return (
     <aside
       className={`min-w-0 rounded-2xl border bg-sc-surface p-4 sm:p-[18px] ${sticky ? "md:sticky md:top-4" : ""}`}
@@ -787,6 +837,8 @@ export function KoreaMapPanel({
             strokeLinejoin="round"
             opacity={outlineOpacity}
           />
+
+          <BasemapTiles view={view} onShown={showBasemap} />
 
           {isRoute &&
             routePaths.map(({ key, d, kind }, index) =>
@@ -899,6 +951,20 @@ export function KoreaMapPanel({
 
       <p className="mt-2 text-xs text-sc-muted">
         {tr("map.source")}
+        {/* 배경 타일 공급자의 이용 조건 — 타일이 실제로 뜬 화면에만 붙인다 */}
+        {basemapShown && (
+          <>
+            {" · "}
+            <a
+              href="https://www.openstreetmap.org/copyright"
+              target="_blank"
+              rel="noreferrer"
+              className="underline underline-offset-2 hover:text-sc-blue"
+            >
+              {tr("map.sourceBasemap")}
+            </a>
+          </>
+        )}
         {/* ODbL 1.0 의무 표기 — 라이선스 링크까지 함께 (OSM 저작권 안내 규정) */}
         {hasRailGeometry && (
           <>
