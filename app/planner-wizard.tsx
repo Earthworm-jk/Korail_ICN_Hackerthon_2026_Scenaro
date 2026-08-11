@@ -6,7 +6,7 @@
  * - 대안 시간표는 mock(#14 ⑨ 선행), 저장·내 일정은 in-memory 스텁(#25 선행) — 엔진·Supabase 연결 시 교체
  */
 import { useCallback, useEffect, useMemo, useReducer, useRef, useState, useTransition } from "react";
-import { Info, MapPin, Sparkles, TriangleAlert, X } from "lucide-react";
+import { BusFront, Info, Sparkles, TrainFront, TriangleAlert, X } from "lucide-react";
 import {
   searchEntities,
   type ActorSummary,
@@ -83,6 +83,7 @@ import {
 import { ItineraryRouteMap, KoreaMapPanel, type MapPlace, type MapStation } from "./korea-map";
 import { PlaceRecommendationSheet, PlaceThumbnail } from "./place-recommendation-sheet";
 import sheetStyles from "./place-recommendation-sheet.module.css";
+import { itineraryRowsOf, rowKey, transferCountOf } from "@/lib/itinerary-rows";
 import { ThemeExperienceCard, ThemeExperienceMapOverlay } from "./theme-experience";
 import { TrainLegModal, legDurationLabel, type TrainLegDetail } from "./train-leg-modal";
 import { getThemeExperience, type ThemeExperienceResult } from "@/lib/actions/theme-experience";
@@ -1239,6 +1240,9 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
     saved: savedNames?.places[id],
     fallback: tr("common.nameUnavailable"),
   });
+  /** 일정 줄의 유형 아이콘 — 추천 카드와 같은 `placeType`을 쓴다 (#146 2절) */
+  const placeTypeOf = (id: string) =>
+    candidateData?.candidates.find((c) => c.id === id)?.placeType;
   const workTitles = (ids: string[]) =>
     ids.map((id) => candidateData?.works.find((w) => w.id === id)?.title[locale] ?? id).join(" · ");
 
@@ -1823,94 +1827,127 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
                       submitVisitDateEdit(placeId, day.date);
                     }}
                   >
+                    {/* #146 2절 — DAY 헤더 오른쪽에 그 날 전체에 걸리는 맥락을 둔다 */}
+                  <div className="flex flex-wrap items-center gap-2">
                     <h3 className="font-medium">{day.date}</h3>
-                    <ul className="mt-2 space-y-1 text-sm">
-                      {/* #14: 장소 단위 시각 미표기 — 역 단위 활용시간은 regionWindows로 표시 (#33) */}
-                      {day.items.map((item) => (
-                        <li
-                          key={item.placeId}
-                          draggable={visitDateEditable}
-                          onDragStart={(event) => {
-                            setDraggingPlaceId(item.placeId);
-                            event.dataTransfer.setData("text/plain", item.placeId);
-                            event.dataTransfer.effectAllowed = "move";
-                          }}
-                          onDragEnd={() => { setDraggingPlaceId(null); setDragOverDate(null); }}
-                          className={`flex flex-wrap items-center gap-x-1 gap-y-1 rounded text-sc-text/80 ${draggingPlaceId === item.placeId ? "opacity-50" : ""}`}
-                        >
-                          <MapPin aria-hidden="true" className="mr-1 size-3.5 shrink-0 text-sc-blue" />
-                          {placeName(item.placeId)}
-                          <span className="ml-1 text-xs text-sc-muted">{accessLabel(item.accessMinutes)}</span>
-                          {/* 날짜 선택 버튼이 기준 조작이고 드래그는 같은 액션의 다른 표현이다
-                              (#14 안건 ⑩ · #139 9-1). 키보드만으로도 같은 편집이 가능하다. */}
-                          <span className="ml-auto flex items-center gap-1">
-                            {(displayedDays ?? []).map((target, index) => (
-                              <button
-                                key={target.date}
-                                type="button"
-                                disabled={!visitDateEditable || target.date === day.date}
-                                onClick={() => submitVisitDateEdit(item.placeId, target.date)}
-                                aria-label={withValues(tr("step4.moveToDay"), {
-                                  place: placeName(item.placeId), day: String(index + 1),
-                                })}
-                                aria-current={target.date === day.date ? "true" : undefined}
-                                className={`min-h-7 min-w-7 rounded border px-1.5 text-xs ${
-                                  target.date === day.date
-                                    ? "border-sc-blue bg-sc-blue text-white"
-                                    : "border-sc-blue/30 text-sc-blue hover:bg-sc-blue-soft disabled:opacity-40"
-                                }`}
-                              >
-                                {index + 1}
-                              </button>
-                            ))}
-                          </span>
-                        </li>
-                      ))}
-                    </ul>
-                    {day.rides.length + (day.gatewayLegs?.length ?? 0) > 0 && (
-                      <details className="mt-3 rounded-lg border bg-sc-subtle/60" data-planning-transport>
-                        <summary className="flex min-h-10 list-none items-center justify-between gap-2 px-3 py-2 text-sm font-medium">
-                          <span>
-                            {tr("step4.transportSummary").replace(
-                              "{n}",
-                              String(day.rides.length + (day.gatewayLegs?.length ?? 0)),
-                            )}
-                          </span>
-                          <span className="text-xs text-sc-muted">{tr("step4.transportHint")}</span>
-                        </summary>
-                        <ul className="space-y-1 border-t px-3 py-2 text-sm">
-                          {(day.gatewayLegs ?? []).map((leg) => (
-                            <li key={leg.id} className="text-sc-text/80">
-                              {fmtTime(leg.departAt)} {leg.fromName[locale]} → {fmtTime(leg.arriveAt)} {leg.toName[locale]}
-                              <span className="ml-2 text-xs text-sc-muted/70">{leg.serviceName[locale]} · {leg.operator[locale]}</span>
-                            </li>
-                          ))}
-                          {/* 조율 중에는 장소가 주정보다. 열차 번호·소요시간은 사용자가 펼쳤을 때만
-                              기존 상세 모달 계약과 함께 제공한다 (#118 P0-3). */}
-                          {day.rides.map((ride) => (
-                            <li key={`${ride.trainNo}-${ride.departAt}`}>
-                              <button
-                                type="button"
-                                className="-mx-1 w-full rounded border border-transparent px-1 py-0.5 text-left text-sc-text/80 hover:border-sc-blue"
-                                onClick={() => setOpenTrainLeg({
-                                  trainNo: ride.trainNo,
-                                  fromName: stationName(ride.fromStationId),
-                                  toName: stationName(ride.toStationId),
-                                  departAt: ride.departAt,
-                                  arriveAt: ride.arriveAt,
-                                })}
-                              >
-                                {fmtTime(ride.departAt)} {stationName(ride.fromStationId)} → {fmtTime(ride.arriveAt)} {stationName(ride.toStationId)}
-                                {" · "}{legDurationLabel(ride.departAt, ride.arriveAt, tr)}
-                                <span className="ml-2 text-xs text-sc-muted/70 underline decoration-dotted underline-offset-2">
-                                  {tr("step4.train")} {ride.trainNo}
-                                </span>
-                              </button>
-                            </li>
-                          ))}
-                        </ul>
-                      </details>
+                    {transferCountOf(day) > 0 && (
+                      <span className="rounded-full bg-sc-subtle px-2 py-0.5 text-xs text-sc-muted">
+                        {tr("step4.transferBadge").replace("{n}", String(transferCountOf(day)))}
+                      </span>
                     )}
+                  </div>
+
+                  {/* 장소 목록과 이동 구간을 따로 그리면 "몇 시에 어디로 이동해 무엇을 보는가"라는
+                      하루의 흐름이 끊긴다. 시각순 한 줄씩으로 세운다 (#146 2절) */}
+                  <ul className="mt-2 space-y-1.5 text-sm">
+                    {itineraryRowsOf(day).map((row) => {
+                      if (row.kind === "place") {
+                        const item = row.item;
+                        return (
+                          <li
+                            key={rowKey(row)}
+                            draggable={visitDateEditable}
+                            onDragStart={(event) => {
+                              setDraggingPlaceId(item.placeId);
+                              event.dataTransfer.setData("text/plain", item.placeId);
+                              event.dataTransfer.effectAllowed = "move";
+                            }}
+                            onDragEnd={() => { setDraggingPlaceId(null); setDragOverDate(null); }}
+                            className={`rounded-lg border bg-sc-surface px-2 py-1.5 ${
+                              draggingPlaceId === item.placeId ? "opacity-50" : ""
+                            }`}
+                            data-itinerary-row="place"
+                          >
+                            {/* 이름과 조작을 두 줄로 나눈다. 한 줄에 몰면 우측 패널 폭에서
+                                이름 칸이 0에 가까워져 한 글자씩 세로로 쪼개진다 */}
+                            <div className="flex items-center gap-2">
+                              {/* 외국인 사용자는 지명만 보고 역인지 관광지인지 식당인지 모른다.
+                                  추천 카드와 같은 유형 아이콘을 써서 두 화면이 저절로 일관된다 */}
+                              <span className="grid size-7 shrink-0 place-items-center rounded-md bg-sc-blue-soft text-sc-blue">
+                                <PlaceTypeIcon placeType={placeTypeOf(item.placeId)} />
+                              </span>
+                              <span className="shrink-0 tabular-nums text-xs text-sc-muted">
+                                {fmtTime(item.arriveAt)}
+                              </span>
+                              <span className="min-w-0 flex-1 text-sc-text/90">{placeName(item.placeId)}</span>
+                            </div>
+                            <div className="mt-1 flex items-center justify-between gap-2 pl-9">
+                            <span className="shrink-0 text-xs text-sc-muted">{accessLabel(item.accessMinutes)}</span>
+                            <span className="flex shrink-0 items-center gap-1">
+                              {(displayedDays ?? []).map((target, index) => (
+                                <button
+                                  key={target.date}
+                                  type="button"
+                                  disabled={!visitDateEditable || target.date === day.date}
+                                  onClick={() => submitVisitDateEdit(item.placeId, target.date)}
+                                  aria-label={withValues(tr("step4.moveToDay"), {
+                                    place: placeName(item.placeId), day: String(index + 1),
+                                  })}
+                                  aria-current={target.date === day.date ? "true" : undefined}
+                                  className={`min-h-7 min-w-7 rounded border px-1.5 text-xs ${
+                                    target.date === day.date
+                                      ? "border-sc-blue bg-sc-blue text-white"
+                                      : "border-sc-blue/30 text-sc-blue hover:bg-sc-blue-soft disabled:opacity-40"
+                                  }`}
+                                >
+                                  {index + 1}
+                                </button>
+                              ))}
+                            </span>
+                            </div>
+                          </li>
+                        );
+                      }
+                      if (row.kind === "gateway") {
+                        const leg = row.leg;
+                        return (
+                          <li
+                            key={rowKey(row)}
+                            className="flex flex-wrap items-center gap-x-2 gap-y-1 rounded-lg border border-dashed bg-sc-subtle/40 px-2 py-1.5"
+                            data-itinerary-row="gateway"
+                          >
+                            <span className="grid size-7 shrink-0 place-items-center rounded-md bg-sc-subtle text-sc-muted">
+                              <BusFront aria-hidden="true" className="size-4" />
+                            </span>
+                            <span className="shrink-0 tabular-nums text-xs text-sc-muted">{fmtTime(leg.departAt)}</span>
+                            <span className="min-w-0 flex-1 text-sc-text/80">
+                              {leg.fromName[locale]} → {leg.toName[locale]}
+                            </span>
+                            <span className="shrink-0 text-xs text-sc-muted/70">{leg.serviceName[locale]}</span>
+                          </li>
+                        );
+                      }
+                      const ride = row.ride;
+                      return (
+                        <li key={rowKey(row)} data-itinerary-row="train">
+                          {/* 조율 중에는 장소가 주정보다 — 열차번호·소요시간은 눌렀을 때
+                              기존 상세 모달에서 본다 (#118 P0-3 계약 유지) */}
+                          <button
+                            type="button"
+                            className="flex w-full flex-wrap items-center gap-x-2 gap-y-1 rounded-lg border border-dashed bg-sc-subtle/40 px-2 py-1.5 text-left hover:border-sc-blue"
+                            onClick={() => setOpenTrainLeg({
+                              trainNo: ride.trainNo,
+                              fromName: stationName(ride.fromStationId),
+                              toName: stationName(ride.toStationId),
+                              departAt: ride.departAt,
+                              arriveAt: ride.arriveAt,
+                            })}
+                          >
+                            <span className="grid size-7 shrink-0 place-items-center rounded-md bg-sc-subtle text-sc-muted">
+                              <TrainFront aria-hidden="true" className="size-4" />
+                            </span>
+                            <span className="shrink-0 tabular-nums text-xs text-sc-muted">{fmtTime(ride.departAt)}</span>
+                            <span className="min-w-0 flex-1 text-sc-text/80">
+                              {stationName(ride.fromStationId)} → {stationName(ride.toStationId)}
+                            </span>
+                            <span className="shrink-0 text-xs text-sc-muted/70">
+                              {legDurationLabel(ride.departAt, ride.arriveAt, tr)}
+                            </span>
+                          </button>
+                        </li>
+                      );
+                    })}
+                  </ul>
                     {/* #33 — 엔진 값 포맷만, 경계·시각 재해석 금지 */}
                     {day.regionWindows.length > 0 && (
                       <div className="mt-2 space-y-1">
