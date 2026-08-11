@@ -1,0 +1,45 @@
+{
+  "date": "2026-08-11",
+  "browser": "Codex in-app browser",
+  "architectureChanged": false,
+  "viewports": {
+    "dom1920": {
+      "window": [1920, 1080],
+      "devicePixelRatio": 1,
+      "stage": [0, 0, 1920, 1080],
+      "document": [1920, 1080],
+      "verifiedStates": [1, 2, 3, 4, 5]
+    },
+    "visual1280": {
+      "window": [1280, 720],
+      "devicePixelRatio": 1,
+      "stage": [0, 0, 1280, 720],
+      "document": [1280, 720],
+      "verifiedStates": [1, 2, 3, 4, 5],
+      "screenshots": [
+        "v05-1280-state01.png",
+        "v05-1280-state02.png",
+        "v05-1280-state03.png",
+        "v05-1280-state04.png",
+        "v05-1280-state05.png"
+      ]
+    }
+  },
+  "state06ContractAt1920": {
+    "productAnchor": [320, 180.0003662109375, 1280, 720],
+    "productViewport": [320, 180, 1280, 720]
+  },
+  "browserConsoleErrors": 0,
+  "renderingFixes": [
+    "State 01 content cards moved below the supporting copy and compacted",
+    "State 03 search loop separated from the constraint card stack",
+    "State 04 survey note separated from the fourth result card",
+    "State 05 service definition width increased to prevent orphan Korean line breaks"
+  ],
+  "contentRefinements": [
+    "State 01 opening headline keeps 싶었습니다 together and renders as two semantic lines",
+    "State 01 preferences are grouped as 좋아하는 배우 and 좋아하는 작품 with independent work selection explained",
+    "State 02 opportunity copy is limited to the evidence-supported scheduling claim while 72% and 79.3% remain unchanged",
+    "State 05 content layer opacity is zero while map, route, product preview, camera and state contracts remain unchanged"
+  ]
+}

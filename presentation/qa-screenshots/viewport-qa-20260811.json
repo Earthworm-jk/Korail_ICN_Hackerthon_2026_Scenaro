@@ -1,0 +1,27 @@
+{
+  "browser": "Codex In-app Browser (Chromium)",
+  "verifiedStates": [5, 6, 7, 8, 9, 10, 11, 12],
+  "viewports": {
+    "1920x1080": {
+      "window.innerWidth": 1920,
+      "window.innerHeight": 1080,
+      "window.devicePixelRatio": 1,
+      "stageBounds": { "x": 0, "y": 0, "width": 1920, "height": 1080 },
+      "documentSize": { "width": 1920, "height": 1080 },
+      "visualScreenshotEvidence": false
+    },
+    "1280x720": {
+      "window.innerWidth": 1280,
+      "window.innerHeight": 720,
+      "window.devicePixelRatio": 1,
+      "stageBounds": { "x": 0, "y": 0, "width": 1280, "height": 720 },
+      "documentSize": { "width": 1280, "height": 720 },
+      "visualScreenshotEvidence": true
+    }
+  },
+  "captureDiagnostics": {
+    "standardTabCaptureAt1920Viewport": { "width": 1698, "height": 1080, "usableAs1920Evidence": false },
+    "fullPageCaptureAt1920Viewport": { "width": 1920, "height": 1080, "fixedGpuStageRendered": false, "usableAsVisualEvidence": false },
+    "note": "1920 viewport validity is based on direct browser DOM measurements, not on the in-app browser screenshot surface."
+  }
+}
