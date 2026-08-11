@@ -855,6 +855,7 @@ export function KoreaMapPanel({
             aria-haspopup="dialog"
             aria-controls={noticeId}
             aria-label={tr("map.noticeOpen")}
+            data-map-notice-anchor
             className="flex size-8 shrink-0 items-center justify-center rounded-full border text-sc-muted hover:border-sc-blue hover:text-sc-blue"
           >
             <span aria-hidden="true" className="text-sm font-semibold">i</span>
@@ -1002,6 +1003,7 @@ export function KoreaMapPanel({
           popover="auto"
           role="dialog"
           aria-labelledby={`${noticeId}-title`}
+          data-map-notice
           className="m-auto w-[min(400px,calc(100vw-32px))] rounded-xl border bg-sc-surface p-4 text-left shadow-2xl backdrop:bg-black/20"
         >
           <h4 id={`${noticeId}-title`} className="text-sm font-semibold text-sc-text">

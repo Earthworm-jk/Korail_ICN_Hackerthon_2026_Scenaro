@@ -415,3 +415,29 @@
     box-shadow: 0 0 0 3px var(--sc-surface);
   }
 }
+
+/**
+ * 지도 표기 안내는 그 (i) 버튼 밑에 붙는다 (#146).
+ *
+ * 네이티브 팝오버는 최상위 레이어에 뜨므로 기본값이 화면 정중앙이다 — 지도 한복판에
+ * 상자가 나타나 어느 버튼이 연 것인지 읽히지 않았다.
+ *
+ * 앵커 위치지정을 못 쓰는 브라우저에서는 가운데 그대로 둔다. 위치가 덜 좋을 뿐
+ * 내용과 조작은 같다.
+ */
+@supports (anchor-name: --probe) {
+  [data-map-notice-anchor] {
+    anchor-name: --sc-map-notice;
+  }
+
+  [data-map-notice] {
+    position-anchor: --sc-map-notice;
+    margin: 0;
+    top: calc(anchor(bottom) + 8px);
+    /* 버튼에 왼쪽을 맞추되 화면 밖으로는 못 나간다. 390px에서 버튼이 오른쪽에 있어
+       그대로 붙이면 상자가 잘렸다 — `clamp`가 양쪽 여백 16px을 지킨다 */
+    left: clamp(16px, anchor(left), calc(100vw - 416px));
+    /* 아래가 모자라면 버튼 위로 뒤집는다 */
+    position-try-fallbacks: flip-block;
+  }
+}

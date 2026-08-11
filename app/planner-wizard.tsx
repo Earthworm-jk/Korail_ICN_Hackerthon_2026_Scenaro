@@ -2042,6 +2042,22 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
                   첫 화면에 DAY가 안 들어왔다 — 없애는 게 아니라 옮기는 것이다 */}
               {displayedDays.map((day, dayIndex) => {
                 const baseDay = baseDays?.find((d) => d.date === day.date);
+                const rows = itineraryRowsOf(day);
+                /**
+                 * 체류 카드가 놓일 칸 (#146).
+                 *
+                 * 두 타임라인이 같은 폭의 칸을 쓰므로 그냥 늘어놓으면 **N번째 체류가
+                 * N번째 이동 밑에 붙는다** - 광화문(서울) 아래에 진부 권역 체류가
+                 * 걸려 서로 관계가 있는 것처럼 읽혔다. 실제로 그렇게 보였다.
+                 *
+                 * 시각으로 맞춘다. 그 체류를 시작시킨 줄(도착) 밑에 세운다.
+                 */
+                const stayColumn = (startAt: string) => {
+                  const at = Date.parse(startAt);
+                  let last = 0;
+                  rows.forEach((row, index) => { if (row.at <= at) last = index; });
+                  return last + 1;
+                };
                 return (
                   <div
                     key={day.date}
@@ -2138,7 +2154,7 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
                   {/* 장소 목록과 이동 구간을 따로 그리면 "몇 시에 어디로 이동해 무엇을 보는가"라는
                       하루의 흐름이 끊긴다. 시각순 한 줄씩으로 세운다 (#146 2절) */}
                   <ul className="mt-2 space-y-1.5 text-sm" data-day-rows>
-                    {itineraryRowsOf(day).map((row) => {
+                    {rows.map((row) => {
                       /* 선택 가능한 버스 대안이 없으면 선택기가 통째로 숨는다. 그때는
                          무엇으로 공항에 드나드는지 알 길이 없으므로 이동 행에 사실만
                          적는다 — 고를 수 없는 버튼을 흐리게 띄우는 것보다 낫다 (#146) */
@@ -2182,8 +2198,22 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
                             {/* 날짜별 숫자 버튼(1·2·3)은 뺐다 (#146) — 한 줄마다 세 개씩
                                 깔려 목록이 버튼밭이 됐다. 장소 하나를 옮기는 일은 드래그로,
                                 하루를 통째로 옮기는 일은 DAY 헤더의 이동 메뉴로 한다 */}
-                            <span className="mt-auto block pt-1 text-xs text-sc-muted" data-row-meta>
-                              {accessLabel(item.accessMinutes)}
+                            {/* 모바일에는 드래그가 없다 (#146) — HTML5 drag는 터치에서
+                                동작하지 않는다. DAY 헤더가 쓰는 것과 같은 이동 메뉴를
+                                장소에도 둔다. 두 경로 모두 `submitVisitDateEdit`으로
+                                들어가므로 조작 방법에 따라 결과가 갈리지 않는다 */}
+                            <span className="mt-auto flex items-center justify-between gap-2 pt-1 text-xs text-sc-muted" data-row-meta>
+                              <span className="min-w-0 truncate">{accessLabel(item.accessMinutes)}</span>
+                              <DayMoveMenu
+                                date={item.placeId}
+                                scope="place"
+                                targets={displayedDays
+                                  .map((target, index) => ({ date: target.date, index }))
+                                  .filter((target) => target.date !== day.date)}
+                                disabled={!visitDateEditable}
+                                onMove={(targetDate) => submitVisitDateEdit(item.placeId, targetDate)}
+                                tr={tr}
+                              />
                             </span>
                           </li>
                         );
@@ -2265,6 +2295,7 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
                               key={window.startAt}
                               className="rounded-lg border border-sc-orange/40 bg-sc-orange-soft/70 px-2 py-1.5"
                               data-itinerary-row="stay"
+                              style={{ gridColumnStart: stayColumn(window.startAt) }}
                             >
                               <span className="block tabular-nums text-xs text-sc-muted" data-row-time>
                                 {fmtTime(window.startAt)}
@@ -2405,7 +2436,7 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
           */}
           <StageUtilityPortal targetId="stage-sheet-actions">
             <div
-              className="mt-4 flex flex-wrap items-center gap-2 lg:mt-0"
+              className="mt-4 flex flex-wrap items-center justify-end gap-2 lg:mt-0"
               data-stage-actions
             >
               <button className="rounded border px-3 py-2 text-sm" onClick={plan}>{tr("step4.recalculate")}</button>
