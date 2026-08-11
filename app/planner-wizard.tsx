@@ -99,7 +99,7 @@ import type { StationCoordinatesSnapshotT } from "@/lib/station-coordinates";
 import type { RailGeometrySnapshotT } from "@/lib/rail-geometry";
 import type { DayPlan } from "@/lib/engine/types";
 import { undoPointOf, type UndoPoint } from "@/lib/itinerary-undo";
-import { groupRejections } from "@/lib/rejection-groups";
+import { displayRejectionCode, groupRejections } from "@/lib/rejection-groups";
 
 const KST = "Asia/Seoul";
 
@@ -1285,14 +1285,18 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
   // #61 정적/동적 분리 — 같은 TRAIN_UNAVAILABLE도 원인이 둘이다.
   // 앵커역 시간표를 아직 확보하지 못한 것과, 확보했는데 일정 안에 탈 열차가 없는 것.
   // "연결 열차 없음"으로 뭉치면 갈 수 없는 곳을 추천한 것처럼 읽힌다.
-  const rejectionLabel = (reason: { code: string; placeId: string }) => {
-    const anchorId = candidateData?.candidates.find((c) => c.id === reason.placeId)?.nearestStationId;
-    const anchor = candidateData?.stations.find((s) => s.id === anchorId);
-    if (reason.code === "TRAIN_UNAVAILABLE" && anchor && !anchor.hasTimetable) {
-      return tr("reason.TRAIN_OUT_OF_COVERAGE");
-    }
-    return tr(`reason.${reason.code}` as MessageKey);
-  };
+  /**
+   * 시간표 범위 밖 장소 (#61) — `TRAIN_UNAVAILABLE`이 화면에서 두 문구로 갈리는 기준이다.
+   * 장소마다 다르므로 집합으로 들고 다닌다.
+   */
+  const outOfCoveragePlaceIds = new Set(
+    (candidateData?.candidates ?? [])
+      .filter((candidate) => {
+        const anchor = candidateData?.stations.find((s) => s.id === candidate.nearestStationId);
+        return anchor !== undefined && !anchor.hasTimetable;
+      })
+      .map((candidate) => candidate.id),
+  );
 
   /**
    * 미배치 목록 — **사유별로 묶는다** (#84 §2 · #171).
@@ -1302,9 +1306,16 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
    */
   const renderRejectionGroups = (rejections: readonly { code: string; placeId: string }[]) => (
     <ul className="mt-2 space-y-2 text-sm text-sc-orange-text">
-      {groupRejections(rejections as never).map((group) => (
+      {/* 묶기 전에 장소별로 표시 코드를 정한다 — 그룹 대표 하나로 문구를 정하면
+          커버리지 밖 장소가 자기 것이 아닌 사유를 달게 된다 (PR #172 리뷰) */}
+      {groupRejections(
+        rejections.map((reason) => ({
+          code: displayRejectionCode(reason as never, outOfCoveragePlaceIds),
+          placeId: reason.placeId,
+        })),
+      ).map((group) => (
         <li key={group.code}>
-          <span className="font-medium">{rejectionLabel({ code: group.code, placeId: group.placeIds[0] })}</span>
+          <span className="font-medium">{tr(`reason.${group.code}` as MessageKey)}</span>
           {" "}
           <span className="whitespace-nowrap">{tr("step4.rejectedCount").replace("{n}", String(group.placeIds.length))}</span>
           <p className="mt-0.5 text-xs text-sc-orange-text/85">

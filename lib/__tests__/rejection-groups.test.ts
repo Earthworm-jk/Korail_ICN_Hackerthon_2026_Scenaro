@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { groupRejections } from "@/lib/rejection-groups";
+import { displayRejectionCode, groupRejections } from "@/lib/rejection-groups";
 import { messages } from "@/lib/i18n/messages";
 import type { CandidateRejection } from "@/lib/engine/types";
 
@@ -74,15 +74,58 @@ describe("미배치 사유 묶기", () => {
     }
   });
 
+  /**
+   * PR #172 리뷰 — `TRAIN_UNAVAILABLE` 하나가 화면에서 두 문구로 갈린다 (#61). 엔진 코드로
+   * 묶고 그룹 대표 하나로 문구를 정하면, 커버리지 밖 장소와 안쪽 장소가 한 줄에 섞여
+   * **이 작업이 고치려던 "사유가 사실과 다르게 읽힌다"가 그대로 되살아난다.**
+   */
+  describe("커버리지 갈림을 묶기 전에 처리한다", () => {
+    const outOfCoverage = new Set(["far"]);
+
+    it("커버리지 밖 장소만 다른 표시 코드가 된다", () => {
+      expect(displayRejectionCode(r("TRAIN_UNAVAILABLE", "far"), outOfCoverage))
+        .toBe("TRAIN_OUT_OF_COVERAGE");
+      expect(displayRejectionCode(r("TRAIN_UNAVAILABLE", "near"), outOfCoverage))
+        .toBe("TRAIN_UNAVAILABLE");
+    });
+
+    it("다른 사유는 커버리지와 무관하다", () => {
+      for (const code of ["NOT_IN_BEST_SUBSET", "DAILY_CAPACITY_EXCEEDED", "DEPARTURE_DEADLINE_EXCEEDED"] as const) {
+        expect(displayRejectionCode(r(code, "far"), outOfCoverage)).toBe(code);
+      }
+    });
+
+    /** 이 테스트가 리뷰에서 지적된 결함을 직접 잡는다 */
+    it("섞인 장소는 두 줄로 갈리고 각자 제 문구를 받는다", () => {
+      const mixed = [r("TRAIN_UNAVAILABLE", "far"), r("TRAIN_UNAVAILABLE", "near")];
+      const groups = groupRejections(
+        mixed.map((reason) => ({
+          code: displayRejectionCode(reason, outOfCoverage),
+          placeId: reason.placeId,
+        })),
+      );
+      expect(groups).toHaveLength(2);
+      expect(groups.find((g) => g.code === "TRAIN_OUT_OF_COVERAGE")?.placeIds).toEqual(["far"]);
+      expect(groups.find((g) => g.code === "TRAIN_UNAVAILABLE")?.placeIds).toEqual(["near"]);
+    });
+
+    it("커버리지 밖 문구가 두 로케일에 있다", () => {
+      for (const locale of ["ko", "en"] as const) {
+        expect(messages[locale]["reason.TRAIN_OUT_OF_COVERAGE"]).toBeTruthy();
+      }
+    });
+  });
+
   /** 새 사유 코드를 추가하고 순서에 넣지 않으면 화면에서 조용히 사라진다 */
   it("모든 사유 코드가 순서에 들어 있다", () => {
-    const codes: CandidateRejection["code"][] = [
+    const codes = [
       "TRAIN_UNAVAILABLE",
+      "TRAIN_OUT_OF_COVERAGE",
       "DAILY_CAPACITY_EXCEEDED",
       "DEPARTURE_DEADLINE_EXCEEDED",
       "NOT_IN_BEST_SUBSET",
-    ];
-    const grouped = groupRejections(codes.map((code, i) => r(code, `p${i}`)));
+    ] as const;
+    const grouped = groupRejections(codes.map((code, i) => ({ code, placeId: `p${i}` })));
     expect(grouped).toHaveLength(codes.length);
     for (const locale of ["ko", "en"] as const) {
       for (const code of codes) {
