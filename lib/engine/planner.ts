@@ -961,6 +961,45 @@ function preferredDateIndex(
  * 만든다. 판정 기준은 엔진과 같은 코드다 — 후보 집합은 `deriveStrictSelectionMemberships`,
  * 날짜 집합은 `tripDatesOf`로 한 군데서만 나온다.
  */
+/**
+ * 순서 선호의 공개 Action 경계 검사 (#145 · PR #153 리뷰 2번).
+ *
+ * `preferredOrderIndex`는 비후보 ID에 `RangeError`를 던진다. 그건 내부 호출의 빠른 실패로
+ * 두고, 공개 Action은 여기서 필드 오류로 정규화한다 — 판정 기준은 방문일과 같은 코드
+ * (`deriveStrictSelectionMemberships`)를 쓴다.
+ */
+export function preferredOrderErrors(
+  constraints: TripConstraints,
+  repos: Repositories,
+): Record<string, string> {
+  const pairs = constraints.preferredOrder ?? [];
+  if (pairs.length === 0) return {};
+  const actorIds = new Set([
+    ...(constraints.selectedActorIds ?? []),
+    ...(constraints.selectedActorId ? [constraints.selectedActorId] : []),
+  ]);
+  const memberships = deriveStrictSelectionMemberships(
+    repos.workPlaceRelations,
+    actorIds,
+    new Set(constraints.selectedWorkIds),
+  );
+  const knownPlaceIds = new Set(repos.places.map(({ id }) => id));
+  const excluded = new Set(constraints.excludedPlaceIds);
+
+  for (const [first, second] of pairs) {
+    for (const placeId of [first, second]) {
+      if (excluded.has(placeId)) continue; // 제외가 선호보다 우선 — 오류가 아니라 무시다
+      if (!knownPlaceIds.has(placeId)) {
+        return { preferredOrder: `unknown place id: ${placeId}` };
+      }
+      if (!memberships.has(placeId)) {
+        return { preferredOrder: `not a candidate place id: ${placeId}` };
+      }
+    }
+  }
+  return {};
+}
+
 export function preferredVisitDateErrors(
   constraints: TripConstraints,
   repos: Repositories,

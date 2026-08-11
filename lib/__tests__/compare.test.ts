@@ -20,6 +20,55 @@ function cand(partial: Partial<Candidate> & { stableId: string }): Candidate {
 }
 
 describe("사전식 비교 (#3 — 가중합 아님)", () => {
+  /**
+   * #145 — 순서 선호가 실제로 최종 승자를 정하는지. 계산만 하고 비교에서 안 읽으면
+   * beam에서 보존해도 마지막에 이동시간이 승자를 뒤집는다 (PR #153 리뷰 1번에서 잡힌 결함).
+   */
+  describe("순서 선호 서열", () => {
+    it("다른 키가 모두 같으면 순서를 더 지킨 쪽이 이긴다", () => {
+      const kept = cand({ stableId: "a", keys: { preferredOrderMismatchCount: 0 } as never });
+      const broken = cand({ stableId: "b", keys: { preferredOrderMismatchCount: 1 } as never });
+      expect(compareCandidates(kept, broken)).toBeLessThan(0);
+      expect(compareCandidates(broken, kept)).toBeGreaterThan(0);
+    });
+
+    it("순서는 이동시간보다 앞이다 — 더 빨라도 순서를 어기면 진다", () => {
+      const slowButKept = cand({
+        stableId: "a",
+        keys: { preferredOrderMismatchCount: 0, totalTravelMinutes: 999 } as never,
+      });
+      const fastButBroken = cand({
+        stableId: "b",
+        keys: { preferredOrderMismatchCount: 1, totalTravelMinutes: 1 } as never,
+      });
+      expect(compareCandidates(slowButKept, fastButBroken)).toBeLessThan(0);
+    });
+
+    it("순서는 방문일보다 뒤다 — 방문일을 어기면서 순서를 지키지 않는다", () => {
+      const dateKept = cand({
+        stableId: "a",
+        keys: { preferredDateMismatchCount: 0, preferredOrderMismatchCount: 9 } as never,
+      });
+      const dateBroken = cand({
+        stableId: "b",
+        keys: { preferredDateMismatchCount: 1, preferredOrderMismatchCount: 0 } as never,
+      });
+      expect(compareCandidates(dateKept, dateBroken)).toBeLessThan(0);
+    });
+
+    it("순서는 운영시간 경고보다 뒤다 — 경고를 늘리면서까지 순서를 지키지 않는다", () => {
+      const noWarning = cand({
+        stableId: "a",
+        keys: { activityWarningCount: 0, preferredOrderMismatchCount: 9 } as never,
+      });
+      const warned = cand({
+        stableId: "b",
+        keys: { activityWarningCount: 1, preferredOrderMismatchCount: 0 } as never,
+      });
+      expect(compareCandidates(noWarning, warned)).toBeLessThan(0);
+    });
+  });
+
   it("배우·작품 그룹을 모두 충족한 일정이 작품 장소만 많은 일정보다 우선한다", () => {
     const both = cand({
       stableId: "a",

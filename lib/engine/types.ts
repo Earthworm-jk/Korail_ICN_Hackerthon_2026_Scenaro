@@ -69,9 +69,9 @@ export type ComparisonKeys = {
   // 5) 낮을수록 우선 — 못 지킨 순서 쌍 수 (#145). **방문일과 합치지 않는다**: 하나로 합치면
   //    엔진이 방문일 하나를 어기고 순서 하나를 지키는 식으로 맞바꿀 수 있는데 둘은 같은 무게가 아니다.
   preferredOrderMismatchCount: number;
-  totalTravelMinutes: number; // 5) 열차 + 역–장소 왕복 추정(문전간), 낮을수록 우선
-  transferCount: number; // 6) 낮을수록 우선
-  slackSatisfied: boolean; // 7) 충족 우선 (미달만 불이익, 초과 가점 없음)
+  totalTravelMinutes: number; // 6) 열차 + 역–장소 왕복 추정(문전간), 낮을수록 우선
+  transferCount: number; // 7) 낮을수록 우선
+  slackSatisfied: boolean; // 8) 충족 우선 (미달만 불이익, 초과 가점 없음)
 };
 
 export type SelectionGroupUncoveredReason =

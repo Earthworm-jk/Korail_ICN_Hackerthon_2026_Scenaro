@@ -70,6 +70,57 @@ describe("방문 순서 소프트 선호", () => {
       expect(res.ok).toBe(false);
     });
 
+    /**
+     * PR #153 리뷰 3번 — 길이 2만 막으면 `A→B, B→C, C→A`가 통과한다. 드래그를 여러 번 하면
+     * 이런 쌍이 쌓일 수 있고, 지금 막지 않으면 모순된 요청을 그대로 받아 버린다.
+     */
+    it("길이 3 순환도 거부한다", async () => {
+      const order = visitOrder(await plan());
+      if (order.length < 3) return;
+      const [a, b, c] = order;
+      const res = await planItinerary(request({
+        preferredOrder: [[a, b], [b, c], [c, a]],
+      }));
+      expect(res.ok).toBe(false);
+    });
+
+    /**
+     * PR #153 리뷰 2번 — 공개 Action은 엔진의 RangeError를 밖으로 새게 하면 안 된다.
+     * 미등록 ID와 등록됐지만 비후보인 ID를 나눠 확인한다.
+     */
+    it("알 수 없는 장소 ID는 INVALID_REQUEST로 정규화된다", async () => {
+      const [placed] = visitOrder(await plan());
+      const res = await planItinerary(request({
+        preferredOrder: [[placed, "place-does-not-exist"]],
+      }));
+      expect(res.ok).toBe(false);
+      if (res.ok) return;
+      expect(res.code).toBe("INVALID_REQUEST");
+      expect(res.fieldErrors.preferredOrder).toContain("unknown place id");
+    });
+
+    it("등록됐지만 이 선택의 후보가 아닌 장소도 INVALID_REQUEST다", async () => {
+      const [placed] = visitOrder(await plan());
+      const { loadRepositories } = await import("../repositories/json");
+      const { getCandidatePlaces } = await import("../actions/places");
+      const { candidates } = await getCandidatePlaces({
+        selectedActorIds: [ACTOR], selectedWorkIds: [],
+      });
+      const candidateIds = new Set(candidates.map(({ id }) => id));
+      const nonCandidate = loadRepositories().places
+        .map(({ id }) => id)
+        .find((id) => !candidateIds.has(id));
+      if (nonCandidate === undefined) return;
+
+      const res = await planItinerary(request({
+        preferredOrder: [[placed, nonCandidate]],
+      }));
+      expect(res.ok).toBe(false);
+      if (res.ok) return;
+      expect(res.code).toBe("INVALID_REQUEST");
+      expect(res.fieldErrors.preferredOrder).toContain("not a candidate place id");
+    });
+
     /** (A,B)와 (B,A)가 함께 오면 어느 쪽도 지킬 수 없다 — 조용히 하나를 버리지 않는다 */
     it("서로 모순되는 쌍은 거부한다", async () => {
       const [first, second] = visitOrder(await plan());
@@ -92,6 +143,33 @@ describe("방문 순서 소프트 선호", () => {
       expect(outcomeOf(result.preferredOrderOutcomes, first, second)?.outcome).toBe("honored");
       expect(visitOrder(result)).toEqual(order);
     });
+
+    /**
+     * PR #153 리뷰 1번 — `honored`든 `adjusted`든 통과하는 테스트는 비교 키가 아예 안 읽히는
+     * 결함을 못 잡는다. **실제로 승자를 바꾸는 쌍이 하나라도 있어야 한다**를 건다.
+     */
+    it("순서 요청이 실제 일정 순서를 바꾼다 — 같은 날 인접 쌍 중 최소 하나", async () => {
+      const baseline = await plan();
+      const before = visitOrder(baseline);
+
+      const adjacentPairs = baseline.days.flatMap((day) =>
+        day.items.slice(0, -1).map((item, index) =>
+          [item.placeId, day.items[index + 1].placeId] as const),
+      );
+      expect(adjacentPairs.length).toBeGreaterThan(0);
+
+      let flipped = 0;
+      for (const [first, second] of adjacentPairs) {
+        // 뒤집어 요청 — 지켜지면 방문 순서가 실제로 달라져야 한다
+        const result = await plan({ preferredOrder: [[second, first]] });
+        if (outcomeOf(result.preferredOrderOutcomes, second, first)?.outcome !== "honored") continue;
+        const after = visitOrder(result);
+        expect(after.indexOf(second)).toBeLessThan(after.indexOf(first));
+        if (JSON.stringify(after) !== JSON.stringify(before)) flipped += 1;
+      }
+      // 실험에서 인접 교환은 20/21이 지켜졌다. 하나도 안 바뀌면 키가 안 읽히는 것이다
+      expect(flipped).toBeGreaterThan(0);
+    }, 60000);
 
     it("뒤집어 요청하면 honored이거나 adjusted이고, 둘 중 무엇이든 일정은 선다", async () => {
       const baseline = await plan();

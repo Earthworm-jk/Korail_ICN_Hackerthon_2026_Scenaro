@@ -7,14 +7,56 @@
  */
 import type { Repositories } from "../repositories/json";
 import type { ItineraryResult, TripConstraints } from "./types";
-import { planItinerary, preferredVisitDateErrors, tripDatesForWindow } from "./planner";
+import { planItinerary, preferredVisitDateErrors,
+  preferredOrderErrors, tripDatesForWindow } from "./planner";
 import { buildGatewayAlternatives } from "./gateway-alternatives";
 import { gatewayPlanningBaselineOf, type GatewayPlanningBaseline } from "./gateway-baseline";
 import { z } from "zod";
 
 // PR #30 리뷰 ③: Server Action 경계가 같은 계약을 safeParse해 잘못된 요청을
 // throw 없이 INVALID_REQUEST로 반환할 수 있도록 내보낸다
-export { preferredVisitDateErrors, tripDatesForWindow };
+export { preferredVisitDateErrors, preferredOrderErrors, tripDatesForWindow };
+
+/**
+ * 순서 쌍 그래프의 첫 순환 (#145 · PR #153 리뷰 3번).
+ *
+ * precedence는 `먼저 → 나중` 방향 간선이다. 순환이 있으면 그 안의 쌍은 어떤 배치로도 전부
+ * 지킬 수 없으므로 입력 자체가 모순이다. 길이 2(직접 역쌍)도 이 검사에 함께 걸린다.
+ *
+ * 깊이 우선으로 훑으며 현재 경로에 다시 닿으면 그 구간을 돌려준다 — 어떤 쌍이 문제인지
+ * 사용자에게 말해 주려면 순환 여부만으로는 부족하다.
+ */
+function firstOrderCycle(pairs: readonly (readonly [string, string])[]): string[] | null {
+  const next = new Map<string, string[]>();
+  for (const [first, second] of pairs) {
+    next.set(first, [...(next.get(first) ?? []), second]);
+  }
+  const done = new Set<string>();
+  const path: string[] = [];
+  const onPath = new Set<string>();
+
+  const walk = (node: string): string[] | null => {
+    if (onPath.has(node)) return [...path.slice(path.indexOf(node)), node];
+    if (done.has(node)) return null;
+    onPath.add(node);
+    path.push(node);
+    for (const child of next.get(node) ?? []) {
+      const found = walk(child);
+      if (found !== null) return found;
+    }
+    path.pop();
+    onPath.delete(node);
+    done.add(node);
+    return null;
+  };
+
+  // 시작점은 입력 순서를 따른다 — 같은 입력이면 같은 순환을 돌려주기 위해서다
+  for (const [first] of pairs) {
+    const found = walk(first);
+    if (found !== null) return found;
+  }
+  return null;
+}
 
 export const TripConstraintsSchema = z.object({
   arrivalAt: z.iso.datetime({ offset: true }),
@@ -63,15 +105,19 @@ export const TripConstraintsSchema = z.object({
       });
     }
     seen.add(key);
-    // (A,B)와 (B,A)가 함께 오면 어느 쪽도 지킬 수 없다. 조용히 하나를 버리지 않고 거부한다
-    if (seen.has(`${second}|${first}`)) {
-      context.addIssue({
-        code: "custom",
-        path: ["preferredOrder", index],
-        message: `contradictory preferredOrder pair: ${second}|${first} already requested`,
-      });
-    }
   });
+
+  // 순환은 길이 2뿐 아니라 3 이상도 모순이다 — `A→B, B→C, C→A`는 동시에 만족할 수 없다.
+  // 드래그를 여러 번 하면 이런 쌍이 쌓일 수 있고, 조용히 일부를 `adjusted`로 돌려주면
+  // 사용자의 모순된 요청을 그대로 받아 버린다 (PR #153 리뷰 3번).
+  const cycle = firstOrderCycle(pairs);
+  if (cycle !== null) {
+    context.addIssue({
+      code: "custom",
+      path: ["preferredOrder"],
+      message: `contradictory preferredOrder cycle: ${cycle.join(" → ")}`,
+    });
+  }
   if (Date.parse(constraints.arrivalAt) >= Date.parse(constraints.departureAt)) {
     context.addIssue({
       code: "custom",

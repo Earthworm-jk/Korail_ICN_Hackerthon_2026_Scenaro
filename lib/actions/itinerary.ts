@@ -9,6 +9,7 @@ import {
   generateGatewayAlternatives,
   generateItinerary,
   preferredVisitDateErrors,
+  preferredOrderErrors,
   TripConstraintsSchema,
 } from "../engine";
 import type { GatewayAlternative, ItineraryResult, TripConstraints } from "../engine/types";
@@ -110,7 +111,12 @@ function referenceErrorsOf(
   if (unknownWork) errors.selectedWorkIds = `unknown work id: ${unknownWork}`;
   if (unknownPlace) errors.excludedPlaceIds = `unknown place id: ${unknownPlace}`;
   // #139 — 선호 날짜의 후보·기간 검사도 엔진 RangeError가 아니라 필드 오류로 나가야 한다
-  return { ...errors, ...preferredVisitDateErrors(constraints, repos) };
+  // #145 — 순서 쌍의 장소 ID도 같은 이유로 필드 오류가 되어야 한다 (PR #153 리뷰 2번)
+  return {
+    ...errors,
+    ...preferredVisitDateErrors(constraints, repos),
+    ...preferredOrderErrors(constraints, repos),
+  };
 }
 
 function validateGatewayBaseline(
