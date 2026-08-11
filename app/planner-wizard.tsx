@@ -74,11 +74,11 @@ import { diffItineraries, type ItineraryDiff } from "@/lib/itinerary-diff";
 import { gatewayPlanningBaselineOf } from "@/lib/engine/gateway-baseline";
 import { AlternativeTimetables } from "./alternative-timetables";
 import { AuthModal, TripsModal, useSaveStub, type SaveStatus } from "./save-stub";
-import { ExecutionSupport } from "./execution-support";
 import { FinalItineraryPage } from "./final-itinerary-page";
 import { GatewayAlternatives } from "./gateway-alternatives";
 import { DayStationFacilities } from "./day-context";
 import { DayMoveMenu } from "./day-move-menu";
+import { DayGatewayInfo } from "./day-gateway";
 import { ItineraryChangeSummary } from "./itinerary-change-summary";
 import {
   ItineraryCommandPanel,
@@ -89,7 +89,7 @@ import { ItineraryRouteMap, KoreaMapPanel, type MapPlace, type MapStation } from
 import { PlaceRecommendationSheet, PlaceThumbnail } from "./place-recommendation-sheet";
 import { PlaceBrowser } from "./place-browser";
 import sheetStyles from "./place-recommendation-sheet.module.css";
-import { allStationIdsOf, itineraryRowsOf, rowKey, shouldNoteAirportRail, stationIdsOf } from "@/lib/itinerary-rows";
+import { airportLegsOf, itineraryRowsOf, rowKey, shouldNoteAirportRail, stationIdsOf } from "@/lib/itinerary-rows";
 import { MoveRow } from "./move-row";
 import { ThemeExperienceCard, ThemeExperienceMapOverlay } from "./theme-experience";
 import { TrainLegModal, legDurationLabel, type TrainLegDetail } from "./train-leg-modal";
@@ -2010,6 +2010,16 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
                         submitDayMove(day.items.map((item) => item.placeId), targetDate)}
                       tr={tr}
                     />
+                    {/* 공항 진입은 여행 전체에 걸리는 정보라 매일 있지 않다 —
+                        왕복이면 첫날·마지막날에만 나온다 (#146) */}
+                    <DayGatewayInfo
+                      legs={airportLegsOf(day, airportStationIds)}
+                      stationName={stationName}
+                      date={day.date}
+                      locale={locale}
+                      formatTime={fmtTime}
+                      tr={tr}
+                    />
                     <DayStationFacilities
                       snapshot={stationFacilities}
                       stationIds={stationIdsOf(day)}
@@ -2260,13 +2270,8 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
                 mapVisible={themeMapVisible}
                 onToggleMap={() => setThemeMapVisible((visible) => !visible)}
               />
-              {/* #24 A5 — 역 시설·짐 보관: 일정에 등장하는 역만, 스냅샷 수록분만 안내 */}
-              <ExecutionSupport
-                snapshot={stationFacilities}
-                stationIds={allStationIdsOf(displayedDays)}
-                stationName={stationName}
-                tr={tr}
-              />
+              {/* #24 A5 역 시설·짐 보관 카드는 DAY 헤더 팝오버로 옮겼다 (#146).
+                  같은 정보가 두 곳에 있으면 어느 쪽이 그 날 이야기인지 알 수 없다 */}
               </div>
               </div>
 

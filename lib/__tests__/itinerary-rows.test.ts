@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { allStationIdsOf, itineraryRowsOf, rowKey, shouldNoteAirportRail, stationIdsOf } from "../itinerary-rows";
+import { airportLegsOf, itineraryRowsOf, rowKey, shouldNoteAirportRail, stationIdsOf } from "../itinerary-rows";
 import type { DayPlan, GatewayRide, RegionWindow } from "../engine/types";
 
 /** #146 2절 — 하루를 시각순 줄로 펼친다 */
@@ -127,11 +127,6 @@ describe("#155 리뷰 1 — 그 날 거치는 역", () => {
     expect(stationIdsOf(d)).toEqual(["s1", "s2", "ST-AIRPORT"]);
   });
 
-  it("일정 전체 합집합은 날짜별 기준을 그대로 합친다", () => {
-    const first = day({ date: "2026-08-12", rides: [ride("T1", "01:00")] });
-    const second = day({ date: "2026-08-13", rides: [], regionWindows: [window("ST-GANG")] });
-    expect(allStationIdsOf([first, second])).toEqual(["s1", "s2", "ST-GANG"]);
-  });
 });
 
 describe("#146 — 공항철도 이용 명시", () => {
@@ -171,5 +166,87 @@ describe("#146 — 공항철도 이용 명시", () => {
     expect(shouldNoteAirportRail({
       hasBusAlternative: false, airportStationIds: new Set(), ride: leg("ST-AIRPORT", "ST-SEOUL"),
     })).toBe(false);
+  });
+});
+
+describe("#146 — 그 날 공항 진입 구간", () => {
+  const airports = new Set(["ST-AIRPORT"]);
+  const gateway = (from: string, to: string, hhmm: string): GatewayRide => ({
+    id: `g-${from}-${to}`, routeId: "r-1", direction: "outbound", mode: "airport_bus",
+    scheduleKind: "observed_snapshot",
+    fromStationId: from, toStationId: to,
+    fromName: { ko: from, en: from }, toName: { ko: to, en: to },
+    serviceName: { ko: "공항버스 6001", en: "Airport bus 6001" },
+    operator: { ko: "운영사", en: "Operator" },
+    departAt: `2026-08-12T${hhmm}:00.000Z`, arriveAt: `2026-08-12T${hhmm}:00.000Z`,
+    sourceUrls: ["https://example.test"], verifiedAt: "2026-08-01", recheckRequired: true,
+  });
+
+  /** 공항 진입은 여행 전체에 걸리는 정보라 가운데 날에는 없다 */
+  it("공항을 지나지 않는 날에는 아무것도 없다", () => {
+    expect(airportLegsOf(day({ rides: [ride("T1", "01:00")] }), airports)).toEqual([]);
+  });
+
+  it("공항으로 가는 열차 구간을 잡는다", () => {
+    const legs = airportLegsOf(
+      day({ rides: [ride("AREX", "05:00", "s1", "ST-AIRPORT")] }), airports);
+    expect(legs).toHaveLength(1);
+    expect(legs[0].kind).toBe("rail");
+    expect(legs[0].direction).toBe("to_airport");
+    expect(legs[0].serviceName).toEqual({ ko: "AREX", en: "AREX" });
+  });
+
+  it("공항에서 나오는 방향도 구분한다", () => {
+    const legs = airportLegsOf(
+      day({ rides: [ride("AREX", "05:00", "ST-AIRPORT", "s1")] }), airports);
+    expect(legs[0].direction).toBe("from_airport");
+  });
+
+  // 철도는 rides에, 검증 버스는 gatewayLegs에 있다 — 사용자에겐 같은 질문의 답이다
+  it("열차와 버스를 한 목록으로 합치고 시각순으로 세운다", () => {
+    const legs = airportLegsOf(day({
+      rides: [ride("AREX", "09:00", "ST-AIRPORT", "s1")],
+      gatewayLegs: [gateway("ST-AIRPORT", "s2", "07:00")],
+    }), airports);
+    expect(legs.map((leg) => leg.kind)).toEqual(["bus", "rail"]);
+  });
+
+  it("공항역 목록이 비면 열차 구간은 잡지 않는다", () => {
+    const legs = airportLegsOf(
+      day({ rides: [ride("AREX", "05:00", "s1", "ST-AIRPORT")] }), new Set());
+    expect(legs).toEqual([]);
+  });
+
+  /**
+   * **버스는 정의상 공항 진입 구간이다.** 소속 검사에 걸어 두면 공항역 메타데이터가
+   * 비었을 때 공항을 어떻게 드나드는지 말할 수단이 통째로 사라진다.
+   */
+  it("공항역 목록이 비어도 버스 구간은 남는다", () => {
+    const legs = airportLegsOf(
+      day({ rides: [], gatewayLegs: [gateway("ST-AIRPORT", "s2", "07:00")] }), new Set());
+    expect(legs).toHaveLength(1);
+    expect(legs[0].kind).toBe("bus");
+  });
+
+  /**
+   * 방향은 엔진 계약(`outbound`=공항 이탈, `inbound`=공항 귀환)을 그대로 옮긴다.
+   * 좌표로 다시 추론하면 **메타데이터가 비었을 때 귀환 구간이 반대로 표시된다.**
+   */
+  it("공항역 목록이 비어도 inbound는 공항으로 간다", () => {
+    const inbound = { ...gateway("s2", "ST-AIRPORT", "07:00"), direction: "inbound" as const };
+    const legs = airportLegsOf(day({ rides: [], gatewayLegs: [inbound] }), new Set());
+    expect(legs[0].direction).toBe("to_airport");
+  });
+
+  it("outbound는 공항에서 나온다", () => {
+    const outbound = { ...gateway("ST-AIRPORT", "s2", "07:00"), direction: "outbound" as const };
+    const legs = airportLegsOf(day({ rides: [], gatewayLegs: [outbound] }), new Set());
+    expect(legs[0].direction).toBe("from_airport");
+  });
+
+  it("버스 노선명은 다국어 그대로 옮긴다", () => {
+    const legs = airportLegsOf(
+      day({ rides: [], gatewayLegs: [gateway("ST-AIRPORT", "s2", "07:00")] }), airports);
+    expect(legs[0].serviceName).toEqual({ ko: "공항버스 6001", en: "Airport bus 6001" });
   });
 });
