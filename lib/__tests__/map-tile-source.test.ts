@@ -8,9 +8,21 @@ import { afterEach, describe, expect, it, vi } from "vitest";
  * 좌표 계약이 흔들리지 않는다**는 것을 여기서 고정한다.
  */
 
-async function load(key: string | undefined, referer?: string) {
+async function load(
+  key: string | undefined,
+  referer?: string,
+  stadiaKey?: string,
+  stadiaReferer?: string,
+) {
   vi.resetModules();
-  vi.doMock("../env", () => ({ env: { VWORLD_API_KEY: key, VWORLD_REFERER: referer } }));
+  vi.doMock("../env", () => ({
+    env: {
+      VWORLD_API_KEY: key,
+      VWORLD_REFERER: referer,
+      STADIA_API_KEY: stadiaKey,
+      STADIA_REFERER: stadiaReferer,
+    },
+  }));
   return await import("../map-tile-source");
 }
 
@@ -85,8 +97,77 @@ describe("배경 타일 공급자", () => {
     });
   });
 
-  it("출처 표기를 들고 다닌다 — 화면에 반드시 붙여야 하는 이용 조건이다", async () => {
-    const { activeTileSource } = await load("TESTKEY");
-    expect(activeTileSource().attribution).toBe("공간정보 오픈플랫폼(VWorld)");
+  /**
+   * Stadia로 갈아탄 것이 #162 결론이다. VWorld 어댑터는 남기되 **활성 공급자는 Stadia**이고,
+   * 두 어댑터가 좌표 계약을 공유한다는 것을 여기서 고정한다.
+   */
+  describe("Stadia (활성 공급자)", () => {
+    it("활성 공급자가 Stadia다", async () => {
+      const { activeTileSource } = await load(undefined);
+      expect(activeTileSource().id).toContain("stadia");
+      expect(activeTileSource().id).toContain("alidade_smooth");
+    });
+
+    it("키가 없어도 URL이 있다 — localhost 등록 도메인으로 통한다", async () => {
+      const { stadiaSource } = await load(undefined);
+      const url = stadiaSource("zxy").urlOf(7, 109, 49);
+      expect(url).toContain("/alidade_smooth/7/109/49.png");
+      expect(url).not.toContain("api_key");
+    });
+
+    it("키가 있으면 붙인다 — 인코딩해서", async () => {
+      const { stadiaSource } = await load(undefined, undefined, "a b/c");
+      const url = stadiaSource("zxy").urlOf(7, 109, 49) ?? "";
+      expect(url).toContain(`api_key=${encodeURIComponent("a b/c")}`);
+      expect(url).not.toContain("a b/c");
+    });
+
+    it("슬리피 순서 zxy가 기본이다 — VWorld의 zyx와 반대다", async () => {
+      const { stadiaSource, vworldSource } = await load("TESTKEY");
+      expect(stadiaSource().urlOf(7, 109, 49)).toContain("/7/109/49.png");
+      expect(vworldSource().urlOf(7, 109, 49)).toContain("/7/49/109.png");
+    });
+
+    it("축 순서가 다르면 id가 다르다 — 캐시가 갈린다", async () => {
+      const { stadiaSource } = await load(undefined);
+      expect(stadiaSource("zxy").id).not.toBe(stadiaSource("zyx").id);
+    });
+
+    it("공급자가 다르면 id가 다르다 — 갈아타도 옛 타일을 맞히지 않는다", async () => {
+      const { stadiaSource, vworldSource } = await load("TESTKEY");
+      expect(stadiaSource("zxy").id).not.toBe(vworldSource("zxy").id);
+    });
+
+    it("출처 표기를 들고 다닌다 — 화면에 반드시 붙여야 하는 이용 조건이다", async () => {
+      const { activeTileSource } = await load(undefined);
+      const attribution = activeTileSource().attribution;
+      for (const required of ["Stadia Maps", "OpenMapTiles", "OpenStreetMap"]) {
+        expect(attribution).toContain(required);
+      }
+    });
+
+    describe("Referer는 어댑터가 들고 다닌다", () => {
+      it("환경변수가 없으면 개발 기본값이다", async () => {
+        const mod = await load(undefined);
+        expect(mod.activeTileSource().referer).toBe(mod.DEV_STADIA_REFERER);
+      });
+
+      /** 배포에서 localhost를 그대로 보내면 우리 서버가 localhost인 척하는 것이 된다 (#162) */
+      it("환경변수가 있으면 그 값을 쓴다 — 배포 도메인", async () => {
+        const { activeTileSource } = await load(undefined, undefined, undefined, "https://scenaro.example/");
+        expect(activeTileSource().referer).toBe("https://scenaro.example/");
+      });
+
+      it("VWorld 어댑터는 자기 Referer를 들고 다닌다 — 공급자마다 다르다", async () => {
+        const { stadiaSource, vworldSource } = await load("K", "https://vworld.example/", undefined, "https://stadia.example/");
+        expect(vworldSource().referer).toBe("https://vworld.example/");
+        expect(stadiaSource().referer).toBe("https://stadia.example/");
+      });
+    });
+  });
+
+  it("VWorld 출처 표기도 그대로 남아 있다", async () => {
+    const { vworldSource } = await load("TESTKEY");
+    expect(vworldSource().attribution).toBe("공간정보 오픈플랫폼(VWorld)");
   });
 });
