@@ -810,6 +810,7 @@ export function KoreaMapPanel({
   const hasPoints = placePoints.length > 0 || routeStations.length > 0;
   const zoomed = isZoomed(view);
   const hintId = `map-zoom-hint-${kind}`;
+  const noticeId = `map-route-notice-${kind}`;
 
   /**
    * 해안선 진하기 — 원천 해상도(1:50m)를 넘어선 배율에서 물러난다.
@@ -842,11 +843,31 @@ export function KoreaMapPanel({
       className={`min-w-0 rounded-2xl border bg-sc-surface p-4 sm:p-[18px] ${sticky ? "md:sticky md:top-4" : ""}`}
     >
       <div className="mb-2 flex flex-wrap items-center justify-between gap-x-2.5 gap-y-2">
+        {/* 제목과 (i)를 한 묶음으로 (#146). `justify-between`인 줄에 셋을 늘어놓으면
+            가운데 것이 화면 한복판으로 떠 어느 것에 딸린 버튼인지 읽히지 않는다 */}
+        <div className="flex min-w-0 items-center gap-2">
         <h3 className="font-medium whitespace-nowrap">
           {tr(isRoute ? "map.routeTitle" : "map.placesTitle")}
         </h3>
+        {/* 동선 고지를 제목 옆 (i)로 옮겼다 (#146 모바일). 390px에서 이 82자가
+            지도 아래 48px을 먹었다. 고지 자체는 그대로 두고 자리만 옮긴다 */}
+        {isRoute && (
+          <button
+            type="button"
+            popoverTarget={noticeId}
+            aria-haspopup="dialog"
+            aria-controls={noticeId}
+            aria-label={tr("map.noticeOpen")}
+            data-map-notice-anchor
+            className="flex size-8 shrink-0 items-center justify-center rounded-full border text-sc-muted hover:border-sc-blue hover:text-sc-blue"
+          >
+            <span aria-hidden="true" className="text-sm font-semibold">i</span>
+          </button>
+        )}
+        </div>
         <div className="flex flex-wrap items-center justify-end gap-1.5">
-          <span className="text-xs text-sc-muted">{tr("map.modeBadge")}</span>
+          {/* "대한민국 지도" 배지는 지웠다 (#146) — 지도를 보면 아는 것을 적어
+              한 줄을 쓰고 있었다. 스크린리더용 이름은 svg의 aria-label에 남아 있다 */}
           {headingAction}
           {hasPoints && <ZoomControls view={view} onZoom={zoomBy} onReset={resetView} tr={tr} />}
         </div>
@@ -978,12 +999,24 @@ export function KoreaMapPanel({
         )}
       </div>
 
-      {/* #14 §6 — 실제 경로 계산으로 읽히지 않도록 동선 지도에는 항상 붙인다.
-          선로를 실제로 그린 화면에서는 어디까지가 실선형인지도 함께 밝힌다 */}
+      {/* #14 §6 — 실제 경로 계산으로 읽히지 않도록 동선 지도에 붙이는 고지다.
+          문구는 그대로이고 자리만 제목 옆 (!) 팝오버로 옮겼다 (#146) */}
       {isRoute && (
-        <p className="mt-2 text-xs text-sc-muted">
-          {tr(hasRailGeometry ? "map.routeNoticeRail" : "map.routeNotice")}
-        </p>
+        <div
+          id={noticeId}
+          popover="auto"
+          role="dialog"
+          aria-labelledby={`${noticeId}-title`}
+          data-map-notice
+          className="m-auto w-[min(400px,calc(100vw-32px))] rounded-xl border bg-sc-surface p-4 text-left shadow-2xl backdrop:bg-black/20"
+        >
+          <h4 id={`${noticeId}-title`} className="text-sm font-semibold text-sc-text">
+            {tr("map.noticeTitle")}
+          </h4>
+          <p className="mt-2 text-xs text-sc-muted">
+            {tr(hasRailGeometry ? "map.routeNoticeRail" : "map.routeNotice")}
+          </p>
+        </div>
       )}
       {experienceNotice}
 
@@ -993,9 +1026,17 @@ export function KoreaMapPanel({
         </p>
       )}
 
+      {/**
+       * 출처·라이선스는 **지도 종류와 무관하게 화면에 남긴다** (PR #168 리뷰).
+       *
+       * 동선 고지는 (i)로 내렸지만 이 줄은 내리지 않는다. 두 가지가 걸린다 —
+       * `KoreaMapPanel`은 `places`도 받는 공용 컴포넌트인데 (i)를 `isRoute`로만 달아 두면
+       * 그쪽은 출처가 통째로 사라지고, 실제 OSM 선형을 그리는 경로 지도에서도 ODbL 표기가
+       * 기본 화면에서 사라진다.
+       */}
       <p className="mt-2 text-xs text-sc-muted">
         {tr("map.source")}
-        {/* 배경 타일 공급자의 이용 조건 — 타일이 실제로 뜬 화면에만 붙인다 */}
+        {/* 배경 타일 공급자의 이용 조건 — 타일이 실제로 뜬 화면에만 붙인다 (#166) */}
         {basemapShown && <BasemapAttribution tr={tr} />}
         {/* ODbL 1.0 의무 표기 — 라이선스 링크까지 함께 (OSM 저작권 안내 규정) */}
         {hasRailGeometry && (

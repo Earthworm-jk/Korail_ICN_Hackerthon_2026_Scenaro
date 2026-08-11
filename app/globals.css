@@ -140,15 +140,8 @@
       padding: 18px 20px 22px;
     }
 
-    /* The entire Step 3 is a three-part stage: left decision rail / central map / right itinerary rail.
-       The existing result component is flattened visually so the map can occupy an independent center column. */
-    section > div.grid:has(> #place-picker) {
-      grid-template-columns: minmax(230px, 280px) minmax(420px, 1fr) minmax(280px, 330px) !important;
-      column-gap: 18px;
-      row-gap: 12px;
-      align-items: start;
-      min-height: min(720px, calc(100vh - 190px));
-    }
+    /* 그리드 열·간격·정렬·높이는 stage-v4 단독 (#146). 여기 있던 3열 스테이지
+       (좌 결정 rail / 중앙 지도 / 우 일정 rail)는 v4의 2열이 전부 덮는다. */
 
     /* Left panel: one presentation-like card, not a stack of floating cards. */
     #place-picker {
@@ -308,22 +301,145 @@
   @layer components {
     body > main > div.mx-auto { padding-inline: 24px; }
 
-    section > div.grid:has(> #place-picker) {
-      grid-template-columns: minmax(270px, 305px) minmax(520px, 1fr) minmax(315px, 355px) !important;
-      column-gap: 24px;
-    }
-
     #place-picker + div[aria-busy] > div[class*="space-y"] > div.grid > div:nth-child(2) > aside:first-child {
       padding-inline: 12px;
     }
   }
 }
 
-@media (min-width: 1440px) {
-  @layer components {
-    section > div.grid:has(> #place-picker) {
-      grid-template-columns: 305px minmax(600px, 1fr) 360px !important;
-      column-gap: 28px;
-    }
+/**
+ * 모바일: 세로로 늘어나던 하루 일정을 가로 레일로 (#146).
+ *
+ * 390px에서 DAY 한 통이 234-270px씩 쌓여 문서가 3.5화면이 됐다. 하루의 흐름은
+ * 원래 시간순이라 **가로가 더 맞는 방향이다** - 카드를 옆으로 밀면 그 날을 따라간다.
+ *
+ * 데스크톱은 건드리지 않는다. 우측 rail은 세로로 스크롤되는 구조가 이미 맞고,
+ * 바닥 독 배치를 방금 맞춰 놨다.
+ */
+@media (max-width: 1023px) {
+  /* DAY 1 - DAY 2 - DAY 3이 한 줄로 흐른다. 스크롤되는 것은 **이 바깥 레일 하나**다 */
+  [data-day-list] {
+    display: flex;
+    gap: 12px;
+    overflow-x: auto;
+    /* 레일 안에서 가로로 튕겼을 때 페이지가 같이 밀리지 않게 한다 */
+    overscroll-behavior-inline: contain;
+    scroll-snap-type: x proximity;
+    padding-bottom: 8px;
+  }
+
+  /* 하루 통은 제 내용만큼만 차지하고 줄어들지 않는다 */
+  [data-day-list] > div {
+    flex: 0 0 auto;
+    margin-top: 0 !important;
+    scroll-snap-align: start;
+  }
+
+  /* 하루 안의 줄도 가로로 눕는다. 다만 **스스로 스크롤하지 않는다** —
+     안팎이 겹쳐 스크롤되면 어느 쪽이 밀리는지 손가락으로 구분할 수 없다 */
+  ul[data-day-rows] {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(210px, 240px);
+    gap: 8px;
+  }
+
+  /* `space-y-1.5`의 세로 마진은 가로 레일에서 첫 칸만 밀어낸다 */
+  ul[data-day-rows] > li {
+    margin-top: 0 !important;
+  }
+}
+
+/**
+ * 하루 일정 카드는 모두 같은 크기다 (#146).
+ *
+ * 내용에 따라 58 - 83px로 들쭉날쭉했다 — 이름이 길면 두 줄이 되고 이동 줄은 메타가
+ * 없어 짧아졌다. **크기를 내용이 정하게 두면 목록이 계단처럼 보인다.**
+ * 높이를 고정하고 이름을 두 줄에서 자른다.
+ */
+[data-itinerary-row] {
+  display: flex;
+  min-height: 88px;
+  flex-direction: column;
+}
+
+[data-row-name] {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-height: 1.35;
+}
+
+/**
+ * 시각을 잇는 타임라인.
+ *
+ * 카드마다 도착 시각이 맨 위에 있으므로, 그 줄을 가로로 이으면 하루가 시간순으로
+ * 흐르는 것이 보인다. 권역별 "약 N시간 활용 가능" 요약을 지운 자리를 이것이 대신한다.
+ */
+@media (max-width: 1023px) {
+  /* 높이를 **고정한다**. `min-height`만 두면 그리드 행이 그 날의 가장 큰 카드에
+     맞춰 늘어나 DAY마다 90 - 106px로 갈린다 - 옆으로 넘길 때 카드가 들썩인다 */
+  ul[data-day-rows] > li {
+    position: relative;
+    height: 108px;
+    padding-top: 14px;
+  }
+
+  /**
+   * 카드 위를 가로지르는 선.
+   *
+   * **레일에 한 번 긋는다.** 칸마다 그으면 체류 타임라인처럼 빈 칸이 있는 줄에서
+   * 선이 끊긴다 - 체류는 도착 시각에 맞춰 칸을 건너뛰므로 실제로 그렇게 끊겼다.
+   * 배경으로 그리면 칸이 비어도 이어진다.
+   */
+  ul[data-day-rows] {
+    background-image: linear-gradient(
+      to right,
+      var(--sc-line-strong, var(--sc-line)) 0 100%
+    );
+    background-position: 8px 5px;
+    background-repeat: no-repeat;
+    background-size: calc(100% - 16px) 1px;
+  }
+
+  /* 그 선 위의 시각 표식 */
+  ul[data-day-rows] > li::before {
+    content: "";
+    position: absolute;
+    top: 2px;
+    left: 6px;
+    z-index: 1;
+    width: 7px;
+    height: 7px;
+    border-radius: 999px;
+    background: var(--sc-orange);
+    box-shadow: 0 0 0 3px var(--sc-surface);
+  }
+}
+
+/**
+ * 지도 표기 안내는 그 (i) 버튼 밑에 붙는다 (#146).
+ *
+ * 네이티브 팝오버는 최상위 레이어에 뜨므로 기본값이 화면 정중앙이다 — 지도 한복판에
+ * 상자가 나타나 어느 버튼이 연 것인지 읽히지 않았다.
+ *
+ * 앵커 위치지정을 못 쓰는 브라우저에서는 가운데 그대로 둔다. 위치가 덜 좋을 뿐
+ * 내용과 조작은 같다.
+ */
+@supports (anchor-name: --probe) {
+  [data-map-notice-anchor] {
+    anchor-name: --sc-map-notice;
+  }
+
+  [data-map-notice] {
+    position-anchor: --sc-map-notice;
+    margin: 0;
+    top: calc(anchor(bottom) + 8px);
+    /* 버튼에 왼쪽을 맞추되 화면 밖으로는 못 나간다. 390px에서 버튼이 오른쪽에 있어
+       그대로 붙이면 상자가 잘렸다 — `clamp`가 양쪽 여백 16px을 지킨다 */
+    left: clamp(16px, anchor(left), calc(100vw - 416px));
+    /* 아래가 모자라면 버튼 위로 뒤집는다 */
+    position-try-fallbacks: flip-block;
   }
 }

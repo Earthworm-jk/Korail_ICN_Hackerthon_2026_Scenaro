@@ -6,7 +6,8 @@
  * - 대안 시간표는 mock(#14 ⑨ 선행), 저장·내 일정은 in-memory 스텁(#25 선행) — 엔진·Supabase 연결 시 교체
  */
 import { useCallback, useEffect, useId, useMemo, useReducer, useRef, useState, useTransition } from "react";
-import { BusFront, Info, Sparkles, TrainFront, TriangleAlert, X } from "lucide-react";
+import { BusFront, Hourglass, Info, Sparkles, TrainFront, TriangleAlert, X } from "lucide-react";
+import { StageUtilityPortal } from "./stage-utility-portal";
 import {
   searchEntities,
   type ActorSummary,
@@ -84,7 +85,7 @@ import {
   type CommandFeedback,
   type ProposalOutcome,
 } from "./itinerary-command-panel";
-import { ItineraryRouteMap, KoreaMapPanel, type MapPlace, type MapStation } from "./korea-map";
+import { ItineraryRouteMap, type MapPlace, type MapStation } from "./korea-map";
 import { PlaceRecommendationSheet, PlaceThumbnail } from "./place-recommendation-sheet";
 import { PlaceBrowser } from "./place-browser";
 import sheetStyles from "./place-recommendation-sheet.module.css";
@@ -278,7 +279,20 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
   railGeometry: RailGeometrySnapshotT;
 }) {
   const [locale, setLocale] = useState<Locale>("ko");
-  const [step, setStep] = useState(1);
+  /**
+   * 단계와 **지금까지 가 본 가장 먼 단계**를 함께 든다 (#146).
+   *
+   * nav로 앞 단계에 돌아갔을 때 원래 있던 자리로 되돌아올 수 있어야 한다. `step`
+   * 하나로 판정하면 3단계에서 2단계로 내려가는 순간 3단계 버튼이 잠겨 조건을 다시
+   * 다 통과해야 한다 - 실제로 그렇게 막혔다.
+   *
+   * 파생이 아니라 같은 갱신에서 올린다 — `step`을 보고 effect로 따라 올리면 렌더가
+   * 한 번 더 돌고, 그 사이 한 프레임 동안 버튼이 잠긴 채로 보인다.
+   */
+  const [{ step, furthestStep }, setStepState] = useState({ step: 1, furthestStep: 1 });
+  const setStep = useCallback((next: number) => {
+    setStepState((current) => ({ step: next, furthestStep: Math.max(current.furthestStep, next) }));
+  }, []);
   const [showFinalItinerary, setShowFinalItinerary] = useState(false);
   // 요약 사이드바 접기 — 접으면 본문(지도·일정)이 220px을 더 쓴다
   const [summaryCollapsed, setSummaryCollapsed] = useState(false);
@@ -452,7 +466,7 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
     }
 
     void refreshThemeExperience(record.days, c.selectedWorkIds);
-  }, [refreshThemeExperience]);
+  }, [refreshThemeExperience, setStep]);
 
   const saveStub = useSaveStub((record) => {
     void reopenRecord(record);
@@ -603,6 +617,7 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
     airportDeadline.at,
     saveStub,
     refreshThemeExperience,
+    setStep,
   ]);
 
   /** 현재 입력 상태의 전체 재계산 constraints — 저장 레코드와 plan 호출이 같은 값을 쓴다 */
@@ -1241,30 +1256,24 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
         })),
     [candidateData, locale, selectedPlaceIds],
   );
-  // 지도에 못 실은 장소 수는 "지금 지도가 대상으로 삼는 집합" 기준이어야 한다.
-  // 전체 후보 기준으로 세면 "선택한 장소만 보기"를 켠 상태에서 좌표 없는 장소를 하나도
-  // 고르지 않았는데도 "2곳 미표시"가 남는다 (PR #83 리뷰).
-
-  // 3단계 지도 전용 표시 필터 — 지도 안에서만 도는 상태이며 선택·일정에는 영향이 없다
-  const [onlySelectedOnMap, setOnlySelectedOnMap] = useState(false);
-  const step3MapPlaces = onlySelectedOnMap
-    ? mappablePlaces.filter((place) => place.selected)
-    : mappablePlaces;
-  const step3MapScope = onlySelectedOnMap
-    ? (candidateData?.candidates ?? []).filter((c) => selectedPlaceIds.has(c.id))
-    : (candidateData?.candidates ?? []);
-  const step3OmittedCount = step3MapScope.length - step3MapPlaces.length;
-
-
-  // #33 — availableMinutes 포맷 전용 (재계산 금지)
-  const availableLabel = (minutes: number) => {
+  /**
+   * 체류 시간 포맷 (#33 — 엔진 값 포맷 전용, 재계산 금지).
+   *
+   * 옛 문구는 `약 2시간 2분 활용 가능`이었다. 카드 폭이 240px이라 "활용 가능"까지
+   * 넣으면 두 줄이 되고, 제목이 이미 `체류 시간`이라 매 칸마다 되풀이할 이유가 없다.
+   */
+  const stayLabel = (minutes: number) => {
     const hours = Math.floor(minutes / 60);
     const mins = minutes % 60;
     const duration = hours > 0
       ? `${hours}${tr("region.hours")}${mins > 0 ? ` ${mins}${tr("region.minutes")}` : ""}`
       : `${mins}${tr("region.minutes")}`;
-    return `${tr("region.about")} ${duration} ${tr("region.available")}`;
+    return `${tr("region.about")} ${duration}`;
   };
+
+  // 3단계 시트 안의 촬영지 위치 지도와 "선택한 장소만 보기" 토글은 지웠다 (#146).
+  // 화면에 전체 이동 동선 지도가 이미 있어 같은 것을 두 벌 그리고 있었다.
+
 
 
   // PR #59 리뷰 1 — 엔진은 분 값만 내리고 라벨은 locale로 조합한다 (REQ-ITIN-006)
@@ -1390,15 +1399,19 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
     // 지도 열이 시안의 minmax(320px) 아래로 눌린다.
     <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6">
       <div className="overflow-hidden rounded-2xl border bg-sc-surface shadow-[0_18px_50px_var(--sc-shadow)]">
-      <header className="flex flex-wrap items-center justify-between gap-3 border-b bg-sc-surface px-5 py-4">
-        <div className="flex items-center gap-2.5">
+      {/* `flex-wrap`을 걷었다 (#146 모바일). 390px에서 버튼 묶음이 아래로 접혀
+          제목 밑에 왼쪽 정렬로 한 줄을 더 쓰고 있었다. 한 줄에 두고 로고 쪽이
+          줄어들게 한다 — 버튼은 늘 오른쪽 윗줄이다 */}
+      <header className="flex items-center justify-between gap-3 border-b bg-sc-surface px-5 py-4">
+        <div className="flex min-w-0 items-center gap-2.5">
           <span aria-hidden className="grid h-9 w-9 place-items-center rounded-[10px] bg-sc-blue text-sm font-medium text-white">SC</span>
-          <div>
-            <h1 className="text-lg font-semibold tracking-wide">{tr("app.title")}</h1>
-            <p className="mt-0.5 text-xs text-sc-muted">{tr("app.tagline")}</p>
+          <div className="min-w-0">
+            <h1 className="truncate text-lg font-semibold tracking-wide">{tr("app.title")}</h1>
+            {/* 좁은 화면에서 태그라인은 버튼 자리를 뺏는다 — 386px 미만에서만 접는다 */}
+            <p className="mt-0.5 hidden truncate text-xs text-sc-muted sm:block">{tr("app.tagline")}</p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex shrink-0 items-center gap-2">
           <span className="rounded-full bg-sc-orange-soft px-2.5 py-1 text-xs text-sc-orange-text">{tr("app.snapshotBadge")}</span>
           <button className="rounded-[10px] border px-3 py-1.5 text-sm font-medium hover:border-sc-blue" onClick={saveStub.requestTrips}>
             {tr("trips.button")}
@@ -1413,16 +1426,31 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
       </header>
 
       {!showFinalItinerary && <nav className="grid grid-cols-3 border-b bg-sc-subtle text-center text-sm">
-        {STEPS.map((key, i) => (
-          <div
-            key={key}
-            aria-current={step === i + 1 ? "step" : undefined}
-            className={`flex min-h-[52px] items-center justify-center gap-2 border-r px-1 last:border-r-0 ${step === i + 1 ? "bg-sc-blue-soft font-medium text-sc-blue" : "text-sc-muted"}`}
-          >
-            <span aria-hidden className="grid h-6 w-6 shrink-0 place-items-center rounded-full border border-current text-xs">{i + 1}</span>
-            <span className="truncate">{tr(key)}</span>
-          </div>
-        ))}
+        {/* 단계 표시가 곧 이동 수단이다 (#146). 시트에서 `이전`을 걷어낸 뒤로
+            여기가 앞 단계로 돌아가는 유일한 길이라 `div`로 둘 수 없다.
+            **아직 못 간 단계는 누를 수 없다** — 조건을 건너뛰고 결과로 갈 수 없다 */}
+        {STEPS.map((key, i) => {
+          const target = i + 1;
+          const current = step === target;
+          const reachable = target <= furthestStep;
+          return (
+            <button
+              key={key}
+              type="button"
+              disabled={!reachable}
+              aria-current={current ? "step" : undefined}
+              onClick={() => setStep(target)}
+              className={`flex min-h-[52px] items-center justify-center gap-2 border-r px-1 last:border-r-0 ${
+                current ? "bg-sc-blue-soft font-medium text-sc-blue" : "text-sc-muted"
+              } ${reachable && !current ? "hover:bg-sc-blue-soft/50 hover:text-sc-blue" : ""} ${
+                reachable ? "" : "cursor-default opacity-60"
+              }`}
+            >
+              <span aria-hidden className="grid h-6 w-6 shrink-0 place-items-center rounded-full border border-current text-xs">{target}</span>
+              <span className="truncate">{tr(key)}</span>
+            </button>
+          );
+        })}
       </nav>}
 
       {/* #14 v0.6 sc-layout — 좌측 선택 요약 + 본문 (md 미만은 상단 밴드) */}
@@ -1642,9 +1670,47 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
 
       {!showFinalItinerary && step === 3 && (candidateData || view.reopened) && (
         <section>
-          <h2 className="text-lg font-semibold">{tr("step3.title")}</h2>
-          {/* #61 — 접근시간이 대중교통으로 읽히지 않도록 목록 위에 한 번 고지 */}
-          <p className="mt-3 text-xs text-sc-muted">{tr("access.notice")}</p>
+          {/* 제목은 한 단어, 설명은 팝오버 (#146). 두 줄짜리 안내가 상단을 먹으면
+              그만큼 지도가 줄어드는데 지도가 이 화면의 핵심이다. #61의 접근시간 고지도
+              여기 들어간다 — 없애는 게 아니라 자리를 옮기는 것이다 */}
+          <div className="flex flex-wrap items-center gap-2">
+            <h2 className="text-lg font-semibold">{tr("step3.title")}</h2>
+            <button
+              type="button"
+              popoverTarget="step3-guide-popover"
+              aria-haspopup="dialog"
+              aria-controls="step3-guide-popover"
+              aria-label={tr("step3.guideOpen")}
+              className="flex size-8 items-center justify-center rounded-full border text-sc-muted hover:border-sc-blue hover:text-sc-blue"
+            >
+              <Info aria-hidden="true" className="size-4" />
+            </button>
+          </div>
+          <div
+            id="step3-guide-popover"
+            popover="auto"
+            role="dialog"
+            aria-labelledby="step3-guide-title"
+            className="m-auto w-[min(400px,calc(100vw-32px))] rounded-xl border bg-sc-surface p-4 text-left shadow-2xl backdrop:bg-black/20"
+          >
+            <div className="flex items-start justify-between gap-3">
+              <h4 id="step3-guide-title" className="text-sm font-semibold text-sc-text">
+                {tr("step3.guideTitle")}
+              </h4>
+              <button
+                type="button"
+                popoverTarget="step3-guide-popover"
+                popoverTargetAction="hide"
+                aria-label={tr("common.close")}
+                className="grid size-8 shrink-0 place-items-center rounded-full border text-sc-muted hover:border-sc-blue hover:text-sc-blue"
+              >
+                <X aria-hidden="true" className="size-4" />
+              </button>
+            </div>
+            <p className="mt-2 text-xs text-sc-muted">{tr("step3.guideBody")}</p>
+            {/* #61 — 접근시간이 대중교통으로 읽히지 않도록 고지한다 */}
+            <p className="mt-2 border-t pt-2 text-xs text-sc-muted">{tr("access.notice")}</p>
+          </div>
 
           {/* #85 — 좌: 후보 선택 / 우: 계산 결과. 왕복 없이 같은 화면에서 판단한다 */}
           <div className="mt-3 grid gap-[18px] lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
@@ -1670,27 +1736,7 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
             onSortChange={setSortBy}
             onBrowseAll={() => setBrowserOpen(true)}
             initialExpanded={false}
-            onBack={() => setStep(2)}
             tr={tr}
-            map={candidateData ? (
-              <KoreaMapPanel
-                kind="places"
-                places={step3MapPlaces}
-                stations={mapStations}
-                omittedCount={step3OmittedCount}
-                tr={tr}
-                headingAction={
-                  <button
-                    type="button"
-                    aria-pressed={onlySelectedOnMap}
-                    className={`min-h-[30px] rounded-lg border px-2 py-1 text-xs ${onlySelectedOnMap ? "border-sc-blue bg-sc-blue-soft text-sc-blue" : ""}`}
-                    onClick={() => setOnlySelectedOnMap((on) => !on)}
-                  >
-                    {tr("map.filterSelected")}
-                  </button>
-                }
-              />
-            ) : null}
             routeRecommendations={routeRecommendationFeedback
               && routeRecommendationFeedback.outcome.recommendations.length > 0
               && candidateData
@@ -1776,6 +1822,56 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
           <div className="min-w-0" aria-busy={updating}>
           <div className="flex flex-wrap items-center gap-2">
             <h3 className="text-base font-semibold">{tr("step4.title")}</h3>
+              {/* #43 수용 기준: 경고 누락 0건 — 배치는 유지하되 방문 전 확인을 안내.
+              카드 한 통이 목록 옆에 늘 펼쳐져 있던 것을 DAY 헤더 아이콘들과 같은
+              방식으로 바꿨다 (#146) — 경고 아이콘 하나에 건수를 달고 팝오버로 연다.
+              경고가 없으면 아이콘도 없다: 없는 것을 자리로 알리지 않는다 */}
+            {viewWarnings.length > 0 && (
+              <div data-stage-warnings>
+              <button
+                type="button"
+                popoverTarget="stage-warnings-popover"
+                aria-haspopup="dialog"
+                aria-controls="stage-warnings-popover"
+                aria-label={withValues(tr("step4.warningsCount"), { n: String(viewWarnings.length) })}
+                className="grid size-9 place-items-center rounded-full border border-sc-orange/40 bg-sc-orange-soft text-sc-orange-text hover:border-sc-orange"
+              >
+                {/* 아이콘만 둔다 (#146). 건수는 이름으로만 남긴다 — 화면에서 세는
+                    것보다 눌러서 무엇인지 보는 쪽이 빠르고, 줄이 짧아진다 */}
+                <TriangleAlert aria-hidden="true" className="size-4" />
+              </button>
+              <div
+                id="stage-warnings-popover"
+                popover="auto"
+                role="dialog"
+                aria-labelledby="stage-warnings-title"
+                className="m-auto w-[min(420px,calc(100vw-32px))] rounded-xl border bg-sc-surface p-4 text-left shadow-2xl backdrop:bg-black/20"
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <h3 id="stage-warnings-title" className="text-sm font-semibold text-sc-orange-text">
+                    {tr("step4.warningsTitle")}
+                  </h3>
+                  <button
+                    type="button"
+                    popoverTarget="stage-warnings-popover"
+                    popoverTargetAction="hide"
+                    aria-label={tr("common.close")}
+                    className="grid size-8 shrink-0 place-items-center rounded-full border text-sc-muted hover:border-sc-blue hover:text-sc-blue"
+                  >
+                    <X aria-hidden="true" className="size-4" />
+                  </button>
+                </div>
+                <ul className="mt-2 space-y-1 text-sm text-sc-orange-text">
+                  {viewWarnings.map((warning) => (
+                    <li key={warning.placeId} className="flex items-start gap-1.5">
+                      <TriangleAlert aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
+                      <span>{placeName(warning.placeId)} — {tr(`reason.${warning.detail}` as MessageKey)}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              </div>
+            )}
             <button
               type="button"
               popoverTarget="itinerary-info-popover"
@@ -1834,6 +1930,8 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
                 </button>
               </div>
               <p className="mt-2 text-xs text-sc-muted">{tr("step4.subtitle")}</p>
+              {/* 목록 위에 있던 고지 (#146 모바일) */}
+              <p className="mt-2 text-xs text-sc-muted">{tr("step4.estimatedNote")}</p>
               <p className="mt-2 border-t pt-2 text-xs text-sc-muted">
                 <strong className="font-medium text-sc-text">{tr("step4.dataNoticeTitle")}</strong>{" "}
                 {tr("step4.dataNotice")}
@@ -1935,12 +2033,31 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
             <div className={`mt-4 space-y-4 ${updating ? "opacity-60 transition-opacity" : ""}`}>
                             {/* #14 v0.6 sc-result-grid — 좌측 일정 타임라인 + 우측 지도·경고·실행 지원 */}
               <div className="grid gap-[18px] md:grid-cols-[minmax(0,1fr)_minmax(360px,1fr)] md:items-start">
-                <div className="min-w-0 space-y-4">
-              {/* 장소 단위 시각을 카드에 적는 이상, 그게 예약 확정 시각이 아니라는 것을
-                  화면에서 한 번은 밝혀야 한다 (PR #154 리뷰) */}
-              <p className="text-xs text-sc-muted">{tr("step4.estimatedNote")}</p>
+                {/* 모바일에서는 DAY 1 - DAY 2 - DAY 3이 통째로 가로로 흐른다 (#146).
+                    세로로 쌓으면 하루를 볼 때마다 스크롤을 내려야 하는데, 여행 일정은
+                    원래 시간순이라 옆으로 넘기는 쪽이 맞다 */}
+                <div className="min-w-0 space-y-4" data-day-list>
+              {/* 장소 단위 시각이 예약 확정 시각이 아니라는 고지는 유지하되, 자리는
+                  옆 (!) 팝오버다 (#146 모바일). 390px에서 이 한 줄이 목록 위를 차지해
+                  첫 화면에 DAY가 안 들어왔다 — 없애는 게 아니라 옮기는 것이다 */}
               {displayedDays.map((day, dayIndex) => {
                 const baseDay = baseDays?.find((d) => d.date === day.date);
+                const rows = itineraryRowsOf(day);
+                /**
+                 * 체류 카드가 놓일 칸 (#146).
+                 *
+                 * 두 타임라인이 같은 폭의 칸을 쓰므로 그냥 늘어놓으면 **N번째 체류가
+                 * N번째 이동 밑에 붙는다** - 광화문(서울) 아래에 진부 권역 체류가
+                 * 걸려 서로 관계가 있는 것처럼 읽혔다. 실제로 그렇게 보였다.
+                 *
+                 * 시각으로 맞춘다. 그 체류를 시작시킨 줄(도착) 밑에 세운다.
+                 */
+                const stayColumn = (startAt: string) => {
+                  const at = Date.parse(startAt);
+                  let last = 0;
+                  rows.forEach((row, index) => { if (row.at <= at) last = index; });
+                  return last + 1;
+                };
                 return (
                   <div
                     key={day.date}
@@ -1992,11 +2109,11 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
                       onDragEnd={() => { setDraggingDayDate(null); setDragOverDate(null); }}
                       title={day.items.length > 0 ? tr("step4.dayDragHint") : undefined}
                     >
-                      {withValues(tr("step4.dayHeading"), {
-                        day: String(dayIndex + 1), places: String(day.items.length),
-                      })}
+                      {/* `DAY 1`만 남긴다 (#146). 장소 수는 아래 카드를 세면 되고,
+                          날짜는 상단 `선택 요약`의 여행 기간이 이미 말한다 - 같은 것을
+                          세 번 적으면 정작 어느 날인지가 묻힌다 */}
+                      {withValues(tr("step4.dayHeading"), { day: String(dayIndex + 1) })}
                     </h3>
-                    <span className="text-xs text-sc-muted">{day.date}</span>
                     {/* 그 날 거치는 역만 — 지금은 화면 맨 아래에 일정 전체 역이 뭉쳐 있어
                         어느 날 어느 역 이야기인지 알 수 없다 (#146 2절) */}
                     {/* 드래그와 같은 일을 하는 포커스 가능한 진입점 (#157 리뷰 2).
@@ -2036,8 +2153,8 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
 
                   {/* 장소 목록과 이동 구간을 따로 그리면 "몇 시에 어디로 이동해 무엇을 보는가"라는
                       하루의 흐름이 끊긴다. 시각순 한 줄씩으로 세운다 (#146 2절) */}
-                  <ul className="mt-2 space-y-1.5 text-sm">
-                    {itineraryRowsOf(day).map((row) => {
+                  <ul className="mt-2 space-y-1.5 text-sm" data-day-rows>
+                    {rows.map((row) => {
                       /* 선택 가능한 버스 대안이 없으면 선택기가 통째로 숨는다. 그때는
                          무엇으로 공항에 드나드는지 알 길이 없으므로 이동 행에 사실만
                          적는다 — 고를 수 없는 버튼을 흐리게 띄우는 것보다 낫다 (#146) */
@@ -2061,43 +2178,43 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
                             }`}
                             data-itinerary-row="place"
                           >
-                            {/* 이름과 조작을 두 줄로 나눈다. 한 줄에 몰면 우측 패널 폭에서
-                                이름 칸이 0에 가까워져 한 글자씩 세로로 쪼개진다 */}
-                            <div className="flex items-center gap-2">
+                            {/* 카드 한 장의 구조는 어느 줄이든 같다 (#146):
+                                시각 / 아이콘 + 이름 / 소요·이동. 줄 수가 내용에 따라
+                                달라지면 카드 높이가 58-83px로 들쭉날쭉해진다 —
+                                이름은 두 줄에서 자른다 */}
+                            <span className="block tabular-nums text-xs text-sc-muted" data-row-time>
+                              {fmtTime(item.arriveAt)}
+                            </span>
+                            <div className="mt-1 flex items-start gap-2" data-row-main>
                               {/* 외국인 사용자는 지명만 보고 역인지 관광지인지 식당인지 모른다.
                                   추천 카드와 같은 유형 아이콘을 써서 두 화면이 저절로 일관된다 */}
                               <span className="grid size-7 shrink-0 place-items-center rounded-md bg-sc-blue-soft text-sc-blue">
                                 <PlaceTypeIcon placeType={placeTypeOf(item.placeId)} />
                               </span>
-                              <span className="shrink-0 tabular-nums text-xs text-sc-muted">
-                                {fmtTime(item.arriveAt)}
+                              <span className="min-w-0 flex-1 text-sc-text/90" data-row-name>
+                                {placeName(item.placeId)}
                               </span>
-                              <span className="min-w-0 flex-1 text-sc-text/90">{placeName(item.placeId)}</span>
                             </div>
-                            <div className="mt-1 flex items-center justify-between gap-2 pl-9">
-                            <span className="shrink-0 text-xs text-sc-muted">{accessLabel(item.accessMinutes)}</span>
-                            <span className="flex shrink-0 items-center gap-1">
-                              {(displayedDays ?? []).map((target, index) => (
-                                <button
-                                  key={target.date}
-                                  type="button"
-                                  disabled={!visitDateEditable || target.date === day.date}
-                                  onClick={() => submitVisitDateEdit(item.placeId, target.date)}
-                                  aria-label={withValues(tr("step4.moveToDay"), {
-                                    place: placeName(item.placeId), day: String(index + 1),
-                                  })}
-                                  aria-current={target.date === day.date ? "true" : undefined}
-                                  className={`min-h-10 min-w-10 rounded border px-1.5 text-xs ${
-                                    target.date === day.date
-                                      ? "border-sc-blue bg-sc-blue text-white"
-                                      : "border-sc-blue/30 text-sc-blue hover:bg-sc-blue-soft disabled:opacity-40"
-                                  }`}
-                                >
-                                  {index + 1}
-                                </button>
-                              ))}
+                            {/* 날짜별 숫자 버튼(1·2·3)은 뺐다 (#146) — 한 줄마다 세 개씩
+                                깔려 목록이 버튼밭이 됐다. 장소 하나를 옮기는 일은 드래그로,
+                                하루를 통째로 옮기는 일은 DAY 헤더의 이동 메뉴로 한다 */}
+                            {/* 모바일에는 드래그가 없다 (#146) — HTML5 drag는 터치에서
+                                동작하지 않는다. DAY 헤더가 쓰는 것과 같은 이동 메뉴를
+                                장소에도 둔다. 두 경로 모두 `submitVisitDateEdit`으로
+                                들어가므로 조작 방법에 따라 결과가 갈리지 않는다 */}
+                            <span className="mt-auto flex items-center justify-between gap-2 pt-1 text-xs text-sc-muted" data-row-meta>
+                              <span className="min-w-0 truncate">{accessLabel(item.accessMinutes)}</span>
+                              <DayMoveMenu
+                                date={item.placeId}
+                                scope="place"
+                                targets={displayedDays
+                                  .map((target, index) => ({ date: target.date, index }))
+                                  .filter((target) => target.date !== day.date)}
+                                disabled={!visitDateEditable}
+                                onMove={(targetDate) => submitVisitDateEdit(item.placeId, targetDate)}
+                                tr={tr}
+                              />
                             </span>
-                            </div>
                           </li>
                         );
                       }
@@ -2119,6 +2236,8 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
                               icon={<BusFront aria-hidden="true" className="size-4" />}
                               label={tr("step4.moveRow")}
                               route={`${leg.fromName[locale]} → ${leg.toName[locale]}`}
+                              startAt={fmtTime(leg.departAt)}
+                              duration={leg.serviceName[locale]}
                             >
                               {detail}
                             </MoveRow>
@@ -2134,6 +2253,8 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
                             label={tr("step4.moveRow")}
                             route={`${stationName(ride.fromStationId)} → ${stationName(ride.toStationId)}`}
                             note={airportRailNote(ride) ? tr("step4.airportRailUsed") : undefined}
+                            startAt={fmtTime(ride.departAt)}
+                            duration={legDurationLabel(ride.departAt, ride.arriveAt, tr)}
                             onOpenDetail={() => setOpenTrainLeg({
                               trainNo: ride.trainNo,
                               fromName: stationName(ride.fromStationId),
@@ -2155,18 +2276,44 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
                       );
                     })}
                   </ul>
-                    {/* #33 — 엔진 값 포맷만, 경계·시각 재해석 금지 */}
+                    {/*
+                      두 번째 타임라인 — 체류 시간 (#146).
+
+                      위 줄이 "언제 어디로 움직이는가"라면 이건 "그 권역에서 실제로 쓸 수
+                      있는 시간이 얼마인가"다. 다른 질문이라 같은 줄에 섞지 않고 따로 눕힌다.
+                      카드 크기는 위 줄과 같다 — 두 타임라인이 같은 격자 위에 놓여야
+                      시각이 서로 대응하는 것으로 읽힌다.
+
+                      #33 — 엔진 값 포맷만, 경계·시각 재해석 금지
+                    */}
                     {day.regionWindows.length > 0 && (
-                      <div className="mt-2 space-y-1">
-                        {day.regionWindows.map((window) => (
-                          <div
-                            key={window.startAt}
-                            className="rounded border-l-2 border-sc-orange/50 bg-sc-orange-soft/70 px-3 py-1.5 text-sm text-sc-text/80"
-                          >
-                            <span className="font-medium">{stationName(window.stationId)}</span>
-                            {" "}{tr("region.block")} · {availableLabel(window.availableMinutes)}
-                          </div>
-                        ))}
+                      <div className="mt-3">
+                        <h4 className="text-xs font-medium text-sc-muted">{tr("step4.stayTitle")}</h4>
+                        <ul className="mt-2 space-y-1.5 text-sm" data-day-rows data-day-stays>
+                          {day.regionWindows.map((window) => (
+                            <li
+                              key={window.startAt}
+                              className="rounded-lg border border-sc-orange/40 bg-sc-orange-soft/70 px-2 py-1.5"
+                              data-itinerary-row="stay"
+                              style={{ gridColumnStart: stayColumn(window.startAt) }}
+                            >
+                              <span className="block tabular-nums text-xs text-sc-muted" data-row-time>
+                                {fmtTime(window.startAt)}
+                              </span>
+                              <span className="mt-1 flex items-start gap-2" data-row-main>
+                                <span className="grid size-7 shrink-0 place-items-center rounded-md bg-sc-orange-soft text-sc-orange-text">
+                                  <Hourglass aria-hidden="true" className="size-4" />
+                                </span>
+                                <span className="min-w-0 flex-1 text-sc-text/90" data-row-name>
+                                  {stationName(window.stationId)} {tr("region.block")}
+                                </span>
+                              </span>
+                              <span className="mt-auto block pt-1 text-xs text-sc-orange-text" data-row-meta>
+                                {stayLabel(window.availableMinutes)}
+                              </span>
+                            </li>
+                          ))}
+                        </ul>
                       </div>
                     )}
                     {/* 재열람 화면은 저장 시점 일정 그대로 — mock 대안은 개발 플래그에서만 (PR #35 리뷰 2) */}
@@ -2224,20 +2371,6 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
                   ) : undefined
                 }
               />
-              {viewWarnings.length > 0 && (
-                // #43 수용 기준: 경고 누락 0건 — 배치는 유지하되 방문 전 확인을 안내
-                <div className="rounded-lg border border-sc-orange/30 bg-sc-orange-soft p-4">
-                  <h3 className="text-sm font-medium text-sc-orange-text">{tr("step4.warningsTitle")}</h3>
-                  <ul className="mt-2 space-y-1 text-sm text-sc-orange-text">
-                    {viewWarnings.map((warning) => (
-                      <li key={warning.placeId} className="flex items-start gap-1.5">
-                        <TriangleAlert aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
-                        <span>{placeName(warning.placeId)} — {tr(`reason.${warning.detail}` as MessageKey)}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
               {uncoveredSelectionGroups.length > 0 && (
                 <div className="rounded-lg border border-sc-orange/30 bg-sc-orange-soft p-4">
                   <h3 className="text-sm font-medium text-sc-orange-text">
@@ -2294,25 +2427,30 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
             </div>
           )}
 
-          <div
-            className="mt-4 flex flex-wrap items-center justify-between gap-2"
-            data-stage-actions
-          >
-            {/* #85 — "촬영지 다시 선택"은 왕복이 사라져 필요 없다. 항공편만 1단계로 돌아간다 */}
-            <div className="flex gap-2">
-              <button className="rounded border px-3 py-2 text-sm" onClick={() => setStep(1)}>{tr("step4.editFlights")}</button>
-              <button className="rounded border px-3 py-2 text-sm" onClick={plan}>{tr("step4.recalculate")}</button>
-            </div>
-            <button
-              type="button"
-              className="rounded bg-sc-blue px-4 py-2 text-sm font-semibold text-white disabled:opacity-40"
-              disabled={!displayedDays || updating || needsSelection || selectionCapacity?.requiresAdjustment}
-              onClick={() => setShowFinalItinerary(true)}
-              data-open-final
+          {/*
+            액션 줄 (#146).
+
+            "항공편 시각 변경"은 뺐다 — 상단 `여행 조건` 탭이 같은 곳으로 가는 길이라
+            중복이었다. 남은 둘은 데스크톱에서 바닥 독(시트 헤더) 오른쪽 끝으로 간다.
+            순서는 왼쪽이 조작, 오른쪽 끝이 주 액션이다.
+          */}
+          <StageUtilityPortal targetId="stage-sheet-actions">
+            <div
+              className="mt-4 flex flex-wrap items-center justify-end gap-2 lg:mt-0"
+              data-stage-actions
             >
-              {tr("step4.openFinal")}
-            </button>
-          </div>
+              <button className="rounded border px-3 py-2 text-sm" onClick={plan}>{tr("step4.recalculate")}</button>
+              <button
+                type="button"
+                className="rounded bg-sc-blue px-4 py-2 text-sm font-semibold text-white disabled:opacity-40"
+                disabled={!displayedDays || updating || needsSelection || selectionCapacity?.requiresAdjustment}
+                onClick={() => setShowFinalItinerary(true)}
+                data-open-final
+              >
+                {tr("step4.openFinal")}
+              </button>
+            </div>
+          </StageUtilityPortal>
           </div>
           </div>
         </section>

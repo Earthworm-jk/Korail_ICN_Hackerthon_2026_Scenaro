@@ -10,35 +10,17 @@
   }
 
   /* Step 3 heading becomes a compact workspace header rather than a page intro. */
-  section:has(#place-picker) > h2 {
+  /* 제목은 이제 (!) 버튼과 한 줄에 있다 (#146) — `> h2`가 아니라 `h2`로 잡는다.
+     뒤따르던 설명 문단 두 개는 팝오버로 내려가 규칙 자체가 사라졌다. */
+  section:has(#place-picker) h2 {
     font-size: 1.25rem !important;
     line-height: 1.35 !important;
     letter-spacing: -0.015em;
   }
 
-  section:has(#place-picker) > h2 + p {
-    margin-top: 2px !important;
-    font-size: 0.8125rem !important;
-  }
-
-  section:has(#place-picker) > h2 + p + p {
-    display: inline-flex;
-    margin-top: 7px !important;
-    border-radius: 999px;
-    background: rgba(255,255,255,.82);
-    padding: 4px 8px;
-    font-size: 0.6875rem !important;
-    line-height: 1.35;
-    box-shadow: inset 0 0 0 1px var(--sc-line);
-  }
-
-  /* 1024–1199: compact rails, map gets the remaining width. */
-  section > div.grid:has(> #place-picker) {
-    grid-template-columns: 220px minmax(420px, 1fr) 282px !important;
-    column-gap: 14px !important;
-    row-gap: 8px !important;
-    min-height: min(760px, calc(100dvh - 174px)) !important;
-  }
+  /* 열·간격·높이는 stage-v4 단독 (#146). 여기 있던 3열 정의와 min-height는
+     v4가 전부 덮는다. `row-gap`만 v4로 옮겼다 - v4가 안 정하던 유일한 속성이라
+     같이 지우면 Tailwind `gap-[18px]`로 돌아가 줄 간격이 벌어진다. */
 
   /* Left rail behaves like a compact selection inspector. */
   /* 배치는 stage-v4 단독 — 위 stage.css 주석 참고 (#146) */
@@ -191,7 +173,10 @@
     background: var(--sc-blue);
   }
 
-  #place-picker + div[aria-busy] > div[class*="space-y"] > div.grid > div:first-child > div > ul > li button {
+  /* **직계 버튼만.** 이 규칙은 줄 전체가 버튼 하나이던 시절에 쓴 것이라 폭을 100%로
+     늘린다. 그 뒤 카드 안에 이동 메뉴 버튼이 생겼는데, 자손까지 잡으면 그 아이콘
+     버튼도 208px로 늘어나 옆의 `차량으로 약 5분`을 밀어내 잘랐다 (#146) */
+  #place-picker + div[aria-busy] > div[class*="space-y"] > div.grid > div:first-child > div > ul > li > button {
     margin: -2px -3px !important;
     width: calc(100% + 6px) !important;
     padding: 3px !important;
@@ -255,11 +240,6 @@
 
 /* Mid-size notebook / small desktop. */
 @media (min-width: 1200px) {
-  section > div.grid:has(> #place-picker) {
-    grid-template-columns: 265px minmax(500px, 1fr) 320px !important;
-    column-gap: 20px !important;
-  }
-
   #place-picker {
     padding: 13px !important;
   }
@@ -286,11 +266,6 @@
     padding-inline: 22px !important;
   }
 
-  section > div.grid:has(> #place-picker) {
-    grid-template-columns: 300px minmax(620px, 1fr) 360px !important;
-    column-gap: 26px !important;
-  }
-
   #place-picker + div[aria-busy] aside:first-child svg[role="img"] {
     min-height: 600px;
     max-height: 720px !important;
@@ -298,11 +273,6 @@
 }
 
 @media (min-width: 1680px) {
-  section > div.grid:has(> #place-picker) {
-    grid-template-columns: 315px minmax(760px, 1fr) 380px !important;
-    column-gap: 30px !important;
-  }
-
   #place-picker + div[aria-busy] aside:first-child svg[role="img"] {
     min-height: 640px;
     max-height: 760px !important;

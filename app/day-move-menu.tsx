@@ -20,9 +20,19 @@ export function DayMoveMenu({
   targets,
   disabled,
   onMove,
+  scope = "day",
   tr,
 }: {
+  /** 팝오버 id를 만드는 키. 날짜 단위면 날짜, 장소 단위면 장소 id */
   date: string;
+  /**
+   * 무엇을 옮기는가 (#146).
+   *
+   * 모바일에는 드래그가 없다 — HTML5 drag는 터치에서 동작하지 않는다. 날짜 통에만
+   * 이 메뉴를 두고 장소는 드래그로만 옮기게 두면 **휴대폰에서는 장소를 옮길 방법이
+   * 아예 없다.** 같은 메뉴를 장소에도 쓴다.
+   */
+  scope?: "day" | "place";
   /** 옮길 수 있는 날들. 자기 자신은 호출부에서 뺀다 */
   targets: { date: string; index: number }[];
   disabled: boolean;
@@ -30,7 +40,8 @@ export function DayMoveMenu({
   tr: (key: MessageKey) => string;
 }) {
   const popoverRef = useRef<HTMLDivElement>(null);
-  const popoverId = `day-move-${date}`;
+  const popoverId = `${scope}-move-${date}`;
+  const label = tr(scope === "day" ? "step4.dayMoveLabel" : "step4.placeMoveLabel");
 
   // 옮길 곳이 없으면 버튼도 두지 않는다 — 눌러 봐야 빈 메뉴다
   if (targets.length === 0) return null;
@@ -43,7 +54,7 @@ export function DayMoveMenu({
         disabled={disabled}
         aria-haspopup="menu"
         aria-controls={popoverId}
-        aria-label={tr("step4.dayMoveLabel")}
+        aria-label={label}
         className="inline-flex min-h-10 items-center gap-1 rounded-full border border-sc-blue/25 px-3 text-xs text-sc-blue hover:bg-sc-blue-soft disabled:opacity-40"
       >
         <CalendarArrowDown aria-hidden="true" className="size-4" />
@@ -54,7 +65,7 @@ export function DayMoveMenu({
         id={popoverId}
         popover="auto"
         role="menu"
-        aria-label={tr("step4.dayMoveLabel")}
+        aria-label={label}
         className="m-auto w-[min(280px,calc(100vw-32px))] rounded-xl border bg-sc-surface p-3 text-left shadow-2xl backdrop:bg-black/20"
       >
         <p className="text-sm font-semibold text-sc-text">{tr("step4.dayMoveTitle")}</p>

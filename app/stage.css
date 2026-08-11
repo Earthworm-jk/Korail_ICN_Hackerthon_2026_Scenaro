@@ -35,15 +35,10 @@
     padding: 18px 16px 22px !important;
   }
 
-  /* Left / Map / Right. 1024px minimums are deliberately conservative to avoid overflow. */
-  section > div.grid:has(> #place-picker) {
-    display: grid !important;
-    grid-template-columns: minmax(215px, 250px) minmax(390px, 1fr) minmax(255px, 290px) !important;
-    column-gap: 16px !important;
-    row-gap: 10px !important;
-    align-items: start !important;
-    min-height: min(720px, calc(100vh - 190px));
-  }
+  /* 그리드 열·간격·정렬·높이는 stage-v4가 단독으로 정한다 (#146).
+     여기 있던 3열 정의(좌 rail / 지도 / 우 rail)는 v4의 2열이 전부 덮고 있어
+     계산에 참여하지 않는다. 남겨 두면 시트를 옮길 때 옛 3열 전제가 되살아난다 -
+     51b5dcb에서 `#place-picker`의 배치를 v4로 모은 것과 같은 이유다. */
 
   /* 배치(grid-column/row, position, top, max-height, overflow)는 stage-v4가 단독으로
      정한다 (#146). 여기 남겨 두면 시트를 옮길 때 옛 3열 전제가 되살아나 우측 rail이
@@ -193,19 +188,7 @@
 }
 
 @media (min-width: 1280px) {
-  section > div.grid:has(> #place-picker) {
-    grid-template-columns: minmax(270px, 300px) minmax(510px, 1fr) minmax(310px, 350px) !important;
-    column-gap: 23px !important;
-  }
-
   #place-picker + div[aria-busy] > div[class*="space-y"] > div.grid > div:nth-child(2) > aside:first-child {
     padding-inline: 11px !important;
-  }
-}
-
-@media (min-width: 1440px) {
-  section > div.grid:has(> #place-picker) {
-    grid-template-columns: 305px minmax(600px, 1fr) 360px !important;
-    column-gap: 28px !important;
   }
 }
