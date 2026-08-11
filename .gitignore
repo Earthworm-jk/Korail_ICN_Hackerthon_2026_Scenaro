@@ -54,3 +54,6 @@ data/raw/ne_*.geojson
 
 # 철로 선형 파이프라인 원천 캐시 (scripts/build_rail_geometry.py)
 data/raw/osm-*.json
+
+# 배경 타일 디스크 캐시 (오프라인 시연용, 커밋하지 않는다)
+.tile-cache/
