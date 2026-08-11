@@ -311,8 +311,10 @@
      명시도로 이긴다. 그래서 컴포넌트가 `min-h-10`으로 40px를 요구해도 조용히 36px로
      대체됐고, 터치 영역 계약이 화면에서 무효가 됐다. 스스로 높이를 선언한 버튼은
      비켜 가고, 아무 선언이 없는 레거시 버튼에만 하한을 준다. */
-  #place-picker button:not([class*="min-h-"]),
-  #place-picker + div[aria-busy] button:not([class*="min-h-"]) {
+  /* `size-*`도 스스로 높이를 선언한 것이다 (#146) — 아이콘 버튼이 32px 정사각을
+     요구했는데 36px로 늘어나 옆 아이콘들과 높이가 어긋났다 */
+  #place-picker button:not([class*="min-h-"]):not([class*="size-"]),
+  #place-picker + div[aria-busy] button:not([class*="min-h-"]):not([class*="size-"]) {
     min-height: 36px;
   }
 

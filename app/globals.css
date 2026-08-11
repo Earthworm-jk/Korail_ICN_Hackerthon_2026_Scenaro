@@ -382,7 +382,10 @@
      맞춰 늘어나 DAY마다 90 - 106px로 갈린다 - 옆으로 넘길 때 카드가 들썩인다 */
   ul[data-day-rows] > li {
     position: relative;
-    height: 108px;
+    /* 이름 두 줄 + 시각 + 조작 두 개가 들어가는 높이 (#145에서 순서 메뉴가 늘었다).
+       `min-height`가 아니라 고정이다 — 늘어나게 두면 그 날의 가장 큰 카드에 맞춰
+       DAY마다 갈리고, 옆으로 넘길 때 카드가 들썩인다 */
+    height: 120px;
     padding-top: 14px;
   }
 

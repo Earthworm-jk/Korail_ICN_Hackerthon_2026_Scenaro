@@ -135,7 +135,18 @@ function targetLabelOf(
   many: string,
   partial: string,
   placeName: (id: string) => string,
+  orderLabel: string,
 ): string {
+  /*
+   * **순서 요청을 가장 먼저 가른다** (#145). 아래 문구들은 전부 날짜를 말하는데
+   * 순서 요청에는 요청 날짜가 없다 - 그대로 두면 자리만 바꿨는데 "그 날 일정에
+   * 반영했습니다"가 되어 날짜를 옮긴 것처럼 읽힌다. 실제로 그렇게 나왔다.
+   */
+  if (proposal.kind === "order") {
+    const [first, second] = proposal.orderPair ?? [proposal.placeId, proposal.placeId];
+    return withValues(orderLabel, { first: placeName(first), second: placeName(second) });
+  }
+
   /*
    * **대상 수로 먼저 가른다.** `scheduledDate` 유무를 앞에 두면 한 곳짜리 실패까지
    * DAY 문구로 새어 나간다 — `impossible`에는 원래 `scheduledDate`가 없으므로,
@@ -318,12 +329,12 @@ export function ItineraryCommandPanel({
             <>
               {feedback.outcome.proposal.decision === "impossible" ? (
                 <p className="mt-1 text-sc-orange-text">
-                  {targetLabelOf(feedback.outcome.proposal, tr("ai.impossible"), tr("ai.impossibleDay"), tr("ai.impossibleDay"), placeName)}
+                  {targetLabelOf(feedback.outcome.proposal, tr("ai.impossible"), tr("ai.impossibleDay"), tr("ai.impossibleDay"), placeName, tr("ai.impossibleOrder"))}
                 </p>
               ) : feedback.applied ? (
                 <>
                   <p className="mt-1 font-medium text-sc-blue">
-                    {targetLabelOf(feedback.outcome.proposal, tr("ai.applied"), tr("ai.appliedDay"), tr("ai.appliedDayPartial"), placeName)}
+                    {targetLabelOf(feedback.outcome.proposal, tr("ai.applied"), tr("ai.appliedDay"), tr("ai.appliedDayPartial"), placeName, tr("ai.appliedOrder"))}
                   </p>
                   {/* 부작용 없는 변경은 즉시 적용하되 한 번에 되돌릴 수 있어야 한다 (#145) */}
                   {canUndo && (
@@ -340,6 +351,12 @@ export function ItineraryCommandPanel({
                 <>
                   <p className="mt-1 font-medium text-sc-text">{tr("ai.confirmTitle")}</p>
                   <ul className="mt-2 space-y-1 text-xs text-sc-text/75">
+                    {/* 순서 조정 (#145). 혼합 권역에서 성립률이 63%라 자주 나오는
+                        줄이다 — 왜 요청대로 안 됐는지 여기서 말하지 않으면 사용자는
+                        기능이 안 먹은 것으로 읽는다 */}
+                    {feedback.outcome.proposal.reasons.includes("order_adjusted") && (
+                      <li>{tr("ai.confirmOrderAdjusted")}</li>
+                    )}
                     {feedback.outcome.proposal.reasons.includes("date_adjusted") && (
                       /* 날짜를 말할 수 있을 때만 말한다. 통 이동에서 장소들이 흩어져 앉으면
                          한 날짜로 요약할 수 없는데, 이름 폴백을 쓰면 날짜 자리에
