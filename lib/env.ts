@@ -25,6 +25,12 @@ const EnvSchema = z.object({
     .trim()
     .optional()
     .transform((v) => (v === "" ? undefined : v)),
+  // 배경 타일(VWorld). 없으면 지도는 배경 없이 그대로 그린다 — 앱이 죽지 않는다
+  VWORLD_API_KEY: z
+    .string()
+    .trim()
+    .optional()
+    .transform((v) => (v === "" ? undefined : v)),
 });
 
 export type Env = z.infer<typeof EnvSchema>;
@@ -34,6 +40,7 @@ export function parseEnv(source: Record<string, string | undefined>): Env {
   return EnvSchema.parse({
     AIRPORT_API_KEY: source.AIRPORT_API_KEY,
     OPENAI_API_KEY: source.OPENAI_API_KEY,
+    VWORLD_API_KEY: source.VWORLD_API_KEY,
   });
 }
 
