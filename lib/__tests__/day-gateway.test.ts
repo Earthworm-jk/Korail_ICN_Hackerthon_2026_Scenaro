@@ -31,7 +31,8 @@ const leg = (over: Partial<AirportLeg> = {}): AirportLeg => ({
 
 const render = (legs: AirportLeg[], locale: "ko" | "en" = "ko") =>
   renderToStaticMarkup(createElement(DayGatewayInfo, {
-    legs, stationName: (id: string) => `${id}역`, date: "2026-08-12", locale,
+    legs, alternatives: [], selectedId: null, onSelect: () => {},
+    stationName: (id: string) => `${id}역`, date: "2026-08-12", locale,
     formatTime: (iso: string) => iso.slice(11, 16), tr,
   }));
 
@@ -63,9 +64,9 @@ describe("내용", () => {
     expect(render([leg({ kind: "bus", serviceName: { ko: "공항버스 6001", en: "Airport bus 6001" } })])).toContain("공항버스");
   });
 
-  /** 고르는 곳이 여기가 아님을 밝히지 않으면 왜 못 바꾸는지 찾게 된다 */
-  it("선택은 다른 곳에서 한다고 알린다", () => {
-    expect(render([leg()])).toContain("이동 수단 선택은 아래 공항 진입 패널에서 바꿉니다");
+  /** 고를 대안이 없으면 선택 절 자체가 없다 — 못 누르는 버튼을 두지 않는다 */
+  it("대안이 없으면 선택 절을 두지 않는다", () => {
+    expect(render([leg()])).not.toContain("gateway.railTitle");
   });
 
   it("팝오버 제목을 aria-labelledby로 연결한다", () => {
@@ -90,5 +91,42 @@ describe("PR #159 리뷰 — 언어와 방향", () => {
   it("한글 화면에서는 한글 노선명을 쓴다", () => {
     const bus = leg({ kind: "bus", serviceName: { ko: "공항버스 6001", en: "Airport bus 6001" } });
     expect(render([bus], "ko")).toContain("공항버스 6001");
+  });
+});
+
+describe("PR #163 리뷰 — 선택기 개수", () => {
+  const bus = {
+    id: "bus-1",
+    serviceName: { ko: "공항버스 6001", en: "Airport bus 6001" },
+    effects: { localUseDeltaMinutes: -352 },
+  } as unknown as Parameters<typeof DayGatewayInfo>[0]["alternatives"][number];
+
+  const withAlt = (legs: AirportLeg[], selectedId: string | null = null) =>
+    renderToStaticMarkup(createElement(DayGatewayInfo, {
+      legs, alternatives: [bus], selectedId, onSelect: () => {},
+      stationName: (id: string) => `${id}역`, date: "2026-08-12", locale: "ko" as const,
+      formatTime: (iso: string) => iso.slice(11, 16), tr,
+    }));
+
+  /**
+   * 조회와 선택을 갈라 두면 아이콘에서 `서울역 경유`를 보고 눌렀다가 못 바꾸고
+   * 바꿀 곳을 따로 찾게 된다. 그래서 한 아이콘 안에 둘 다 둔다.
+   */
+  it("공항 구간이 있는 날에는 선택기가 정확히 한 벌 뜬다", () => {
+    const html = withAlt([leg()]);
+    const rail = html.split("gateway.railTitle").length - 1;
+    const buses = html.split("공항버스 6001").length - 1;
+    expect(rail).toBe(1);
+    expect(buses).toBe(1);
+  });
+
+  /** 구간이 없는 날에는 아이콘 자체가 없으므로 선택기도 없다 */
+  it("공항 구간이 없는 날에는 선택기가 없다", () => {
+    expect(withAlt([])).toBe("");
+  });
+
+  it("현재 선택을 aria-pressed로 알린다", () => {
+    expect(withAlt([leg()], null)).toContain('aria-pressed="true"');
+    expect(withAlt([leg()], "bus-1")).toContain('aria-pressed="true"');
   });
 });

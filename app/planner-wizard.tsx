@@ -75,7 +75,6 @@ import { gatewayPlanningBaselineOf } from "@/lib/engine/gateway-baseline";
 import { AlternativeTimetables } from "./alternative-timetables";
 import { AuthModal, TripsModal, useSaveStub, type SaveStatus } from "./save-stub";
 import { FinalItineraryPage } from "./final-itinerary-page";
-import { GatewayAlternatives } from "./gateway-alternatives";
 import { DayStationFacilities } from "./day-context";
 import { DayMoveMenu } from "./day-move-menu";
 import { DayGatewayInfo } from "./day-gateway";
@@ -91,7 +90,7 @@ import { PlaceBrowser } from "./place-browser";
 import sheetStyles from "./place-recommendation-sheet.module.css";
 import { airportLegsOf, itineraryRowsOf, rowKey, shouldNoteAirportRail, stationIdsOf } from "@/lib/itinerary-rows";
 import { MoveRow } from "./move-row";
-import { ThemeExperienceCard, ThemeExperienceMapOverlay } from "./theme-experience";
+import { ThemeExperienceChip, ThemeExperienceMapOverlay } from "./theme-experience";
 import { TrainLegModal, legDurationLabel, type TrainLegDetail } from "./train-leg-modal";
 import { getThemeExperience, type ThemeExperienceResult } from "@/lib/actions/theme-experience";
 import type { StationFacilitiesSnapshotT } from "@/lib/station-facilities";
@@ -1655,6 +1654,16 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
             placedCount={selectionStateShown ? selectionCapacity!.schedulableCount : null}
             unplacedCount={selectionStateShown ? selectionCapacity!.minimumExclusionCount : null}
             themeState={themeChipState(themeExperience)}
+            themeChip={(
+              <ThemeExperienceChip
+                result={themeExperience}
+                stationName={themeStationLabel(displayedDays ?? [], themeExperience, stationName)}
+                locale={locale}
+                tr={tr}
+                mapVisible={themeMapVisible}
+                onToggleMap={() => setThemeMapVisible((visible) => !visible)}
+              />
+            )}
             updating={updating}
             updated={lastItineraryDiff?.changed === true && !updating}
             sortBy={sortBy}
@@ -1923,16 +1932,7 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
           {displayedDays && (
             // 갱신 중에는 살짝 흐리게 — 지금 보이는 게 직전 결과라는 걸 알 수 있어야 한다
             <div className={`mt-4 space-y-4 ${updating ? "opacity-60 transition-opacity" : ""}`}>
-              {!view.reopened && view.result?.status === "planned" && (
-                <GatewayAlternatives
-                  alternatives={view.result.gatewayAlternatives ?? []}
-                  selectedId={view.selectedAlt?.kind === "gateway_bus" ? view.selectedAlt.id : null}
-                  locale={locale}
-                  onSelect={chooseAlternative}
-                  tr={tr}
-                />
-              )}
-              {/* #14 v0.6 sc-result-grid — 좌측 일정 타임라인 + 우측 지도·경고·실행 지원 */}
+                            {/* #14 v0.6 sc-result-grid — 좌측 일정 타임라인 + 우측 지도·경고·실행 지원 */}
               <div className="grid gap-[18px] md:grid-cols-[minmax(0,1fr)_minmax(360px,1fr)] md:items-start">
                 <div className="min-w-0 space-y-4">
               {/* 장소 단위 시각을 카드에 적는 이상, 그게 예약 확정 시각이 아니라는 것을
@@ -2014,6 +2014,10 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
                         왕복이면 첫날·마지막날에만 나온다 (#146) */}
                     <DayGatewayInfo
                       legs={airportLegsOf(day, airportStationIds)}
+                      alternatives={view.result?.status === "planned" && !view.reopened
+                        ? (view.result.gatewayAlternatives ?? []) : []}
+                      selectedId={view.selectedAlt?.kind === "gateway_bus" ? view.selectedAlt.id : null}
+                      onSelect={chooseAlternative}
                       stationName={stationName}
                       date={day.date}
                       locale={locale}
@@ -2262,14 +2266,6 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
                 </div>
               )}
               {/* #80 — 권역 단위 테마체험 제안. 일정에는 자동으로 포함되지 않는다 (#14 v0.6) */}
-              <ThemeExperienceCard
-                result={themeExperience}
-                stationName={themeStationLabel(displayedDays, themeExperience, stationName)}
-                locale={locale}
-                tr={tr}
-                mapVisible={themeMapVisible}
-                onToggleMap={() => setThemeMapVisible((visible) => !visible)}
-              />
               {/* #24 A5 역 시설·짐 보관 카드는 DAY 헤더 팝오버로 옮겼다 (#146).
                   같은 정보가 두 곳에 있으면 어느 쪽이 그 날 이야기인지 알 수 없다 */}
               </div>
