@@ -21,6 +21,7 @@ import {
 import { planGatewayAlternatives, planItinerary } from "@/lib/actions/itinerary";
 import {
   runItineraryCommand,
+  runDayMove,
   runVisitDateEdit,
   type RouteRecommendation,
 } from "@/lib/actions/itinerary-command";
@@ -77,6 +78,7 @@ import { ExecutionSupport } from "./execution-support";
 import { FinalItineraryPage } from "./final-itinerary-page";
 import { GatewayAlternatives } from "./gateway-alternatives";
 import { DayStationFacilities } from "./day-context";
+import { DayMoveMenu } from "./day-move-menu";
 import { ItineraryChangeSummary } from "./itinerary-change-summary";
 import {
   ItineraryCommandPanel,
@@ -362,6 +364,7 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
   // #109 드래그 — 잡고 있는 장소와 올라가 있는 날짜. 표시 전용 상태다
   const [draggingPlaceId, setDraggingPlaceId] = useState<string | null>(null);
   const [dragOverDate, setDragOverDate] = useState<string | null>(null);
+  const [draggingDayDate, setDraggingDayDate] = useState<string | null>(null);
   /**
    * 부작용 없는 변경을 즉시 적용한 직후의 되돌리기 지점 (#145 · PR #150 리뷰 2번).
    *
@@ -1054,6 +1057,8 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
     if (!request || !visitDateEditable) return;
     const submittedSequence = ++planSequence.current;
     setAiFeedback(null);
+    // 결과가 패널 안에만 있다 — 열지 않으면 확인 창도 실행 취소도 닿지 않는다
+    setAiPanelOpen(true);
     startAiTransition(async () => {
       try {
         const result = await runVisitDateEdit({ placeId, targetDate, request });
@@ -1076,6 +1081,49 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
         }
       } catch {
         // 늦게 도착한 실패가 현재 화면에 옛 오류를 띄우지 않게 한다
+        if (!commandResponseIsCurrent(submittedSequence, planSequence.current)) {
+          setAiFeedback({ kind: "cancelled" });
+          return;
+        }
+        setAiFeedback({ kind: "error" });
+      }
+    });
+  }, [currentConstraints, visitDateEditable, applyCommandOutcome]);
+
+  /**
+   * 날짜 통 이동 (#146 10).
+   *
+   * 한 곳짜리와 **같은 실행기·같은 판정·같은 적용 경로**를 쓴다. 다른 것은 대상이 여럿이라는
+   * 사실뿐이다. 여러 장소가 한 번에 움직여 부작용이 클 수 있으므로 `ready`가 아니면
+   * 자동 적용하지 않고 확인을 받는다.
+   */
+  const submitDayMove = useCallback((placeIds: string[], targetDate: string) => {
+    const request = currentConstraints();
+    if (!request || !visitDateEditable || placeIds.length === 0) return;
+    const submittedSequence = ++planSequence.current;
+    setAiFeedback(null);
+    setAiPanelOpen(true);
+    startAiTransition(async () => {
+      try {
+        const result = await runDayMove({ placeIds, targetDate, request });
+        if (!commandResponseIsCurrent(submittedSequence, planSequence.current)) {
+          setAiFeedback({ kind: "cancelled" });
+          return;
+        }
+        if (!result.ok) {
+          setAiFeedback({ kind: "error" });
+          return;
+        }
+        setAiFeedback({
+          kind: "proposal",
+          outcome: result.outcome,
+          applied: false,
+          submittedSequence,
+        });
+        if (result.outcome.proposal.decision === "ready") {
+          applyCommandOutcome(result.outcome, submittedSequence);
+        }
+      } catch {
         if (!commandResponseIsCurrent(submittedSequence, planSequence.current)) {
           setAiFeedback({ kind: "cancelled" });
           return;
@@ -1895,9 +1943,14 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
                 return (
                   <div
                     key={day.date}
-                    className={`rounded-lg border p-4 ${dragOverDate === day.date ? "border-sc-blue bg-sc-blue-soft/40" : ""}`}
+                    className={`rounded-lg border p-4 ${dragOverDate === day.date ? "border-sc-blue bg-sc-blue-soft/40" : ""} ${
+                      draggingDayDate === day.date ? "opacity-50" : ""
+                    }`}
                     onDragOver={(event) => {
-                      if (!draggingPlaceId || !visitDateEditable) return;
+                      if (!visitDateEditable) return;
+                      if (!draggingPlaceId && !draggingDayDate) return;
+                      // 자기 자신 위로는 표시하지 않는다 — 떨어뜨려도 아무 일이 없다
+                      if (draggingDayDate === day.date) return;
                       event.preventDefault();
                       setDragOverDate(day.date);
                     }}
@@ -1905,6 +1958,14 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
                     onDrop={(event) => {
                       event.preventDefault();
                       setDragOverDate(null);
+                      // 날짜 통 이동이 먼저다 — 통 드래그 중에는 장소 드래그가 아니다 (#146 10)
+                      if (draggingDayDate) {
+                        const source = displayedDays.find((d) => d.date === draggingDayDate);
+                        setDraggingDayDate(null);
+                        if (!source || source.date === day.date) return;
+                        submitDayMove(source.items.map((item) => item.placeId), day.date);
+                        return;
+                      }
                       const placeId = draggingPlaceId ?? event.dataTransfer.getData("text/plain");
                       setDraggingPlaceId(null);
                       // 같은 날로 떨어뜨리면 바뀌는 것이 없다 — 재계산을 부르지 않는다
@@ -1916,7 +1977,20 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
                         9박 10일이든 라벨과 배치는 바뀌지 않고 숫자만 커진다.
                         날짜는 아래에 작게 둔다 — 형식은 공통이되 실제 날짜도 필요하다 */}
                   <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
-                    <h3 className="font-medium">
+                    {/* 날짜를 통째로 끄는 핸들 (#146 10). 헤더 전체가 아니라 이 조각만
+                        `draggable`이다 — 헤더에 있는 역 시설 버튼까지 드래그로 먹히면
+                        누를 수가 없다 */}
+                    <h3
+                      className="cursor-grab font-medium active:cursor-grabbing"
+                      draggable={visitDateEditable && day.items.length > 0}
+                      onDragStart={(event) => {
+                        setDraggingDayDate(day.date);
+                        event.dataTransfer.setData("text/plain", `day:${day.date}`);
+                        event.dataTransfer.effectAllowed = "move";
+                      }}
+                      onDragEnd={() => { setDraggingDayDate(null); setDragOverDate(null); }}
+                      title={day.items.length > 0 ? tr("step4.dayDragHint") : undefined}
+                    >
                       {withValues(tr("step4.dayHeading"), {
                         day: String(dayIndex + 1), places: String(day.items.length),
                       })}
@@ -1924,6 +1998,18 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
                     <span className="text-xs text-sc-muted">{day.date}</span>
                     {/* 그 날 거치는 역만 — 지금은 화면 맨 아래에 일정 전체 역이 뭉쳐 있어
                         어느 날 어느 역 이야기인지 알 수 없다 (#146 2절) */}
+                    {/* 드래그와 같은 일을 하는 포커스 가능한 진입점 (#157 리뷰 2).
+                        HTML5 drag는 터치에서 안 되고 키보드로도 못 쓴다 */}
+                    <DayMoveMenu
+                      date={day.date}
+                      targets={displayedDays
+                        .map((target, index) => ({ date: target.date, index }))
+                        .filter((target) => target.date !== day.date)}
+                      disabled={!visitDateEditable || day.items.length === 0}
+                      onMove={(targetDate) =>
+                        submitDayMove(day.items.map((item) => item.placeId), targetDate)}
+                      tr={tr}
+                    />
                     <DayStationFacilities
                       snapshot={stationFacilities}
                       stationIds={stationIdsOf(day)}

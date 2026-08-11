@@ -7,10 +7,12 @@ import { resolveCommand, type ResolveContext } from "../itinerary-command-resolv
 import {
   changeSummaryOf,
   planRequestFor,
+  planRequestForPlaces,
   proposalFor,
+  proposalForPlaces,
   withoutPreference,
 } from "../itinerary-command-executor";
-import type { ItineraryResult } from "../engine/types";
+import type { ItineraryResult, PreferredDateOutcome } from "../engine/types";
 import type { CommandProposal, ProposalReason } from "../itinerary-command-executor";
 import {
   IMPACT_REASON_MESSAGE, impactLinesOf, isImpactReason, type ImpactReason,
@@ -604,6 +606,86 @@ describe("#141 실행기 판정 — 적용하지 않고 제안한다", () => {
     });
     expect(proposalFor(command, before, after).displaced).toEqual([]);
   });
+
+
+  describe("#146 10 — 통 이동 판정", () => {
+    const outcomes = (
+      entries: Array<[string, PreferredDateOutcome["outcome"], string?]>,
+    ): PreferredDateOutcome[] =>
+      entries.map(([placeId, outcome, scheduledDate]) => (
+        outcome === "adjusted"
+          ? { placeId, requestedDate: "2026-08-13", outcome, scheduledDate: scheduledDate! }
+          : { placeId, requestedDate: "2026-08-13", outcome }
+      ));
+
+    /** 셋 중 하나만 빠지면 나머지는 옮겨졌다 — 불가능이 아니라 확인 대상이다 */
+    it("일부만 못 들어가면 불가가 아니라 확인이다", () => {
+      const before = result({ days: [day("2026-08-12", ["p1", "p2"])] });
+      const after = result({
+        days: [day("2026-08-13", ["p1"])],
+        preferredDateOutcomes: outcomes([["p1", "honored"], ["p2", "unplaced"]]),
+      });
+      const proposal = proposalForPlaces(["p1", "p2"], "2026-08-13", before, after);
+      expect(proposal.decision).toBe("needs_confirmation");
+      expect(proposal.reasons).toContain("date_adjusted");
+    });
+
+    it("전부 못 들어가야 불가다", () => {
+      const before = result({ days: [day("2026-08-12", ["p1", "p2"])] });
+      const after = result({
+        days: [day("2026-08-12", [])],
+        preferredDateOutcomes: outcomes([["p1", "unplaced"], ["p2", "unplaced"]]),
+      });
+      expect(proposalForPlaces(["p1", "p2"], "2026-08-13", before, after).decision).toBe("impossible");
+    });
+
+    it("전부 요청한 날에 앉으면 바로 적용할 수 있다", () => {
+      const before = result({ days: [day("2026-08-12", ["p1", "p2"])] });
+      const after = result({
+        days: [day("2026-08-13", ["p1", "p2"])],
+        preferredDateOutcomes: outcomes([["p1", "honored"], ["p2", "honored"]]),
+      });
+      const proposal = proposalForPlaces(["p1", "p2"], "2026-08-13", before, after);
+      expect(proposal.decision).toBe("ready");
+      expect(proposal.scheduledDate).toBe("2026-08-13");
+      expect(proposal.placeIds).toEqual(["p1", "p2"]);
+    });
+
+    /** 흩어지면 한 날짜로 요약할 수 없다 — 대표 날짜를 지어내지 않는다 */
+    it("서로 다른 날에 앉으면 날짜를 말하지 않는다", () => {
+      const before = result({ days: [day("2026-08-12", ["p1", "p2"])] });
+      const after = result({
+        days: [day("2026-08-13", ["p1"]), day("2026-08-14", ["p2"])],
+        preferredDateOutcomes: outcomes([["p1", "honored"], ["p2", "adjusted", "2026-08-14"]]),
+      });
+      const proposal = proposalForPlaces(["p1", "p2"], "2026-08-13", before, after);
+      expect(proposal.scheduledDate).toBeUndefined();
+      expect(proposal.reasons).toContain("date_adjusted");
+    });
+
+    // 옮기는 대상 자신은 요청 밖 변화가 아니다
+    it("대상 전부를 부작용 목록에서 뺀다", () => {
+      const before = result({ days: [day("2026-08-12", ["p1", "p2"])] });
+      const after = result({
+        days: [day("2026-08-13", ["p1", "p2"])],
+        preferredDateOutcomes: outcomes([["p1", "honored"], ["p2", "honored"]]),
+      });
+      const proposal = proposalForPlaces(["p1", "p2"], "2026-08-13", before, after);
+      expect(proposal.moved).toEqual([]);
+      expect(proposal.displaced).toEqual([]);
+    });
+
+    it("한 곳짜리는 같은 판정을 그대로 쓴다", () => {
+      const before = result({ days: [day("2026-08-12", ["p1"])] });
+      const after = result({
+        days: [day("2026-08-13", ["p1"])],
+        preferredDateOutcomes: outcomes([["p1", "honored"]]),
+      });
+      const single = proposalFor({ intent: "move_place", placeId: "p1", targetDate: "2026-08-13" }, before, after);
+      const many = proposalForPlaces(["p1"], "2026-08-13", before, after);
+      expect(single).toEqual(many);
+    });
+  });
 });
 
 describe("#141 P0-1 수직 — 폴백만으로 대표 명령이 끝까지 간다", () => {
@@ -655,7 +737,7 @@ describe("#141 P0-1 수직 — 폴백만으로 대표 명령이 끝까지 간다
 describe("#148 확인 창 문구 매핑 — 사유가 늘어도 빈 창이 뜨지 않는다", () => {
   const proposal = (reasons: ProposalReason[], impact?: CommandProposal["impact"]) => ({
     decision: "needs_confirmation" as const,
-    placeId: "p1", requestedDate: "2026-08-13",
+    placeId: "p1", placeIds: ["p1"], requestedDate: "2026-08-13",
     reasons, displaced: [], moved: [], ...(impact ? { impact } : {}),
   });
 
@@ -691,5 +773,26 @@ describe("#148 확인 창 문구 매핑 — 사유가 늘어도 빈 창이 뜨�
 
   it("impact가 없으면 줄을 만들지 않는다", () => {
     expect(impactLinesOf(proposal(["travel_time_increased"]))).toEqual([]);
+  });
+});
+
+describe("#146 10 — 날짜 통 이동", () => {
+
+  it("여러 장소에 같은 날짜 선호를 건다 — 새 엔진 계약은 없다", () => {
+    const next = planRequestForPlaces(["p1", "p2"], "2026-08-13", request());
+    expect(next.preferredVisitDates).toEqual({ p1: "2026-08-13", p2: "2026-08-13" });
+  });
+
+  it("기존 선호는 남기고 대상만 덮어쓴다", () => {
+    const next = planRequestForPlaces(["p1"], "2026-08-14",
+      request({ preferredVisitDates: { p1: "2026-08-12", p9: "2026-08-12" } }));
+    expect(next.preferredVisitDates).toEqual({ p1: "2026-08-14", p9: "2026-08-12" });
+  });
+
+  // 제외된 장소를 끌어오면 선호만으로는 아무 일도 없다 (#139 7절)
+  it("대상은 제외 목록에서 뺀다", () => {
+    const next = planRequestForPlaces(["p1", "p2"], "2026-08-13",
+      request({ excludedPlaceIds: ["p1", "p3"] }));
+    expect(next.excludedPlaceIds).toEqual(["p3"]);
   });
 });

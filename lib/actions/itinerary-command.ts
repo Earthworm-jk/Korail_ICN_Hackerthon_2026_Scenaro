@@ -20,7 +20,9 @@ import {
   changeSummaryOf,
   isExplainCommand,
   planRequestFor,
+  planRequestForPlaces,
   proposalFor,
+  proposalForPlaces,
   type CommandProposal,
 } from "../itinerary-command-executor";
 import type { PlanRequest } from "./itinerary";
@@ -91,6 +93,13 @@ export type CommandActionResult =
 /** 버튼·드래그 입력 — 자연어와 달리 장소·날짜가 이미 정해져 온다 (#109) */
 const VisitDateEditSchema = z.object({
   placeId: z.string().min(1),
+  targetDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  request: PlanRequestSchema,
+});
+
+/** 빈 날짜를 끌면 옮길 것이 없다 — 계산을 부르지 않고 입력에서 막는다 */
+const DayMoveSchema = z.object({
+  placeIds: z.array(z.string().min(1)).min(1),
   targetDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   request: PlanRequestSchema,
 });
@@ -346,6 +355,47 @@ export async function runItineraryCommand(input: {
  * 자연어와 **같은 명령·같은 실행기·같은 판정**을 쓴다. 해석 단계만 없다 — 사용자가
  * 이미 장소와 날짜를 직접 골랐으므로 LLM도 파서도 부를 이유가 없다.
  */
+/**
+ * 날짜 통 이동 (#146 10)
+ *
+ * 그 날 장소 전부에 같은 날짜 선호를 건다. **새 엔진 계약은 없다** — `preferredVisitDates`
+ * 하나에 항목이 여러 개 들어갈 뿐이다.
+ *
+ * 판정도 한 곳짜리와 같은 경로를 쓴다. 다만 여러 장소가 한 번에 움직이므로 부작용이 클 수
+ * 있어, `ready`가 아니면 호출부가 확인을 받는다(#146 결정).
+ */
+export async function runDayMove(input: {
+  placeIds: string[];
+  targetDate: string;
+  request: PlanRequest;
+}): Promise<VisitDateEditResult> {
+  const parsed = DayMoveSchema.safeParse(input);
+  if (!parsed.success) {
+    return { ok: false, code: "INVALID_REQUEST", fieldErrors: fieldErrorsOf(parsed.error) };
+  }
+  const { placeIds, targetDate, request } = parsed.data;
+  const beforeAction = await planItinerary(request);
+  if (!beforeAction.ok) {
+    return { ok: false, code: "INVALID_REQUEST", fieldErrors: beforeAction.fieldErrors };
+  }
+  const nextRequest = planRequestForPlaces(placeIds, targetDate, request);
+  const afterAction = await planItinerary(nextRequest);
+  if (!afterAction.ok) {
+    return { ok: false, code: "INVALID_REQUEST", fieldErrors: afterAction.fieldErrors };
+  }
+  return {
+    ok: true,
+    outcome: {
+      kind: "proposal",
+      proposal: proposalForPlaces(placeIds, targetDate, beforeAction.result, afterAction.result),
+      nextRequest,
+      nextResult: afterAction.result,
+      diff: diffItineraries(beforeAction.result, afterAction.result),
+      summary: changeSummaryOf(beforeAction.result, afterAction.result),
+    },
+  };
+}
+
 export async function runVisitDateEdit(input: {
   placeId: string;
   targetDate: string;

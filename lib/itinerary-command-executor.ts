@@ -67,7 +67,15 @@ export type ProposalImpact = {
 
 export type CommandProposal = {
   decision: "ready" | "needs_confirmation" | "impossible";
+  /** 대표 대상. 날짜 통 이동이면 `placeIds`의 첫 항목이다 */
   placeId: string;
+  /**
+   * 이 제안이 옮기려는 장소 전부 (#146 10 — 날짜 통 드래그).
+   *
+   * 한 곳짜리 명령에서는 `[placeId]`와 같다. 화면은 길이가 2 이상일 때만 다르게 말하면 된다 —
+   * 판정·부작용 계산은 **같은 경로**를 쓴다. 갈라 두면 통 이동에서만 확인 기준이 달라진다.
+   */
+  placeIds: string[];
   requestedDate: string;
   /** 실제 배치된 날짜. `impossible`이면 없다 */
   scheduledDate?: string;
@@ -105,12 +113,22 @@ const SLACK_DROP_MINUTES = 30;
  * 제외가 선호보다 우선이라(#139 7절) 선호만 넣어서는 아무 일도 일어나지 않는다.
  */
 export function planRequestFor(command: VisitDateCommand, current: PlanRequest): PlanRequest {
+  return planRequestForPlaces([command.placeId], command.targetDate, current);
+}
+
+/** 여러 장소를 같은 날짜로 (#146 10). 한 곳짜리와 같은 규칙을 그대로 넓힌다 */
+export function planRequestForPlaces(
+  placeIds: string[],
+  targetDate: string,
+  current: PlanRequest,
+): PlanRequest {
+  const targets = new Set(placeIds);
   return {
     ...current,
-    excludedPlaceIds: current.excludedPlaceIds.filter((id) => id !== command.placeId),
+    excludedPlaceIds: current.excludedPlaceIds.filter((id) => !targets.has(id)),
     preferredVisitDates: {
       ...(current.preferredVisitDates ?? {}),
-      [command.placeId]: command.targetDate,
+      ...Object.fromEntries(placeIds.map((placeId) => [placeId, targetDate])),
     },
   };
 }
@@ -142,7 +160,29 @@ export function proposalFor(
   before: ItineraryResult,
   after: ItineraryResult,
 ): CommandProposal {
-  const base = { placeId: command.placeId, requestedDate: command.targetDate };
+  return proposalForPlaces([command.placeId], command.targetDate, before, after);
+}
+
+/**
+ * 여러 장소를 같은 날짜로 (#146 10 — 날짜 통 드래그)
+ *
+ * 한 곳짜리와 **같은 판정을 쓴다.** 갈라 두면 통 이동에서만 확인 기준이 달라져, 손으로 하면
+ * 통과하는 변경이 드래그로는 막히는 식이 된다.
+ *
+ * 통 이동에서 달라지는 것은 셋뿐이다 —
+ * - `impossible`은 **전부** 못 들어갔을 때다. 셋 중 하나만 빠지면 나머지는 옮겨졌으므로
+ *   불가능이 아니라 확인 대상이다.
+ * - `date_adjusted`는 **하나라도** 다른 날에 앉았을 때다.
+ * - `scheduledDate`는 전부 같은 날에 앉았을 때만 말한다. 흩어졌으면 한 날짜로 요약할 수 없다.
+ */
+export function proposalForPlaces(
+  placeIds: string[],
+  targetDate: string,
+  before: ItineraryResult,
+  after: ItineraryResult,
+): CommandProposal {
+  const base = { placeId: placeIds[0], placeIds, requestedDate: targetDate };
+  const targets = new Set(placeIds);
 
   const impossible = (): CommandProposal => ({
     ...base,
@@ -150,25 +190,31 @@ export function proposalFor(
     reasons: [],
     displaced: [],
     moved: [],
-    rejection: rejectionOf(after, command.placeId),
+    rejection: rejectionOf(after, placeIds[0]),
   });
 
   // 일정 자체가 서지 않았다 — 요청한 장소 탓이라고 단정하지 않고 사유만 옮긴다
   if (after.status !== "planned") return impossible();
 
-  const outcome = after.preferredDateOutcomes
-    ?.find((entry) => entry.placeId === command.placeId)?.outcome;
-  if (outcome === undefined || outcome === "unplaced") return impossible();
+  const outcomes = placeIds.map((placeId) => after.preferredDateOutcomes
+    ?.find((entry) => entry.placeId === placeId)?.outcome);
+  const placed = outcomes.filter((outcome) => outcome === "honored" || outcome === "adjusted");
+  if (placed.length === 0) return impossible();
 
   // 명령한 장소 자신은 요청 밖 변화가 아니다 — 이동은 의도한 것이고, 빠짐은 위에서 갈렸다
   const diff = diffItineraries(before, after).places;
-  const displaced = diff.dropped.filter((entry) => entry.placeId !== command.placeId);
-  const moved = diff.moved.filter((entry) => entry.placeId !== command.placeId);
+  const displaced = diff.dropped.filter((entry) => !targets.has(entry.placeId));
+  const moved = diff.moved.filter((entry) => !targets.has(entry.placeId));
 
   const impact = impactOf(before, after);
+  const scheduled = placeIds.map((placeId) => dateOf(after, placeId));
+  const sameDate = scheduled.every((date) => date !== undefined && date === scheduled[0]);
 
   const reasons: ProposalReason[] = [];
-  if (outcome === "adjusted") reasons.push("date_adjusted");
+  // 하나라도 다른 날에 앉았거나, 일부가 아예 못 들어갔으면 요청대로가 아니다
+  if (outcomes.some((outcome) => outcome === "adjusted") || placed.length < placeIds.length) {
+    reasons.push("date_adjusted");
+  }
   if (displaced.length > 0) reasons.push("places_displaced");
   if (moved.length > 0) reasons.push("places_moved");
   if (impact) {
@@ -184,7 +230,7 @@ export function proposalFor(
   return {
     ...base,
     decision: reasons.length > 0 ? "needs_confirmation" : "ready",
-    scheduledDate: dateOf(after, command.placeId),
+    ...(sameDate ? { scheduledDate: scheduled[0] } : {}),
     reasons,
     displaced,
     moved,
