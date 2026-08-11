@@ -254,6 +254,7 @@
     max-height: none !important;
   }
 
+
   #place-picker + div[aria-busy] > div:first-child {
     grid-row: 1;
   }
@@ -394,6 +395,21 @@
     transform: translateY(calc(-1 * var(--sc-sheet-dock-offset, 0px)));
   }
 
+  /**
+   * 펼친 카드 줄이 시트 밖으로 나갈 수 있게 한다 (#146 9번).
+   *
+   * 위 블록의 `overflow-y: auto`는 시트를 스스로 스크롤되는 상자로 만든다. 접힌 바에서는
+   * 그게 맞지만, 펼칠 때 카드 줄이 헤더 **위로** 떠올라야 하는 구조에서는 그 상자가
+   * 잘라 버린다 — DOM에는 있는데 화면에 없다.
+   *
+   * 규칙을 지우지 않고 펼친 상태에만 예외를 둔다. **선택자를 위 블록과 같은 모양에
+   * 상태 조건만 더해 뒤에 둔다** — 명시도가 같으면 순서로 갈리기 때문이다.
+   */
+  div#place-picker[data-place-sheet][data-sheet-expanded="true"] {
+    overflow: visible !important;
+    max-height: none !important;
+  }
+
   /* Reset the legacy sticky left-rail header from stage-v2. Its negative margin
      cancels the sheet padding and pins the title/toggle against the clipped edge. */
   div#place-picker[data-place-sheet] > [data-place-sheet-header] {
@@ -404,8 +420,20 @@
     padding: 12px 14px 9px !important;
   }
 
+  /**
+   * 접힌 바의 높이 (#146 9번).
+   *
+   * 62px은 상태 요약과 분류 칩이 생기기 전 값이라 지금은 칩 줄을 35px 잘라 냈다.
+   * compact 바는 **기능을 숨긴 빈 헤더가 아니라 추천 진입점과 현재 선택 상태가 보이는
+   * 바**여야 하므로, 기능을 잘라 90px에 맞추는 대신 상한을 내용에 맞춰 올린다
+   * (PR #161 리뷰 판단). 본문은 접힌 상태에서 렌더되지 않으므로 이 높이는 곧 헤더다.
+   *
+   * `none`이 아니라 값을 두는 이유는 **다음에 헤더가 넘칠 때 드러나게 하기 위해서다.**
+   * 열어 두면 조용히 자라 어느 순간 지도를 덮는다. 실측 - 1024x768에서 97px,
+   * 1280x720에서 75px.
+   */
   div#place-picker[data-place-sheet][data-sheet-expanded="false"] {
-    max-height: 62px !important;
+    max-height: 100px !important;
   }
 
   /* All result prose and the itinerary rail move from the old third column to the right. */

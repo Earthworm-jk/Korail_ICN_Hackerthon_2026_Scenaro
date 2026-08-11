@@ -1669,6 +1669,7 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
             sortBy={sortBy}
             onSortChange={setSortBy}
             onBrowseAll={() => setBrowserOpen(true)}
+            initialExpanded={false}
             onBack={() => setStep(2)}
             tr={tr}
             map={candidateData ? (

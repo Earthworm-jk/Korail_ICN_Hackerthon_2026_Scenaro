@@ -324,6 +324,34 @@
     max-height: min(46vh, 372px);
   }
 
+  /**
+   * 펼친 카드 줄을 **위로 띄운다** (#146 9번).
+   *
+   * 접힌 상태에서는 헤더만 흐름에 남아 지도 아래의 짧은 바가 되고, 펼치면 카드 줄이
+   * 헤더 위로 올라와 그때만 지도를 덮는다. 흐름에 남는 높이는 양쪽 상태에서 같으므로
+   * **그리드도 지도 크기도 바뀌지 않는다** — 펼칠 때마다 지도 bounds를 다시 잡지 않아도 된다.
+   *
+   * `overflow: hidden`을 시트에서 걷어야 밖으로 나갈 수 있다. 대신 카드 줄이 스스로
+   * 모서리와 그림자를 갖는다.
+   */
+  .sheet[data-sheet-expanded="true"] {
+    overflow: visible;
+  }
+
+  .sheet[data-sheet-expanded="true"] .body {
+    position: absolute;
+    bottom: 100%;
+    left: -1px;
+    right: -1px;
+    z-index: 5;
+    max-height: min(46vh, 372px);
+    border: 1px solid var(--sc-line);
+    border-bottom: 0;
+    border-radius: 14px 14px 0 0;
+    background: var(--sc-surface);
+    box-shadow: 0 -10px 28px rgba(16, 24, 40, 0.14);
+  }
+
   .header {
     min-height: 58px;
     padding: 12px 14px 9px;
