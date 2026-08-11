@@ -85,9 +85,21 @@ export const TripConstraintsSchema = z.object({
     z.tuple([z.string().min(1), z.string().min(1)]),
   ).optional(),
 }).superRefine((constraints, context) => {
-  const pairs = constraints.preferredOrder ?? [];
+  /**
+   * 의미 검사는 **제외를 먼저 걷어낸 쌍**에만 건다 (PR #153 리뷰 — 제외 우선 경계).
+   *
+   * 엔진 계약이 `제외한 장소가 낀 쌍은 버린다 — 제외가 선호보다 우선`인데, 스키마가 먼저
+   * 순환을 잡아 거부하면 그 계약이 뒤집힌다. 순서를 조율한 뒤 장소를 선택 해제하는 실제
+   * 흐름에서, 이미 무효가 된 선호 때문에 재계산이 통째로 실패한다.
+   *
+   * 인덱스는 원본 기준으로 유지한다 — 오류 경로가 사용자가 보낸 자리를 가리켜야 한다.
+   */
+  const excluded = new Set(constraints.excludedPlaceIds);
+  const pairs = (constraints.preferredOrder ?? [])
+    .map((pair, index) => ({ pair, index }))
+    .filter(({ pair: [first, second] }) => !excluded.has(first) && !excluded.has(second));
   const seen = new Set<string>();
-  pairs.forEach(([first, second], index) => {
+  pairs.forEach(({ pair: [first, second], index }) => {
     if (first === second) {
       context.addIssue({
         code: "custom",
@@ -110,7 +122,7 @@ export const TripConstraintsSchema = z.object({
   // 순환은 길이 2뿐 아니라 3 이상도 모순이다 — `A→B, B→C, C→A`는 동시에 만족할 수 없다.
   // 드래그를 여러 번 하면 이런 쌍이 쌓일 수 있고, 조용히 일부를 `adjusted`로 돌려주면
   // 사용자의 모순된 요청을 그대로 받아 버린다 (PR #153 리뷰 3번).
-  const cycle = firstOrderCycle(pairs);
+  const cycle = firstOrderCycle(pairs.map(({ pair }) => pair));
   if (cycle !== null) {
     context.addIssue({
       code: "custom",

@@ -121,6 +121,51 @@ describe("방문 순서 소프트 선호", () => {
       expect(res.fieldErrors.preferredOrder).toContain("not a candidate place id");
     });
 
+    /**
+     * 제외 우선 경계 (PR #153 리뷰).
+     *
+     * 순서를 조율한 뒤 장소를 선택 해제하는 흐름이 실제로 있다. 그때 이미 무효가 된 선호
+     * 때문에 재계산이 통째로 실패하면 안 된다 — 의미 검사는 제외를 걷어낸 뒤에 건다.
+     */
+    describe("제외가 순환 검사보다 우선", () => {
+      it("역쌍 중 한 장소를 제외하면 요청이 성공하고 선호가 남지 않는다", async () => {
+        const [first, second] = visitOrder(await plan());
+        const res = await planItinerary(request({
+          excludedPlaceIds: [second],
+          preferredOrder: [[first, second], [second, first]],
+        }));
+        expect(res.ok).toBe(true);
+        if (!res.ok || res.result.status !== "planned") return;
+        expect(res.result.preferredOrderOutcomes).toBeUndefined();
+      });
+
+      it("3-순환 중 한 장소를 제외하면 남은 비순환 쌍만 처리한다", async () => {
+        const order = visitOrder(await plan());
+        if (order.length < 3) return;
+        const [a, b, c] = order;
+        const res = await planItinerary(request({
+          excludedPlaceIds: [c],
+          preferredOrder: [[a, b], [b, c], [c, a]],
+        }));
+        expect(res.ok).toBe(true);
+        if (!res.ok || res.result.status !== "planned") return;
+        // c가 낀 두 쌍은 버려지고 (a,b)만 남는다
+        const keys = (res.result.preferredOrderOutcomes ?? [])
+          .map((o) => `${o.firstPlaceId}|${o.secondPlaceId}`);
+        expect(keys).toEqual([`${a}|${b}`]);
+      });
+
+      it("제외하지 않으면 같은 입력이 여전히 순환 오류다", async () => {
+        const order = visitOrder(await plan());
+        if (order.length < 3) return;
+        const [a, b, c] = order;
+        const res = await planItinerary(request({
+          preferredOrder: [[a, b], [b, c], [c, a]],
+        }));
+        expect(res.ok).toBe(false);
+      });
+    });
+
     /** (A,B)와 (B,A)가 함께 오면 어느 쪽도 지킬 수 없다 — 조용히 하나를 버리지 않는다 */
     it("서로 모순되는 쌍은 거부한다", async () => {
       const [first, second] = visitOrder(await plan());
