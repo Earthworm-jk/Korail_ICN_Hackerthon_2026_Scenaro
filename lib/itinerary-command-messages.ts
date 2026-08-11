@@ -16,7 +16,7 @@ import type { CommandProposal, ProposalReason } from "./itinerary-command-execut
  * **이 타입과 아래 `IMPACT_REASON_MESSAGE`가 `ProposalReason`을 남김없이 가른다.**
  * 새 사유를 추가하면 둘 중 하나에 분류하기 전까지 컴파일이 실패한다 (PR #148 리뷰 3번).
  */
-type ListRenderedReason = "date_adjusted" | "places_displaced" | "places_moved";
+type ListRenderedReason = "date_adjusted" | "order_adjusted" | "places_displaced" | "places_moved";
 
 /** 장소 목록이 아니라 일정 전체에 대한 한 줄로 설명되는 사유 */
 export type ImpactReason = Exclude<ProposalReason, ListRenderedReason>;
@@ -37,6 +37,8 @@ export const IMPACT_REASON_MESSAGE = {
 /** 목록 렌더링 쪽도 같은 방식으로 잠근다 — 여기 빠지면 자동으로 `ImpactReason`이 된다 */
 const LIST_RENDERED = {
   date_adjusted: true,
+  // 순서 조정도 확인 창에서 한 줄로 적는다 — 숫자 델타가 아니라 사실 서술이다 (#145)
+  order_adjusted: true,
   places_displaced: true,
   places_moved: true,
 } satisfies Record<ListRenderedReason, true>;

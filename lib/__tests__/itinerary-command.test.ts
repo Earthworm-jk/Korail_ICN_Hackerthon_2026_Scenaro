@@ -736,6 +736,7 @@ describe("#141 P0-1 수직 — 폴백만으로 대표 명령이 끝까지 간다
 
 describe("#148 확인 창 문구 매핑 — 사유가 늘어도 빈 창이 뜨지 않는다", () => {
   const proposal = (reasons: ProposalReason[], impact?: CommandProposal["impact"]) => ({
+    kind: "date" as const,
     decision: "needs_confirmation" as const,
     placeId: "p1", placeIds: ["p1"], requestedDate: "2026-08-13",
     reasons, displaced: [], moved: [], ...(impact ? { impact } : {}),
@@ -754,7 +755,7 @@ describe("#148 확인 창 문구 매핑 — 사유가 늘어도 빈 창이 뜨�
   });
 
   it("목록으로 그리는 사유는 문구 키를 갖지 않는다", () => {
-    for (const reason of ["date_adjusted", "places_displaced", "places_moved"] as const) {
+    for (const reason of ["date_adjusted", "order_adjusted", "places_displaced", "places_moved"] as const) {
       expect(isImpactReason(reason)).toBe(false);
     }
   });

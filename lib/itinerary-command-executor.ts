@@ -45,6 +45,8 @@ export type MovedPlace = {
 
 export type ProposalReason =
   | "date_adjusted"
+  /** 순서 선호를 못 지켰다 (#145). 날짜의 `date_adjusted`와 같은 성격이다 */
+  | "order_adjusted"
   | "places_displaced"
   | "places_moved"
   | "travel_time_increased"
@@ -66,6 +68,18 @@ export type ProposalImpact = {
 };
 
 export type CommandProposal = {
+  /**
+   * 무엇을 요청한 제안인가 (#145).
+   *
+   * **타입을 나누지 않고 갈래만 둔다.** 판정(`decision`)·확인 창·실행 취소·diff는
+   * 날짜와 순서가 같은 경로를 써야 한다 — `planner-wizard`의 네 곳과
+   * `itinerary-command.ts`의 displaced 재계산이 전부 `decision` 하나를 보고 도는데,
+   * 타입을 갈라 두면 그 다섯 자리에 두 번째 분기가 생기고 시간이 지나면 규칙이 갈린다.
+   *
+   * 갈리는 것은 **문구뿐이다.** 순서 제안에는 날짜가 없으므로 날짜 문구를 만드는
+   * 자리에서 이 값을 먼저 봐야 한다.
+   */
+  kind: "date" | "order";
   decision: "ready" | "needs_confirmation" | "impossible";
   /** 대표 대상. 날짜 통 이동이면 `placeIds`의 첫 항목이다 */
   placeId: string;
@@ -87,6 +101,10 @@ export type CommandProposal = {
   impact?: ProposalImpact;
   /** `impossible`일 때 엔진이 준 사유 (`rejectedPlaces`에서 그대로) */
   rejection?: CandidateRejection["code"];
+  /** `kind: "order"`에서만 — 요청한 `[먼저, 나중]` 쌍 */
+  orderPair?: readonly [string, string];
+  /** `kind: "order"`에서만 — 엔진이 그 쌍을 어떻게 처리했는지 */
+  orderOutcome?: "honored" | "adjusted" | "unplaced";
 };
 
 /**
@@ -131,6 +149,93 @@ export function planRequestForPlaces(
       ...Object.fromEntries(placeIds.map((placeId) => [placeId, targetDate])),
     },
   };
+}
+
+/**
+ * 순서 선호 쌍을 요청에 얹는다 (#145).
+ *
+ * **쌓지 않고 정리한다.** 드래그는 여러 번 일어나고, 그때마다 쌍을 더하기만 하면
+ * `A→B`와 `B→A`가 함께 남는다. 엔진 스키마는 그런 순환을 `INVALID_REQUEST`로 거부하므로
+ * 재계산 자체가 실패한다 - 사용자는 방금 끈 것과 무관한 오류를 보게 된다.
+ *
+ * 그래서 새 쌍과 **같은 두 장소를 다루는 기존 쌍은 방향과 무관하게 걷어내고** 새 쌍을 넣는다.
+ * 마지막 드래그가 그 두 장소에 대한 사용자의 뜻이다.
+ *
+ * 길이 3 이상의 순환(`A→B, B→C, C→A`)까지는 여기서 막지 않는다. 엔진이 결정적인 순환 경로와
+ * 함께 거부하므로(PR #153 리뷰 3) 그 오류를 화면이 받아 처리하는 쪽이 맞다 - 여기서
+ * 조용히 버리면 사용자가 요청한 쌍 중 어느 것이 사라졌는지 알 수 없다.
+ */
+export function planRequestForOrder(
+  firstPlaceId: string,
+  secondPlaceId: string,
+  current: PlanRequest,
+): PlanRequest {
+  const pair = new Set([firstPlaceId, secondPlaceId]);
+  const kept = (current.preferredOrder ?? []).filter(
+    ([first, second]) => !(pair.has(first) && pair.has(second)),
+  );
+  return {
+    ...current,
+    // 순서를 요청한 장소가 제외돼 있으면 선호가 통째로 버려진다 (엔진 계약: 제외 우선).
+    // 날짜 선호와 같은 규칙으로 제외에서 빼 준다
+    excludedPlaceIds: current.excludedPlaceIds.filter((id) => !pair.has(id)),
+    preferredOrder: [...kept, [firstPlaceId, secondPlaceId] as const],
+  };
+}
+
+/**
+ * 순서 제안 판정 (#145).
+ *
+ * 날짜 제안과 **같은 부작용 계산을 쓴다.** 다른 것은 요청 자체를 지켰는지 보는 축뿐이라,
+ * 그 축만 엔진의 `preferredOrderOutcomes`에서 읽고 나머지(밀려난 장소·이동시간·환승·여유)는
+ * 날짜 쪽 함수를 그대로 통과시킨다.
+ */
+export function proposalForOrder(
+  firstPlaceId: string,
+  secondPlaceId: string,
+  before: ItineraryResult,
+  after: ItineraryResult,
+): CommandProposal {
+  const outcome = after.status === "planned"
+    ? (after.preferredOrderOutcomes ?? []).find(
+      (row) => row.firstPlaceId === firstPlaceId && row.secondPlaceId === secondPlaceId,
+    )?.outcome
+    : undefined;
+
+  /*
+   * 부작용(밀려난 장소·이동시간·환승·여유)은 날짜 경로가 이미 계산하므로 그대로 쓴다.
+   * **다만 판정은 가져오지 않는다.** 날짜 경로는 "요청한 날짜에 앉았는가"로 가르는데
+   * 순서 요청에는 요청 날짜가 없다 - 실제로 그 축이 새어 나와, 그냥 순서를 바꿨을 뿐인데
+   * `현재 조건에서는 넣을 수 없습니다`가 떴다.
+   */
+  const scheduledDate = dateOfPlaceIn(after, firstPlaceId);
+  const base = proposalForPlaces([firstPlaceId], scheduledDate ?? "", before, after);
+  const reasons = base.reasons.filter((reason) => reason !== "date_adjusted");
+  if (outcome === "adjusted") reasons.push("order_adjusted");
+
+  /*
+   * 순서에서 `impossible`은 **그 장소가 일정에서 아예 빠졌을 때만**이다. 순서를 못 지킨
+   * 것은 실패가 아니라 조정이다 - 소프트 선호라 순위만 밀리고 일정은 그대로 나온다(#145 2절).
+   */
+  const decision = scheduledDate === undefined
+    ? "impossible"
+    : reasons.length > 0 ? "needs_confirmation" : "ready";
+
+  return {
+    ...base,
+    kind: "order",
+    decision,
+    ...(scheduledDate ? { scheduledDate } : {}),
+    reasons: decision === "impossible" ? [] : reasons,
+    orderPair: [firstPlaceId, secondPlaceId],
+    ...(outcome ? { orderOutcome: outcome } : {}),
+  };
+}
+
+/** 그 장소가 앉은 날짜 — 없으면 `undefined` */
+function dateOfPlaceIn(result: ItineraryResult, placeId: string): string | undefined {
+  if (result.status !== "planned") return undefined;
+  return result.days.find((day) => day.items.some((item) => item.placeId === placeId))?.date;
 }
 
 /**
@@ -185,6 +290,7 @@ export function proposalForPlaces(
   const targets = new Set(placeIds);
 
   const impossible = (): CommandProposal => ({
+    kind: "date",
     ...base,
     decision: "impossible",
     reasons: [],
@@ -228,6 +334,7 @@ export function proposalForPlaces(
   }
 
   return {
+    kind: "date",
     ...base,
     decision: reasons.length > 0 ? "needs_confirmation" : "ready",
     ...(sameDate ? { scheduledDate: scheduled[0] } : {}),

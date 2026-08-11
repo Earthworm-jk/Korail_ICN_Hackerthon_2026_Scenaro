@@ -106,6 +106,7 @@ describe("#109 실행 취소 버튼", () => {
     outcome: {
       kind: "proposal",
       proposal: {
+        kind: "date",
         decision: "ready", placeId: "p1", placeIds: ["p1"], requestedDate: "2026-08-13",
         scheduledDate: "2026-08-13", reasons: [], displaced: [], moved: [],
       },
@@ -154,7 +155,7 @@ describe("#152 갇히지 않는 패널", () => {
 
 describe("PR #157 리뷰 1 — 적용 후 문구는 결과를 과장하지 않는다", () => {
   const proposalWith = (over: Partial<CommandProposal>): CommandProposal => ({
-    decision: "needs_confirmation", placeId: "p1", placeIds: ["p1", "p2"],
+    kind: "date", decision: "needs_confirmation", placeId: "p1", placeIds: ["p1", "p2"],
     requestedDate: "2026-08-14", reasons: ["date_adjusted"],
     displaced: [], moved: [], ...over,
   });

@@ -20,8 +20,10 @@ import {
   changeSummaryOf,
   isExplainCommand,
   planRequestFor,
+  planRequestForOrder,
   planRequestForPlaces,
   proposalFor,
+  proposalForOrder,
   proposalForPlaces,
   type CommandProposal,
 } from "../itinerary-command-executor";
@@ -96,6 +98,16 @@ const VisitDateEditSchema = z.object({
   targetDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   request: PlanRequestSchema,
 });
+
+/** 같은 날 순서 드래그 (#145). 두 장소가 같으면 요청 자체가 뜻이 없다 */
+const VisitOrderEditSchema = z.object({
+  firstPlaceId: z.string().min(1),
+  secondPlaceId: z.string().min(1),
+  request: PlanRequestSchema,
+}).refine(
+  ({ firstPlaceId, secondPlaceId }) => firstPlaceId !== secondPlaceId,
+  { path: ["secondPlaceId"], message: "같은 장소를 앞뒤로 둘 수 없습니다" },
+);
 
 /** 빈 날짜를 끌면 옮길 것이 없다 — 계산을 부르지 않고 입력에서 막는다 */
 const DayMoveSchema = z.object({
@@ -389,6 +401,51 @@ export async function runDayMove(input: {
       kind: "proposal",
       proposal: proposalForPlaces(placeIds, targetDate, beforeAction.result, afterAction.result),
       nextRequest,
+      nextResult: afterAction.result,
+      diff: diffItineraries(beforeAction.result, afterAction.result),
+      summary: changeSummaryOf(beforeAction.result, afterAction.result),
+    },
+  };
+}
+
+/**
+ * 같은 날 방문 순서 조율 (#145).
+ *
+ * `runVisitDateEdit`과 **같은 골격이다** — 명령 전 일정을 먼저 계산하고, 요청을 패치해
+ * 다시 계산한 뒤 둘을 비교해 제안을 만든다. #118 결정 2의 `별도 엔진을 만들지 않고
+ * 동일한 재계산 액션을 사용한다`가 여기에도 걸린다.
+ *
+ * 엔진의 순환 거부(`INVALID_REQUEST`)는 그대로 올려 보낸다. 화면이 어느 쌍이 문제인지
+ * 말할 수 있어야 하므로 여기서 삼키지 않는다.
+ */
+export async function runVisitOrderEdit(input: {
+  firstPlaceId: string;
+  secondPlaceId: string;
+  request: PlanRequest;
+}): Promise<VisitDateEditResult> {
+  const parsed = VisitOrderEditSchema.safeParse(input);
+  if (!parsed.success) {
+    return { ok: false, code: "INVALID_REQUEST", fieldErrors: fieldErrorsOf(parsed.error) };
+  }
+  const { firstPlaceId, secondPlaceId, request } = parsed.data;
+  const beforeAction = await planItinerary(request);
+  if (!beforeAction.ok) {
+    return { ok: false, code: "INVALID_REQUEST", fieldErrors: beforeAction.fieldErrors };
+  }
+  const proposedRequest = planRequestForOrder(firstPlaceId, secondPlaceId, request);
+  const afterAction = await planItinerary(proposedRequest);
+  if (!afterAction.ok) {
+    return { ok: false, code: "INVALID_REQUEST", fieldErrors: afterAction.fieldErrors };
+  }
+  const proposal = proposalForOrder(
+    firstPlaceId, secondPlaceId, beforeAction.result, afterAction.result,
+  );
+  return {
+    ok: true,
+    outcome: {
+      kind: "proposal",
+      proposal,
+      nextRequest: proposedRequest,
       nextResult: afterAction.result,
       diff: diffItineraries(beforeAction.result, afterAction.result),
       summary: changeSummaryOf(beforeAction.result, afterAction.result),

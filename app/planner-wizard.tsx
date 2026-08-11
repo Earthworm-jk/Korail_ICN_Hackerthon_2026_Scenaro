@@ -24,6 +24,7 @@ import {
   runItineraryCommand,
   runDayMove,
   runVisitDateEdit,
+  runVisitOrderEdit,
   type RouteRecommendation,
 } from "@/lib/actions/itinerary-command";
 import { excludedPlaceIdsFrom, initialCandidateIds } from "@/lib/candidates";
@@ -376,6 +377,8 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
   const [aiFeedback, setAiFeedback] = useState<CommandFeedback | null>(null);
   // #109 드래그 — 잡고 있는 장소와 올라가 있는 날짜. 표시 전용 상태다
   const [draggingPlaceId, setDraggingPlaceId] = useState<string | null>(null);
+  /** 같은 날 순서 드래그에서 지금 겨냥한 카드 (#145) — 어느 앞으로 갈지 화면으로 알린다 */
+  const [dragOverPlaceId, setDragOverPlaceId] = useState<string | null>(null);
   const [dragOverDate, setDragOverDate] = useState<string | null>(null);
   const [draggingDayDate, setDraggingDayDate] = useState<string | null>(null);
   /**
@@ -1095,6 +1098,52 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
         }
       } catch {
         // 늦게 도착한 실패가 현재 화면에 옛 오류를 띄우지 않게 한다
+        if (!commandResponseIsCurrent(submittedSequence, planSequence.current)) {
+          setAiFeedback({ kind: "cancelled" });
+          return;
+        }
+        setAiFeedback({ kind: "error" });
+      }
+    });
+  }, [currentConstraints, visitDateEditable, applyCommandOutcome]);
+
+  /**
+   * 같은 날 방문 순서 (#145).
+   *
+   * `submitVisitDateEdit`과 **같은 골격이다** — 제안을 만들고, 패널을 열고, `ready`면 바로
+   * 적용한다. 확인 창·실행 취소·diff가 전부 그 경로에 이미 붙어 있어 순서만 따로 만들 이유가
+   * 없다(#118 결정 2).
+   *
+   * 순서는 소프트 선호라 못 지켜도 일정이 실패하지 않는다. 대신 엔진이 `adjusted`로 알리고
+   * 확인 창이 `열차 시간표에 따라...`를 띄운다 — 혼합 권역 성립률이 63%라 자주 나온다.
+   */
+  const submitVisitOrderEdit = useCallback((firstPlaceId: string, secondPlaceId: string) => {
+    const request = currentConstraints();
+    if (!request || !visitDateEditable) return;
+    const submittedSequence = ++planSequence.current;
+    setAiFeedback(null);
+    setAiPanelOpen(true);
+    startAiTransition(async () => {
+      try {
+        const result = await runVisitOrderEdit({ firstPlaceId, secondPlaceId, request });
+        if (!commandResponseIsCurrent(submittedSequence, planSequence.current)) {
+          setAiFeedback({ kind: "cancelled" });
+          return;
+        }
+        if (!result.ok) {
+          setAiFeedback({ kind: "error" });
+          return;
+        }
+        setAiFeedback({
+          kind: "proposal",
+          outcome: result.outcome,
+          applied: false,
+          submittedSequence,
+        });
+        if (result.outcome.proposal.decision === "ready") {
+          applyCommandOutcome(result.outcome, submittedSequence);
+        }
+      } catch {
         if (!commandResponseIsCurrent(submittedSequence, planSequence.current)) {
           setAiFeedback({ kind: "cancelled" });
           return;
@@ -2246,10 +2295,37 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
                               event.dataTransfer.setData("text/plain", item.placeId);
                               event.dataTransfer.effectAllowed = "move";
                             }}
-                            onDragEnd={() => { setDraggingPlaceId(null); setDragOverDate(null); }}
+                            onDragEnd={() => {
+                              setDraggingPlaceId(null); setDragOverDate(null); setDragOverPlaceId(null);
+                            }}
+                            /* 같은 날 안에서 카드 위에 떨어뜨리면 **그 앞으로** 간다 (#145).
+                               날짜 통에 떨어뜨리는 것(날짜 이동)과 자리가 겹치므로, 카드에서
+                               멈춘 드래그만 여기서 가로채고 나머지는 통으로 흘려 보낸다 */
+                            onDragOver={(event) => {
+                              if (!visitDateEditable || !draggingPlaceId) return;
+                              if (draggingPlaceId === item.placeId) return;
+                              if (dateOfPlace(displayedDays, draggingPlaceId) !== day.date) return;
+                              event.preventDefault();
+                              event.stopPropagation();
+                              setDragOverPlaceId(item.placeId);
+                            }}
+                            onDragLeave={() => setDragOverPlaceId((current) => (
+                              current === item.placeId ? null : current
+                            ))}
+                            onDrop={(event) => {
+                              const moving = draggingPlaceId ?? event.dataTransfer.getData("text/plain");
+                              setDragOverPlaceId(null);
+                              if (!moving || moving === item.placeId) return;
+                              if (dateOfPlace(displayedDays, moving) !== day.date) return;
+                              event.preventDefault();
+                              // 날짜 통의 드롭까지 타면 같은 드래그가 두 번 처리된다
+                              event.stopPropagation();
+                              setDraggingPlaceId(null);
+                              submitVisitOrderEdit(moving, item.placeId);
+                            }}
                             className={`rounded-lg border bg-sc-surface px-2 py-1.5 ${
                               draggingPlaceId === item.placeId ? "opacity-50" : ""
-                            }`}
+                            } ${dragOverPlaceId === item.placeId ? "border-sc-blue bg-sc-blue-soft/40" : ""}`}
                             data-itinerary-row="place"
                           >
                             {/* 카드 한 장의 구조는 어느 줄이든 같다 (#146):
