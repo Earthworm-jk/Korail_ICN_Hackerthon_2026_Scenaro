@@ -105,6 +105,7 @@ import type { StationFacilitiesSnapshotT } from "@/lib/station-facilities";
 import type { StationCoordinatesSnapshotT } from "@/lib/station-coordinates";
 import type { RailGeometrySnapshotT } from "@/lib/rail-geometry";
 import type { DayPlan } from "@/lib/engine/types";
+import type { RegionWindowKind } from "@/lib/engine/region-windows";
 import { undoPointOf, type UndoPoint } from "@/lib/itinerary-undo";
 
 const KST = "Asia/Seoul";
@@ -132,6 +133,41 @@ const STEPS: MessageKey[] = ["nav.step1", "nav.step2", "nav.step3"];
 
 /** 3단계 후보 목록을 한 번에 보여주는 개수 — 나머지는 "더보기" */
 const PLACES_PAGE_SIZE = 5;
+
+/** #101 — 창 종류별 표현을 한곳에 모아 새 종류가 생기면 타입 검사가 누락을 잡는다. */
+const REGION_WINDOW_CARD = {
+  transfer_wait: {
+    frameClass: "border-sc-blue/40 bg-sc-blue-soft/70",
+    iconClass: "bg-sc-blue-soft text-sc-blue",
+    metaClass: "text-sc-blue",
+    icon: TrainFront,
+    titleKey: "region.transfer",
+    detailKey: "region.nextTrainIn",
+  },
+  through_stop: {
+    frameClass: "border-sc-line bg-sc-subtle",
+    iconClass: "bg-sc-surface text-sc-muted",
+    metaClass: "text-sc-muted",
+    icon: TrainFront,
+    titleKey: "region.throughStop",
+    detailKey: "region.sameTrainContinues",
+  },
+  stay: {
+    frameClass: "border-sc-orange/40 bg-sc-orange-soft/70",
+    iconClass: "bg-sc-orange-soft text-sc-orange-text",
+    metaClass: "text-sc-orange-text",
+    icon: Hourglass,
+    titleKey: "region.block",
+    detailKey: null,
+  },
+} satisfies Record<RegionWindowKind, {
+  frameClass: string;
+  iconClass: string;
+  metaClass: string;
+  icon: typeof Hourglass;
+  titleKey: MessageKey;
+  detailKey: MessageKey | null;
+}>;
 
 /**
  * 장소 토글 후 자동 재계산까지의 대기(ms) — #85 성능 실측 기준.
@@ -2372,33 +2408,20 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
                         <h4 className="text-xs font-medium text-sc-muted">{tr("step4.stayTitle")}</h4>
                         <ul className="mt-2 space-y-1.5 text-sm" data-day-rows data-day-stays>
                           {day.regionWindows.map((window) => {
-                            const presentation = regionWindowPresentationOf(
-                              window,
-                              day,
-                            );
-                            const transfer = presentation.kind === "transfer_wait";
-                            const through = presentation.kind === "through_stop";
-                            const title = transfer
-                              ? `${stationName(window.stationId)} ${tr("region.transfer")}`
-                              : through
-                                ? `${stationName(window.stationId)} ${tr("region.throughStop")}`
-                                : `${stationName(window.stationId)} ${tr("region.block")}`;
-                            const detail = transfer
-                              ? tr("region.nextTrainIn").replace(
+                            const presentation = regionWindowPresentationOf(window, day);
+                            const card = REGION_WINDOW_CARD[presentation.kind];
+                            const WindowIcon = card.icon;
+                            const title = `${stationName(window.stationId)} ${tr(card.titleKey)}`;
+                            const detail = card.detailKey === null
+                              ? stayLabel(presentation.minutes)
+                              : tr(card.detailKey).replace(
                                 "{duration}",
                                 durationLabel(presentation.minutes),
-                              )
-                              : through
-                                ? tr("region.sameTrainContinues")
-                                : stayLabel(presentation.minutes);
+                              );
                             return (
                               <li
                                 key={window.startAt}
-                                className={transfer
-                                  ? "rounded-lg border border-sc-blue/40 bg-sc-blue-soft/70 px-2 py-1.5"
-                                  : through
-                                    ? "rounded-lg border border-sc-line bg-sc-subtle px-2 py-1.5"
-                                    : "rounded-lg border border-sc-orange/40 bg-sc-orange-soft/70 px-2 py-1.5"}
+                                className={`rounded-lg border px-2 py-1.5 ${card.frameClass}`}
                                 data-itinerary-row={presentation.kind}
                                 style={{ gridColumnStart: stayColumn(window.startAt) }}
                               >
@@ -2406,27 +2429,14 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
                                   {fmtTime(window.startAt)}
                                 </span>
                                 <span className="mt-1 flex items-start gap-2" data-row-main>
-                                  <span className={transfer
-                                    ? "grid size-7 shrink-0 place-items-center rounded-md bg-sc-blue-soft text-sc-blue"
-                                    : through
-                                      ? "grid size-7 shrink-0 place-items-center rounded-md bg-sc-surface text-sc-muted"
-                                      : "grid size-7 shrink-0 place-items-center rounded-md bg-sc-orange-soft text-sc-orange-text"}
-                                  >
-                                    {presentation.kind === "stay"
-                                      ? <Hourglass aria-hidden="true" className="size-4" />
-                                      : <TrainFront aria-hidden="true" className="size-4" />}
+                                  <span className={`grid size-7 shrink-0 place-items-center rounded-md ${card.iconClass}`}>
+                                    <WindowIcon aria-hidden="true" className="size-4" />
                                   </span>
                                   <span className="min-w-0 flex-1 text-sc-text/90" data-row-name>
                                     {title}
                                   </span>
                                 </span>
-                                <span className={transfer
-                                  ? "mt-auto block pt-1 text-xs text-sc-blue"
-                                  : through
-                                    ? "mt-auto block pt-1 text-xs text-sc-muted"
-                                    : "mt-auto block pt-1 text-xs text-sc-orange-text"}
-                                  data-row-meta
-                                >
+                                <span className={`mt-auto block pt-1 text-xs ${card.metaClass}`} data-row-meta>
                                   {detail}
                                 </span>
                               </li>

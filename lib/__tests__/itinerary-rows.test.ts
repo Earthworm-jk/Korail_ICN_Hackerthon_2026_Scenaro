@@ -159,7 +159,7 @@ describe("#101 — 권역 창 화면 표시", () => {
   ];
 
   it("환승에는 활동시간으로 잘리지 않은 실제 다음 열차 간격을 표시한다", () => {
-    expect(regionWindowPresentationOf(transferWindow, day({ rides }), rides)).toEqual({
+    expect(regionWindowPresentationOf(transferWindow, day({ rides }))).toEqual({
       kind: "transfer_wait",
       minutes: 90,
     });
@@ -167,7 +167,7 @@ describe("#101 — 권역 창 화면 표시", () => {
 
   it("일반 체류에는 엔진의 보수 활동 가능 시간을 그대로 표시한다", () => {
     const stayWindow = { ...transferWindow, startBoundary: "DAY_START" as const };
-    expect(regionWindowPresentationOf(stayWindow, day({ rides }), rides)).toEqual({
+    expect(regionWindowPresentationOf(stayWindow, day({ rides }))).toEqual({
       kind: "stay",
       minutes: 30,
     });
@@ -178,7 +178,6 @@ describe("#101 — 권역 창 화면 표시", () => {
     const presentation = regionWindowPresentationOf(
       transferWindow,
       day({ rides: sameTrain }),
-      sameTrain,
     );
     expect(presentation).toEqual({
       kind: "through_stop",

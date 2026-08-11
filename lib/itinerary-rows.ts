@@ -85,15 +85,17 @@ export function stationIdsOf(day: DayPlan): string[] {
  *
  * `availableMinutes`는 09:00-21:00 활동 시간대로 잘린 값이라 실제 환승 간격과 다를 수
  * 있다. 체류에는 그 보수 활동시간을 그대로 쓰되, "다음 열차까지"라고 말하는 환승에는
- * 반드시 창의 실제 시작-끝 간격을 쓴다. 그렇지 않으면 20:30-22:00 환승을 30분이라고
- * 표시하게 된다.
+ * 반드시 창의 실제 시작-끝 간격을 쓴다. 그렇지 않으면 같은 날 20:30-22:00 환승을
+ * 30분이라고 표시하게 된다.
+ *
+ * 자정을 넘는 창은 엔진이 `DAY_END` / `DAY_START`로 나누며 현재 분류 계약상 `stay`다.
+ * 이 헬퍼는 이미 분류된 창의 표시값만 정하고 분할 조각을 다시 잇지는 않는다.
  */
 export function regionWindowPresentationOf(
   window: RegionWindow,
   day: Pick<DayPlan, "items" | "rides">,
-  allRides: readonly TrainRide[] = day.rides,
 ): { kind: RegionWindowKind; minutes: number } {
-  const kind = classifyRegionWindow(window, day.items, allRides);
+  const kind = classifyRegionWindow(window, day.items, day.rides);
   if (kind === "stay") return { kind, minutes: window.availableMinutes };
 
   const duration = Date.parse(window.endAt) - Date.parse(window.startAt);
