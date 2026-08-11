@@ -173,7 +173,10 @@
     background: var(--sc-blue);
   }
 
-  #place-picker + div[aria-busy] > div[class*="space-y"] > div.grid > div:first-child > div > ul > li button {
+  /* **직계 버튼만.** 이 규칙은 줄 전체가 버튼 하나이던 시절에 쓴 것이라 폭을 100%로
+     늘린다. 그 뒤 카드 안에 이동 메뉴 버튼이 생겼는데, 자손까지 잡으면 그 아이콘
+     버튼도 208px로 늘어나 옆의 `차량으로 약 5분`을 밀어내 잘랐다 (#146) */
+  #place-picker + div[aria-busy] > div[class*="space-y"] > div.grid > div:first-child > div > ul > li > button {
     margin: -2px -3px !important;
     width: calc(100% + 6px) !important;
     padding: 3px !important;
