@@ -41,9 +41,8 @@
   }
 
   /* Left rail behaves like a compact selection inspector. */
+  /* 배치는 stage-v4 단독 — 위 stage.css 주석 참고 (#146) */
   #place-picker {
-    top: 10px !important;
-    max-height: calc(100dvh - 162px) !important;
     padding: 11px !important;
     border-color: var(--sc-line-strong, var(--sc-line)) !important;
     box-shadow: 0 2px 10px rgba(16,24,40,.045) !important;
