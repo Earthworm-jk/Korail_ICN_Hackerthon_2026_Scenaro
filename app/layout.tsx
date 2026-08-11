@@ -5,6 +5,7 @@ import "./stage.css";
 import "./stage-v2.css";
 import "./stage-v3.css";
 import "./stage-v4.css";
+import "./stage-v5.css";
 import { StepNavController } from "./step-nav-controller";
 import { StageUtilityDockController } from "./stage-utility-portal";
 
