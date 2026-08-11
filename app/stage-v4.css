@@ -250,9 +250,8 @@
     max-height: calc(100% - 42px) !important;
   }
 
-  #place-picker + div[aria-busy] [data-stage-warnings] {
-    grid-row: 4;
-  }
+  /* 경고 아이콘은 이제 `상세 일정` 제목 줄 안에 있다 (#146) — 자기 행을 갖지 않는다.
+     340px 폭의 한 행을 36px 아이콘 하나가 차지하고 옆이 비어 있었다 */
 
   #place-picker + div[aria-busy] > div[class*="flex-wrap"][class*="justify-between"] {
     grid-row: 5;

@@ -1010,6 +1010,23 @@ export function KoreaMapPanel({
           <p className="mt-2 text-xs text-sc-muted">
             {tr(hasRailGeometry ? "map.routeNoticeRail" : "map.routeNotice")}
           </p>
+          <p className="mt-2 border-t pt-2 text-xs text-sc-muted">
+            {tr("map.source")}
+            {/* ODbL 1.0 의무 표기 — 라이선스 링크까지 함께 (OSM 저작권 안내 규정) */}
+            {hasRailGeometry && (
+              <>
+                {" \u00b7 "}
+                <a
+                  href="https://www.openstreetmap.org/copyright"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="underline underline-offset-2 hover:text-sc-blue"
+                >
+                  {tr("map.sourceRail")}
+                </a>
+              </>
+            )}
+          </p>
         </div>
       )}
       {experienceNotice}

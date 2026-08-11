@@ -349,3 +349,69 @@
     margin-top: 0 !important;
   }
 }
+
+/**
+ * 하루 일정 카드는 모두 같은 크기다 (#146).
+ *
+ * 내용에 따라 58 - 83px로 들쭉날쭉했다 — 이름이 길면 두 줄이 되고 이동 줄은 메타가
+ * 없어 짧아졌다. **크기를 내용이 정하게 두면 목록이 계단처럼 보인다.**
+ * 높이를 고정하고 이름을 두 줄에서 자른다.
+ */
+[data-itinerary-row] {
+  display: flex;
+  min-height: 88px;
+  flex-direction: column;
+}
+
+[data-row-name] {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-height: 1.35;
+}
+
+/**
+ * 시각을 잇는 타임라인.
+ *
+ * 카드마다 도착 시각이 맨 위에 있으므로, 그 줄을 가로로 이으면 하루가 시간순으로
+ * 흐르는 것이 보인다. 권역별 "약 N시간 활용 가능" 요약을 지운 자리를 이것이 대신한다.
+ */
+@media (max-width: 1023px) {
+  /* 높이를 **고정한다**. `min-height`만 두면 그리드 행이 그 날의 가장 큰 카드에
+     맞춰 늘어나 DAY마다 90 - 106px로 갈린다 - 옆으로 넘길 때 카드가 들썩인다 */
+  ul[data-day-rows] > li {
+    position: relative;
+    height: 108px;
+    padding-top: 14px;
+  }
+
+  /* 카드 위를 가로지르는 선 — 마지막 칸은 오른쪽으로 더 잇지 않는다 */
+  ul[data-day-rows] > li::after {
+    content: "";
+    position: absolute;
+    top: 5px;
+    left: 8px;
+    right: -8px;
+    height: 1px;
+    background: var(--sc-line-strong, var(--sc-line));
+  }
+
+  ul[data-day-rows] > li:last-child::after {
+    right: 8px;
+  }
+
+  /* 그 선 위의 시각 표식 */
+  ul[data-day-rows] > li::before {
+    content: "";
+    position: absolute;
+    top: 2px;
+    left: 6px;
+    z-index: 1;
+    width: 7px;
+    height: 7px;
+    border-radius: 999px;
+    background: var(--sc-orange);
+    box-shadow: 0 0 0 3px var(--sc-surface);
+  }
+}
