@@ -1,8 +1,9 @@
 "use client";
 
-import { useRef, useEffect, type ReactNode } from "react";
+import { useRef, type ReactNode } from "react";
 import { X } from "lucide-react";
 import { withValues, type MessageKey } from "@/lib/i18n/messages";
+import { useModalDismiss } from "./use-modal-dismiss";
 
 /**
  * 전체 후보 보기 (#146 ①)
@@ -42,22 +43,35 @@ export function PlaceBrowser({
   children: ReactNode;
   tr: (key: MessageKey) => string;
 }) {
-  const dialogRef = useRef<HTMLDivElement>(null);
-  const closeRef = useRef<HTMLButtonElement>(null);
-
-  // 열릴 때 포커스를 안으로 들인다 — 안 그러면 키보드 사용자는 뒤 목록에 갇힌다
-  useEffect(() => {
-    if (open) closeRef.current?.focus();
-  }, [open]);
-
-  useEffect(() => {
-    if (!open) return;
-    const onKey = (event: KeyboardEvent) => { if (event.key === "Escape") onClose(); };
-    document.addEventListener("keydown", onKey);
-    return () => document.removeEventListener("keydown", onKey);
-  }, [open, onClose]);
-
   if (!open) return null;
+  return <OpenBrowser {...{
+    onClose, count, stations, works, station, work, onStationChange, onWorkChange, children, tr,
+  }} />;
+}
+
+/**
+ * 열린 상태만 따로 둔다 — 훅은 조건부로 부를 수 없고, `useModalDismiss`는 마운트/언마운트에
+ * 포커스 진입과 복귀를 건다. `open` 분기를 훅 안에서 처리하면 닫힌 동안에도 리스너가 산다.
+ */
+function OpenBrowser({
+  onClose,
+  count,
+  stations,
+  works,
+  station,
+  work,
+  onStationChange,
+  onWorkChange,
+  children,
+  tr,
+}: Omit<Parameters<typeof PlaceBrowser>[0], "open">) {
+  const dialogRef = useRef<HTMLDivElement>(null);
+
+  /**
+   * 포커스 트랩·Esc·닫은 뒤 복귀를 저장소 공통 훅에 맡긴다 (PR #156 리뷰 2).
+   * 직접 만들면 Esc만 걸리고 Tab이 뒤 목록으로 새어 나가, `aria-modal="true"`가 거짓말이 된다.
+   */
+  useModalDismiss(dialogRef, onClose);
 
   return (
     <div
@@ -80,7 +94,6 @@ export function PlaceBrowser({
             </p>
           </div>
           <button
-            ref={closeRef}
             type="button"
             onClick={onClose}
             aria-label={tr("common.close")}

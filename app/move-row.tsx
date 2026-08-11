@@ -74,7 +74,7 @@ export function MoveRow({
         {onOpenDetail && detailLabel && (
           <button
             type="button"
-            className="shrink-0 rounded border px-2 py-0.5 text-xs text-sc-blue hover:border-sc-blue"
+            className="min-h-10 shrink-0 rounded border px-2 text-xs text-sc-blue hover:border-sc-blue"
             onClick={onOpenDetail}
           >
             {detailLabel}

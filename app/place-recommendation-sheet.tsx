@@ -14,7 +14,7 @@ export function PlaceRecommendationSheet({
   totalCount,
   placedCount,
   unplacedCount,
-  themeRecommended,
+  themeState,
   updating,
   updated,
   sortBy,
@@ -32,8 +32,12 @@ export function PlaceRecommendationSheet({
   placedCount: number | null;
   /** 선택했지만 들어가지 못한 수. `placedCount + unplacedCount = selectedCount` */
   unplacedCount: number | null;
-  /** 테마체험은 아직 선택할 수 없다 — 숫자 대신 추천 유무만 말한다 */
-  themeRecommended: boolean;
+  /**
+   * 테마체험은 아직 선택할 수 없다 — 숫자 대신 추천 유무를 말한다.
+   * `unknown`은 조회 전이거나 스냅샷이 없는 상태다. 그때는 **아무 말도 하지 않는다** —
+   * 모르는 것을 "추천 없음"이라고 하면 사용자가 없는 사실을 믿는다.
+   */
+  themeState: "available" | "none" | "unknown";
   updating: boolean;
   updated: boolean;
   sortBy: "relevance" | "official";
@@ -107,9 +111,11 @@ export function PlaceRecommendationSheet({
             <span className="rounded-full border border-sc-blue/30 px-2 py-0.5 text-sc-blue">
               {withValues(tr("step3.chipKCulture"), { n: String(selectedCount) })}
             </span>
-            <span className="rounded-full border px-2 py-0.5 text-sc-muted">
-              {tr(themeRecommended ? "step3.chipThemeAvailable" : "step3.chipThemeNone")}
-            </span>
+            {themeState !== "unknown" && (
+              <span className="rounded-full border px-2 py-0.5 text-sc-muted">
+                {tr(themeState === "available" ? "step3.chipThemeAvailable" : "step3.chipThemeNone")}
+              </span>
+            )}
           </div>
         </div>
         <label className={styles.sortControl}>

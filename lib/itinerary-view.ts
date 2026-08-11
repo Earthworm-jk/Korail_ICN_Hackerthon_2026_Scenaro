@@ -133,3 +133,20 @@ export function banner(view: ItineraryView): "reopened" | "swapped" | "gateway" 
   if (view.selectedAlt) return "swapped";
   return null;
 }
+
+/**
+ * 테마체험 칩이 말할 수 있는 것 (PR #156 리뷰 4)
+ *
+ * 미조회(`null`)와 스냅샷 부재(`unavailable`)를 "추천 없음"으로 합치면 **모르는 것을
+ * 안다고 말하게 된다.** 재계산마다 `null`로 초기화되므로 매번 "추천 없음"이 먼저 떴다가
+ * 뒤집히기도 한다.
+ *
+ * `status: "ok"`면 추천이 있는 것이다 — `point`는 지도용 좌표라 없어도 추천은 있다.
+ */
+export function themeChipState(
+  result: { status: "ok" | "none" | "unavailable" } | null,
+): "available" | "none" | "unknown" {
+  if (result === null) return "unknown";
+  if (result.status === "unavailable") return "unknown";
+  return result.status === "ok" ? "available" : "none";
+}

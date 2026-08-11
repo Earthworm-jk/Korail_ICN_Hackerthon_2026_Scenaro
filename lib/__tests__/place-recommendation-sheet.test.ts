@@ -39,7 +39,7 @@ describe("지도 위 추천 장소 바텀시트", () => {
       totalCount: 8,
       placedCount: null,
       unplacedCount: null,
-      themeRecommended: false,
+      themeState: "none" as const,
       updating: false,
       updated: false,
       sortBy: "relevance",
@@ -74,7 +74,7 @@ describe("지도 위 추천 장소 바텀시트", () => {
       totalCount: 8,
       placedCount: null,
       unplacedCount: null,
-      themeRecommended: false,
+      themeState: "none" as const,
       updating: true,
       updated: false,
       sortBy: "official",
@@ -95,7 +95,7 @@ describe("지도 위 추천 장소 바텀시트", () => {
       totalCount: 8,
       placedCount: null,
       unplacedCount: null,
-      themeRecommended: false,
+      themeState: "none" as const,
       updating: false,
       updated: false,
       sortBy: "relevance",
@@ -119,7 +119,7 @@ describe("지도 위 추천 장소 바텀시트", () => {
       totalCount: 8,
       placedCount: null,
       unplacedCount: null,
-      themeRecommended: false,
+      themeState: "none" as const,
       updating: false,
       updated: true,
       sortBy: "official",
@@ -220,7 +220,7 @@ describe("#146 ① 상태 요약과 분류", () => {
   it("테마체험은 숫자 대신 추천 유무를 말한다", () => {
     expect(render({ placedCount: 7, unplacedCount: 1, themeRecommended: false }))
       .toContain("테마체험 추천 없음");
-    expect(render({ placedCount: 7, unplacedCount: 1, themeRecommended: true }))
+    expect(render({ placedCount: 7, unplacedCount: 1, themeState: "available" }))
       .toContain("테마체험 추천 있음");
   });
 
@@ -229,5 +229,32 @@ describe("#146 ① 상태 요약과 분류", () => {
     const html = render({ placedCount: 7, unplacedCount: 1, themeRecommended: false });
     expect(html.indexOf("data-selection-state")).toBeLessThan(html.indexOf("data-category-chips"));
     expect(html).toMatch(/data-selection-state[\s\S]*?<\/span>[\s\S]*?data-category-chips/);
+  });
+});
+
+describe("PR #156 리뷰 4 — 테마체험은 아는 것만 말한다", () => {
+  const base = {
+    selectedCount: 8, totalCount: 20, updating: false, updated: false,
+    sortBy: "relevance" as const, onSortChange: () => undefined,
+    onBrowseAll: () => undefined, map: null, onBack: () => undefined, tr,
+    placedCount: 7, unplacedCount: 1,
+  };
+  const render = (themeState: "available" | "none" | "unknown") =>
+    renderToStaticMarkup(createElement(PlaceRecommendationSheet, { ...base, themeState } as never));
+
+  /**
+   * 재계산마다 조회 상태가 `null`로 초기화된다. 미조회를 "추천 없음"으로 합치면
+   * **매번 없다고 단언했다가 뒤집힌다.** 모르는 동안은 말하지 않는다.
+   */
+  it("조회 전·확인 불가에는 칩을 두지 않는다", () => {
+    const html = render("unknown");
+    expect(html).not.toContain("테마체험");
+    // K-컬처 칩은 그대로 있다 — 선택 수는 지금도 아는 값이다
+    expect(html).toContain("K-컬처 8");
+  });
+
+  it("조회가 끝났을 때만 있음·없음을 말한다", () => {
+    expect(render("none")).toContain("테마체험 추천 없음");
+    expect(render("available")).toContain("테마체험 추천 있음");
   });
 });

@@ -5,7 +5,7 @@
  * - 편집 = 촬영지 재선택·항공 시각 변경 후 전체 재계산 (무상태)
  * - 대안 시간표는 mock(#14 ⑨ 선행), 저장·내 일정은 in-memory 스텁(#25 선행) — 엔진·Supabase 연결 시 교체
  */
-import { useCallback, useEffect, useMemo, useReducer, useRef, useState, useTransition } from "react";
+import { useCallback, useEffect, useId, useMemo, useReducer, useRef, useState, useTransition } from "react";
 import { BusFront, Info, Sparkles, TrainFront, TriangleAlert, X } from "lucide-react";
 import {
   searchEntities,
@@ -56,8 +56,10 @@ import {
   reduceItineraryView,
   rejectedPlaces as deriveRejectedPlaces,
   showEmpty,
+  themeChipState,
   type SelectableAlternative,
 } from "@/lib/itinerary-view";
+import { selectionResultIsCurrent } from "@/lib/selection-capacity";
 import { autoPlanDecision } from "@/lib/auto-plan";
 import { collectDisplayNames, resolveDisplayName } from "@/lib/display-names";
 import { useLocalDraft } from "./local-draft";
@@ -965,6 +967,22 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
     () => displayedSelectionCapacity(view, selectedPlaceIds),
     [selectedPlaceIds, view],
   );
+  /**
+   * 배치 수를 말해도 되는가 (PR #156 리뷰 3).
+   *
+   * 갱신 중이거나, 표시 중인 결과가 현재 선택으로 계산된 것이 아니면 말하지 않는다.
+   * 선택은 즉시 바뀌고 일정은 응답 후에 바뀌므로, 그 사이에 새로 고른 장소가
+   * "이전 일정에 없다"는 이유만으로 미배치로 찍힌다.
+   */
+  const selectionStateShown = useMemo(() => {
+    if (updating || selectionCapacity === null || !displayedDays) return false;
+    return selectionResultIsCurrent(
+      selectedPlaceIds,
+      displayedDays,
+      deriveRejectedPlaces(view).map((rejection) => rejection.placeId),
+    );
+  }, [updating, selectionCapacity, displayedDays, selectedPlaceIds, view]);
+
   const aiCommandDisabled = commandPanelUnavailable({
     hasCandidates: candidateData !== null,
     hasPlannedResult: view.result?.status === "planned",
@@ -1586,9 +1604,9 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
           <PlaceRecommendationSheet
             selectedCount={selectedPlaceIds.size}
             totalCount={sortedCandidates.length}
-            placedCount={selectionCapacity?.schedulableCount ?? null}
-            unplacedCount={selectionCapacity?.minimumExclusionCount ?? null}
-            themeRecommended={themeExperience?.status === "ok" && themeExperience.point !== null}
+            placedCount={selectionStateShown ? selectionCapacity!.schedulableCount : null}
+            unplacedCount={selectionStateShown ? selectionCapacity!.minimumExclusionCount : null}
+            themeState={themeChipState(themeExperience)}
             updating={updating}
             updated={lastItineraryDiff?.changed === true && !updating}
             sortBy={sortBy}
@@ -2331,7 +2349,13 @@ function PlaceCard({ candidate, locale, tr, selected, onToggle, stationName, wor
 }) {
   // 카드는 고르는 데 필요한 요약만 유지한다. 작품·회차·장면·출처는 top-layer 팝오버로
   // 분리해 고정 높이 카드가 잘리거나 내부 스크롤을 만들지 않게 한다.
-  const detailPopoverId = `place-detail-${candidate.id}`;
+  /**
+   * **인스턴스마다 고유해야 한다** (PR #156 리뷰 1). 같은 후보가 시트의 상위 줄과
+   * 전체 보기에 동시에 렌더되므로, 후보 id로만 만들면 dialog·title id가 두 개씩 생기고
+   * 전체 보기의 상세 버튼이 뒤에 깔린 시트의 팝오버를 연다.
+   */
+  const instanceId = useId();
+  const detailPopoverId = `place-detail-${candidate.id}-${instanceId}`;
   const detailTitleId = `${detailPopoverId}-title`;
   const oh = candidate.openingHours;
   const hoursLabel =
