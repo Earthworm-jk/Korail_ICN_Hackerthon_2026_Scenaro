@@ -423,13 +423,17 @@
   /**
    * 접힌 바의 높이 (#146 9번).
    *
-   * 62px은 상태 요약과 분류 칩이 생기기 전 값이라 지금은 칩 줄을 35px 잘라 낸다.
+   * 62px은 상태 요약과 분류 칩이 생기기 전 값이라 지금은 칩 줄을 35px 잘라 냈다.
    * compact 바는 **기능을 숨긴 빈 헤더가 아니라 추천 진입점과 현재 선택 상태가 보이는
-   * 바**여야 하므로, 잘라 내는 대신 내용이 들어갈 만큼 연다. 본문은 접힌 상태에서
-   * 렌더되지 않으므로 이 높이는 곧 헤더 높이다.
+   * 바**여야 하므로, 기능을 잘라 90px에 맞추는 대신 상한을 내용에 맞춰 올린다
+   * (PR #161 리뷰 판단). 본문은 접힌 상태에서 렌더되지 않으므로 이 높이는 곧 헤더다.
+   *
+   * `none`이 아니라 값을 두는 이유는 **다음에 헤더가 넘칠 때 드러나게 하기 위해서다.**
+   * 열어 두면 조용히 자라 어느 순간 지도를 덮는다. 실측 - 1024x768에서 97px,
+   * 1280x720에서 75px.
    */
   div#place-picker[data-place-sheet][data-sheet-expanded="false"] {
-    max-height: none !important;
+    max-height: 100px !important;
   }
 
   /* All result prose and the itinerary rail move from the old third column to the right. */
