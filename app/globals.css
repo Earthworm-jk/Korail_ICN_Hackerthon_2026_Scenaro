@@ -317,21 +317,35 @@
  * 바닥 독 배치를 방금 맞춰 놨다.
  */
 @media (max-width: 1023px) {
+  /* DAY 1 - DAY 2 - DAY 3이 한 줄로 흐른다. 스크롤되는 것은 **이 바깥 레일 하나**다 */
+  [data-day-list] {
+    display: flex;
+    gap: 12px;
+    overflow-x: auto;
+    /* 레일 안에서 가로로 튕겼을 때 페이지가 같이 밀리지 않게 한다 */
+    overscroll-behavior-inline: contain;
+    scroll-snap-type: x proximity;
+    padding-bottom: 8px;
+  }
+
+  /* 하루 통은 제 내용만큼만 차지하고 줄어들지 않는다 */
+  [data-day-list] > div {
+    flex: 0 0 auto;
+    margin-top: 0 !important;
+    scroll-snap-align: start;
+  }
+
+  /* 하루 안의 줄도 가로로 눕는다. 다만 **스스로 스크롤하지 않는다** —
+     안팎이 겹쳐 스크롤되면 어느 쪽이 밀리는지 손가락으로 구분할 수 없다 */
   ul[data-day-rows] {
     display: grid;
     grid-auto-flow: column;
     grid-auto-columns: minmax(210px, 240px);
     gap: 8px;
-    overflow-x: auto;
-    /* 레일 안에서 가로로 튕겼을 때 페이지가 같이 밀리지 않게 한다 */
-    overscroll-behavior-inline: contain;
-    scroll-snap-type: x proximity;
-    padding-bottom: 6px;
   }
 
   /* `space-y-1.5`의 세로 마진은 가로 레일에서 첫 칸만 밀어낸다 */
   ul[data-day-rows] > li {
     margin-top: 0 !important;
-    scroll-snap-align: start;
   }
 }

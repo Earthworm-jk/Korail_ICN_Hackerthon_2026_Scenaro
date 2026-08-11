@@ -72,28 +72,41 @@
   flex-shrink: 0;
 }
 
+/**
+ * 정렬은 아이콘만 그린다 (#146).
+ *
+ * 닫혀 있을 때 "추천순"까지 적으면 독에서 한 줄을 더 먹는다. 값은 **누른 순간**
+ * 브라우저가 그리는 목록에서 보이므로 화면에 미리 적어 둘 이유가 없다.
+ *
+ * `select`를 숨기는 대신 **아이콘 위에 투명하게 덮는다.** `display: none`이나 폭 0으로
+ * 접으면 네이티브 목록이 열리지 않거나 누를 곳이 사라진다. 덮어 두면 클릭·키보드·
+ * 목록이 전부 브라우저 기본 동작 그대로다.
+ */
 .sortControl {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  padding-block: 0;
-  padding-right: 6px;
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 38px;
+  padding: 0;
   color: var(--sc-text);
 }
 
 .sortControl select {
-  min-width: 0;
-  max-width: 132px;
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
   cursor: pointer;
   border: 0;
-  background: transparent;
-  color: inherit;
+  opacity: 0;
   font: inherit;
   outline: 0;
+  /* Safari가 기본 크롬을 그려 아이콘 위로 겹치는 것을 막는다 */
+  appearance: none;
 }
 
-.sortControl select:focus-visible:not([data-pointer-focus="true"]) {
-  border-radius: 4px;
+/* 초점 표시는 덮인 select가 아니라 보이는 아이콘 쪽에 준다 */
+.sortControl:has(select:focus-visible:not([data-pointer-focus="true"])) {
   outline: 2px solid var(--sc-blue);
   outline-offset: 2px;
 }

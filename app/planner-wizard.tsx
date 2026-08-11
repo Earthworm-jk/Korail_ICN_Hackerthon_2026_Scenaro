@@ -85,7 +85,7 @@ import {
   type CommandFeedback,
   type ProposalOutcome,
 } from "./itinerary-command-panel";
-import { ItineraryRouteMap, KoreaMapPanel, type MapPlace, type MapStation } from "./korea-map";
+import { ItineraryRouteMap, type MapPlace, type MapStation } from "./korea-map";
 import { PlaceRecommendationSheet, PlaceThumbnail } from "./place-recommendation-sheet";
 import { PlaceBrowser } from "./place-browser";
 import sheetStyles from "./place-recommendation-sheet.module.css";
@@ -1242,19 +1242,8 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
         })),
     [candidateData, locale, selectedPlaceIds],
   );
-  // 지도에 못 실은 장소 수는 "지금 지도가 대상으로 삼는 집합" 기준이어야 한다.
-  // 전체 후보 기준으로 세면 "선택한 장소만 보기"를 켠 상태에서 좌표 없는 장소를 하나도
-  // 고르지 않았는데도 "2곳 미표시"가 남는다 (PR #83 리뷰).
-
-  // 3단계 지도 전용 표시 필터 — 지도 안에서만 도는 상태이며 선택·일정에는 영향이 없다
-  const [onlySelectedOnMap, setOnlySelectedOnMap] = useState(false);
-  const step3MapPlaces = onlySelectedOnMap
-    ? mappablePlaces.filter((place) => place.selected)
-    : mappablePlaces;
-  const step3MapScope = onlySelectedOnMap
-    ? (candidateData?.candidates ?? []).filter((c) => selectedPlaceIds.has(c.id))
-    : (candidateData?.candidates ?? []);
-  const step3OmittedCount = step3MapScope.length - step3MapPlaces.length;
+  // 3단계 시트 안의 촬영지 위치 지도와 "선택한 장소만 보기" 토글은 지웠다 (#146).
+  // 화면에 전체 이동 동선 지도가 이미 있어 같은 것을 두 벌 그리고 있었다.
 
 
   // #33 — availableMinutes 포맷 전용 (재계산 금지)
@@ -1418,16 +1407,31 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
       </header>
 
       {!showFinalItinerary && <nav className="grid grid-cols-3 border-b bg-sc-subtle text-center text-sm">
-        {STEPS.map((key, i) => (
-          <div
-            key={key}
-            aria-current={step === i + 1 ? "step" : undefined}
-            className={`flex min-h-[52px] items-center justify-center gap-2 border-r px-1 last:border-r-0 ${step === i + 1 ? "bg-sc-blue-soft font-medium text-sc-blue" : "text-sc-muted"}`}
-          >
-            <span aria-hidden className="grid h-6 w-6 shrink-0 place-items-center rounded-full border border-current text-xs">{i + 1}</span>
-            <span className="truncate">{tr(key)}</span>
-          </div>
-        ))}
+        {/* 단계 표시가 곧 이동 수단이다 (#146). 시트에서 `이전`을 걷어낸 뒤로
+            여기가 앞 단계로 돌아가는 유일한 길이라 `div`로 둘 수 없다.
+            **아직 못 간 단계는 누를 수 없다** — 조건을 건너뛰고 결과로 갈 수 없다 */}
+        {STEPS.map((key, i) => {
+          const target = i + 1;
+          const current = step === target;
+          const reachable = target <= step;
+          return (
+            <button
+              key={key}
+              type="button"
+              disabled={!reachable}
+              aria-current={current ? "step" : undefined}
+              onClick={() => setStep(target)}
+              className={`flex min-h-[52px] items-center justify-center gap-2 border-r px-1 last:border-r-0 ${
+                current ? "bg-sc-blue-soft font-medium text-sc-blue" : "text-sc-muted"
+              } ${reachable && !current ? "hover:bg-sc-blue-soft/50 hover:text-sc-blue" : ""} ${
+                reachable ? "" : "cursor-default opacity-60"
+              }`}
+            >
+              <span aria-hidden className="grid h-6 w-6 shrink-0 place-items-center rounded-full border border-current text-xs">{target}</span>
+              <span className="truncate">{tr(key)}</span>
+            </button>
+          );
+        })}
       </nav>}
 
       {/* #14 v0.6 sc-layout — 좌측 선택 요약 + 본문 (md 미만은 상단 밴드) */}
@@ -1714,25 +1718,6 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
             onBrowseAll={() => setBrowserOpen(true)}
             initialExpanded={false}
             tr={tr}
-            map={candidateData ? (
-              <KoreaMapPanel
-                kind="places"
-                places={step3MapPlaces}
-                stations={mapStations}
-                omittedCount={step3OmittedCount}
-                tr={tr}
-                headingAction={
-                  <button
-                    type="button"
-                    aria-pressed={onlySelectedOnMap}
-                    className={`min-h-[30px] rounded-lg border px-2 py-1 text-xs ${onlySelectedOnMap ? "border-sc-blue bg-sc-blue-soft text-sc-blue" : ""}`}
-                    onClick={() => setOnlySelectedOnMap((on) => !on)}
-                  >
-                    {tr("map.filterSelected")}
-                  </button>
-                }
-              />
-            ) : null}
             routeRecommendations={routeRecommendationFeedback
               && routeRecommendationFeedback.outcome.recommendations.length > 0
               && candidateData
@@ -1979,7 +1964,10 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
             <div className={`mt-4 space-y-4 ${updating ? "opacity-60 transition-opacity" : ""}`}>
                             {/* #14 v0.6 sc-result-grid — 좌측 일정 타임라인 + 우측 지도·경고·실행 지원 */}
               <div className="grid gap-[18px] md:grid-cols-[minmax(0,1fr)_minmax(360px,1fr)] md:items-start">
-                <div className="min-w-0 space-y-4">
+                {/* 모바일에서는 DAY 1 - DAY 2 - DAY 3이 통째로 가로로 흐른다 (#146).
+                    세로로 쌓으면 하루를 볼 때마다 스크롤을 내려야 하는데, 여행 일정은
+                    원래 시간순이라 옆으로 넘기는 쪽이 맞다 */}
+                <div className="min-w-0 space-y-4" data-day-list>
               {/* 장소 단위 시각이 예약 확정 시각이 아니라는 고지는 유지하되, 자리는
                   옆 (!) 팝오버다 (#146 모바일). 390px에서 이 한 줄이 목록 위를 차지해
                   첫 화면에 DAY가 안 들어왔다 — 없애는 게 아니라 옮기는 것이다 */}
@@ -2261,10 +2249,12 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
                     popoverTarget="stage-warnings-popover"
                     aria-haspopup="dialog"
                     aria-controls="stage-warnings-popover"
-                    className="inline-flex items-center gap-1.5 rounded-full border border-sc-orange/40 bg-sc-orange-soft px-2.5 py-1.5 text-xs font-medium text-sc-orange-text hover:border-sc-orange"
+                    aria-label={withValues(tr("step4.warningsCount"), { n: String(viewWarnings.length) })}
+                    className="grid size-9 place-items-center rounded-full border border-sc-orange/40 bg-sc-orange-soft text-sc-orange-text hover:border-sc-orange"
                   >
-                    <TriangleAlert aria-hidden="true" className="size-4 shrink-0" />
-                    <span>{withValues(tr("step4.warningsCount"), { n: String(viewWarnings.length) })}</span>
+                    {/* 아이콘만 둔다 (#146). 건수는 이름으로만 남긴다 — 화면에서 세는
+                        것보다 눌러서 무엇인지 보는 쪽이 빠르고, 줄이 짧아진다 */}
+                    <TriangleAlert aria-hidden="true" className="size-4" />
                   </button>
                   <div
                     id="stage-warnings-popover"

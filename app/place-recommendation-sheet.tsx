@@ -24,7 +24,6 @@ export function PlaceRecommendationSheet({
   routeRecommendations,
   onBrowseAll,
   initialExpanded = true,
-  map,
   tr,
 }: {
   selectedCount: number;
@@ -65,7 +64,6 @@ export function PlaceRecommendationSheet({
    * 시작 상태만 달리할 수 있어야 한다.
    */
   initialExpanded?: boolean;
-  map: ReactNode;
   tr: Translator;
 }) {
   const [expanded, setExpanded] = useState(initialExpanded);
@@ -206,10 +204,8 @@ export function PlaceRecommendationSheet({
             </li>
           </ul>
 
-          <details className={styles.fallbackMap}>
-            <summary>{tr("map.placesTitle")}</summary>
-            <div>{map}</div>
-          </details>
+          {/* 촬영지 위치 지도(fallback)는 지웠다 (#146) — 화면에는 이미 전체 이동
+              동선 지도가 있고, 시트 안에 또 한 벌 두면 같은 것을 두 번 그린다 */}
         </div>
       )}
 
