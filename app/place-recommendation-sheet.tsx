@@ -147,20 +147,28 @@ export function PlaceThumbnail({
   children,
   photo,
   locale = "ko",
+  /** `cover`는 카드를 가득 채운다 — 사진이 카드인 추천 카드용 (#146 1절) */
+  variant = "inline",
+  sizes = "82px",
 }: {
   label: string;
   children?: ReactNode;
   photo?: PlacePhoto | null;
   locale?: "ko" | "en";
+  variant?: "inline" | "cover";
+  sizes?: string;
 }) {
+  const frameClass = variant === "cover"
+    ? `${styles.thumbnail} ${styles.thumbnailCover}`
+    : styles.thumbnail;
   if (photo) {
     return (
-      <figure className={styles.thumbnail} data-place-thumbnail data-place-photo>
+      <figure className={frameClass} data-place-thumbnail data-place-photo>
         <Image
           src={photo.src}
           alt={photo.alt[locale]}
           fill
-          sizes="82px"
+          sizes={sizes}
           unoptimized
           className={styles.thumbnailImage}
         />
@@ -184,7 +192,7 @@ export function PlaceThumbnail({
 
   return (
     <div
-      className={styles.thumbnail}
+      className={frameClass}
       data-place-thumbnail
       aria-label={label}
       role="img"

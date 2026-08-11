@@ -6,7 +6,7 @@
  * - 대안 시간표는 mock(#14 ⑨ 선행), 저장·내 일정은 in-memory 스텁(#25 선행) — 엔진·Supabase 연결 시 교체
  */
 import { useCallback, useEffect, useMemo, useReducer, useRef, useState, useTransition } from "react";
-import { Info, MapPin, Sparkles, TriangleAlert, X } from "lucide-react";
+import { BusFront, Info, Sparkles, TrainFront, TriangleAlert, X } from "lucide-react";
 import {
   searchEntities,
   type ActorSummary,
@@ -82,6 +82,9 @@ import {
 } from "./itinerary-command-panel";
 import { ItineraryRouteMap, KoreaMapPanel, type MapPlace, type MapStation } from "./korea-map";
 import { PlaceRecommendationSheet, PlaceThumbnail } from "./place-recommendation-sheet";
+import sheetStyles from "./place-recommendation-sheet.module.css";
+import { itineraryRowsOf, rowKey } from "@/lib/itinerary-rows";
+import { MoveRow } from "./move-row";
 import { ThemeExperienceCard, ThemeExperienceMapOverlay } from "./theme-experience";
 import { TrainLegModal, legDurationLabel, type TrainLegDetail } from "./train-leg-modal";
 import { getThemeExperience, type ThemeExperienceResult } from "@/lib/actions/theme-experience";
@@ -1238,6 +1241,9 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
     saved: savedNames?.places[id],
     fallback: tr("common.nameUnavailable"),
   });
+  /** 일정 줄의 유형 아이콘 — 추천 카드와 같은 `placeType`을 쓴다 (#146 2절) */
+  const placeTypeOf = (id: string) =>
+    candidateData?.candidates.find((c) => c.id === id)?.placeType;
   const workTitles = (ids: string[]) =>
     ids.map((id) => candidateData?.works.find((w) => w.id === id)?.title[locale] ?? id).join(" · ");
 
@@ -1800,6 +1806,9 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
               {/* #14 v0.6 sc-result-grid — 좌측 일정 타임라인 + 우측 지도·경고·실행 지원 */}
               <div className="grid gap-[18px] md:grid-cols-[minmax(0,1fr)_minmax(360px,1fr)] md:items-start">
                 <div className="min-w-0 space-y-4">
+              {/* 장소 단위 시각을 카드에 적는 이상, 그게 예약 확정 시각이 아니라는 것을
+                  화면에서 한 번은 밝혀야 한다 (PR #154 리뷰) */}
+              <p className="text-xs text-sc-muted">{tr("step4.estimatedNote")}</p>
               {displayedDays.map((day) => {
                 const baseDay = baseDays?.find((d) => d.date === day.date);
                 return (
@@ -1822,94 +1831,126 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
                       submitVisitDateEdit(placeId, day.date);
                     }}
                   >
+                    {/* #146 2절 — DAY 헤더 오른쪽에 그 날 전체에 걸리는 맥락을 둔다 */}
+                  <div className="flex flex-wrap items-center gap-2">
                     <h3 className="font-medium">{day.date}</h3>
-                    <ul className="mt-2 space-y-1 text-sm">
-                      {/* #14: 장소 단위 시각 미표기 — 역 단위 활용시간은 regionWindows로 표시 (#33) */}
-                      {day.items.map((item) => (
-                        <li
-                          key={item.placeId}
-                          draggable={visitDateEditable}
-                          onDragStart={(event) => {
-                            setDraggingPlaceId(item.placeId);
-                            event.dataTransfer.setData("text/plain", item.placeId);
-                            event.dataTransfer.effectAllowed = "move";
-                          }}
-                          onDragEnd={() => { setDraggingPlaceId(null); setDragOverDate(null); }}
-                          className={`flex flex-wrap items-center gap-x-1 gap-y-1 rounded text-sc-text/80 ${draggingPlaceId === item.placeId ? "opacity-50" : ""}`}
-                        >
-                          <MapPin aria-hidden="true" className="mr-1 size-3.5 shrink-0 text-sc-blue" />
-                          {placeName(item.placeId)}
-                          <span className="ml-1 text-xs text-sc-muted">{accessLabel(item.accessMinutes)}</span>
-                          {/* 날짜 선택 버튼이 기준 조작이고 드래그는 같은 액션의 다른 표현이다
-                              (#14 안건 ⑩ · #139 9-1). 키보드만으로도 같은 편집이 가능하다. */}
-                          <span className="ml-auto flex items-center gap-1">
-                            {(displayedDays ?? []).map((target, index) => (
-                              <button
-                                key={target.date}
-                                type="button"
-                                disabled={!visitDateEditable || target.date === day.date}
-                                onClick={() => submitVisitDateEdit(item.placeId, target.date)}
-                                aria-label={withValues(tr("step4.moveToDay"), {
-                                  place: placeName(item.placeId), day: String(index + 1),
-                                })}
-                                aria-current={target.date === day.date ? "true" : undefined}
-                                className={`min-h-7 min-w-7 rounded border px-1.5 text-xs ${
-                                  target.date === day.date
-                                    ? "border-sc-blue bg-sc-blue text-white"
-                                    : "border-sc-blue/30 text-sc-blue hover:bg-sc-blue-soft disabled:opacity-40"
-                                }`}
-                              >
-                                {index + 1}
-                              </button>
-                            ))}
-                          </span>
+                  </div>
+
+                  {/* 장소 목록과 이동 구간을 따로 그리면 "몇 시에 어디로 이동해 무엇을 보는가"라는
+                      하루의 흐름이 끊긴다. 시각순 한 줄씩으로 세운다 (#146 2절) */}
+                  <ul className="mt-2 space-y-1.5 text-sm">
+                    {itineraryRowsOf(day).map((row) => {
+                      /* 조율 중에는 이동이 조작 대상이 아니라 결과다. 구간·시각·소요를
+                         펼쳐 두면 장소보다 이동이 화면을 더 차지한다 (#118 P0-3).
+                         저장된 최종 일정에서는 지금 수준으로 편다 */
+                      if (row.kind === "place") {
+                        const item = row.item;
+                        return (
+                          <li
+                            key={rowKey(row)}
+                            draggable={visitDateEditable}
+                            onDragStart={(event) => {
+                              setDraggingPlaceId(item.placeId);
+                              event.dataTransfer.setData("text/plain", item.placeId);
+                              event.dataTransfer.effectAllowed = "move";
+                            }}
+                            onDragEnd={() => { setDraggingPlaceId(null); setDragOverDate(null); }}
+                            className={`rounded-lg border bg-sc-surface px-2 py-1.5 ${
+                              draggingPlaceId === item.placeId ? "opacity-50" : ""
+                            }`}
+                            data-itinerary-row="place"
+                          >
+                            {/* 이름과 조작을 두 줄로 나눈다. 한 줄에 몰면 우측 패널 폭에서
+                                이름 칸이 0에 가까워져 한 글자씩 세로로 쪼개진다 */}
+                            <div className="flex items-center gap-2">
+                              {/* 외국인 사용자는 지명만 보고 역인지 관광지인지 식당인지 모른다.
+                                  추천 카드와 같은 유형 아이콘을 써서 두 화면이 저절로 일관된다 */}
+                              <span className="grid size-7 shrink-0 place-items-center rounded-md bg-sc-blue-soft text-sc-blue">
+                                <PlaceTypeIcon placeType={placeTypeOf(item.placeId)} />
+                              </span>
+                              <span className="shrink-0 tabular-nums text-xs text-sc-muted">
+                                {fmtTime(item.arriveAt)}
+                              </span>
+                              <span className="min-w-0 flex-1 text-sc-text/90">{placeName(item.placeId)}</span>
+                            </div>
+                            <div className="mt-1 flex items-center justify-between gap-2 pl-9">
+                            <span className="shrink-0 text-xs text-sc-muted">{accessLabel(item.accessMinutes)}</span>
+                            <span className="flex shrink-0 items-center gap-1">
+                              {(displayedDays ?? []).map((target, index) => (
+                                <button
+                                  key={target.date}
+                                  type="button"
+                                  disabled={!visitDateEditable || target.date === day.date}
+                                  onClick={() => submitVisitDateEdit(item.placeId, target.date)}
+                                  aria-label={withValues(tr("step4.moveToDay"), {
+                                    place: placeName(item.placeId), day: String(index + 1),
+                                  })}
+                                  aria-current={target.date === day.date ? "true" : undefined}
+                                  className={`min-h-7 min-w-7 rounded border px-1.5 text-xs ${
+                                    target.date === day.date
+                                      ? "border-sc-blue bg-sc-blue text-white"
+                                      : "border-sc-blue/30 text-sc-blue hover:bg-sc-blue-soft disabled:opacity-40"
+                                  }`}
+                                >
+                                  {index + 1}
+                                </button>
+                              ))}
+                            </span>
+                            </div>
+                          </li>
+                        );
+                      }
+                      if (row.kind === "gateway") {
+                        const leg = row.leg;
+                        const detail = (
+                          <>
+                            <span className="shrink-0 tabular-nums text-xs text-sc-muted">{fmtTime(leg.departAt)}</span>
+                            <span className="min-w-0 flex-1 text-sc-text/80">
+                              {leg.fromName[locale]} → {leg.toName[locale]}
+                            </span>
+                            <span className="shrink-0 text-xs text-sc-muted/70">{leg.serviceName[locale]}</span>
+                          </>
+                        );
+                        return (
+                          <li key={rowKey(row)} data-itinerary-row="gateway">
+                            <MoveRow
+                              collapsed={!reopened}
+                              icon={<BusFront aria-hidden="true" className="size-4" />}
+                              label={tr("step4.moveRow")}
+                            >
+                              {detail}
+                            </MoveRow>
+                          </li>
+                        );
+                      }
+                      const ride = row.ride;
+                      return (
+                        <li key={rowKey(row)} data-itinerary-row="train">
+                          <MoveRow
+                            collapsed={!reopened}
+                            icon={<TrainFront aria-hidden="true" className="size-4" />}
+                            label={tr("step4.moveRow")}
+                            onOpenDetail={() => setOpenTrainLeg({
+                              trainNo: ride.trainNo,
+                              fromName: stationName(ride.fromStationId),
+                              toName: stationName(ride.toStationId),
+                              departAt: ride.departAt,
+                              arriveAt: ride.arriveAt,
+                            })}
+                            detailLabel={tr("step4.trainDetail")}
+                          >
+                            <span className="shrink-0 tabular-nums text-xs text-sc-muted">{fmtTime(ride.departAt)}</span>
+                            <span className="min-w-0 flex-1 text-sc-text/80">
+                              {stationName(ride.fromStationId)} → {stationName(ride.toStationId)}
+                            </span>
+                            <span className="shrink-0 text-xs text-sc-muted/70">
+                              {legDurationLabel(ride.departAt, ride.arriveAt, tr)}
+                            </span>
+                          </MoveRow>
                         </li>
-                      ))}
-                    </ul>
-                    {day.rides.length + (day.gatewayLegs?.length ?? 0) > 0 && (
-                      <details className="mt-3 rounded-lg border bg-sc-subtle/60" data-planning-transport>
-                        <summary className="flex min-h-10 list-none items-center justify-between gap-2 px-3 py-2 text-sm font-medium">
-                          <span>
-                            {tr("step4.transportSummary").replace(
-                              "{n}",
-                              String(day.rides.length + (day.gatewayLegs?.length ?? 0)),
-                            )}
-                          </span>
-                          <span className="text-xs text-sc-muted">{tr("step4.transportHint")}</span>
-                        </summary>
-                        <ul className="space-y-1 border-t px-3 py-2 text-sm">
-                          {(day.gatewayLegs ?? []).map((leg) => (
-                            <li key={leg.id} className="text-sc-text/80">
-                              {fmtTime(leg.departAt)} {leg.fromName[locale]} → {fmtTime(leg.arriveAt)} {leg.toName[locale]}
-                              <span className="ml-2 text-xs text-sc-muted/70">{leg.serviceName[locale]} · {leg.operator[locale]}</span>
-                            </li>
-                          ))}
-                          {/* 조율 중에는 장소가 주정보다. 열차 번호·소요시간은 사용자가 펼쳤을 때만
-                              기존 상세 모달 계약과 함께 제공한다 (#118 P0-3). */}
-                          {day.rides.map((ride) => (
-                            <li key={`${ride.trainNo}-${ride.departAt}`}>
-                              <button
-                                type="button"
-                                className="-mx-1 w-full rounded border border-transparent px-1 py-0.5 text-left text-sc-text/80 hover:border-sc-blue"
-                                onClick={() => setOpenTrainLeg({
-                                  trainNo: ride.trainNo,
-                                  fromName: stationName(ride.fromStationId),
-                                  toName: stationName(ride.toStationId),
-                                  departAt: ride.departAt,
-                                  arriveAt: ride.arriveAt,
-                                })}
-                              >
-                                {fmtTime(ride.departAt)} {stationName(ride.fromStationId)} → {fmtTime(ride.arriveAt)} {stationName(ride.toStationId)}
-                                {" · "}{legDurationLabel(ride.departAt, ride.arriveAt, tr)}
-                                <span className="ml-2 text-xs text-sc-muted/70 underline decoration-dotted underline-offset-2">
-                                  {tr("step4.train")} {ride.trainNo}
-                                </span>
-                              </button>
-                            </li>
-                          ))}
-                        </ul>
-                      </details>
-                    )}
+                      );
+                    })}
+                  </ul>
                     {/* #33 — 엔진 값 포맷만, 경계·시각 재해석 금지 */}
                     {day.regionWindows.length > 0 && (
                       <div className="mt-2 space-y-1">
@@ -2229,55 +2270,67 @@ function PlaceCard({ candidate, locale, tr, selected, onToggle, stationName, wor
 
   return (
     <li
-      className={`rounded-lg border p-3 ${selected ? "border-sc-blue bg-sc-blue-soft/60" : ""}`}
+      className={`rounded-xl border ${selected ? "border-sc-blue ring-2 ring-sc-blue/40" : ""}`}
       data-recommendation-card
     >
-      <div className="flex items-start gap-2">
-        {/* 이름·좌표·이미지를 검증한 TourAPI 제1유형 사진만 쓴다. 나머지는 추정 사진
-            대신 동일한 플레이스홀더 프레임과 Lucide 장소 유형 표식을 유지한다. */}
+      {/* #146 1절 — 카드에는 사진과 이름만 둔다. 역·접근시간·운영시간·작품 근거는
+          전부 상세 팝업으로 넘겨 카드가 빡빡해지지 않게 한다 */}
+      <div className={sheetStyles.photoCard}>
         <PlaceThumbnail
           label={tr("step3.photoPlaceholder")}
           photo={photo}
           locale={locale}
+          variant="cover"
+          sizes="(max-width: 768px) 45vw, 240px"
         >
           <PlaceTypeIcon placeType={candidate.placeType} />
         </PlaceThumbnail>
-        <p className="min-w-0 flex-1 text-sm font-medium" data-place-card-title>
-          {candidate.name[locale]}
-        </p>
+
+        {/* 사진 위 이름은 어두운 그라디언트 없이도 읽혀야 한다 — CSS의 paint-order 참고.
+            우하단 상세 버튼 자리는 `.photoCardBar`가 버튼 기하에서 파생해 비워 둔다 */}
+        <div className={sheetStyles.photoCardBar}>
+          {/* 운영시간 미확인은 고르기 전에 알아야 한다 (#43). 좌상단은 사진 출처가 쓰므로
+              이름과 한 덩어리로 둔다 — 어차피 이 장소에 대한 단서다 */}
+          {!hoursLabel && (
+            <span className="inline-flex items-center gap-1 rounded bg-sc-orange-soft px-1.5 py-0.5 text-xs text-sc-orange-text shadow">
+              <TriangleAlert aria-hidden="true" className="size-3.5 shrink-0" />
+              {tr("step3.hoursUnverified")}
+            </span>
+          )}
+          <p
+            className={`text-sm font-semibold ${
+              // 사진 위에서만 흰 글자 + 검은 테두리를 쓴다. 플레이스홀더는 우리가 만든
+              // 밝은 배경이라 대비가 이미 보장되고, 흰 글자를 쓰면 오히려 안 읽힌다
+              photo ? sheetStyles.photoCardTitle : "text-sc-text"
+            }`}
+            data-place-card-title
+          >
+            {candidate.name[locale]}
+          </p>
+        </div>
+
         <button
           type="button"
-          className={`shrink-0 rounded px-3 py-1 text-sm ${selected ? "bg-sc-blue text-white" : "border"}`}
+          className={`${sheetStyles.cornerButton} ${sheetStyles.cornerButtonSelect} text-sm shadow ${
+            selected ? "bg-sc-blue text-white" : "border bg-sc-surface/90"
+          }`}
           onClick={onToggle}
           aria-label={tr(selected ? "step3.removePlace" : "step3.addPlace").replace("{place}", candidate.name[locale])}
           aria-pressed={selected}
         >
           {selected ? "✓" : "+"}
         </button>
-      </div>
 
-      <p className="mt-1.5 text-xs text-sc-muted" data-place-card-access>
-        {stationName(candidate.nearestStationId)} · {tr("access.byCar").replace("{n}", String(candidate.accessEstimate.minutes))}
-      </p>
-
-      <div className="mt-1.5 flex items-center justify-between gap-2">
-        {hoursLabel ? (
-          <span className="text-xs text-sc-muted">{hoursLabel}</span>
-        ) : (
-          <span className="inline-flex items-center gap-1 whitespace-nowrap rounded bg-sc-orange-soft px-1.5 py-0.5 text-xs text-sc-orange-text">
-            <TriangleAlert aria-hidden="true" className="size-3.5 shrink-0" />
-            {tr("step3.hoursUnverified")}
-          </span>
-        )}
         <button
           type="button"
           data-place-detail-toggle
           popoverTarget={detailPopoverId}
           aria-haspopup="dialog"
           aria-controls={detailPopoverId}
-          className="shrink-0 text-xs text-sc-blue underline underline-offset-2"
+          aria-label={tr("step3.showDetail")}
+          className={`${sheetStyles.cornerButton} ${sheetStyles.cornerButtonDetail} border bg-sc-surface/90 text-sc-blue shadow`}
         >
-          {tr("step3.showDetail")}
+          <Info aria-hidden="true" className="size-4" />
         </button>
       </div>
 
@@ -2301,6 +2354,13 @@ function PlaceCard({ candidate, locale, tr, selected, onToggle, stationName, wor
             <X aria-hidden="true" className="size-4" />
           </button>
         </div>
+        {/* 카드에서 내린 요약을 여기서 전부 보여 준다 (#146 1절) */}
+        <p className="mt-2 text-xs text-sc-muted" data-place-card-access>
+          {stationName(candidate.nearestStationId)} · {tr("access.byCar").replace("{n}", String(candidate.accessEstimate.minutes))}
+        </p>
+        <p className="mt-1 text-xs text-sc-muted">
+          {hoursLabel ?? tr("step3.hoursUnverified")}
+        </p>
         {candidate.selectionGroups.length > 0 && (
           <div className="mt-2 flex flex-wrap gap-1.5">
             {candidate.selectionGroups.map((group) => (
