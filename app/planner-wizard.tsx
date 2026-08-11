@@ -6,7 +6,7 @@
  * - 대안 시간표는 mock(#14 ⑨ 선행), 저장·내 일정은 in-memory 스텁(#25 선행) — 엔진·Supabase 연결 시 교체
  */
 import { useCallback, useEffect, useId, useMemo, useReducer, useRef, useState, useTransition } from "react";
-import { BusFront, Info, Sparkles, TrainFront, TriangleAlert, X } from "lucide-react";
+import { BusFront, Hourglass, Info, Sparkles, TrainFront, TriangleAlert, X } from "lucide-react";
 import { StageUtilityPortal } from "./stage-utility-portal";
 import {
   searchEntities,
@@ -1256,6 +1256,21 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
         })),
     [candidateData, locale, selectedPlaceIds],
   );
+  /**
+   * 체류 시간 포맷 (#33 — 엔진 값 포맷 전용, 재계산 금지).
+   *
+   * 옛 문구는 `약 2시간 2분 활용 가능`이었다. 카드 폭이 240px이라 "활용 가능"까지
+   * 넣으면 두 줄이 되고, 제목이 이미 `체류 시간`이라 매 칸마다 되풀이할 이유가 없다.
+   */
+  const stayLabel = (minutes: number) => {
+    const hours = Math.floor(minutes / 60);
+    const mins = minutes % 60;
+    const duration = hours > 0
+      ? `${hours}${tr("region.hours")}${mins > 0 ? ` ${mins}${tr("region.minutes")}` : ""}`
+      : `${mins}${tr("region.minutes")}`;
+    return `${tr("region.about")} ${duration}`;
+  };
+
   // 3단계 시트 안의 촬영지 위치 지도와 "선택한 장소만 보기" 토글은 지웠다 (#146).
   // 화면에 전체 이동 동선 지도가 이미 있어 같은 것을 두 벌 그리고 있었다.
 
@@ -2191,6 +2206,8 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
                               icon={<BusFront aria-hidden="true" className="size-4" />}
                               label={tr("step4.moveRow")}
                               route={`${leg.fromName[locale]} → ${leg.toName[locale]}`}
+                              startAt={fmtTime(leg.departAt)}
+                              duration={leg.serviceName[locale]}
                             >
                               {detail}
                             </MoveRow>
@@ -2206,6 +2223,8 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
                             label={tr("step4.moveRow")}
                             route={`${stationName(ride.fromStationId)} → ${stationName(ride.toStationId)}`}
                             note={airportRailNote(ride) ? tr("step4.airportRailUsed") : undefined}
+                            startAt={fmtTime(ride.departAt)}
+                            duration={legDurationLabel(ride.departAt, ride.arriveAt, tr)}
                             onOpenDetail={() => setOpenTrainLeg({
                               trainNo: ride.trainNo,
                               fromName: stationName(ride.fromStationId),
@@ -2227,9 +2246,45 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
                       );
                     })}
                   </ul>
-                    {/* 권역별 "약 N시간 활용 가능" 줄은 지웠다 (#146). 카드마다 도착
-                        시각과 이동·체류 시간이 붙어 타임라인으로 읽히므로, 같은 시간을
-                        권역 단위로 한 번 더 요약하면 줄만 늘어난다 */}
+                    {/*
+                      두 번째 타임라인 — 체류 시간 (#146).
+
+                      위 줄이 "언제 어디로 움직이는가"라면 이건 "그 권역에서 실제로 쓸 수
+                      있는 시간이 얼마인가"다. 다른 질문이라 같은 줄에 섞지 않고 따로 눕힌다.
+                      카드 크기는 위 줄과 같다 — 두 타임라인이 같은 격자 위에 놓여야
+                      시각이 서로 대응하는 것으로 읽힌다.
+
+                      #33 — 엔진 값 포맷만, 경계·시각 재해석 금지
+                    */}
+                    {day.regionWindows.length > 0 && (
+                      <div className="mt-3">
+                        <h4 className="text-xs font-medium text-sc-muted">{tr("step4.stayTitle")}</h4>
+                        <ul className="mt-2 space-y-1.5 text-sm" data-day-rows data-day-stays>
+                          {day.regionWindows.map((window) => (
+                            <li
+                              key={window.startAt}
+                              className="rounded-lg border border-sc-orange/40 bg-sc-orange-soft/70 px-2 py-1.5"
+                              data-itinerary-row="stay"
+                            >
+                              <span className="block tabular-nums text-xs text-sc-muted" data-row-time>
+                                {fmtTime(window.startAt)}
+                              </span>
+                              <span className="mt-1 flex items-start gap-2" data-row-main>
+                                <span className="grid size-7 shrink-0 place-items-center rounded-md bg-sc-orange-soft text-sc-orange-text">
+                                  <Hourglass aria-hidden="true" className="size-4" />
+                                </span>
+                                <span className="min-w-0 flex-1 text-sc-text/90" data-row-name>
+                                  {stationName(window.stationId)} {tr("region.block")}
+                                </span>
+                              </span>
+                              <span className="mt-auto block pt-1 text-xs text-sc-orange-text" data-row-meta>
+                                {stayLabel(window.availableMinutes)}
+                              </span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
                     {/* 재열람 화면은 저장 시점 일정 그대로 — mock 대안은 개발 플래그에서만 (PR #35 리뷰 2) */}
                     {SHOW_ALT_MOCK && !view.reopened && baseDay && baseDay.rides.length > 0 && (
                       <AlternativeTimetables
