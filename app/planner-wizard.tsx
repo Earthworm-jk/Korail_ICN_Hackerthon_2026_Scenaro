@@ -36,7 +36,7 @@ import {
 } from "@/lib/itinerary-command-ui";
 import { sortCandidatePlaces } from "@/lib/place-ranking";
 import { getFlightInfo } from "@/lib/actions/flights";
-import { t, type Locale, type MessageKey } from "@/lib/i18n/messages";
+import { t, withValues, type Locale, type MessageKey } from "@/lib/i18n/messages";
 import { buildMockAlternatives } from "@/lib/alternatives-mock";
 import {
   constraintsFromTripInputs,
@@ -83,6 +83,7 @@ import {
 } from "./itinerary-command-panel";
 import { ItineraryRouteMap, KoreaMapPanel, type MapPlace, type MapStation } from "./korea-map";
 import { PlaceRecommendationSheet, PlaceThumbnail } from "./place-recommendation-sheet";
+import { PlaceBrowser } from "./place-browser";
 import sheetStyles from "./place-recommendation-sheet.module.css";
 import { allStationIdsOf, itineraryRowsOf, rowKey, shouldNoteAirportRail, stationIdsOf } from "@/lib/itinerary-rows";
 import { MoveRow } from "./move-row";
@@ -268,13 +269,6 @@ function dateOfPlace(days: DayPlan[] | null, placeId: string): string | undefine
   return days?.find((day) => day.items.some((item) => item.placeId === placeId))?.date;
 }
 
-function withValues(template: string, values: Record<string, string>): string {
-  return Object.entries(values).reduce(
-    (text, [key, value]) => text.replaceAll(`{${key}}`, value),
-    template,
-  );
-}
-
 export default function PlannerWizard({ stationFacilities, stationCoordinates, railGeometry }: {
   stationFacilities: StationFacilitiesSnapshotT;
   stationCoordinates: StationCoordinatesSnapshotT;
@@ -352,7 +346,10 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
   const [reopenCandidateStatus, setReopenCandidateStatus] = useState<"loading" | "failed" | null>(null);
   const [sortBy, setSortBy] = useState<"relevance" | "official">("relevance");
   // 후보 목록은 5곳씩 — 한 화면에 다 쏟으면 무엇을 고를지가 안 보인다. 표시 개수만 늘린다
-  const [visibleCount, setVisibleCount] = useState(PLACES_PAGE_SIZE);
+  /** 전체 보기 안의 좁히기 상태. 시트 밖에 필터를 늘어놓으면 시트가 다시 무거워진다 */
+  const [browserOpen, setBrowserOpen] = useState(false);
+  const [browserStation, setBrowserStation] = useState<string | null>(null);
+  const [browserWork, setBrowserWork] = useState<string | null>(null);
 
   // step 4 — 결과. 전이 규칙·파생은 lib/itinerary-view 순수 함수로 고정 (PR #35 리뷰 3)
   const [view, dispatchView] = useReducer(reduceItineraryView, initialItineraryView);
@@ -557,7 +554,8 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
 
       setCandidateData(data);
       setSelectedPlaceIds(new Set(selectedIds));
-      setVisibleCount(PLACES_PAGE_SIZE);
+      setBrowserStation(null);
+      setBrowserWork(null);
       setSettledSelectionKey([...selectedIds].sort().join("|"));
 
       if (!finalAction.ok) {
@@ -586,7 +584,8 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
       if (sequence !== planSequence.current) return;
       setCandidateData(data);
       setSelectedPlaceIds(new Set(allCandidateIds));
-      setVisibleCount(PLACES_PAGE_SIZE);
+      setBrowserStation(null);
+      setBrowserWork(null);
       setSettledSelectionKey([...allCandidateIds].sort().join("|"));
       dispatchView({ type: "PLAN_FAILED" });
       setStep(3);
@@ -1246,12 +1245,13 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
   const airportRailNote = (ride: { fromStationId: string; toStationId: string }) =>
     shouldNoteAirportRail({ hasBusAlternative, airportStationIds, ride });
 
-  const stationName = (id: string) => resolveDisplayName({
+  // `useCallback` — 전체 보기의 지역 목록이 이 함수를 의존성으로 쓴다
+  const stationName = useCallback((id: string) => resolveDisplayName({
     locale,
     current: candidateData?.stations.find((s) => s.id === id)?.name,
     saved: savedNames?.stations[id],
     fallback: tr("common.nameUnavailable"),
-  });
+  }), [locale, candidateData, savedNames, tr]);
   const placeName = (id: string) => resolveDisplayName({
     locale,
     current: candidateData?.candidates.find((c) => c.id === id)?.name,
@@ -1261,6 +1261,39 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
   /** 일정 줄의 유형 아이콘 — 추천 카드와 같은 `placeType`을 쓴다 (#146 2절) */
   const placeTypeOf = (id: string) =>
     candidateData?.candidates.find((c) => c.id === id)?.placeType;
+  /**
+   * 후보 선택 토글 — 시트의 상위 줄과 전체 보기가 **같은 경로**를 쓴다.
+   * 갈라 두면 한쪽에서만 방문일 선호가 정리되는 식으로 어긋난다.
+   */
+  const togglePlace = (placeId: string) => {
+    const next = new Set(selectedPlaceIds);
+    if (next.has(placeId)) next.delete(placeId); else next.add(placeId);
+    if (next.size === 0) setLastItineraryDiff(null);
+    setPreferredVisitDates((current) => {
+      if (!(placeId in current)) return current;
+      const nextPreferences = { ...current };
+      delete nextPreferences[placeId];
+      return nextPreferences;
+    });
+    setAiFeedback(null);
+    setSelectedPlaceIds(next);
+  };
+
+  /** 전체 보기의 좁히기 — 지역은 최인접역, 콘텐츠는 작품 */
+  const browserStations = useMemo(() => {
+    const ids = [...new Set((candidateData?.candidates ?? []).map((c) => c.nearestStationId))];
+    return ids.map((id) => ({ id, label: stationName(id) }))
+      .sort((a, b) => a.label.localeCompare(b.label, locale));
+  }, [candidateData, locale, stationName]);
+  const browserWorks = useMemo(
+    () => (candidateData?.works ?? []).map((w) => ({ id: w.id, label: w.title[locale] })),
+    [candidateData, locale],
+  );
+  const browsedCandidates = useMemo(() => sortedCandidates.filter((c) =>
+    (browserStation === null || c.nearestStationId === browserStation)
+    && (browserWork === null || c.workIds.includes(browserWork))),
+  [sortedCandidates, browserStation, browserWork]);
+
   const workTitles = (ids: string[]) =>
     ids.map((id) => candidateData?.works.find((w) => w.id === id)?.title[locale] ?? id).join(" · ");
 
@@ -1553,12 +1586,14 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
           <PlaceRecommendationSheet
             selectedCount={selectedPlaceIds.size}
             totalCount={sortedCandidates.length}
+            placedCount={selectionCapacity?.schedulableCount ?? null}
+            unplacedCount={selectionCapacity?.minimumExclusionCount ?? null}
+            themeRecommended={themeExperience?.status === "ok" && themeExperience.point !== null}
             updating={updating}
             updated={lastItineraryDiff?.changed === true && !updating}
             sortBy={sortBy}
             onSortChange={setSortBy}
-            remainingCount={Math.max(0, regularCandidates.length - visibleCount)}
-            onShowMore={() => setVisibleCount((n) => n + PLACES_PAGE_SIZE)}
+            onBrowseAll={() => setBrowserOpen(true)}
             onBack={() => setStep(2)}
             tr={tr}
             map={candidateData ? (
@@ -1612,24 +1647,12 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
             </li>
           )}
           {/* #43 확정: 미확인 후보도 같은 목록에서 선택 가능 — 카드에 경고 배지 */}
-          {regularCandidates.slice(0, visibleCount).map((c) => (
+          {regularCandidates.slice(0, PLACES_PAGE_SIZE).map((c) => (
             <PlaceCard key={c.id} candidate={c} locale={locale} tr={tr}
               selected={selectedPlaceIds.has(c.id)}
               stationName={stationName} workTitles={workTitles}
               aiReason={c.aiReason ?? null}
-              onToggle={() => {
-                const next = new Set(selectedPlaceIds);
-                if (next.has(c.id)) next.delete(c.id); else next.add(c.id);
-                if (next.size === 0) setLastItineraryDiff(null);
-                setPreferredVisitDates((current) => {
-                  if (!(c.id in current)) return current;
-                  const nextPreferences = { ...current };
-                  delete nextPreferences[c.id];
-                  return nextPreferences;
-                });
-                setAiFeedback(null);
-                setSelectedPlaceIds(next);
-              }}
+              onToggle={() => togglePlace(c.id)}
             />
           ))}
           </>
@@ -1649,6 +1672,29 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
             </li>
           )}
           </PlaceRecommendationSheet>
+
+          {/* 전체 보기 (#146 ①) — 좁히기는 이 안에서만 한다 */}
+          <PlaceBrowser
+            open={browserOpen}
+            onClose={() => setBrowserOpen(false)}
+            count={browsedCandidates.length}
+            stations={browserStations}
+            works={browserWorks}
+            station={browserStation}
+            work={browserWork}
+            onStationChange={setBrowserStation}
+            onWorkChange={setBrowserWork}
+            tr={tr}
+          >
+            {browsedCandidates.map((c) => (
+              <PlaceCard key={c.id} candidate={c} locale={locale} tr={tr}
+                selected={selectedPlaceIds.has(c.id)}
+                stationName={stationName} workTitles={workTitles}
+                aiReason={c.aiReason ?? null}
+                onToggle={() => togglePlace(c.id)}
+              />
+            ))}
+          </PlaceBrowser>
 
           {/* 우측 열 — 계산 결과. 장소를 켜고 끄면 여기서 바로 갱신된다 */}
           <div className="min-w-0" aria-busy={updating}>

@@ -3,7 +3,7 @@
 import Image from "next/image";
 import { ArrowUpDown } from "lucide-react";
 import { useState, type ReactNode } from "react";
-import type { MessageKey } from "@/lib/i18n/messages";
+import { withValues, type MessageKey } from "@/lib/i18n/messages";
 import type { PlacePhoto } from "@/lib/place-photos";
 import styles from "./place-recommendation-sheet.module.css";
 
@@ -12,28 +12,36 @@ type Translator = (key: MessageKey) => string;
 export function PlaceRecommendationSheet({
   selectedCount,
   totalCount,
+  placedCount,
+  unplacedCount,
+  themeRecommended,
   updating,
   updated,
   sortBy,
   onSortChange,
   children,
   routeRecommendations,
-  remainingCount,
-  onShowMore,
+  onBrowseAll,
   map,
   onBack,
   tr,
 }: {
   selectedCount: number;
   totalCount: number;
+  /** 선택 후보 중 엔진이 실제 배치한 수. 아직 계산 전이면 null */
+  placedCount: number | null;
+  /** 선택했지만 들어가지 못한 수. `placedCount + unplacedCount = selectedCount` */
+  unplacedCount: number | null;
+  /** 테마체험은 아직 선택할 수 없다 — 숫자 대신 추천 유무만 말한다 */
+  themeRecommended: boolean;
   updating: boolean;
   updated: boolean;
   sortBy: "relevance" | "official";
   onSortChange: (sort: "relevance" | "official") => void;
   children?: ReactNode;
   routeRecommendations?: ReactNode;
-  remainingCount: number;
-  onShowMore: () => void;
+  /** 후보 수와 무관하게 항상 같은 자리에 둔다 (#146 ①) */
+  onBrowseAll: () => void;
   map: ReactNode;
   onBack: () => void;
   tr: Translator;
@@ -60,12 +68,48 @@ export function PlaceRecommendationSheet({
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
             <h3 className="font-semibold">{tr("step3.sheetTitle")}</h3>
-            <span className="text-xs text-sc-muted">{selectedCountLabel}</span>
             {routeStatus && (
               <span className="text-xs text-sc-muted" role="status" aria-live="polite">
                 {routeStatus}
               </span>
             )}
+          </div>
+
+          {/*
+            상태 요약 (#146 ①).
+
+            **여행 기간과 무관하게 같은 구조를 쓴다.** 2박 3일이든 9박 10일이든 라벨과
+            배치는 그대로고 숫자만 커진다. `일정 반영 + 미배치 = 선택` 관계가 유지되므로
+            "왜 8곳을 골랐는데 7곳만 있지"가 화면에서 바로 풀린다.
+
+            분류 칩은 이 요약과 **다른 자리에 둔다.** 성격이 다른 숫자를 같은 줄에 섞으면
+            둘 다 무슨 뜻인지 흐려진다.
+          */}
+          <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs">
+            <span className="text-sc-muted" data-selection-state>
+              {placedCount === null || unplacedCount === null
+                ? selectedCountLabel
+                : withValues(tr("step3.selectionState"), {
+                  selected: String(selectedCount),
+                  placed: String(placedCount),
+                  unplaced: String(unplacedCount),
+                })}
+            </span>
+            {unplacedCount !== null && unplacedCount > 0 && (
+              <span className="rounded bg-sc-orange-soft px-1.5 py-0.5 text-sc-orange-text">
+                {tr("step3.unplacedHint")}
+              </span>
+            )}
+          </div>
+
+          {/* 분류 - K-컬처는 선택 수, 테마체험은 아직 선택할 수 없어 추천 유무만 말한다 */}
+          <div className="mt-1 flex flex-wrap items-center gap-1.5 text-xs" data-category-chips>
+            <span className="rounded-full border border-sc-blue/30 px-2 py-0.5 text-sc-blue">
+              {withValues(tr("step3.chipKCulture"), { n: String(selectedCount) })}
+            </span>
+            <span className="rounded-full border px-2 py-0.5 text-sc-muted">
+              {tr(themeRecommended ? "step3.chipThemeAvailable" : "step3.chipThemeNone")}
+            </span>
           </div>
         </div>
         <label className={styles.sortControl}>
@@ -117,13 +161,13 @@ export function PlaceRecommendationSheet({
           )}
           <ul className={styles.list} data-place-sheet-list>
             {children}
-            {remainingCount > 0 && (
-              <li className={styles.moreItem} data-place-sheet-more>
-                <button type="button" className={styles.more} onClick={onShowMore}>
-                  {tr("step3.showMore").replace("{n}", String(remainingCount))}
-                </button>
-              </li>
-            )}
+            {/* 후보가 몇 개든 마지막 자리는 늘 전체 보기다 — 고르는 방법이
+                데이터 양에 따라 달라지면 사용자가 매번 화면을 다시 배운다 */}
+            <li className={styles.moreItem} data-place-sheet-more>
+              <button type="button" className={styles.more} onClick={onBrowseAll}>
+                {tr("step3.browseAll")}
+              </button>
+            </li>
           </ul>
 
           <details className={styles.fallbackMap}>
