@@ -136,13 +136,26 @@ function targetLabelOf(
   partial: string,
   placeName: (id: string) => string,
 ): string {
+  /*
+   * **대상 수로 먼저 가른다.** `scheduledDate` 유무를 앞에 두면 한 곳짜리 실패까지
+   * DAY 문구로 새어 나간다 — `impossible`에는 원래 `scheduledDate`가 없으므로,
+   * 자연어나 날짜 버튼으로 장소 하나를 못 옮긴 기존 경로가 "이 날 일정을 통째로
+   * 옮길 수 없습니다"라고 말하게 된다(PR #157 리뷰).
+   */
+  if (proposal.placeIds.length === 1) {
+    return withValues(single, {
+      place: placeName(proposal.placeId),
+      date: proposal.scheduledDate ?? proposal.requestedDate,
+    });
+  }
+
   // 흩어지거나 일부가 빠지면 날짜도 개수도 단정할 수 없다 — 확인 창에서는 "일부는 다른
   // 날로 조정"이라 정확히 알려 놓고 적용 후에 "N곳을 그 날로 옮겼다"고 하면 거짓이 된다
   if (proposal.scheduledDate === undefined) return partial;
-  const date = proposal.scheduledDate;
-  return proposal.placeIds.length > 1
-    ? withValues(many, { count: String(proposal.placeIds.length), date })
-    : withValues(single, { place: placeName(proposal.placeId), date });
+  return withValues(many, {
+    count: String(proposal.placeIds.length),
+    date: proposal.scheduledDate,
+  });
 }
 
 export function ItineraryCommandPanel({

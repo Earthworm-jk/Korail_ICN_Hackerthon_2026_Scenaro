@@ -158,14 +158,15 @@ describe("PR #157 리뷰 1 — 적용 후 문구는 결과를 과장하지 않�
     requestedDate: "2026-08-14", reasons: ["date_adjusted"],
     displaced: [], moved: [], ...over,
   });
-  const appliedWith = (proposal: CommandProposal): CommandFeedback => ({
-    kind: "proposal", applied: true, submittedSequence: 1,
+  const feedbackWith = (proposal: CommandProposal, applied: boolean): CommandFeedback => ({
+    kind: "proposal", applied, submittedSequence: 1,
     outcome: {
       kind: "proposal", proposal,
       nextRequest: {} as never, nextResult: {} as never,
       diff: {} as never, summary: {} as never,
     },
   });
+  const appliedWith = (proposal: CommandProposal) => feedbackWith(proposal, true);
 
   /**
    * 확인 창에서는 "일부는 다른 날로 조정"이라 정확히 알려 놓고, 적용 후에 "2곳을 그 날로
@@ -190,5 +191,24 @@ describe("PR #157 리뷰 1 — 적용 후 문구는 결과를 과장하지 않�
   it("통 이동이 불가하면 한 곳처럼 말하지 않는다", () => {
     const html = render({ feedback: appliedWith(proposalWith({ decision: "impossible" })) });
     expect(html).toContain("ai.impossibleDay");
+  });
+
+  /**
+   * **한 곳짜리는 이 분기에 걸리면 안 된다.** `impossible`에는 원래 `scheduledDate`가
+   * 없어서, 대상 수보다 날짜 유무를 먼저 보면 자연어·날짜 버튼으로 장소 하나를 못 옮긴
+   * 기존 경로까지 "이 날 일정을 통째로 옮길 수 없습니다"라고 말한다.
+   */
+  it("한 곳짜리 실패는 장소 이름으로 말한다", () => {
+    const html = render({ feedback: appliedWith(proposalWith({
+      placeId: "p1", placeIds: ["p1"], decision: "impossible", scheduledDate: undefined,
+    })) });
+    expect(html).toContain("ai.impossible");
+    expect(html).not.toContain("ai.impossibleDay");
+  });
+
+  it("한 곳짜리는 확인 대기 상태에서도 DAY 문구를 쓰지 않는다", () => {
+    const pending = feedbackWith(
+      proposalWith({ placeId: "p1", placeIds: ["p1"], scheduledDate: undefined }), false);
+    expect(render({ feedback: pending })).not.toContain("ai.appliedDayPartial");
   });
 });
