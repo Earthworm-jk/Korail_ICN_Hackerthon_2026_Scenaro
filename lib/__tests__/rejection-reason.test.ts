@@ -24,9 +24,73 @@ describe("미배치 사유 분리", () => {
     expect(result.status).toBe("planned");
     for (const rejection of result.rejectedPlaces) {
       expect(
-        ["TRAIN_UNAVAILABLE", "DAILY_CAPACITY_EXCEEDED", "DEPARTURE_DEADLINE_EXCEEDED"],
+        ["TRAIN_UNAVAILABLE", "DAILY_CAPACITY_EXCEEDED", "DEPARTURE_DEADLINE_EXCEEDED",
+          "NOT_IN_BEST_SUBSET"],
       ).toContain(rejection.code);
     }
+  });
+
+  /**
+   * #84 §2 · #171 — 실시드 기본 조건이 곧 과선택 상황이다(후보 전체가 초기 선택이므로).
+   * 여기서 밀린 장소들이 "이용 가능한 KTX가 없습니다"를 받고 있었다. 강릉·부산처럼 KTX가
+   * 멀쩡히 다니는 곳이라 화면이 사실과 다른 말을 했다.
+   */
+  describe("밀린 것과 단독 불가능을 가른다", () => {
+    it("기본 조건에서 밀린 장소는 NOT_IN_BEST_SUBSET이다", () => {
+      const result = generateItinerary(BASE_CONSTRAINTS, repos);
+      expect(result.status).toBe("planned");
+      expect(codesOf(result.rejectedPlaces).has("NOT_IN_BEST_SUBSET")).toBe(true);
+    });
+
+    /**
+     * 분류의 근거를 고정한다 — 코드만 바꾸고 판정이 틀리면 이 테스트가 잡는다.
+     * 밀렸다고 보고한 장소는 **다른 선택을 모두 빼면 실제로 배치돼야** 한다.
+     */
+    it("밀렸다고 보고한 장소는 혼자 고르면 실제로 배치된다", () => {
+      const result = generateItinerary(BASE_CONSTRAINTS, repos);
+      expect(result.status).toBe("planned");
+      if (result.status !== "planned") return;
+
+      const pushedOut = result.rejectedPlaces.filter((r) => r.code === "NOT_IN_BEST_SUBSET");
+      expect(pushedOut.length).toBeGreaterThan(0);
+
+      for (const rejection of pushedOut) {
+        const alone = generateItinerary(
+          {
+            ...BASE_CONSTRAINTS,
+            excludedPlaceIds: repos.places
+              .map((place) => place.id)
+              .filter((id) => id !== rejection.placeId),
+          },
+          repos,
+        );
+        expect(alone.status, `${rejection.placeId} 는 혼자면 갈 수 있어야 한다`).toBe("planned");
+      }
+    });
+
+    /**
+     * 하루 상한은 이미 구체적이고 조치도 다르다(날짜를 늘리면 된다). 밀림으로 덮으면
+     * 사용자가 할 수 있는 일이 사라진다 — #84 P0-1이 나눠 놓은 것을 되돌리면 안 된다.
+     */
+    it("하루 상한 사유를 밀림으로 덮지 않는다", () => {
+      const tight = generateItinerary({ ...BASE_CONSTRAINTS, maxPlacesPerDay: 1 }, repos);
+      expect(codesOf(tight.rejectedPlaces).has("DAILY_CAPACITY_EXCEEDED")).toBe(true);
+    });
+
+    /** 일정 자체가 서지 않는 경우는 조합 경쟁이 없다 — 사유가 밀림으로 바뀌면 안 된다 */
+    it("일정이 아예 안 서면 밀림으로 보고하지 않는다", () => {
+      const tooShort = generateItinerary(
+        {
+          ...BASE_CONSTRAINTS,
+          airportArrivalDeadline: "2026-08-12T18:00:00+09:00",
+          departureAt: "2026-08-12T20:00:00+09:00",
+        },
+        repos,
+      );
+      expect(tooShort.status).toBe("empty");
+      expect(tooShort.rejectedPlaces.length).toBeGreaterThan(0);
+      expect(codesOf(tooShort.rejectedPlaces).has("NOT_IN_BEST_SUBSET")).toBe(false);
+    });
   });
 
   it("하루 상한을 1로 조이면 밀린 장소가 DAILY_CAPACITY_EXCEEDED로 보고된다", () => {

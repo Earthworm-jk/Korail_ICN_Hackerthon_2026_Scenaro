@@ -283,9 +283,53 @@ describe("generateItinerary", () => {
     });
     expect(result.comparisonKeys.activityWarningCount).toBe(0);
     expect(result.warnings).toEqual([]);
+    /**
+     * #84 §2 · #171 — 이 장소는 **혼자면 갈 수 있다.** 더 좋은 조합에 밀렸을 뿐이라
+     * "이용 가능한 KTX가 없습니다"가 아니라 "밀렸다"로 보고해야 한다.
+     */
     expect(result.rejectedPlaces).toContainEqual({
-      code: "TRAIN_UNAVAILABLE", placeId: "place-unverified",
+      code: "NOT_IN_BEST_SUBSET", placeId: "place-unverified",
     });
+
+    // 분류의 근거를 함께 고정한다 — 이 장소만 골라 계산하면 실제로 배치된다
+    const alone = generateItinerary(
+      { ...constraints(), excludedPlaceIds: ["place-selected", "place-actor-a", "place-actor-b"] },
+      repositories(),
+    );
+    expect(alone.status).toBe("planned");
+    if (alone.status !== "planned") return;
+    expect(alone.days.flatMap((day) => day.items.map((item) => item.placeId)))
+      .toContain("place-unverified");
+  });
+
+  /**
+   * 반대 분기 — 시간표에 연결편이 아예 없는 장소는 조합과 무관하게 불가능하므로
+   * `TRAIN_UNAVAILABLE`이 그대로 남아야 한다. 이 둘이 한 코드로 뭉치면 사용자는
+   * 고칠 수 있는 문제(선택 줄이기)와 못 고치는 문제를 구분할 수 없다.
+   */
+  it("연결편이 없는 장소는 밀린 것이 아니라 TRAIN_UNAVAILABLE로 남는다 (#84 §2)", () => {
+    const repos = repositories();
+    repos.stations.push({
+      id: "station-isolated", name: localized("고립역"), lineType: "KTX", regionId: "gangwon",
+    });
+    repos.places.push(
+      place("place-isolated", "work-1", "station-isolated",
+        { type: "always_open", source: "fixture", verifiedAt: "2026-08-08" }),
+    );
+    repos.workPlaceRelations = strictRelationsFor(repos.places);
+
+    const result = generateItinerary(constraints(), repos);
+    expect(result.status).toBe("planned");
+    expect(result.rejectedPlaces).toContainEqual({
+      code: "TRAIN_UNAVAILABLE", placeId: "place-isolated",
+    });
+
+    // 근거 — 이 장소만 남겨도 일정이 서지 않는다
+    const alone = generateItinerary(
+      { ...constraints(), excludedPlaceIds: ["place-selected", "place-actor-a", "place-actor-b", "place-unverified"] },
+      repos,
+    );
+    expect(alone.status).toBe("empty");
   });
 
   it("사용자가 제외한 장소는 일정과 자동 제외 사유에서 모두 뺀다", () => {

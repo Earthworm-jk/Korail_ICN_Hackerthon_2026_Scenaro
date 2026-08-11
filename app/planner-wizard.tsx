@@ -99,6 +99,7 @@ import type { StationCoordinatesSnapshotT } from "@/lib/station-coordinates";
 import type { RailGeometrySnapshotT } from "@/lib/rail-geometry";
 import type { DayPlan } from "@/lib/engine/types";
 import { undoPointOf, type UndoPoint } from "@/lib/itinerary-undo";
+import { groupRejections } from "@/lib/rejection-groups";
 
 const KST = "Asia/Seoul";
 
@@ -1294,6 +1295,27 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
   };
 
   /**
+   * 미배치 목록 — **사유별로 묶는다** (#84 §2 · #171).
+   *
+   * 장소마다 한 줄이면 같은 문장이 11번 반복돼 읽히지 않고, 카탈로그가 늘면 더 나빠진다.
+   * 사용자가 읽어야 하는 것은 "몇 가지 이유로 몇 곳이 빠졌는가"다.
+   */
+  const renderRejectionGroups = (rejections: readonly { code: string; placeId: string }[]) => (
+    <ul className="mt-2 space-y-2 text-sm text-sc-orange-text">
+      {groupRejections(rejections as never).map((group) => (
+        <li key={group.code}>
+          <span className="font-medium">{rejectionLabel({ code: group.code, placeId: group.placeIds[0] })}</span>
+          {" "}
+          <span className="whitespace-nowrap">{tr("step4.rejectedCount").replace("{n}", String(group.placeIds.length))}</span>
+          <p className="mt-0.5 text-xs text-sc-orange-text/85">
+            {group.placeIds.map((placeId) => placeName(placeId)).join(" · ")}
+          </p>
+        </li>
+      ))}
+    </ul>
+  );
+
+  /**
    * 표시 이름 조회 (#130).
    *
    * 순서는 `현재 candidateData` → `저장 당시 스냅샷` → `현지화된 대체 문구`다.
@@ -2464,13 +2486,7 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
               {viewRejected.length > 0 && (
                 <div className="rounded-lg border border-sc-orange/30 bg-sc-orange-soft p-4">
                   <h3 className="text-sm font-medium text-sc-orange-text">{tr("step4.rejectedTitle")}</h3>
-                  <ul className="mt-2 space-y-1 text-sm text-sc-orange-text">
-                    {viewRejected.map((reason) => (
-                      <li key={`${reason.placeId}-${reason.code}`}>
-                        {placeName(reason.placeId)} — {rejectionLabel(reason)}
-                      </li>
-                    ))}
-                  </ul>
+                  {renderRejectionGroups(viewRejected)}
                 </div>
               )}
               {/* #80 — 권역 단위 테마체험 제안. 일정에는 자동으로 포함되지 않는다 (#14 v0.6) */}
@@ -2489,15 +2505,8 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
             <div className="mt-4 rounded-lg border border-sc-orange/30 bg-sc-orange-soft p-4">
               <h3 className="font-medium text-sc-orange-text">{tr("step4.emptyTitle")}</h3>
               <p className="mt-1 text-sm text-sc-orange-text">{tr("step4.emptyDesc")}</p>
-              {view.result.rejectedPlaces.length > 0 && (
-                <ul className="mt-2 space-y-1 text-sm text-sc-orange-text">
-                  {view.result.rejectedPlaces.map((reason) => (
-                    <li key={`${reason.placeId}-${reason.code}`}>
-                      {placeName(reason.placeId)} — {rejectionLabel(reason)}
-                    </li>
-                  ))}
-                </ul>
-              )}
+              {view.result.rejectedPlaces.length > 0
+                && renderRejectionGroups(view.result.rejectedPlaces)}
             </div>
           )}
 
