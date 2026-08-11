@@ -8,6 +8,7 @@ import {
   reduceItineraryView,
   rejectedPlaces,
   showEmpty,
+  themeChipState,
   type ItineraryView,
   type ItineraryViewEvent,
 } from "../itinerary-view";
@@ -258,5 +259,25 @@ describe("즉시 재계산 상태 전이 (#85)", () => {
   it("0곳 상태에서는 저장 대상 일정이 없다", () => {
     const cleared = run([{ type: "PLAN_SUCCESS", result: plannedA }, { type: "SELECTION_CLEARED" }]);
     expect(displayedSelectionCapacity(cleared, ["place-x"])).toBeNull();
+  });
+});
+
+describe("PR #156 리뷰 4 — themeChipState", () => {
+  it("조회 전에는 모른다", () => {
+    expect(themeChipState(null)).toBe("unknown");
+  });
+
+  // 스냅샷 자체가 없는 것과 "추천이 없다"는 다른 사실이다
+  it("스냅샷이 없으면 없다고 하지 않는다", () => {
+    expect(themeChipState({ status: "unavailable" })).toBe("unknown");
+  });
+
+  it("기준을 통과한 권역이 없으면 없음이다", () => {
+    expect(themeChipState({ status: "none" })).toBe("none");
+  });
+
+  /** `point`는 지도용 좌표다 — 없어도 추천은 있다 */
+  it("좌표가 없어도 ok면 추천이 있다", () => {
+    expect(themeChipState({ status: "ok" })).toBe("available");
   });
 });

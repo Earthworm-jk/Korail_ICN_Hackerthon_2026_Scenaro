@@ -5,7 +5,7 @@
  * - 편집 = 촬영지 재선택·항공 시각 변경 후 전체 재계산 (무상태)
  * - 대안 시간표는 mock(#14 ⑨ 선행), 저장·내 일정은 in-memory 스텁(#25 선행) — 엔진·Supabase 연결 시 교체
  */
-import { useCallback, useEffect, useMemo, useReducer, useRef, useState, useTransition } from "react";
+import { useCallback, useEffect, useId, useMemo, useReducer, useRef, useState, useTransition } from "react";
 import { BusFront, Info, Sparkles, TrainFront, TriangleAlert, X } from "lucide-react";
 import {
   searchEntities,
@@ -36,7 +36,7 @@ import {
 } from "@/lib/itinerary-command-ui";
 import { sortCandidatePlaces } from "@/lib/place-ranking";
 import { getFlightInfo } from "@/lib/actions/flights";
-import { t, type Locale, type MessageKey } from "@/lib/i18n/messages";
+import { t, withValues, type Locale, type MessageKey } from "@/lib/i18n/messages";
 import { buildMockAlternatives } from "@/lib/alternatives-mock";
 import {
   constraintsFromTripInputs,
@@ -56,8 +56,10 @@ import {
   reduceItineraryView,
   rejectedPlaces as deriveRejectedPlaces,
   showEmpty,
+  themeChipState,
   type SelectableAlternative,
 } from "@/lib/itinerary-view";
+import { selectionResultIsCurrent } from "@/lib/selection-capacity";
 import { autoPlanDecision } from "@/lib/auto-plan";
 import { collectDisplayNames, resolveDisplayName } from "@/lib/display-names";
 import { useLocalDraft } from "./local-draft";
@@ -83,8 +85,9 @@ import {
 } from "./itinerary-command-panel";
 import { ItineraryRouteMap, KoreaMapPanel, type MapPlace, type MapStation } from "./korea-map";
 import { PlaceRecommendationSheet, PlaceThumbnail } from "./place-recommendation-sheet";
+import { PlaceBrowser } from "./place-browser";
 import sheetStyles from "./place-recommendation-sheet.module.css";
-import { allStationIdsOf, itineraryRowsOf, rowKey, stationIdsOf } from "@/lib/itinerary-rows";
+import { allStationIdsOf, itineraryRowsOf, rowKey, shouldNoteAirportRail, stationIdsOf } from "@/lib/itinerary-rows";
 import { MoveRow } from "./move-row";
 import { ThemeExperienceCard, ThemeExperienceMapOverlay } from "./theme-experience";
 import { TrainLegModal, legDurationLabel, type TrainLegDetail } from "./train-leg-modal";
@@ -268,13 +271,6 @@ function dateOfPlace(days: DayPlan[] | null, placeId: string): string | undefine
   return days?.find((day) => day.items.some((item) => item.placeId === placeId))?.date;
 }
 
-function withValues(template: string, values: Record<string, string>): string {
-  return Object.entries(values).reduce(
-    (text, [key, value]) => text.replaceAll(`{${key}}`, value),
-    template,
-  );
-}
-
 export default function PlannerWizard({ stationFacilities, stationCoordinates, railGeometry }: {
   stationFacilities: StationFacilitiesSnapshotT;
   stationCoordinates: StationCoordinatesSnapshotT;
@@ -352,7 +348,10 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
   const [reopenCandidateStatus, setReopenCandidateStatus] = useState<"loading" | "failed" | null>(null);
   const [sortBy, setSortBy] = useState<"relevance" | "official">("relevance");
   // 후보 목록은 5곳씩 — 한 화면에 다 쏟으면 무엇을 고를지가 안 보인다. 표시 개수만 늘린다
-  const [visibleCount, setVisibleCount] = useState(PLACES_PAGE_SIZE);
+  /** 전체 보기 안의 좁히기 상태. 시트 밖에 필터를 늘어놓으면 시트가 다시 무거워진다 */
+  const [browserOpen, setBrowserOpen] = useState(false);
+  const [browserStation, setBrowserStation] = useState<string | null>(null);
+  const [browserWork, setBrowserWork] = useState<string | null>(null);
 
   // step 4 — 결과. 전이 규칙·파생은 lib/itinerary-view 순수 함수로 고정 (PR #35 리뷰 3)
   const [view, dispatchView] = useReducer(reduceItineraryView, initialItineraryView);
@@ -557,7 +556,8 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
 
       setCandidateData(data);
       setSelectedPlaceIds(new Set(selectedIds));
-      setVisibleCount(PLACES_PAGE_SIZE);
+      setBrowserStation(null);
+      setBrowserWork(null);
       setSettledSelectionKey([...selectedIds].sort().join("|"));
 
       if (!finalAction.ok) {
@@ -586,7 +586,8 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
       if (sequence !== planSequence.current) return;
       setCandidateData(data);
       setSelectedPlaceIds(new Set(allCandidateIds));
-      setVisibleCount(PLACES_PAGE_SIZE);
+      setBrowserStation(null);
+      setBrowserWork(null);
       setSettledSelectionKey([...allCandidateIds].sort().join("|"));
       dispatchView({ type: "PLAN_FAILED" });
       setStep(3);
@@ -966,6 +967,22 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
     () => displayedSelectionCapacity(view, selectedPlaceIds),
     [selectedPlaceIds, view],
   );
+  /**
+   * 배치 수를 말해도 되는가 (PR #156 리뷰 3).
+   *
+   * 갱신 중이거나, 표시 중인 결과가 현재 선택으로 계산된 것이 아니면 말하지 않는다.
+   * 선택은 즉시 바뀌고 일정은 응답 후에 바뀌므로, 그 사이에 새로 고른 장소가
+   * "이전 일정에 없다"는 이유만으로 미배치로 찍힌다.
+   */
+  const selectionStateShown = useMemo(() => {
+    if (updating || selectionCapacity === null || !displayedDays) return false;
+    return selectionResultIsCurrent(
+      selectedPlaceIds,
+      displayedDays,
+      deriveRejectedPlaces(view).map((rejection) => rejection.placeId),
+    );
+  }, [updating, selectionCapacity, displayedDays, selectedPlaceIds, view]);
+
   const aiCommandDisabled = commandPanelUnavailable({
     hasCandidates: candidateData !== null,
     hasPlannedResult: view.result?.status === "planned",
@@ -1230,12 +1247,29 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
    * 온라인 재조회가 성공하면 현재 데이터가 먼저다 — 저장 이후 이름이 바뀌었을 수 있다.
    */
   const savedNames = view.reopened?.displayNames;
-  const stationName = (id: string) => resolveDisplayName({
+  /**
+   * 이 구간이 "공항철도로 간다"는 사실을 알려야 하는가 (#146 결정).
+   *
+   * 검증된 버스 대안이 **하나도 없을 때만** 적는다. 대안이 있으면 선택기가 화면에 떠
+   * 있어 사용자가 이미 알고 있고, 없을 때는 선택기가 통째로 숨어 무엇으로 드나드는지
+   * 알 길이 없어진다. 고를 수 없는 버튼을 흐리게 띄우는 대신 사실만 남기는 쪽이다.
+   */
+  const airportStationIds = useMemo(
+    () => new Set((candidateData?.stations ?? []).filter((s) => s.isAirport).map((s) => s.id)),
+    [candidateData],
+  );
+  const hasBusAlternative = (view.result?.status === "planned"
+    && (view.result.gatewayAlternatives ?? []).length > 0);
+  const airportRailNote = (ride: { fromStationId: string; toStationId: string }) =>
+    shouldNoteAirportRail({ hasBusAlternative, airportStationIds, ride });
+
+  // `useCallback` — 전체 보기의 지역 목록이 이 함수를 의존성으로 쓴다
+  const stationName = useCallback((id: string) => resolveDisplayName({
     locale,
     current: candidateData?.stations.find((s) => s.id === id)?.name,
     saved: savedNames?.stations[id],
     fallback: tr("common.nameUnavailable"),
-  });
+  }), [locale, candidateData, savedNames, tr]);
   const placeName = (id: string) => resolveDisplayName({
     locale,
     current: candidateData?.candidates.find((c) => c.id === id)?.name,
@@ -1245,6 +1279,39 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
   /** 일정 줄의 유형 아이콘 — 추천 카드와 같은 `placeType`을 쓴다 (#146 2절) */
   const placeTypeOf = (id: string) =>
     candidateData?.candidates.find((c) => c.id === id)?.placeType;
+  /**
+   * 후보 선택 토글 — 시트의 상위 줄과 전체 보기가 **같은 경로**를 쓴다.
+   * 갈라 두면 한쪽에서만 방문일 선호가 정리되는 식으로 어긋난다.
+   */
+  const togglePlace = (placeId: string) => {
+    const next = new Set(selectedPlaceIds);
+    if (next.has(placeId)) next.delete(placeId); else next.add(placeId);
+    if (next.size === 0) setLastItineraryDiff(null);
+    setPreferredVisitDates((current) => {
+      if (!(placeId in current)) return current;
+      const nextPreferences = { ...current };
+      delete nextPreferences[placeId];
+      return nextPreferences;
+    });
+    setAiFeedback(null);
+    setSelectedPlaceIds(next);
+  };
+
+  /** 전체 보기의 좁히기 — 지역은 최인접역, 콘텐츠는 작품 */
+  const browserStations = useMemo(() => {
+    const ids = [...new Set((candidateData?.candidates ?? []).map((c) => c.nearestStationId))];
+    return ids.map((id) => ({ id, label: stationName(id) }))
+      .sort((a, b) => a.label.localeCompare(b.label, locale));
+  }, [candidateData, locale, stationName]);
+  const browserWorks = useMemo(
+    () => (candidateData?.works ?? []).map((w) => ({ id: w.id, label: w.title[locale] })),
+    [candidateData, locale],
+  );
+  const browsedCandidates = useMemo(() => sortedCandidates.filter((c) =>
+    (browserStation === null || c.nearestStationId === browserStation)
+    && (browserWork === null || c.workIds.includes(browserWork))),
+  [sortedCandidates, browserStation, browserWork]);
+
   const workTitles = (ids: string[]) =>
     ids.map((id) => candidateData?.works.find((w) => w.id === id)?.title[locale] ?? id).join(" · ");
 
@@ -1537,12 +1604,14 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
           <PlaceRecommendationSheet
             selectedCount={selectedPlaceIds.size}
             totalCount={sortedCandidates.length}
+            placedCount={selectionStateShown ? selectionCapacity!.schedulableCount : null}
+            unplacedCount={selectionStateShown ? selectionCapacity!.minimumExclusionCount : null}
+            themeState={themeChipState(themeExperience)}
             updating={updating}
             updated={lastItineraryDiff?.changed === true && !updating}
             sortBy={sortBy}
             onSortChange={setSortBy}
-            remainingCount={Math.max(0, regularCandidates.length - visibleCount)}
-            onShowMore={() => setVisibleCount((n) => n + PLACES_PAGE_SIZE)}
+            onBrowseAll={() => setBrowserOpen(true)}
             onBack={() => setStep(2)}
             tr={tr}
             map={candidateData ? (
@@ -1596,24 +1665,12 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
             </li>
           )}
           {/* #43 확정: 미확인 후보도 같은 목록에서 선택 가능 — 카드에 경고 배지 */}
-          {regularCandidates.slice(0, visibleCount).map((c) => (
+          {regularCandidates.slice(0, PLACES_PAGE_SIZE).map((c) => (
             <PlaceCard key={c.id} candidate={c} locale={locale} tr={tr}
               selected={selectedPlaceIds.has(c.id)}
               stationName={stationName} workTitles={workTitles}
               aiReason={c.aiReason ?? null}
-              onToggle={() => {
-                const next = new Set(selectedPlaceIds);
-                if (next.has(c.id)) next.delete(c.id); else next.add(c.id);
-                if (next.size === 0) setLastItineraryDiff(null);
-                setPreferredVisitDates((current) => {
-                  if (!(c.id in current)) return current;
-                  const nextPreferences = { ...current };
-                  delete nextPreferences[c.id];
-                  return nextPreferences;
-                });
-                setAiFeedback(null);
-                setSelectedPlaceIds(next);
-              }}
+              onToggle={() => togglePlace(c.id)}
             />
           ))}
           </>
@@ -1633,6 +1690,29 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
             </li>
           )}
           </PlaceRecommendationSheet>
+
+          {/* 전체 보기 (#146 ①) — 좁히기는 이 안에서만 한다 */}
+          <PlaceBrowser
+            open={browserOpen}
+            onClose={() => setBrowserOpen(false)}
+            count={browsedCandidates.length}
+            stations={browserStations}
+            works={browserWorks}
+            station={browserStation}
+            work={browserWork}
+            onStationChange={setBrowserStation}
+            onWorkChange={setBrowserWork}
+            tr={tr}
+          >
+            {browsedCandidates.map((c) => (
+              <PlaceCard key={c.id} candidate={c} locale={locale} tr={tr}
+                selected={selectedPlaceIds.has(c.id)}
+                stationName={stationName} workTitles={workTitles}
+                aiReason={c.aiReason ?? null}
+                onToggle={() => togglePlace(c.id)}
+              />
+            ))}
+          </PlaceBrowser>
 
           {/* 우측 열 — 계산 결과. 장소를 켜고 끄면 여기서 바로 갱신된다 */}
           <div className="min-w-0" aria-busy={updating}>
@@ -1810,7 +1890,7 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
               {/* 장소 단위 시각을 카드에 적는 이상, 그게 예약 확정 시각이 아니라는 것을
                   화면에서 한 번은 밝혀야 한다 (PR #154 리뷰) */}
               <p className="text-xs text-sc-muted">{tr("step4.estimatedNote")}</p>
-              {displayedDays.map((day) => {
+              {displayedDays.map((day, dayIndex) => {
                 const baseDay = baseDays?.find((d) => d.date === day.date);
                 return (
                   <div
@@ -1832,9 +1912,16 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
                       submitVisitDateEdit(placeId, day.date);
                     }}
                   >
-                    {/* #146 2절 — DAY 헤더 오른쪽에 그 날 전체에 걸리는 맥락을 둔다 */}
-                  <div className="flex flex-wrap items-center gap-2">
-                    <h3 className="font-medium">{day.date}</h3>
+                    {/* #146 ① — 여행 기간과 무관하게 같은 형식을 쓴다. 2박 3일이든
+                        9박 10일이든 라벨과 배치는 바뀌지 않고 숫자만 커진다.
+                        날짜는 아래에 작게 둔다 — 형식은 공통이되 실제 날짜도 필요하다 */}
+                  <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+                    <h3 className="font-medium">
+                      {withValues(tr("step4.dayHeading"), {
+                        day: String(dayIndex + 1), places: String(day.items.length),
+                      })}
+                    </h3>
+                    <span className="text-xs text-sc-muted">{day.date}</span>
                     {/* 그 날 거치는 역만 — 지금은 화면 맨 아래에 일정 전체 역이 뭉쳐 있어
                         어느 날 어느 역 이야기인지 알 수 없다 (#146 2절) */}
                     <DayStationFacilities
@@ -1850,6 +1937,9 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
                       하루의 흐름이 끊긴다. 시각순 한 줄씩으로 세운다 (#146 2절) */}
                   <ul className="mt-2 space-y-1.5 text-sm">
                     {itineraryRowsOf(day).map((row) => {
+                      /* 선택 가능한 버스 대안이 없으면 선택기가 통째로 숨는다. 그때는
+                         무엇으로 공항에 드나드는지 알 길이 없으므로 이동 행에 사실만
+                         적는다 — 고를 수 없는 버튼을 흐리게 띄우는 것보다 낫다 (#146) */
                       /* 조율 중에는 이동이 조작 대상이 아니라 결과다. 구간·시각·소요를
                          펼쳐 두면 장소보다 이동이 화면을 더 차지한다 (#118 P0-3).
                          저장된 최종 일정에서는 지금 수준으로 편다 */
@@ -1927,6 +2017,7 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
                               collapsed={!reopened}
                               icon={<BusFront aria-hidden="true" className="size-4" />}
                               label={tr("step4.moveRow")}
+                              route={`${leg.fromName[locale]} → ${leg.toName[locale]}`}
                             >
                               {detail}
                             </MoveRow>
@@ -1940,6 +2031,8 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
                             collapsed={!reopened}
                             icon={<TrainFront aria-hidden="true" className="size-4" />}
                             label={tr("step4.moveRow")}
+                            route={`${stationName(ride.fromStationId)} → ${stationName(ride.toStationId)}`}
+                            note={airportRailNote(ride) ? tr("step4.airportRailUsed") : undefined}
                             onOpenDetail={() => setOpenTrainLeg({
                               trainNo: ride.trainNo,
                               fromName: stationName(ride.fromStationId),
@@ -2256,7 +2349,13 @@ function PlaceCard({ candidate, locale, tr, selected, onToggle, stationName, wor
 }) {
   // 카드는 고르는 데 필요한 요약만 유지한다. 작품·회차·장면·출처는 top-layer 팝오버로
   // 분리해 고정 높이 카드가 잘리거나 내부 스크롤을 만들지 않게 한다.
-  const detailPopoverId = `place-detail-${candidate.id}`;
+  /**
+   * **인스턴스마다 고유해야 한다** (PR #156 리뷰 1). 같은 후보가 시트의 상위 줄과
+   * 전체 보기에 동시에 렌더되므로, 후보 id로만 만들면 dialog·title id가 두 개씩 생기고
+   * 전체 보기의 상세 버튼이 뒤에 깔린 시트의 팝오버를 연다.
+   */
+  const instanceId = useId();
+  const detailPopoverId = `place-detail-${candidate.id}-${instanceId}`;
   const detailTitleId = `${detailPopoverId}-title`;
   const oh = candidate.openingHours;
   const hoursLabel =

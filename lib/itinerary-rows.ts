@@ -84,3 +84,25 @@ export function allStationIdsOf(days: DayPlan[]): string[] {
   const ids = new Set(days.flatMap(stationIdsOf));
   return [...ids].sort((a, b) => a.localeCompare(b, "en"));
 }
+
+/**
+ * 이 구간이 "공항철도로 간다"는 사실을 적어야 하는가 (#146 결정)
+ *
+ * 검증된 버스 대안이 **하나도 없을 때만** 적는다. 대안이 있으면 선택기가 화면에 떠 있어
+ * 사용자가 이미 알고 있다. 없을 때는 선택기가 통째로 숨어(`alternatives.length === 0`이면
+ * `null` 반환) 무엇으로 공항을 드나드는지 알 길이 사라진다.
+ *
+ * 고를 수 없는 버스 버튼을 흐리게 띄우는 대신 현재 일정의 사실만 남기는 쪽이다.
+ */
+export function shouldNoteAirportRail({
+  hasBusAlternative,
+  airportStationIds,
+  ride,
+}: {
+  hasBusAlternative: boolean;
+  airportStationIds: ReadonlySet<string>;
+  ride: Pick<TrainRide, "fromStationId" | "toStationId">;
+}): boolean {
+  if (hasBusAlternative) return false;
+  return airportStationIds.has(ride.fromStationId) || airportStationIds.has(ride.toStationId);
+}

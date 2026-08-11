@@ -70,6 +70,18 @@ export const messages = {
     "step3.sheetCollapse": "접기",
     "step3.sheetExpand": "추천 장소 펼치기",
     "step3.selectedCount": "{selected}/{total}곳 선택",
+    "step3.selectionState": "선택 {selected} · 일정 반영 {placed} · 미배치 {unplaced}",
+    "step3.unplacedHint": "시간·동선 제약",
+    "step3.chipKCulture": "K-컬처 {n}",
+    "step3.browseAll": "전체 보기",
+    "step3.browserTitle": "전체 촬영지",
+    "step3.browserCount": "후보 {n}곳",
+    "step3.browserEmpty": "이 조건에 맞는 후보가 없습니다.",
+    "step3.filterRegion": "지역",
+    "step3.filterContent": "콘텐츠",
+    "step3.filterAll": "전체",
+    "step3.chipThemeNone": "테마체험 추천 없음",
+    "step3.chipThemeAvailable": "테마체험 추천 있음",
     "step3.routeUpdating": "일정·경로 다시 그리는 중",
     "step3.routeUpdated": "새 일정·경로 반영 완료",
     "step3.photoPlaceholder": "장소 이미지 준비 중",
@@ -119,7 +131,9 @@ export const messages = {
     "ai.confirmDisplaced": "{place}이 일정에서 제외됩니다.",
     "ai.confirmMoved": "{place}이 {from}에서 {to}로 이동합니다.",
     "step4.moveToDay": "{place}을(를) {day}일차로 옮기기",
+    "step4.dayHeading": "DAY {day} · {places}곳",
     "step4.moveRow": "이동",
+    "step4.airportRailUsed": "공항철도 이용",
     "step4.trainDetail": "열차 상세",
     "step4.estimatedNote": "표시된 시각은 예상 일정입니다 — 예약된 시각이 아닙니다.",
     "step4.dayFacilities": "이 날 거치는 역 시설 {n}곳",
@@ -451,6 +465,18 @@ export const messages = {
     "step3.sheetCollapse": "Collapse",
     "step3.sheetExpand": "Show recommended places",
     "step3.selectedCount": "{selected}/{total} selected",
+    "step3.selectionState": "Selected {selected} · Scheduled {placed} · Unplaced {unplaced}",
+    "step3.unplacedHint": "Time and route limits",
+    "step3.chipKCulture": "K-culture {n}",
+    "step3.browseAll": "Browse all",
+    "step3.browserTitle": "All filming locations",
+    "step3.browserCount": "{n} candidates",
+    "step3.browserEmpty": "No candidates match these filters.",
+    "step3.filterRegion": "Region",
+    "step3.filterContent": "Content",
+    "step3.filterAll": "All",
+    "step3.chipThemeNone": "Theme experience: none suggested",
+    "step3.chipThemeAvailable": "Theme experience: suggestion available",
     "step3.routeUpdating": "Redrawing itinerary and route",
     "step3.routeUpdated": "New itinerary and route ready",
     "step3.photoPlaceholder": "Place image coming soon",
@@ -500,7 +526,9 @@ export const messages = {
     "ai.confirmDisplaced": "{place} will be removed from the itinerary.",
     "ai.confirmMoved": "{place} will move from {from} to {to}.",
     "step4.moveToDay": "Move {place} to day {day}",
+    "step4.dayHeading": "DAY {day} · {places} places",
     "step4.moveRow": "Travel",
+    "step4.airportRailUsed": "Airport railroad",
     "step4.trainDetail": "Train detail",
     "step4.estimatedNote": "Times shown are an estimated schedule, not confirmed bookings.",
     "step4.dayFacilities": "Station facilities on this day ({n})",
@@ -770,4 +798,12 @@ export type MessageKey = keyof (typeof messages)["ko"];
 
 export function t(locale: Locale, key: MessageKey): string {
   return messages[locale][key];
+}
+
+/** `{key}` 자리표시자를 값으로 채운다. 메시지를 쓰는 쪽이 모두 같은 치환을 쓴다 */
+export function withValues(template: string, values: Record<string, string>): string {
+  return Object.entries(values).reduce(
+    (text, [key, value]) => text.replaceAll(`{${key}}`, value),
+    template,
+  );
 }
