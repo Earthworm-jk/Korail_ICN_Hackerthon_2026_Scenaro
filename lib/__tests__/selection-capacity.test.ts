@@ -79,9 +79,17 @@ describe("PR #156 리뷰 3 — 결과가 현재 선택의 것인가", () => {
     expect(selectionResultIsCurrent(["p1", "p2"], [dayWith("p1")], [])).toBe(false);
   });
 
-  // 재계산이 실패해 직전 결과가 남아도 같은 판정이 걸린다
-  it("선택을 줄인 직후에도 이전 결과는 그대로 통과한다", () => {
-    expect(selectionResultIsCurrent(["p1"], [dayWith("p1", "p2")], [])).toBe(true);
+  /**
+   * 반대 방향도 막아야 한다. 재계산이 실패해 이전 일정이 남으면 화면에는 두 곳이
+   * 보이는데 상태 요약만 `선택 1 · 일정 반영 1 · 미배치 0`이 된다 — **성공한 것처럼
+   * 보인다.**
+   */
+  it("선택을 줄였는데 이전 결과가 남아 있으면 현재가 아니다", () => {
+    expect(selectionResultIsCurrent(["p1"], [dayWith("p1", "p2")], [])).toBe(false);
+  });
+
+  it("뺀 장소가 제외 목록에 남아 있어도 현재가 아니다", () => {
+    expect(selectionResultIsCurrent(["p1"], [dayWith("p1")], ["p2"])).toBe(false);
   });
 
   it("아무것도 안 골랐으면 덮을 것이 없다", () => {

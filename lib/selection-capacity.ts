@@ -39,8 +39,16 @@ export function summarizeSelectionCapacity(
  * 계속된다.
  *
  * 엔진은 선택한 장소를 배치하거나 사유와 함께 제외한다 — 둘 중 하나다. 그래서
- * `배치 ∪ 제외`가 선택 집합을 정확히 덮을 때만 그 결과가 현재 선택의 것이다.
- * 새 장소를 고른 직후에는 어느 쪽에도 없어 덮이지 않는다.
+ * `배치 ∪ 제외`가 선택 집합과 **정확히 같을 때만** 그 결과가 현재 선택의 것이다.
+ *
+ * **양방향을 봐야 한다** (PR #156 리뷰 재확인).
+ * - 선택에 있는데 결과에 없다 → 방금 고른 장소다. 아직 계산되지 않았다.
+ * - 결과에 있는데 선택에 없다 → 방금 뺀 장소다. 이전 결과가 남아 있다.
+ *
+ * 뒤쪽을 빼먹으면 **재계산이 실패했을 때 거짓말을 한다.** 두 곳을 골랐다가 하나를 뺐는데
+ * 재계산이 실패하면 화면에는 이전 일정 두 곳이 그대로 보이는데, `updating`이 풀린 뒤
+ * 상태 요약은 `선택 1 · 일정 반영 1 · 미배치 0`이라고 말한다 — 현재 선택으로 성공한
+ * 결과처럼 보인다.
  */
 export function selectionResultIsCurrent(
   selectedPlaceIds: Iterable<string>,
@@ -50,6 +58,7 @@ export function selectionResultIsCurrent(
   const selected = new Set(selectedPlaceIds);
   const accounted = new Set<string>(rejectedPlaceIds);
   for (const day of days) for (const item of day.items) accounted.add(item.placeId);
+  if (selected.size !== accounted.size) return false;
   for (const placeId of selected) if (!accounted.has(placeId)) return false;
   return true;
 }
