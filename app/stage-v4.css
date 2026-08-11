@@ -243,17 +243,40 @@
     max-height: none !important;
   }
 
+  /* 지도 열은 세로 flex다 (PR #168 리뷰). 제목·지도·범례·출처가 이 한 칸 안에서
+     나뉘어야 한다 - 지도 높이를 뷰포트로 못박아 두면 그 아래 줄들이 칸 밖으로 흘러
+     카드 `overflow: hidden`에 잘린다. 실제로 출처 줄이 그렇게 사라졌다 */
   #place-picker + div[aria-busy] > div[class*="space-y"] > div.grid > div:nth-child(2) > aside:first-child {
     grid-row: 1 / 6 !important;
+    display: flex;
     height: 100%;
+    flex-direction: column;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  /**
+   * 지도 높이 상한은 **아래 줄들의 자리를 뺀 값**이다 (PR #168 리뷰).
+   *
+   * `flex: 1 1 auto`는 안 된다 - SVG는 고유 비율이 있어 `height: auto`면 내용 높이가
+   * 781px로 잡히고, 그 상태로는 줄어들지 않아 오히려 더 밀려났다. 상한을 명시한다.
+   *
+   * 42px은 제목 줄만 뺀 값이었다. 범례(20)와 출처(35)가 그 아래에 있으므로 그만큼
+   * 더 빼야 출처가 칸 안에 들어온다.
+   */
+  /* 줄어드는 것은 **지도를 감싼 상자**다. svg에만 상한을 걸면 상자는 제 높이를
+     고집해 아래 줄들을 칸 밖으로 밀어낸다 - 실제로 지도만 233px로 줄고 출처는
+     그대로 잘렸다 */
+  #place-picker + div[aria-busy] aside:first-child > div:nth-child(2) {
+    flex: 1 1 auto;
     min-height: 0;
     overflow: hidden;
   }
 
   #place-picker + div[aria-busy] aside:first-child svg[role="img"] {
-    height: clamp(330px, calc(100dvh - 430px), 598px) !important;
+    height: 100% !important;
     min-height: 0 !important;
-    max-height: calc(100% - 42px) !important;
+    max-height: none !important;
   }
 
   /* 경고 아이콘은 이제 `상세 일정` 제목 줄 안에 있다 (#146) — 자기 행을 갖지 않는다.

@@ -1016,23 +1016,6 @@ export function KoreaMapPanel({
           <p className="mt-2 text-xs text-sc-muted">
             {tr(hasRailGeometry ? "map.routeNoticeRail" : "map.routeNotice")}
           </p>
-          <p className="mt-2 border-t pt-2 text-xs text-sc-muted">
-            {tr("map.source")}
-            {/* ODbL 1.0 의무 표기 — 라이선스 링크까지 함께 (OSM 저작권 안내 규정) */}
-            {hasRailGeometry && (
-              <>
-                {" \u00b7 "}
-                <a
-                  href="https://www.openstreetmap.org/copyright"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="underline underline-offset-2 hover:text-sc-blue"
-                >
-                  {tr("map.sourceRail")}
-                </a>
-              </>
-            )}
-          </p>
         </div>
       )}
       {experienceNotice}
@@ -1043,9 +1026,17 @@ export function KoreaMapPanel({
         </p>
       )}
 
+      {/**
+       * 출처·라이선스는 **지도 종류와 무관하게 화면에 남긴다** (PR #168 리뷰).
+       *
+       * 동선 고지는 (i)로 내렸지만 이 줄은 내리지 않는다. 두 가지가 걸린다 —
+       * `KoreaMapPanel`은 `places`도 받는 공용 컴포넌트인데 (i)를 `isRoute`로만 달아 두면
+       * 그쪽은 출처가 통째로 사라지고, 실제 OSM 선형을 그리는 경로 지도에서도 ODbL 표기가
+       * 기본 화면에서 사라진다.
+       */}
       <p className="mt-2 text-xs text-sc-muted">
         {tr("map.source")}
-        {/* 배경 타일 공급자의 이용 조건 — 타일이 실제로 뜬 화면에만 붙인다 */}
+        {/* 배경 타일 공급자의 이용 조건 — 타일이 실제로 뜬 화면에만 붙인다 (#166) */}
         {basemapShown && <BasemapAttribution tr={tr} />}
         {/* ODbL 1.0 의무 표기 — 라이선스 링크까지 함께 (OSM 저작권 안내 규정) */}
         {hasRailGeometry && (
