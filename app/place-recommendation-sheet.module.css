@@ -1,5 +1,7 @@
 .sheet {
+  display: flex;
   min-width: 0;
+  flex-direction: column;
   overflow: hidden;
   border: 1px solid var(--sc-line);
   border-radius: 14px;
@@ -81,26 +83,42 @@
 }
 
 .body {
+  /* `flex: 1` + `min-height: 0`이 핵심이다 — 시트가 `max-height`로 잘릴 때
+     자식이 그 안에서 줄어들 수 있어야 스크롤 뷰포트가 생긴다. 이게 없으면
+     자식이 본래 높이를 고집하고 부모의 `overflow: hidden`이 아랫부분을 잘라
+     **스크롤바는 있는데 끝까지 닿지 않는다** */
+  flex: 1 1 auto;
   min-height: 0;
   padding: 10px 12px 12px;
-  /* 그리드는 줄이 늘어난다 — 시트가 지도 위에 떠 있어 세로가 유한하므로 여기서 스크롤한다.
-     시트를 지도 아래 독립 바로 빼는 것은 #146 1절의 별도 작업이다 */
   max-height: min(46vh, 420px);
   overflow-y: auto;
   overscroll-behavior-block: contain;
 }
 
 /**
- * 카드 그리드 (#146 1절).
+ * 카드 줄 (#146 1절).
  *
- * px로 열 수를 고정하지 않는다 — 웹앱이고 태블릿 크기가 제각각이다. 다만 비율만으로는
- * 부족해 **최소 폭 하한**을 둔다. 폭이 계속 줄면 한글 장소 이름이 세 줄로 흐르거나 잘린다.
+ * **세로로 쌓지 않고 가로로 눕힌다.** 시트는 지도 위에 떠 있어 세로가 유한한데,
+ * 그리드는 후보가 늘수록 아래로 자라 지도를 덮는다. 한 줄로 눕히면 시트 높이가
+ * 카드 한 장으로 고정돼 지도가 계속 보이고, 후보 수와 무관해진다.
+ *
+ * 폭은 200px 하한을 지킨다 — 더 줄면 한글 장소 이름이 잘린다. 태블릿에서도 같다.
  */
 .list {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(200px, 232px);
   gap: 12px;
   margin-top: 10px;
+  padding-bottom: 6px;
+  overflow-x: auto;
+  /* 시트 안에서 가로로 튕겼을 때 뒤 지도가 같이 밀리지 않게 한다 */
+  overscroll-behavior-inline: contain;
+  scroll-snap-type: x proximity;
+}
+
+.list > * {
+  scroll-snap-align: start;
 }
 
 /** 사진이 카드다 — 어떤 폭에서도 모양이 유지되게 종횡비를 고정한다 */
@@ -130,17 +148,26 @@
   min-width: 0;
 }
 
+/** 사진 높이가 고정이라 이름은 어느 폭에서도 두 줄까지만 흐른다 */
+.list :global([data-place-card-title]) {
+  display: -webkit-box;
+  overflow: hidden;
+  line-height: 1.35;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
 .more {
   width: 100%;
   min-height: 44px;
   background: var(--sc-surface);
 }
 
-/** 더보기는 카드가 아니다 — 그리드 셀 높이에 맞춰 늘어나지 않게 한다 */
+/** 더보기는 카드가 아니다 — 줄 끝에 좁게 붙인다 */
 .moreItem {
   display: flex;
-  align-self: start;
-  min-width: 0;
+  width: 118px;
+  align-items: center;
   list-style: none;
 }
 
@@ -188,8 +215,10 @@
  * 명시도를 올리면 순서와 무관하게 이긴다.
  */
 /**
- * cover 카드에서는 출처 표기를 위로 올린다. 아래는 장소 이름 자리라 겹친다.
- * 오른쪽 위는 선택 토글이 쓰므로 왼쪽 위에 붙이고 폭도 내용만큼만 잡는다.
+ * cover 카드에서는 출처 표기를 좌상단에 둔다.
+ *
+ * 모서리 넷이 이미 다 찼었다 — 좌상단 운영시간 배지, 우상단 선택 토글, 우하단 상세,
+ * 하단 전폭 이름. 그래서 운영시간 배지를 이름 줄로 내려 **좌상단을 비웠다.**
  */
 .thumbnail.thumbnailCover .thumbnailAttribution {
   inset-inline: auto;
@@ -238,8 +267,10 @@
 }
 
 @media (min-width: 1024px) {
+  /* 카드 한 줄 + 헤더가 들어갈 만큼만. 뷰포트를 따라가되 상한을 둬서
+     큰 화면에서 시트가 지도를 지나치게 덮지 않게 한다 */
   .sheet {
-    max-height: 238px;
+    max-height: min(46vh, 372px);
   }
 
   .header {
@@ -252,34 +283,14 @@
   }
 
   .list {
-    grid-template-columns: repeat(auto-fill, minmax(168px, 1fr));
     gap: 9px;
     margin-top: 0;
-    padding: 1px 2px 8px;
-  }
-
-  .list :global([data-place-card-title]) {
-    display: -webkit-box;
-    overflow: hidden;
-    line-height: 1.35;
-    -webkit-box-orient: vertical;
-    -webkit-line-clamp: 2;
-  }
-
-  .list :global([data-place-detail-toggle]) {
-    min-height: 28px !important;
   }
 
   .more {
     width: 100%;
     height: 100%;
     white-space: nowrap;
-  }
-
-  .moreItem {
-    flex: 0 0 112px;
-    height: 166px;
-    scroll-snap-align: start;
   }
 
   .fallbackMap,

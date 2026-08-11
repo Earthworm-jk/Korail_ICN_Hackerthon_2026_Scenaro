@@ -53,20 +53,6 @@ export function rowKey(row: ItineraryRow): string {
   return `gateway:${row.leg.id}`;
 }
 
-/**
- * 그 날 환승 수 — 앞 구간과 열차번호가 다르면 갈아탄 것이다.
- *
- * DAY 헤더의 환승 배지에 쓴다. 공항 진입 구간(gateway)은 열차가 아니라 별도 수단이므로
- * 환승 계산에 넣지 않는다 — 엔진의 `transferCount`와 같은 기준이다.
- */
-export function transferCountOf(day: DayPlan): number {
-  let count = 0;
-  for (let index = 1; index < day.rides.length; index += 1) {
-    if (day.rides[index - 1].trainNo !== day.rides[index].trainNo) count += 1;
-  }
-  return count;
-}
-
 /** 그 날 거치는 역 — DAY 헤더의 역 시설 팝오버 대상 */
 export function stationIdsOf(day: DayPlan): string[] {
   const ids = new Set<string>();

@@ -83,7 +83,8 @@ import {
 import { ItineraryRouteMap, KoreaMapPanel, type MapPlace, type MapStation } from "./korea-map";
 import { PlaceRecommendationSheet, PlaceThumbnail } from "./place-recommendation-sheet";
 import sheetStyles from "./place-recommendation-sheet.module.css";
-import { itineraryRowsOf, rowKey, transferCountOf } from "@/lib/itinerary-rows";
+import { itineraryRowsOf, rowKey } from "@/lib/itinerary-rows";
+import { MoveRow } from "./move-row";
 import { ThemeExperienceCard, ThemeExperienceMapOverlay } from "./theme-experience";
 import { TrainLegModal, legDurationLabel, type TrainLegDetail } from "./train-leg-modal";
 import { getThemeExperience, type ThemeExperienceResult } from "@/lib/actions/theme-experience";
@@ -1805,6 +1806,9 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
               {/* #14 v0.6 sc-result-grid — 좌측 일정 타임라인 + 우측 지도·경고·실행 지원 */}
               <div className="grid gap-[18px] md:grid-cols-[minmax(0,1fr)_minmax(360px,1fr)] md:items-start">
                 <div className="min-w-0 space-y-4">
+              {/* 장소 단위 시각을 카드에 적는 이상, 그게 예약 확정 시각이 아니라는 것을
+                  화면에서 한 번은 밝혀야 한다 (PR #154 리뷰) */}
+              <p className="text-xs text-sc-muted">{tr("step4.estimatedNote")}</p>
               {displayedDays.map((day) => {
                 const baseDay = baseDays?.find((d) => d.date === day.date);
                 return (
@@ -1830,17 +1834,15 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
                     {/* #146 2절 — DAY 헤더 오른쪽에 그 날 전체에 걸리는 맥락을 둔다 */}
                   <div className="flex flex-wrap items-center gap-2">
                     <h3 className="font-medium">{day.date}</h3>
-                    {transferCountOf(day) > 0 && (
-                      <span className="rounded-full bg-sc-subtle px-2 py-0.5 text-xs text-sc-muted">
-                        {tr("step4.transferBadge").replace("{n}", String(transferCountOf(day)))}
-                      </span>
-                    )}
                   </div>
 
                   {/* 장소 목록과 이동 구간을 따로 그리면 "몇 시에 어디로 이동해 무엇을 보는가"라는
                       하루의 흐름이 끊긴다. 시각순 한 줄씩으로 세운다 (#146 2절) */}
                   <ul className="mt-2 space-y-1.5 text-sm">
                     {itineraryRowsOf(day).map((row) => {
+                      /* 조율 중에는 이동이 조작 대상이 아니라 결과다. 구간·시각·소요를
+                         펼쳐 두면 장소보다 이동이 화면을 더 차지한다 (#118 P0-3).
+                         저장된 최종 일정에서는 지금 수준으로 편다 */
                       if (row.kind === "place") {
                         const item = row.item;
                         return (
@@ -1900,42 +1902,43 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
                       }
                       if (row.kind === "gateway") {
                         const leg = row.leg;
-                        return (
-                          <li
-                            key={rowKey(row)}
-                            className="flex flex-wrap items-center gap-x-2 gap-y-1 rounded-lg border border-dashed bg-sc-subtle/40 px-2 py-1.5"
-                            data-itinerary-row="gateway"
-                          >
-                            <span className="grid size-7 shrink-0 place-items-center rounded-md bg-sc-subtle text-sc-muted">
-                              <BusFront aria-hidden="true" className="size-4" />
-                            </span>
+                        const detail = (
+                          <>
                             <span className="shrink-0 tabular-nums text-xs text-sc-muted">{fmtTime(leg.departAt)}</span>
                             <span className="min-w-0 flex-1 text-sc-text/80">
                               {leg.fromName[locale]} → {leg.toName[locale]}
                             </span>
                             <span className="shrink-0 text-xs text-sc-muted/70">{leg.serviceName[locale]}</span>
+                          </>
+                        );
+                        return (
+                          <li key={rowKey(row)} data-itinerary-row="gateway">
+                            <MoveRow
+                              collapsed={!reopened}
+                              icon={<BusFront aria-hidden="true" className="size-4" />}
+                              label={tr("step4.moveRow")}
+                            >
+                              {detail}
+                            </MoveRow>
                           </li>
                         );
                       }
                       const ride = row.ride;
                       return (
                         <li key={rowKey(row)} data-itinerary-row="train">
-                          {/* 조율 중에는 장소가 주정보다 — 열차번호·소요시간은 눌렀을 때
-                              기존 상세 모달에서 본다 (#118 P0-3 계약 유지) */}
-                          <button
-                            type="button"
-                            className="flex w-full flex-wrap items-center gap-x-2 gap-y-1 rounded-lg border border-dashed bg-sc-subtle/40 px-2 py-1.5 text-left hover:border-sc-blue"
-                            onClick={() => setOpenTrainLeg({
+                          <MoveRow
+                            collapsed={!reopened}
+                            icon={<TrainFront aria-hidden="true" className="size-4" />}
+                            label={tr("step4.moveRow")}
+                            onOpenDetail={() => setOpenTrainLeg({
                               trainNo: ride.trainNo,
                               fromName: stationName(ride.fromStationId),
                               toName: stationName(ride.toStationId),
                               departAt: ride.departAt,
                               arriveAt: ride.arriveAt,
                             })}
+                            detailLabel={tr("step4.trainDetail")}
                           >
-                            <span className="grid size-7 shrink-0 place-items-center rounded-md bg-sc-subtle text-sc-muted">
-                              <TrainFront aria-hidden="true" className="size-4" />
-                            </span>
                             <span className="shrink-0 tabular-nums text-xs text-sc-muted">{fmtTime(ride.departAt)}</span>
                             <span className="min-w-0 flex-1 text-sc-text/80">
                               {stationName(ride.fromStationId)} → {stationName(ride.toStationId)}
@@ -1943,7 +1946,7 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
                             <span className="shrink-0 text-xs text-sc-muted/70">
                               {legDurationLabel(ride.departAt, ride.arriveAt, tr)}
                             </span>
-                          </button>
+                          </MoveRow>
                         </li>
                       );
                     })}
@@ -2283,21 +2286,33 @@ function PlaceCard({ candidate, locale, tr, selected, onToggle, stationName, wor
           <PlaceTypeIcon placeType={candidate.placeType} />
         </PlaceThumbnail>
 
-        {/* 사진 위 이름은 어두운 그라디언트 없이도 읽혀야 한다 — CSS의 paint-order 참고 */}
-        <p
-          className={`absolute inset-x-0 bottom-0 p-2 text-sm font-semibold ${
-            // 사진 위에서만 흰 글자 + 검은 테두리를 쓴다. 플레이스홀더는 우리가 만든
-            // 밝은 배경이라 대비가 이미 보장되고, 흰 글자를 쓰면 오히려 안 읽힌다
-            photo ? sheetStyles.photoCardTitle : "text-sc-text"
-          }`}
-          data-place-card-title
-        >
-          {candidate.name[locale]}
-        </p>
+        {/* 사진 위 이름은 어두운 그라디언트 없이도 읽혀야 한다 — CSS의 paint-order 참고.
+            `pr-10`으로 우하단 상세 버튼 자리를 비워 둔다 — 없으면 긴 이름이 버튼 밑으로 깔린다 */
+        }
+        <div className="absolute inset-x-0 bottom-0 flex flex-col items-start gap-1 p-2 pr-10">
+          {/* 운영시간 미확인은 고르기 전에 알아야 한다 (#43). 좌상단은 사진 출처가 쓰므로
+              이름과 한 덩어리로 둔다 — 어차피 이 장소에 대한 단서다 */}
+          {!hoursLabel && (
+            <span className="inline-flex items-center gap-1 rounded bg-sc-orange-soft px-1.5 py-0.5 text-xs text-sc-orange-text shadow">
+              <TriangleAlert aria-hidden="true" className="size-3.5 shrink-0" />
+              {tr("step3.hoursUnverified")}
+            </span>
+          )}
+          <p
+            className={`text-sm font-semibold ${
+              // 사진 위에서만 흰 글자 + 검은 테두리를 쓴다. 플레이스홀더는 우리가 만든
+              // 밝은 배경이라 대비가 이미 보장되고, 흰 글자를 쓰면 오히려 안 읽힌다
+              photo ? sheetStyles.photoCardTitle : "text-sc-text"
+            }`}
+            data-place-card-title
+          >
+            {candidate.name[locale]}
+          </p>
+        </div>
 
         <button
           type="button"
-          className={`absolute right-1.5 top-1.5 grid size-8 place-items-center rounded-full text-sm shadow ${
+          className={`absolute right-1.5 top-1.5 grid size-10 place-items-center rounded-full text-sm shadow ${
             selected ? "bg-sc-blue text-white" : "border bg-sc-surface/90"
           }`}
           onClick={onToggle}
@@ -2307,14 +2322,6 @@ function PlaceCard({ candidate, locale, tr, selected, onToggle, stationName, wor
           {selected ? "✓" : "+"}
         </button>
 
-        {/* 운영시간 미확인은 카드에서도 보여야 고르기 전에 알 수 있다 (#43) */}
-        {!hoursLabel && (
-          <span className="absolute left-1.5 top-1.5 inline-flex items-center gap-1 rounded bg-sc-orange-soft px-1.5 py-0.5 text-xs text-sc-orange-text shadow">
-            <TriangleAlert aria-hidden="true" className="size-3.5 shrink-0" />
-            {tr("step3.hoursUnverified")}
-          </span>
-        )}
-
         <button
           type="button"
           data-place-detail-toggle
@@ -2322,7 +2329,7 @@ function PlaceCard({ candidate, locale, tr, selected, onToggle, stationName, wor
           aria-haspopup="dialog"
           aria-controls={detailPopoverId}
           aria-label={tr("step3.showDetail")}
-          className="absolute bottom-1.5 right-1.5 grid size-8 place-items-center rounded-full border bg-sc-surface/90 text-sc-blue shadow"
+          className="absolute bottom-1.5 right-1.5 grid size-10 place-items-center rounded-full border bg-sc-surface/90 text-sc-blue shadow"
         >
           <Info aria-hidden="true" className="size-4" />
         </button>

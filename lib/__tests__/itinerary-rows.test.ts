@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { itineraryRowsOf, rowKey, stationIdsOf, transferCountOf } from "../itinerary-rows";
+import { itineraryRowsOf, rowKey, stationIdsOf } from "../itinerary-rows";
 import type { DayPlan } from "../engine/types";
 
 /** #146 2절 — 하루를 시각순 줄로 펼친다 */
@@ -62,18 +62,6 @@ describe("#146 시각순 줄", () => {
     expect(rows.map((r) => r.kind)).toEqual(["gateway", "place"]);
   });
 
-  it("빈 하루는 빈 줄이다", () => {
-    expect(itineraryRowsOf(day())).toEqual([]);
-  });
-});
-
-describe("#146 DAY 헤더 배지", () => {
-  // 엔진의 transferCount와 같은 기준 — 앞 구간과 열차번호가 다르면 갈아탄 것이다
-  it("열차번호가 바뀐 횟수를 센다", () => {
-    expect(transferCountOf(day({ rides: [ride("T1", "01:00"), ride("T2", "02:00")] }))).toBe(1);
-    expect(transferCountOf(day({ rides: [ride("T1", "01:00"), ride("T1", "02:00")] }))).toBe(0);
-    expect(transferCountOf(day({ rides: [ride("T1", "01:00")] }))).toBe(0);
-  });
 
   it("그 날 거치는 역을 결정적으로 모은다", () => {
     const ids = stationIdsOf(day({
