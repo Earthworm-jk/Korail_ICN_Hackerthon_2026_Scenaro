@@ -371,10 +371,16 @@
     padding-bottom: calc(var(--sc-dock-h, 0px) + 24px) !important;
   }
 
+  /* 그리드 열·간격의 단독 소유자다 (#146). globals.css · stage.css · stage-v2에
+     흩어져 있던 3열 정의 열 벌을 여기로 모았다 - 앞 파일들은 겉모습만 맡는다.
+     `display`와 `row-gap`은 v4가 안 정하고 있어 각각 stage.css·stage-v2에서 실제로
+     계산에 쓰이던 값이라 같이 가져왔다. 지우기만 했다면 조용히 바뀌었을 두 개다. */
   html body main section > div.grid:has(> div#place-picker[data-place-sheet]) {
     position: relative;
+    display: grid !important;
     grid-template-columns: minmax(560px, 1fr) minmax(285px, 340px) !important;
     column-gap: 18px !important;
+    row-gap: 8px !important;
   }
 
   div#place-picker[data-place-sheet] {

@@ -140,15 +140,8 @@
       padding: 18px 20px 22px;
     }
 
-    /* The entire Step 3 is a three-part stage: left decision rail / central map / right itinerary rail.
-       The existing result component is flattened visually so the map can occupy an independent center column. */
-    section > div.grid:has(> #place-picker) {
-      grid-template-columns: minmax(230px, 280px) minmax(420px, 1fr) minmax(280px, 330px) !important;
-      column-gap: 18px;
-      row-gap: 12px;
-      align-items: start;
-      min-height: min(720px, calc(100vh - 190px));
-    }
+    /* 그리드 열·간격·정렬·높이는 stage-v4 단독 (#146). 여기 있던 3열 스테이지
+       (좌 결정 rail / 중앙 지도 / 우 일정 rail)는 v4의 2열이 전부 덮는다. */
 
     /* Left panel: one presentation-like card, not a stack of floating cards. */
     #place-picker {
@@ -308,22 +301,8 @@
   @layer components {
     body > main > div.mx-auto { padding-inline: 24px; }
 
-    section > div.grid:has(> #place-picker) {
-      grid-template-columns: minmax(270px, 305px) minmax(520px, 1fr) minmax(315px, 355px) !important;
-      column-gap: 24px;
-    }
-
     #place-picker + div[aria-busy] > div[class*="space-y"] > div.grid > div:nth-child(2) > aside:first-child {
       padding-inline: 12px;
-    }
-  }
-}
-
-@media (min-width: 1440px) {
-  @layer components {
-    section > div.grid:has(> #place-picker) {
-      grid-template-columns: 305px minmax(600px, 1fr) 360px !important;
-      column-gap: 28px;
     }
   }
 }

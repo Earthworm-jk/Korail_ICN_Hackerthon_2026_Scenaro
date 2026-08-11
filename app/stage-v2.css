@@ -32,13 +32,9 @@
     box-shadow: inset 0 0 0 1px var(--sc-line);
   }
 
-  /* 1024–1199: compact rails, map gets the remaining width. */
-  section > div.grid:has(> #place-picker) {
-    grid-template-columns: 220px minmax(420px, 1fr) 282px !important;
-    column-gap: 14px !important;
-    row-gap: 8px !important;
-    min-height: min(760px, calc(100dvh - 174px)) !important;
-  }
+  /* 열·간격·높이는 stage-v4 단독 (#146). 여기 있던 3열 정의와 min-height는
+     v4가 전부 덮는다. `row-gap`만 v4로 옮겼다 - v4가 안 정하던 유일한 속성이라
+     같이 지우면 Tailwind `gap-[18px]`로 돌아가 줄 간격이 벌어진다. */
 
   /* Left rail behaves like a compact selection inspector. */
   /* 배치는 stage-v4 단독 — 위 stage.css 주석 참고 (#146) */
@@ -255,11 +251,6 @@
 
 /* Mid-size notebook / small desktop. */
 @media (min-width: 1200px) {
-  section > div.grid:has(> #place-picker) {
-    grid-template-columns: 265px minmax(500px, 1fr) 320px !important;
-    column-gap: 20px !important;
-  }
-
   #place-picker {
     padding: 13px !important;
   }
@@ -286,11 +277,6 @@
     padding-inline: 22px !important;
   }
 
-  section > div.grid:has(> #place-picker) {
-    grid-template-columns: 300px minmax(620px, 1fr) 360px !important;
-    column-gap: 26px !important;
-  }
-
   #place-picker + div[aria-busy] aside:first-child svg[role="img"] {
     min-height: 600px;
     max-height: 720px !important;
@@ -298,11 +284,6 @@
 }
 
 @media (min-width: 1680px) {
-  section > div.grid:has(> #place-picker) {
-    grid-template-columns: 315px minmax(760px, 1fr) 380px !important;
-    column-gap: 30px !important;
-  }
-
   #place-picker + div[aria-busy] aside:first-child svg[role="img"] {
     min-height: 640px;
     max-height: 760px !important;
