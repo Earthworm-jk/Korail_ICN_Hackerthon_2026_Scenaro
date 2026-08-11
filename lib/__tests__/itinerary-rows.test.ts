@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { allStationIdsOf, itineraryRowsOf, rowKey, stationIdsOf } from "../itinerary-rows";
+import { allStationIdsOf, itineraryRowsOf, rowKey, shouldNoteAirportRail, stationIdsOf } from "../itinerary-rows";
 import type { DayPlan, GatewayRide, RegionWindow } from "../engine/types";
 
 /** #146 2절 — 하루를 시각순 줄로 펼친다 */
@@ -131,5 +131,45 @@ describe("#155 리뷰 1 — 그 날 거치는 역", () => {
     const first = day({ date: "2026-08-12", rides: [ride("T1", "01:00")] });
     const second = day({ date: "2026-08-13", rides: [], regionWindows: [window("ST-GANG")] });
     expect(allStationIdsOf([first, second])).toEqual(["s1", "s2", "ST-GANG"]);
+  });
+});
+
+describe("#146 — 공항철도 이용 명시", () => {
+  const airports = new Set(["ST-AIRPORT"]);
+  const leg = (from: string, to: string) => ({ fromStationId: from, toStationId: to });
+
+  /**
+   * 대안이 없으면 `GatewayAlternatives`가 `null`을 반환해 선택기가 통째로 사라진다.
+   * 그러면 사용자는 **무엇으로 공항을 드나드는지 알 길이 없다.**
+   */
+  it("버스 대안이 없으면 공항 구간에 사실을 적는다", () => {
+    expect(shouldNoteAirportRail({
+      hasBusAlternative: false, airportStationIds: airports, ride: leg("ST-AIRPORT", "ST-SEOUL"),
+    })).toBe(true);
+  });
+
+  it("도착이 공항이어도 마찬가지다", () => {
+    expect(shouldNoteAirportRail({
+      hasBusAlternative: false, airportStationIds: airports, ride: leg("ST-SEOUL", "ST-AIRPORT"),
+    })).toBe(true);
+  });
+
+  // 선택기가 화면에 떠 있으면 사용자가 이미 안다 — 같은 말을 두 번 하지 않는다
+  it("버스 대안이 있으면 적지 않는다", () => {
+    expect(shouldNoteAirportRail({
+      hasBusAlternative: true, airportStationIds: airports, ride: leg("ST-AIRPORT", "ST-SEOUL"),
+    })).toBe(false);
+  });
+
+  it("공항을 지나지 않는 구간에는 적지 않는다", () => {
+    expect(shouldNoteAirportRail({
+      hasBusAlternative: false, airportStationIds: airports, ride: leg("ST-SEOUL", "ST-GANG"),
+    })).toBe(false);
+  });
+
+  it("공항역 목록이 비면 아무 구간에도 적지 않는다", () => {
+    expect(shouldNoteAirportRail({
+      hasBusAlternative: false, airportStationIds: new Set(), ride: leg("ST-AIRPORT", "ST-SEOUL"),
+    })).toBe(false);
   });
 });

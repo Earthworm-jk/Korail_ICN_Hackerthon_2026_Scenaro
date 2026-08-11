@@ -84,7 +84,7 @@ import {
 import { ItineraryRouteMap, KoreaMapPanel, type MapPlace, type MapStation } from "./korea-map";
 import { PlaceRecommendationSheet, PlaceThumbnail } from "./place-recommendation-sheet";
 import sheetStyles from "./place-recommendation-sheet.module.css";
-import { allStationIdsOf, itineraryRowsOf, rowKey, stationIdsOf } from "@/lib/itinerary-rows";
+import { allStationIdsOf, itineraryRowsOf, rowKey, shouldNoteAirportRail, stationIdsOf } from "@/lib/itinerary-rows";
 import { MoveRow } from "./move-row";
 import { ThemeExperienceCard, ThemeExperienceMapOverlay } from "./theme-experience";
 import { TrainLegModal, legDurationLabel, type TrainLegDetail } from "./train-leg-modal";
@@ -1230,6 +1230,22 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
    * 온라인 재조회가 성공하면 현재 데이터가 먼저다 — 저장 이후 이름이 바뀌었을 수 있다.
    */
   const savedNames = view.reopened?.displayNames;
+  /**
+   * 이 구간이 "공항철도로 간다"는 사실을 알려야 하는가 (#146 결정).
+   *
+   * 검증된 버스 대안이 **하나도 없을 때만** 적는다. 대안이 있으면 선택기가 화면에 떠
+   * 있어 사용자가 이미 알고 있고, 없을 때는 선택기가 통째로 숨어 무엇으로 드나드는지
+   * 알 길이 없어진다. 고를 수 없는 버튼을 흐리게 띄우는 대신 사실만 남기는 쪽이다.
+   */
+  const airportStationIds = useMemo(
+    () => new Set((candidateData?.stations ?? []).filter((s) => s.isAirport).map((s) => s.id)),
+    [candidateData],
+  );
+  const hasBusAlternative = (view.result?.status === "planned"
+    && (view.result.gatewayAlternatives ?? []).length > 0);
+  const airportRailNote = (ride: { fromStationId: string; toStationId: string }) =>
+    shouldNoteAirportRail({ hasBusAlternative, airportStationIds, ride });
+
   const stationName = (id: string) => resolveDisplayName({
     locale,
     current: candidateData?.stations.find((s) => s.id === id)?.name,
@@ -1810,7 +1826,7 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
               {/* 장소 단위 시각을 카드에 적는 이상, 그게 예약 확정 시각이 아니라는 것을
                   화면에서 한 번은 밝혀야 한다 (PR #154 리뷰) */}
               <p className="text-xs text-sc-muted">{tr("step4.estimatedNote")}</p>
-              {displayedDays.map((day) => {
+              {displayedDays.map((day, dayIndex) => {
                 const baseDay = baseDays?.find((d) => d.date === day.date);
                 return (
                   <div
@@ -1832,9 +1848,16 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
                       submitVisitDateEdit(placeId, day.date);
                     }}
                   >
-                    {/* #146 2절 — DAY 헤더 오른쪽에 그 날 전체에 걸리는 맥락을 둔다 */}
-                  <div className="flex flex-wrap items-center gap-2">
-                    <h3 className="font-medium">{day.date}</h3>
+                    {/* #146 ① — 여행 기간과 무관하게 같은 형식을 쓴다. 2박 3일이든
+                        9박 10일이든 라벨과 배치는 바뀌지 않고 숫자만 커진다.
+                        날짜는 아래에 작게 둔다 — 형식은 공통이되 실제 날짜도 필요하다 */}
+                  <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+                    <h3 className="font-medium">
+                      {withValues(tr("step4.dayHeading"), {
+                        day: String(dayIndex + 1), places: String(day.items.length),
+                      })}
+                    </h3>
+                    <span className="text-xs text-sc-muted">{day.date}</span>
                     {/* 그 날 거치는 역만 — 지금은 화면 맨 아래에 일정 전체 역이 뭉쳐 있어
                         어느 날 어느 역 이야기인지 알 수 없다 (#146 2절) */}
                     <DayStationFacilities
@@ -1850,6 +1873,9 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
                       하루의 흐름이 끊긴다. 시각순 한 줄씩으로 세운다 (#146 2절) */}
                   <ul className="mt-2 space-y-1.5 text-sm">
                     {itineraryRowsOf(day).map((row) => {
+                      /* 선택 가능한 버스 대안이 없으면 선택기가 통째로 숨는다. 그때는
+                         무엇으로 공항에 드나드는지 알 길이 없으므로 이동 행에 사실만
+                         적는다 — 고를 수 없는 버튼을 흐리게 띄우는 것보다 낫다 (#146) */
                       /* 조율 중에는 이동이 조작 대상이 아니라 결과다. 구간·시각·소요를
                          펼쳐 두면 장소보다 이동이 화면을 더 차지한다 (#118 P0-3).
                          저장된 최종 일정에서는 지금 수준으로 편다 */
@@ -1927,6 +1953,7 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
                               collapsed={!reopened}
                               icon={<BusFront aria-hidden="true" className="size-4" />}
                               label={tr("step4.moveRow")}
+                              route={`${leg.fromName[locale]} → ${leg.toName[locale]}`}
                             >
                               {detail}
                             </MoveRow>
@@ -1940,6 +1967,8 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
                             collapsed={!reopened}
                             icon={<TrainFront aria-hidden="true" className="size-4" />}
                             label={tr("step4.moveRow")}
+                            route={`${stationName(ride.fromStationId)} → ${stationName(ride.toStationId)}`}
+                            note={airportRailNote(ride) ? tr("step4.airportRailUsed") : undefined}
                             onOpenDetail={() => setOpenTrainLeg({
                               trainNo: ride.trainNo,
                               fromName: stationName(ride.fromStationId),
