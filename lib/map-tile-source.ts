@@ -36,11 +36,6 @@ export type TileSource = {
   /** 화면에 반드시 표기해야 하는 출처 (이용 조건) */
   attribution: string;
   axisOrder: TileAxisOrder;
-  /**
-   * 등록 도메인 검사용 `Referer`. 공급자마다 다른 값을 요구하므로 어댑터가 들고 다닌다 —
-   * 프록시가 공급자 이름을 알 필요가 없어진다.
-   */
-  referer: string;
   /** 키가 없으면 null — 호출부는 배경 없이 그린다 */
   urlOf: (zoom: number, x: number, y: number) => string | null;
 };
@@ -73,54 +68,9 @@ export function vworldReferer(): string {
  */
 export const TILE_CACHE_ENABLED = false;
 
-/**
- * Stadia Maps `alidade_smooth` — **지금 쓰는 공급자** (#162).
- *
- * VWorld에서 옮긴 이유는 둘 다 실측이다.
- *
- * 1. **응답** — 같은 화면 12장을 받을 때 VWorld는 5장 성공에 3-29초, Stadia는 12장 전부에
- *    평균 212ms였다. VWorld 실패는 키 한도가 아니라 공급자 용량 문제(Apache 기본 503)라
- *    우리 쪽에서 손쓸 여지가 없었다.
- * 2. **밀도** — VWorld `Base`는 도로를 노랗게 칠하는 일반 지도라 우리 경로선과 같은 굵기로
- *    경쟁한다. `alidade_smooth`는 마커·오버레이가 많은 지도용으로 저채도·낮은 POI 밀도로
- *    설계된 스타일이라, 필터 없이 원본 그대로 물러난다.
- *
- * 좌표계는 EPSG:3857 표준 XYZ라 `map-tiles.ts`의 변환이 그대로 맞는다. 축 순서는 슬리피
- * 관례인 `z/x/y`로 VWorld(`z/y/x`)와 다르고, 그 차이는 `axisOrder`가 흡수한다.
- *
- * **키가 없으면 `localhost` 이외에서 401이다.** 로컬 개발은 등록 없이 되지만 배포에는
- * 계정 키와 도메인 인증이 필요하다. 키 없이 배포하면 배경만 조용히 빠지고 정적 지도가 남는다.
- */
-const STADIA_BASE = "https://tiles.stadiamaps.com/tiles";
-const STADIA_STYLE = "alidade_smooth";
-
-/**
- * 개발 기본 `Referer`. 우리 개발 서버가 실제로 `localhost:3000`이므로 이 값은 사실이다 —
- * **배포에서 이 값을 그대로 보내면 우리 서버가 localhost인 척하는 것**이 되므로,
- * 배포 환경에서는 반드시 `STADIA_REFERER`로 그 환경의 도메인을 준다 (#162 팀 합의).
- */
-export const DEV_STADIA_REFERER = "http://localhost:3000/";
-
-export function stadiaSource(axisOrder: TileAxisOrder = "zxy"): TileSource {
-  const key = env.STADIA_API_KEY;
-  return {
-    id: `stadia:${STADIA_STYLE}:${axisOrder}`,
-    attribution: "© Stadia Maps · © OpenMapTiles · © OpenStreetMap 기여자",
-    axisOrder,
-    referer: env.STADIA_REFERER ?? DEV_STADIA_REFERER,
-    urlOf: (zoom, x, y) => {
-      const path = axisOrder === "zyx" ? `${zoom}/${y}/${x}` : `${zoom}/${x}/${y}`;
-      const url = `${STADIA_BASE}/${STADIA_STYLE}/${path}.png`;
-      // 키는 선택이다 — 없으면 localhost 등록 도메인으로만 통한다(로컬 개발)
-      return key ? `${url}?api_key=${encodeURIComponent(key)}` : url;
-    },
-  };
-}
-
 export function vworldSource(axisOrder: TileAxisOrder = "zyx"): TileSource {
   const key = env.VWORLD_API_KEY;
   return {
-    referer: vworldReferer(),
     /**
      * 캐시 키의 일부다 — **설정이 바뀌면 id도 바뀌어야 한다** (PR #158 리뷰 1번).
      *
@@ -138,12 +88,7 @@ export function vworldSource(axisOrder: TileAxisOrder = "zyx"): TileSource {
   };
 }
 
-/**
- * 지금 쓰는 공급자 (#162 합의).
- *
- * VWorld 어댑터는 지우지 않고 남긴다 — 공급자를 갈아탈 자리가 여기 하나라는 것이 #137·#158
- * 추상화의 값이고, 그것을 실제로 한 번 써서 확인한 셈이다.
- */
+/** 지금 쓰는 공급자. 순서 판별이 끝나면 여기 인자만 바꾼다 */
 export function activeTileSource(): TileSource {
-  return stadiaSource("zxy");
+  return vworldSource("zyx");
 }

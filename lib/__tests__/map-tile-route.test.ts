@@ -26,11 +26,11 @@ async function loadRoute(options: {
   vi.doMock("@/lib/map-tile-cache", () => ({ readTile, writeTile }));
   vi.doMock("@/lib/map-tile-source", () => ({
     TILE_CACHE_ENABLED: cacheEnabled,
+    vworldReferer: () => "http://localhost:3000/",
     activeTileSource: () => ({
       id: "test:Base:zyx",
       attribution: "테스트",
       axisOrder: "zyx" as const,
-      referer: "http://localhost:3000/",
       urlOf: (z: number, x: number, y: number) =>
         keyed ? `https://example.invalid/${z}/${y}/${x}.png` : null,
     }),
