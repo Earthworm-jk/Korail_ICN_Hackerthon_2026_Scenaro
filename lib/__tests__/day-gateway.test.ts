@@ -31,7 +31,8 @@ const leg = (over: Partial<AirportLeg> = {}): AirportLeg => ({
 
 const render = (legs: AirportLeg[], locale: "ko" | "en" = "ko") =>
   renderToStaticMarkup(createElement(DayGatewayInfo, {
-    legs, stationName: (id: string) => `${id}역`, date: "2026-08-12", locale,
+    legs, alternatives: [], selectedId: null, onSelect: () => {},
+    stationName: (id: string) => `${id}역`, date: "2026-08-12", locale,
     formatTime: (iso: string) => iso.slice(11, 16), tr,
   }));
 
@@ -63,9 +64,9 @@ describe("내용", () => {
     expect(render([leg({ kind: "bus", serviceName: { ko: "공항버스 6001", en: "Airport bus 6001" } })])).toContain("공항버스");
   });
 
-  /** 고르는 곳이 여기가 아님을 밝히지 않으면 왜 못 바꾸는지 찾게 된다 */
-  it("선택은 다른 곳에서 한다고 알린다", () => {
-    expect(render([leg()])).toContain("이동 수단 선택은 아래 공항 진입 패널에서 바꿉니다");
+  /** 고를 대안이 없으면 선택 절 자체가 없다 — 못 누르는 버튼을 두지 않는다 */
+  it("대안이 없으면 선택 절을 두지 않는다", () => {
+    expect(render([leg()])).not.toContain("gateway.railTitle");
   });
 
   it("팝오버 제목을 aria-labelledby로 연결한다", () => {

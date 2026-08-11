@@ -1,7 +1,9 @@
 "use client";
 
+import { useRef } from "react";
 import { Plane } from "lucide-react";
 import type { AirportLeg } from "@/lib/itinerary-rows";
+import type { GatewayAlternative } from "@/lib/engine/types";
 import { withValues, type Locale, type MessageKey } from "@/lib/i18n/messages";
 
 /**
@@ -19,6 +21,9 @@ import { withValues, type Locale, type MessageKey } from "@/lib/i18n/messages";
  */
 export function DayGatewayInfo({
   legs,
+  alternatives,
+  selectedId,
+  onSelect,
   stationName,
   date,
   locale,
@@ -26,6 +31,10 @@ export function DayGatewayInfo({
   tr,
 }: {
   legs: AirportLeg[];
+  /** 고를 수 있는 버스 대안. 비어 있으면 선택할 것이 없어 조회만 남는다 */
+  alternatives: GatewayAlternative[];
+  selectedId: string | null;
+  onSelect: (alternative: GatewayAlternative | null) => void;
   stationName: (id: string) => string;
   date: string;
   /** 역 이름이 이미 locale을 따른다 — 노선명만 한국어로 굳으면 한 팝오버에서 언어가 섞인다 */
@@ -33,6 +42,8 @@ export function DayGatewayInfo({
   formatTime: (iso: string) => string;
   tr: (key: MessageKey) => string;
 }) {
+  const popoverRef = useRef<HTMLDivElement>(null);
+
   // 그 날 공항 구간이 없으면 아이콘 자체를 두지 않는다
   if (legs.length === 0) return null;
 
@@ -54,6 +65,7 @@ export function DayGatewayInfo({
       </button>
 
       <div
+        ref={popoverRef}
         id={popoverId}
         popover="auto"
         role="dialog"
@@ -79,8 +91,46 @@ export function DayGatewayInfo({
             </li>
           ))}
         </ul>
-        {/* 고르는 곳은 여기가 아니라는 것을 밝힌다 — 아니면 왜 못 바꾸는지 찾게 된다 */}
-        <p className="mt-2 text-[11px] text-sc-muted/80">{tr("step4.gatewayPickerHint")}</p>
+        {/*
+          선택도 여기서 한다 (#146).
+          공항 진입 정보는 이 아이콘 하나로 모은다 — 조회와 선택이 갈라져 있으면
+          "왜 여기선 못 바꾸지"를 찾아 헤매게 된다. 고를 대안이 없으면 이 절은 없다.
+        */}
+        {alternatives.length > 0 && (
+          <div className="mt-3 border-t pt-2">
+            <p className="text-xs font-medium text-sc-text">{tr("gateway.title")}</p>
+            <p className="mt-0.5 text-[11px] text-sc-muted">{tr("gateway.subtitle")}</p>
+            <div className="mt-2 space-y-1.5">
+              <button
+                type="button"
+                aria-pressed={selectedId === null}
+                onClick={() => { popoverRef.current?.hidePopover(); onSelect(null); }}
+                className={`min-h-11 w-full rounded-lg border px-3 py-1.5 text-left text-sm ${
+                  selectedId === null ? "border-sc-blue bg-sc-blue-soft" : "hover:border-sc-blue"
+                }`}
+              >
+                {tr("gateway.railTitle")}
+              </button>
+              {alternatives.map((alternative) => (
+                <button
+                  key={alternative.id}
+                  type="button"
+                  aria-pressed={selectedId === alternative.id}
+                  onClick={() => { popoverRef.current?.hidePopover(); onSelect(alternative); }}
+                  className={`min-h-11 w-full rounded-lg border px-3 py-1.5 text-left text-sm ${
+                    selectedId === alternative.id ? "border-sc-blue bg-sc-blue-soft" : "hover:border-sc-blue"
+                  }`}
+                >
+                  <span className="block">{alternative.serviceName[locale]}</span>
+                  <span className="mt-0.5 block text-[11px] text-sc-muted">
+                    {tr("gateway.localUse")} {alternative.effects.localUseDeltaMinutes >= 0 ? "+" : ""}
+                    {alternative.effects.localUseDeltaMinutes}{tr("step1.minutes")}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </>
   );

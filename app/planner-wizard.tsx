@@ -75,7 +75,6 @@ import { gatewayPlanningBaselineOf } from "@/lib/engine/gateway-baseline";
 import { AlternativeTimetables } from "./alternative-timetables";
 import { AuthModal, TripsModal, useSaveStub, type SaveStatus } from "./save-stub";
 import { FinalItineraryPage } from "./final-itinerary-page";
-import { GatewayAlternatives } from "./gateway-alternatives";
 import { DayStationFacilities } from "./day-context";
 import { DayMoveMenu } from "./day-move-menu";
 import { DayGatewayInfo } from "./day-gateway";
@@ -1655,15 +1654,6 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
             placedCount={selectionStateShown ? selectionCapacity!.schedulableCount : null}
             unplacedCount={selectionStateShown ? selectionCapacity!.minimumExclusionCount : null}
             themeState={themeChipState(themeExperience)}
-            gatewayChip={view.result?.status === "planned" && !view.reopened ? (
-              <GatewayAlternatives
-                alternatives={view.result.gatewayAlternatives ?? []}
-                selectedId={view.selectedAlt?.kind === "gateway_bus" ? view.selectedAlt.id : null}
-                locale={locale}
-                onSelect={chooseAlternative}
-                tr={tr}
-              />
-            ) : null}
             themeChip={(
               <ThemeExperienceChip
                 result={themeExperience}
@@ -2024,6 +2014,10 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
                         왕복이면 첫날·마지막날에만 나온다 (#146) */}
                     <DayGatewayInfo
                       legs={airportLegsOf(day, airportStationIds)}
+                      alternatives={view.result?.status === "planned" && !view.reopened
+                        ? (view.result.gatewayAlternatives ?? []) : []}
+                      selectedId={view.selectedAlt?.kind === "gateway_bus" ? view.selectedAlt.id : null}
+                      onSelect={chooseAlternative}
                       stationName={stationName}
                       date={day.date}
                       locale={locale}
