@@ -78,6 +78,7 @@ import { ExecutionSupport } from "./execution-support";
 import { FinalItineraryPage } from "./final-itinerary-page";
 import { GatewayAlternatives } from "./gateway-alternatives";
 import { DayStationFacilities } from "./day-context";
+import { DayMoveMenu } from "./day-move-menu";
 import { ItineraryChangeSummary } from "./itinerary-change-summary";
 import {
   ItineraryCommandPanel,
@@ -1997,6 +1998,18 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
                     <span className="text-xs text-sc-muted">{day.date}</span>
                     {/* 그 날 거치는 역만 — 지금은 화면 맨 아래에 일정 전체 역이 뭉쳐 있어
                         어느 날 어느 역 이야기인지 알 수 없다 (#146 2절) */}
+                    {/* 드래그와 같은 일을 하는 포커스 가능한 진입점 (#157 리뷰 2).
+                        HTML5 drag는 터치에서 안 되고 키보드로도 못 쓴다 */}
+                    <DayMoveMenu
+                      date={day.date}
+                      targets={displayedDays
+                        .map((target, index) => ({ date: target.date, index }))
+                        .filter((target) => target.date !== day.date)}
+                      disabled={!visitDateEditable || day.items.length === 0}
+                      onMove={(targetDate) =>
+                        submitDayMove(day.items.map((item) => item.placeId), targetDate)}
+                      tr={tr}
+                    />
                     <DayStationFacilities
                       snapshot={stationFacilities}
                       stationIds={stationIdsOf(day)}

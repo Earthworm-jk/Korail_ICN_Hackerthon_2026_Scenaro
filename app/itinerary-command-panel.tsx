@@ -133,9 +133,13 @@ function targetLabelOf(
   proposal: CommandProposal,
   single: string,
   many: string,
+  partial: string,
   placeName: (id: string) => string,
 ): string {
-  const date = proposal.scheduledDate ?? proposal.requestedDate;
+  // 흩어지거나 일부가 빠지면 날짜도 개수도 단정할 수 없다 — 확인 창에서는 "일부는 다른
+  // 날로 조정"이라 정확히 알려 놓고 적용 후에 "N곳을 그 날로 옮겼다"고 하면 거짓이 된다
+  if (proposal.scheduledDate === undefined) return partial;
+  const date = proposal.scheduledDate;
   return proposal.placeIds.length > 1
     ? withValues(many, { count: String(proposal.placeIds.length), date })
     : withValues(single, { place: placeName(proposal.placeId), date });
@@ -301,12 +305,12 @@ export function ItineraryCommandPanel({
             <>
               {feedback.outcome.proposal.decision === "impossible" ? (
                 <p className="mt-1 text-sc-orange-text">
-                  {targetLabelOf(feedback.outcome.proposal, tr("ai.impossible"), tr("ai.impossibleDay"), placeName)}
+                  {targetLabelOf(feedback.outcome.proposal, tr("ai.impossible"), tr("ai.impossibleDay"), tr("ai.impossibleDay"), placeName)}
                 </p>
               ) : feedback.applied ? (
                 <>
                   <p className="mt-1 font-medium text-sc-blue">
-                    {targetLabelOf(feedback.outcome.proposal, tr("ai.applied"), tr("ai.appliedDay"), placeName)}
+                    {targetLabelOf(feedback.outcome.proposal, tr("ai.applied"), tr("ai.appliedDay"), tr("ai.appliedDayPartial"), placeName)}
                   </p>
                   {/* 부작용 없는 변경은 즉시 적용하되 한 번에 되돌릴 수 있어야 한다 (#145) */}
                   {canUndo && (

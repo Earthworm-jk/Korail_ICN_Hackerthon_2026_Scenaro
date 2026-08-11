@@ -6,6 +6,7 @@ import {
   type CommandFeedback,
 } from "../../app/itinerary-command-panel";
 import type { MessageKey } from "../i18n/messages";
+import type { CommandProposal } from "../itinerary-command-executor";
 
 const copy: Partial<Record<MessageKey, string>> = {
   "ai.title": "AI tuning",
@@ -18,6 +19,7 @@ const copy: Partial<Record<MessageKey, string>> = {
   "ai.exampleAdd": "Add a place",
   "ai.exampleRecommend": "Recommend along day 2",
   "ai.exampleExplain": "What changed?",
+  "ai.appliedDay": "{count}곳을 {date}로 옮겼습니다.",
   "ai.disabled": "Create an itinerary first.",
   "ai.disabledOverselection": "Reduce your selection first.",
   "ai.sourceDeterministic": "Verified result",
@@ -147,5 +149,46 @@ describe("#152 갇히지 않는 패널", () => {
 
   it("합의한 임시 패널 폭 상한을 지킨다", () => {
     expect(render()).toContain("max-w-[400px]");
+  });
+});
+
+describe("PR #157 리뷰 1 — 적용 후 문구는 결과를 과장하지 않는다", () => {
+  const proposalWith = (over: Partial<CommandProposal>): CommandProposal => ({
+    decision: "needs_confirmation", placeId: "p1", placeIds: ["p1", "p2"],
+    requestedDate: "2026-08-14", reasons: ["date_adjusted"],
+    displaced: [], moved: [], ...over,
+  });
+  const appliedWith = (proposal: CommandProposal): CommandFeedback => ({
+    kind: "proposal", applied: true, submittedSequence: 1,
+    outcome: {
+      kind: "proposal", proposal,
+      nextRequest: {} as never, nextResult: {} as never,
+      diff: {} as never, summary: {} as never,
+    },
+  });
+
+  /**
+   * 확인 창에서는 "일부는 다른 날로 조정"이라 정확히 알려 놓고, 적용 후에 "2곳을 그 날로
+   * 옮겼다"고 하면 **거짓이 된다.** `requestedDate` 폴백이 정확히 그 사고였다.
+   */
+  it("흩어져 앉으면 날짜도 개수도 단정하지 않는다", () => {
+    const html = render({ feedback: appliedWith(proposalWith({ scheduledDate: undefined })) });
+    expect(html).toContain("ai.appliedDayPartial");
+    expect(html).not.toContain("2026-08-14");
+  });
+
+  it("전부 같은 날에 앉았을 때만 날짜와 개수를 말한다", () => {
+    const html = render({ feedback: appliedWith(proposalWith({
+      scheduledDate: "2026-08-14", decision: "ready", reasons: [],
+    })) });
+    expect(html).toContain("2");
+    expect(html).toContain("2026-08-14");
+    expect(html).not.toContain("ai.appliedDayPartial");
+  });
+
+  /** 불가 문구도 같은 폴백을 쓰고 있었다 */
+  it("통 이동이 불가하면 한 곳처럼 말하지 않는다", () => {
+    const html = render({ feedback: appliedWith(proposalWith({ decision: "impossible" })) });
+    expect(html).toContain("ai.impossibleDay");
   });
 });
