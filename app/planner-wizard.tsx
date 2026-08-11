@@ -1474,7 +1474,9 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
         </div>
       </header>
 
-      {!showFinalItinerary && <nav className="grid grid-cols-3 border-b bg-sc-subtle text-center text-sm">
+      {/* 단계 nav와 아래 선택 요약이 이 화면에서 제일 작았는데, 둘이야말로 여정의 축이다.
+          3단계 제목 줄을 걷어 확보한 44px을 여기에 돌려준다 (#146) */}
+      {!showFinalItinerary && <nav className="grid grid-cols-3 border-b bg-sc-subtle text-center text-base">
         {/* 단계 표시가 곧 이동 수단이다 (#146). 시트에서 `이전`을 걷어낸 뒤로
             여기가 앞 단계로 돌아가는 유일한 길이라 `div`로 둘 수 없다.
             **아직 못 간 단계는 누를 수 없다** — 조건을 건너뛰고 결과로 갈 수 없다 */}
@@ -1489,13 +1491,13 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
               disabled={!reachable}
               aria-current={current ? "step" : undefined}
               onClick={() => setStep(target)}
-              className={`flex min-h-[52px] items-center justify-center gap-2 border-r px-1 last:border-r-0 ${
+              className={`flex min-h-[62px] items-center justify-center gap-2 border-r px-1 last:border-r-0 ${
                 current ? "bg-sc-blue-soft font-medium text-sc-blue" : "text-sc-muted"
               } ${reachable && !current ? "hover:bg-sc-blue-soft/50 hover:text-sc-blue" : ""} ${
                 reachable ? "" : "cursor-default opacity-60"
               }`}
             >
-              <span aria-hidden className="grid h-6 w-6 shrink-0 place-items-center rounded-full border border-current text-xs">{target}</span>
+              <span aria-hidden className="grid h-7 w-7 shrink-0 place-items-center rounded-full border border-current text-sm">{target}</span>
               <span className="truncate">{tr(key)}</span>
             </button>
           );
@@ -1793,47 +1795,16 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
 
       {!showFinalItinerary && step === 3 && (candidateData || view.reopened) && (
         <section>
-          {/* 제목은 한 단어, 설명은 팝오버 (#146). 두 줄짜리 안내가 상단을 먹으면
-              그만큼 지도가 줄어드는데 지도가 이 화면의 핵심이다. #61의 접근시간 고지도
-              여기 들어간다 — 없애는 게 아니라 자리를 옮기는 것이다 */}
-          <div className="flex flex-wrap items-center gap-2">
-            <h2 className="text-lg font-semibold">{tr("step3.title")}</h2>
-            <button
-              type="button"
-              popoverTarget="step3-guide-popover"
-              aria-haspopup="dialog"
-              aria-controls="step3-guide-popover"
-              aria-label={tr("step3.guideOpen")}
-              className="flex size-8 items-center justify-center rounded-full border text-sc-muted hover:border-sc-blue hover:text-sc-blue"
-            >
-              <Info aria-hidden="true" className="size-4" />
-            </button>
-          </div>
-          <div
-            id="step3-guide-popover"
-            popover="auto"
-            role="dialog"
-            aria-labelledby="step3-guide-title"
-            className="m-auto w-[min(400px,calc(100vw-32px))] rounded-xl border bg-sc-surface p-4 text-left shadow-2xl backdrop:bg-black/20"
-          >
-            <div className="flex items-start justify-between gap-3">
-              <h4 id="step3-guide-title" className="text-sm font-semibold text-sc-text">
-                {tr("step3.guideTitle")}
-              </h4>
-              <button
-                type="button"
-                popoverTarget="step3-guide-popover"
-                popoverTargetAction="hide"
-                aria-label={tr("common.close")}
-                className="grid size-8 shrink-0 place-items-center rounded-full border text-sc-muted hover:border-sc-blue hover:text-sc-blue"
-              >
-                <X aria-hidden="true" className="size-4" />
-              </button>
-            </div>
-            <p className="mt-2 text-xs text-sc-muted">{tr("step3.guideBody")}</p>
-            {/* #61 — 접근시간이 대중교통으로 읽히지 않도록 고지한다 */}
-            <p className="mt-2 border-t pt-2 text-xs text-sc-muted">{tr("access.notice")}</p>
-          </div>
+          {/*
+            상단 제목 줄을 통째로 걷었다 (#146).
+
+            `추천일정` 한 단어와 (i)가 한 줄(44px)을 쓰고 있었는데, nav가 바로 위에서
+            `추천일정`이라고 이미 말한다. 같은 말을 두 줄로 하는 대신 그 44px을
+            nav와 선택 요약 글자 크기에 돌려준다 - 둘이 이 화면에서 제일 작았다.
+
+            여기 있던 안내는 우측 rail의 (i) 팝오버로 합쳤다. 화면이 하나이므로
+            안내도 한 곳이면 된다.
+          */}
 
           {/* #85 — 좌: 후보 선택 / 우: 계산 결과. 왕복 없이 같은 화면에서 판단한다 */}
           <div className="mt-3 grid gap-[18px] lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
@@ -2048,9 +2019,14 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
                   <X aria-hidden="true" className="size-4" />
                 </button>
               </div>
+              {/* 상단 제목 줄에 있던 안내를 여기로 합쳤다 (#146) — 화면이 하나이므로
+                  안내도 한 곳이면 된다 */}
+              <p className="mt-2 text-xs text-sc-muted">{tr("step3.guideBody")}</p>
               <p className="mt-2 text-xs text-sc-muted">{tr("step4.subtitle")}</p>
               {/* 목록 위에 있던 고지 (#146 모바일) */}
               <p className="mt-2 text-xs text-sc-muted">{tr("step4.estimatedNote")}</p>
+              {/* #61 — 접근시간이 대중교통으로 읽히지 않도록 고지한다 */}
+              <p className="mt-2 text-xs text-sc-muted">{tr("access.notice")}</p>
               <p className="mt-2 border-t pt-2 text-xs text-sc-muted">
                 <strong className="font-medium text-sc-text">{tr("step4.dataNoticeTitle")}</strong>{" "}
                 {tr("step4.dataNotice")}

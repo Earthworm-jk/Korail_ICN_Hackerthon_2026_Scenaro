@@ -9,8 +9,10 @@
     display: flex !important;
     align-items: center !important;
     gap: 16px !important;
-    min-height: 58px;
-    padding: 8px 14px !important;
+    /* 3단계 제목 줄을 걷어 확보한 44px을 여기에 돌려준다 (#146) — 선택 요약은
+       여정의 축인데 이 화면에서 제일 작았다 */
+    min-height: 70px;
+    padding: 10px 14px !important;
     border-right: 0 !important;
     border-bottom: 1px solid var(--sc-line) !important;
     background: rgba(248, 250, 252, .94) !important;
@@ -48,12 +50,12 @@
   }
 
   body > main div.grid:has(> aside[aria-label]):has(#place-picker) > aside[aria-label] span[class*="text-xs"] {
-    font-size: 10px !important;
+    font-size: 13px !important;
   }
 
   body > main div.grid:has(> aside[aria-label]):has(#place-picker) > aside[aria-label] strong {
     overflow: hidden;
-    font-size: 12px !important;
+    font-size: 16px !important;
     line-height: 1.35 !important;
     text-overflow: ellipsis;
   }
@@ -215,7 +217,9 @@
      heading / description / itinerary / warnings / actions. The left rail and map span
      those rows while their own contents scroll. */
   html body main section > div.grid:has(> div#place-picker[data-place-sheet]) {
-    height: clamp(372px, calc(100dvh - 384px), 640px);
+    /* 384 -> 362: 제목 줄 44px이 사라지고 nav·요약이 22px 커졌다. 남은 22px은
+       지도에 돌려준다 (#146) */
+    height: clamp(372px, calc(100dvh - 362px), 640px);
     min-height: 0 !important;
     grid-template-rows: auto auto minmax(0, 1fr) auto auto;
     align-items: stretch !important;
@@ -332,12 +336,12 @@
   }
 
   body > main div.grid:has(> aside[aria-label]):has(#place-picker) > aside[aria-label] > div:first-child h3,
-  body > main div.grid:has(> aside[aria-label]):has(#place-picker) > aside[aria-label] span[class*="text-xs"],
+  /* 넓은 화면에서 다시 줄이던 규칙은 걷었다 (#146) — 좁은 쪽에서 키운 것이
+     넓은 쪽에서 도로 작아지면 태블릿보다 데스크톱이 더 안 보인다 */
   #stage-utility-dock details > summary span[class*="text-xs"] {
     font-size: 0.75rem !important;
   }
 
-  body > main div.grid:has(> aside[aria-label]):has(#place-picker) > aside[aria-label] strong,
   #stage-utility-dock details > summary strong {
     font-size: 0.875rem !important;
   }
