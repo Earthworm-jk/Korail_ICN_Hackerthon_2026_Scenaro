@@ -7,6 +7,7 @@
  */
 import { useCallback, useEffect, useId, useMemo, useReducer, useRef, useState, useTransition } from "react";
 import { BusFront, Hourglass, Info, Sparkles, TrainFront, TriangleAlert, X } from "lucide-react";
+import { PlaceOrderMenu } from "./place-order-menu";
 import { StageUtilityPortal } from "./stage-utility-portal";
 import {
   searchEntities,
@@ -2349,6 +2350,19 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
                                 들어가므로 조작 방법에 따라 결과가 갈리지 않는다 */}
                             <span className="mt-auto flex items-center justify-between gap-2 pt-1 text-xs text-sc-muted" data-row-meta>
                               <span className="min-w-0 truncate">{accessLabel(item.accessMinutes)}</span>
+                              <span className="flex shrink-0 items-center gap-1">
+                              {/* 드래그를 못 쓰는 경로(터치·키보드)를 위한 순서 진입점 (#145).
+                                  드래그와 같은 `submitVisitOrderEdit`으로 들어간다 */}
+                              <PlaceOrderMenu
+                                placeId={item.placeId}
+                                targets={day.items
+                                  .map(({ placeId }) => placeId)
+                                  .filter((id) => id !== item.placeId)}
+                                disabled={!visitDateEditable}
+                                placeName={placeName}
+                                onMoveBefore={(targetId) => submitVisitOrderEdit(item.placeId, targetId)}
+                                tr={tr}
+                              />
                               <DayMoveMenu
                                 date={item.placeId}
                                 scope="place"
@@ -2359,6 +2373,7 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
                                 onMove={(targetDate) => submitVisitDateEdit(item.placeId, targetDate)}
                                 tr={tr}
                               />
+                              </span>
                             </span>
                           </li>
                         );

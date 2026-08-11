@@ -196,38 +196,70 @@ export function proposalForOrder(
   before: ItineraryResult,
   after: ItineraryResult,
 ): CommandProposal {
-  const outcome = after.status === "planned"
-    ? (after.preferredOrderOutcomes ?? []).find(
-      (row) => row.firstPlaceId === firstPlaceId && row.secondPlaceId === secondPlaceId,
-    )?.outcome
-    : undefined;
+  const base = {
+    kind: "order" as const,
+    placeId: firstPlaceId,
+    placeIds: [firstPlaceId],
+    requestedDate: "",
+    orderPair: [firstPlaceId, secondPlaceId] as const,
+  };
 
   /*
-   * 부작용(밀려난 장소·이동시간·환승·여유)은 날짜 경로가 이미 계산하므로 그대로 쓴다.
-   * **다만 판정은 가져오지 않는다.** 날짜 경로는 "요청한 날짜에 앉았는가"로 가르는데
-   * 순서 요청에는 요청 날짜가 없다 - 실제로 그 축이 새어 나와, 그냥 순서를 바꿨을 뿐인데
-   * `현재 조건에서는 넣을 수 없습니다`가 떴다.
+   * **부작용을 날짜 경로에서 빌려 오지 않는다** (PR #170 리뷰).
+   *
+   * `proposalForPlaces`는 `preferredDateOutcomes`로 배치 여부를 가른다. 순서 요청은
+   * `preferredVisitDates`를 넣지 않으므로 그 배열이 비고, 함수가 곧장 `impossible()`로
+   * 빠져 **`displaced`·`moved`·`impact`가 전부 빈 값으로 돌아온다.** 그 위에서 판정만
+   * 다시 계산하면 사유가 없어 `ready`가 되고, 선택한 장소가 빠져도 확인 없이 적용된다.
+   *
+   * 그래서 순서 축으로 직접 센다. 판정 규칙은 날짜 쪽과 같다 - 요청 밖에서 나빠진 것이
+   * 하나라도 있으면 확인을 받는다.
    */
+  if (after.status !== "planned") {
+    return { ...base, decision: "impossible", reasons: [], displaced: [], moved: [],
+      rejection: rejectionOf(after, firstPlaceId) };
+  }
+
   const scheduledDate = dateOfPlaceIn(after, firstPlaceId);
-  const base = proposalForPlaces([firstPlaceId], scheduledDate ?? "", before, after);
-  const reasons = base.reasons.filter((reason) => reason !== "date_adjusted");
-  if (outcome === "adjusted") reasons.push("order_adjusted");
+  if (scheduledDate === undefined) {
+    return { ...base, decision: "impossible", reasons: [], displaced: [], moved: [],
+      rejection: rejectionOf(after, firstPlaceId) };
+  }
 
-  /*
-   * 순서에서 `impossible`은 **그 장소가 일정에서 아예 빠졌을 때만**이다. 순서를 못 지킨
-   * 것은 실패가 아니라 조정이다 - 소프트 선호라 순위만 밀리고 일정은 그대로 나온다(#145 2절).
-   */
-  const decision = scheduledDate === undefined
-    ? "impossible"
-    : reasons.length > 0 ? "needs_confirmation" : "ready";
+  // 요청 대상 자신의 이동은 의도한 것이라 요청 밖 변화에서 뺀다
+  const targets = new Set([firstPlaceId, secondPlaceId]);
+  const diff = diffItineraries(before, after).places;
+  const displaced = diff.dropped.filter((entry) => !targets.has(entry.placeId));
+  const moved = diff.moved.filter((entry) => !targets.has(entry.placeId));
+  const impact = impactOf(before, after);
+
+  const outcome = (after.preferredOrderOutcomes ?? []).find(
+    (row) => row.firstPlaceId === firstPlaceId && row.secondPlaceId === secondPlaceId,
+  )?.outcome;
+
+  const reasons: ProposalReason[] = [];
+  // 순서를 못 지킨 것은 실패가 아니라 조정이다 — 소프트 선호라 일정은 그대로 나온다
+  if (outcome === "adjusted") reasons.push("order_adjusted");
+  if (displaced.length > 0) reasons.push("places_displaced");
+  if (moved.length > 0) reasons.push("places_moved");
+  if (impact) {
+    if (isLargeTravelIncrease(impact.travelMinutesDelta, before)) {
+      reasons.push("travel_time_increased");
+    }
+    if (impact.transferCountDelta > 0) reasons.push("transfers_increased");
+    if (impact.departureSlackMinutesDelta <= -SLACK_DROP_MINUTES) {
+      reasons.push("departure_slack_reduced");
+    }
+  }
 
   return {
     ...base,
-    kind: "order",
-    decision,
-    ...(scheduledDate ? { scheduledDate } : {}),
-    reasons: decision === "impossible" ? [] : reasons,
-    orderPair: [firstPlaceId, secondPlaceId],
+    decision: reasons.length > 0 ? "needs_confirmation" : "ready",
+    scheduledDate,
+    reasons,
+    displaced,
+    moved,
+    ...(impact ? { impact } : {}),
     ...(outcome ? { orderOutcome: outcome } : {}),
   };
 }
