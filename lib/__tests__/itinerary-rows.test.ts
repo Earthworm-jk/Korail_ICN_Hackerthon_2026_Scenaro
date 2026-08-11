@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { itineraryRowsOf, rowKey, stationIdsOf } from "../itinerary-rows";
-import type { DayPlan } from "../engine/types";
+import { allStationIdsOf, itineraryRowsOf, rowKey, stationIdsOf } from "../itinerary-rows";
+import type { DayPlan, GatewayRide, RegionWindow } from "../engine/types";
 
 /** #146 2절 — 하루를 시각순 줄로 펼친다 */
 
@@ -68,5 +68,68 @@ describe("#146 시각순 줄", () => {
       rides: [ride("T1", "01:00", "sB", "sA"), ride("T2", "02:00", "sA", "sC")],
     }));
     expect(ids).toEqual(["sA", "sB", "sC"]);
+  });
+});
+
+describe("#155 리뷰 1 — 그 날 거치는 역", () => {
+  const gateway = (from: string, to: string): GatewayRide => ({
+    id: `g-${from}-${to}`,
+    routeId: "r-1",
+    direction: "outbound",
+    mode: "airport_bus",
+    scheduleKind: "observed_snapshot",
+    fromStationId: from,
+    toStationId: to,
+    fromName: { ko: from, en: from },
+    toName: { ko: to, en: to },
+    serviceName: { ko: "공항버스", en: "Airport bus" },
+    operator: { ko: "운영사", en: "Operator" },
+    departAt: "2026-08-12T09:00:00.000Z",
+    arriveAt: "2026-08-12T10:00:00.000Z",
+    sourceUrls: ["https://example.test"],
+    verifiedAt: "2026-08-01",
+    recheckRequired: true,
+  });
+  const window = (stationId: string): RegionWindow => ({
+    stationId,
+    regionId: `rg-${stationId}`,
+    startAt: "2026-08-12T12:00:00.000Z",
+    endAt: "2026-08-12T14:00:00.000Z",
+    availableMinutes: 120,
+    startBoundary: "TRAIN_ARRIVAL",
+    endBoundary: "DAY_END",
+  });
+
+  it("열차 출도착역을 모은다", () => {
+    expect(stationIdsOf(day({ rides: [ride("T1", "01:00")] }))).toEqual(["s1", "s2"]);
+  });
+
+  /**
+   * 열차만 보면 **공항버스로만 진입하는 날의 관문역이 통째로 빠진다.**
+   * 그 날 짐을 맡길 곳을 묻는 화면에서 정작 그 역이 없어진다.
+   */
+  it("열차가 없어도 공항 진입 구간의 역을 포함한다", () => {
+    const d = day({ rides: [], gatewayLegs: [gateway("ST-AIRPORT", "ST-SEOUL")] });
+    expect(stationIdsOf(d)).toEqual(["ST-AIRPORT", "ST-SEOUL"]);
+  });
+
+  /** 자정 분할로 그 날 탑승은 없지만 권역 체류 창만 이어지는 날이 있다 */
+  it("체류 창만 있는 날에도 그 역을 포함한다", () => {
+    expect(stationIdsOf(day({ rides: [], regionWindows: [window("ST-GANG")] }))).toEqual(["ST-GANG"]);
+  });
+
+  it("셋이 겹쳐도 한 번만 세고 순서는 결정적이다", () => {
+    const d = day({
+      rides: [ride("T1", "01:00")],
+      gatewayLegs: [gateway("s2", "ST-AIRPORT")],
+      regionWindows: [window("s1")],
+    });
+    expect(stationIdsOf(d)).toEqual(["s1", "s2", "ST-AIRPORT"]);
+  });
+
+  it("일정 전체 합집합은 날짜별 기준을 그대로 합친다", () => {
+    const first = day({ date: "2026-08-12", rides: [ride("T1", "01:00")] });
+    const second = day({ date: "2026-08-13", rides: [], regionWindows: [window("ST-GANG")] });
+    expect(allStationIdsOf([first, second])).toEqual(["s1", "s2", "ST-GANG"]);
   });
 });

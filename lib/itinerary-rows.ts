@@ -53,12 +53,34 @@ export function rowKey(row: ItineraryRow): string {
   return `gateway:${row.leg.id}`;
 }
 
-/** 그 날 거치는 역 — DAY 헤더의 역 시설 팝오버 대상 */
+/**
+ * 그 날 거치는 역 — 역 시설 표시의 단일 기준 (PR #155 리뷰 1)
+ *
+ * **열차만 보면 안 된다.** 공항버스로만 진입하는 날에는 도착 관문역이 빠지고,
+ * 자정 분할로 열차 탑승 없이 권역 체류 창만 이어지는 날에는 그 역이 통째로 사라진다.
+ * 셋을 모두 합쳐야 "이 날 내가 있게 되는 역"이 된다.
+ *
+ * DAY 헤더와 실행 지원 패널이 **같은 함수를 본다.** 따로 계산하면 한쪽만 고쳐져
+ * 같은 날에 대해 두 화면이 다른 역을 말하게 된다.
+ */
 export function stationIdsOf(day: DayPlan): string[] {
   const ids = new Set<string>();
   for (const ride of day.rides) {
     ids.add(ride.fromStationId);
     ids.add(ride.toStationId);
   }
+  for (const leg of day.gatewayLegs ?? []) {
+    ids.add(leg.fromStationId);
+    ids.add(leg.toStationId);
+  }
+  for (const window of day.regionWindows) {
+    ids.add(window.stationId);
+  }
+  return [...ids].sort((a, b) => a.localeCompare(b, "en"));
+}
+
+/** 일정 전체에서 거치는 역 — 실행 지원 패널용, 날짜별 기준을 그대로 합친다 */
+export function allStationIdsOf(days: DayPlan[]): string[] {
+  const ids = new Set(days.flatMap(stationIdsOf));
   return [...ids].sort((a, b) => a.localeCompare(b, "en"));
 }

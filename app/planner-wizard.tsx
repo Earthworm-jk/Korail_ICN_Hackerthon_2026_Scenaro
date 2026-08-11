@@ -84,7 +84,7 @@ import {
 import { ItineraryRouteMap, KoreaMapPanel, type MapPlace, type MapStation } from "./korea-map";
 import { PlaceRecommendationSheet, PlaceThumbnail } from "./place-recommendation-sheet";
 import sheetStyles from "./place-recommendation-sheet.module.css";
-import { itineraryRowsOf, rowKey, stationIdsOf } from "@/lib/itinerary-rows";
+import { allStationIdsOf, itineraryRowsOf, rowKey, stationIdsOf } from "@/lib/itinerary-rows";
 import { MoveRow } from "./move-row";
 import { ThemeExperienceCard, ThemeExperienceMapOverlay } from "./theme-experience";
 import { TrainLegModal, legDurationLabel, type TrainLegDetail } from "./train-leg-modal";
@@ -2084,11 +2084,7 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
               {/* #24 A5 — 역 시설·짐 보관: 일정에 등장하는 역만, 스냅샷 수록분만 안내 */}
               <ExecutionSupport
                 snapshot={stationFacilities}
-                stationIds={[...new Set(displayedDays.flatMap((day) => [
-                  ...day.rides.flatMap((ride) => [ride.fromStationId, ride.toStationId]),
-                  ...(day.gatewayLegs ?? []).flatMap((leg) => [leg.fromStationId, leg.toStationId]),
-                  ...day.regionWindows.map((window) => window.stationId),
-                ]))]}
+                stationIds={allStationIdsOf(displayedDays)}
                 stationName={stationName}
                 tr={tr}
               />
