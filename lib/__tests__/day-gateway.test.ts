@@ -93,3 +93,40 @@ describe("PR #159 리뷰 — 언어와 방향", () => {
     expect(render([bus], "ko")).toContain("공항버스 6001");
   });
 });
+
+describe("PR #163 리뷰 — 선택기 개수", () => {
+  const bus = {
+    id: "bus-1",
+    serviceName: { ko: "공항버스 6001", en: "Airport bus 6001" },
+    effects: { localUseDeltaMinutes: -352 },
+  } as unknown as Parameters<typeof DayGatewayInfo>[0]["alternatives"][number];
+
+  const withAlt = (legs: AirportLeg[], selectedId: string | null = null) =>
+    renderToStaticMarkup(createElement(DayGatewayInfo, {
+      legs, alternatives: [bus], selectedId, onSelect: () => {},
+      stationName: (id: string) => `${id}역`, date: "2026-08-12", locale: "ko" as const,
+      formatTime: (iso: string) => iso.slice(11, 16), tr,
+    }));
+
+  /**
+   * 조회와 선택을 갈라 두면 아이콘에서 `서울역 경유`를 보고 눌렀다가 못 바꾸고
+   * 바꿀 곳을 따로 찾게 된다. 그래서 한 아이콘 안에 둘 다 둔다.
+   */
+  it("공항 구간이 있는 날에는 선택기가 정확히 한 벌 뜬다", () => {
+    const html = withAlt([leg()]);
+    const rail = html.split("gateway.railTitle").length - 1;
+    const buses = html.split("공항버스 6001").length - 1;
+    expect(rail).toBe(1);
+    expect(buses).toBe(1);
+  });
+
+  /** 구간이 없는 날에는 아이콘 자체가 없으므로 선택기도 없다 */
+  it("공항 구간이 없는 날에는 선택기가 없다", () => {
+    expect(withAlt([])).toBe("");
+  });
+
+  it("현재 선택을 aria-pressed로 알린다", () => {
+    expect(withAlt([leg()], null)).toContain('aria-pressed="true"');
+    expect(withAlt([leg()], "bus-1")).toContain('aria-pressed="true"');
+  });
+});
