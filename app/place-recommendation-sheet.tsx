@@ -16,6 +16,7 @@ export function PlaceRecommendationSheet({
   unplacedCount,
   themeState,
   themeChip,
+  gatewayChip,
   updating,
   updated,
   sortBy,
@@ -46,6 +47,8 @@ export function PlaceRecommendationSheet({
    * 데이터가 필요한데, 그건 시트가 아니라 호출부가 갖고 있다.
    */
   themeChip?: ReactNode;
+  /** 공항 진입 선택 — 여행 전체 단위라 분류 칩과 같은 줄에 선다 (#146) */
+  gatewayChip?: ReactNode;
   updating: boolean;
   updated: boolean;
   sortBy: "relevance" | "official";
@@ -124,6 +127,7 @@ export function PlaceRecommendationSheet({
                 {tr(themeState === "available" ? "step3.chipThemeAvailable" : "step3.chipThemeNone")}
               </span>
             ))}
+            {gatewayChip}
           </div>
         </div>
         <label className={styles.sortControl}>

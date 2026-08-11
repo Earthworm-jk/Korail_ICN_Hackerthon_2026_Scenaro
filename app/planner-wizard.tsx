@@ -1655,6 +1655,15 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
             placedCount={selectionStateShown ? selectionCapacity!.schedulableCount : null}
             unplacedCount={selectionStateShown ? selectionCapacity!.minimumExclusionCount : null}
             themeState={themeChipState(themeExperience)}
+            gatewayChip={view.result?.status === "planned" && !view.reopened ? (
+              <GatewayAlternatives
+                alternatives={view.result.gatewayAlternatives ?? []}
+                selectedId={view.selectedAlt?.kind === "gateway_bus" ? view.selectedAlt.id : null}
+                locale={locale}
+                onSelect={chooseAlternative}
+                tr={tr}
+              />
+            ) : null}
             themeChip={(
               <ThemeExperienceChip
                 result={themeExperience}
@@ -1933,16 +1942,7 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
           {displayedDays && (
             // 갱신 중에는 살짝 흐리게 — 지금 보이는 게 직전 결과라는 걸 알 수 있어야 한다
             <div className={`mt-4 space-y-4 ${updating ? "opacity-60 transition-opacity" : ""}`}>
-              {!view.reopened && view.result?.status === "planned" && (
-                <GatewayAlternatives
-                  alternatives={view.result.gatewayAlternatives ?? []}
-                  selectedId={view.selectedAlt?.kind === "gateway_bus" ? view.selectedAlt.id : null}
-                  locale={locale}
-                  onSelect={chooseAlternative}
-                  tr={tr}
-                />
-              )}
-              {/* #14 v0.6 sc-result-grid — 좌측 일정 타임라인 + 우측 지도·경고·실행 지원 */}
+                            {/* #14 v0.6 sc-result-grid — 좌측 일정 타임라인 + 우측 지도·경고·실행 지원 */}
               <div className="grid gap-[18px] md:grid-cols-[minmax(0,1fr)_minmax(360px,1fr)] md:items-start">
                 <div className="min-w-0 space-y-4">
               {/* 장소 단위 시각을 카드에 적는 이상, 그게 예약 확정 시각이 아니라는 것을
