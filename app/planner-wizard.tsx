@@ -1491,8 +1491,45 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
 
       {step === 1 && (
         <section>
-          <h2 className="text-lg font-semibold">{tr("step1.title")}</h2>
-          <p className="text-sm text-sc-muted">{tr("step1.subtitle")}</p>
+          {/* 제목은 한 단어, 설명은 (i) 팝오버 (#146). 세 단계가 nav와 같은 말을
+              쓰게 되어 사용자가 지금 어디 있는지 두 곳에서 같은 단어로 확인한다 */}
+          <div className="flex flex-wrap items-center gap-2">
+            <h2 className="text-lg font-semibold">{tr("step1.title")}</h2>
+            <button
+              type="button"
+              popoverTarget="step1-guide-popover"
+              aria-haspopup="dialog"
+              aria-controls="step1-guide-popover"
+              aria-label={tr("step1.guideOpen")}
+              className="flex size-8 items-center justify-center rounded-full border text-sc-muted hover:border-sc-blue hover:text-sc-blue"
+            >
+              <Info aria-hidden="true" className="size-4" />
+            </button>
+          </div>
+          <div
+            id="step1-guide-popover"
+            popover="auto"
+            role="dialog"
+            aria-labelledby="step1-guide-popover-title"
+            className="m-auto w-[min(400px,calc(100vw-32px))] rounded-xl border bg-sc-surface p-4 text-left shadow-2xl backdrop:bg-black/20"
+          >
+            <div className="flex items-start justify-between gap-3">
+              <h4 id="step1-guide-popover-title" className="text-sm font-semibold text-sc-text">
+                {tr("step1.guideTitle")}
+              </h4>
+              <button
+                type="button"
+                popoverTarget="step1-guide-popover"
+                popoverTargetAction="hide"
+                aria-label={tr("common.close")}
+                className="grid size-8 shrink-0 place-items-center rounded-full border text-sc-muted hover:border-sc-blue hover:text-sc-blue"
+              >
+                <X aria-hidden="true" className="size-4" />
+              </button>
+            </div>
+            <p className="mt-2 text-xs text-sc-muted">{tr("step1.guideBody")}</p>
+            <p className="mt-2 border-t pt-2 text-xs text-sc-muted">{tr("step1.subtitle")}</p>
+          </div>
           <div className="mt-4 grid gap-4 sm:grid-cols-2">
             {([
               ["arrival", arrival, setArrival] as const,
@@ -1579,8 +1616,45 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
 
       {step === 2 && (
         <section>
-          <h2 className="text-lg font-semibold">{tr("step2.title")}</h2>
-          <p className="text-sm text-sc-muted">{tr("step2.subtitle")}</p>
+          {/* 제목은 한 단어, 설명은 (i) 팝오버 (#146). 세 단계가 nav와 같은 말을
+              쓰게 되어 사용자가 지금 어디 있는지 두 곳에서 같은 단어로 확인한다 */}
+          <div className="flex flex-wrap items-center gap-2">
+            <h2 className="text-lg font-semibold">{tr("step2.title")}</h2>
+            <button
+              type="button"
+              popoverTarget="step2-guide-popover"
+              aria-haspopup="dialog"
+              aria-controls="step2-guide-popover"
+              aria-label={tr("step2.guideOpen")}
+              className="flex size-8 items-center justify-center rounded-full border text-sc-muted hover:border-sc-blue hover:text-sc-blue"
+            >
+              <Info aria-hidden="true" className="size-4" />
+            </button>
+          </div>
+          <div
+            id="step2-guide-popover"
+            popover="auto"
+            role="dialog"
+            aria-labelledby="step2-guide-popover-title"
+            className="m-auto w-[min(400px,calc(100vw-32px))] rounded-xl border bg-sc-surface p-4 text-left shadow-2xl backdrop:bg-black/20"
+          >
+            <div className="flex items-start justify-between gap-3">
+              <h4 id="step2-guide-popover-title" className="text-sm font-semibold text-sc-text">
+                {tr("step2.guideTitle")}
+              </h4>
+              <button
+                type="button"
+                popoverTarget="step2-guide-popover"
+                popoverTargetAction="hide"
+                aria-label={tr("common.close")}
+                className="grid size-8 shrink-0 place-items-center rounded-full border text-sc-muted hover:border-sc-blue hover:text-sc-blue"
+              >
+                <X aria-hidden="true" className="size-4" />
+              </button>
+            </div>
+            <p className="mt-2 text-xs text-sc-muted">{tr("step2.guideBody")}</p>
+            <p className="mt-2 border-t pt-2 text-xs text-sc-muted">{tr("step2.subtitle")}</p>
+          </div>
           <input
             className="mt-4 w-full rounded border px-3 py-2"
             placeholder={tr("step2.placeholder")}
