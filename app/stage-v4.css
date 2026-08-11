@@ -113,15 +113,21 @@
     display: none !important;
   }
 
+  /**
+   * 추천 시트가 바닥 독 자리를 쓰므로 (#146) 이 독은 **그 위에 쌓인다.**
+   *
+   * 둘 다 `bottom: 12px`이던 동안 재계산 요약이 들어오면 시트를 562x58만큼 덮었다 -
+   * 같은 z-index라 나중에 그려지는 쪽이 이겼다. `--sc-dock-h`는 컨트롤러가 시트
+   * 높이로 채우므로 그만큼 띄우면 겹치지 않는다.
+   */
   #stage-utility-dock {
     position: fixed;
     left: 33px;
-    bottom: 12px;
-    z-index: 60;
+    right: 33px;
+    bottom: calc(var(--sc-dock-h, 0px) + 20px);
+    z-index: 59;
     display: grid;
-    /* Keep every utility on the map side. The right result rail contains the
-       primary final-itinerary CTA and must never sit underneath this dock. */
-    width: calc(100vw - 462px);
+    width: auto;
     grid-auto-flow: column;
     grid-auto-columns: minmax(0, 1fr);
     gap: 7px;
@@ -313,7 +319,10 @@
 }
 
 @media (min-width: 1440px) {
+  /* 넓은 화면에서는 폭을 묶되 시트와 왼쪽을 맞춘다 — `width`만 주면 `right: 33px`와
+     싸워 오른쪽으로 끌려간다 (#146) */
   #stage-utility-dock {
+    right: auto;
     width: min(840px, calc(100vw - 44px));
   }
 }
