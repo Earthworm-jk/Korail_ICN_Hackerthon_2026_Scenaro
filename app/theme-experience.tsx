@@ -3,11 +3,11 @@
  * 테마체험 권역 카드 (#80 · #14 v0.6 계약)
  */
 import { Sparkles } from "lucide-react";
+import { useRef } from "react";
 import { project } from "@/lib/korea-map-projection";
 import { useMapOverlayEntry, useMapView } from "./korea-map";
 import type { ThemeExperienceResult } from "@/lib/actions/theme-experience";
 import type { MessageKey } from "@/lib/i18n/messages";
-import { StageUtilityPortal } from "./stage-utility-portal";
 
 export function ThemeExperienceMapOverlay({ result, visible }: {
   result: ThemeExperienceResult | null;
@@ -37,7 +37,16 @@ export function ThemeExperienceMapOverlay({ result, visible }: {
   );
 }
 
-export function ThemeExperienceCard({ result, stationName, locale, tr, mapVisible, onToggleMap }: {
+/**
+ * 테마체험 칩 (#146 — 하단 독 제거)
+ *
+ * 독 카드는 시트 칩과 **같은 말을 두 번** 했다. `추천 없음`이 양쪽에 있었고, 독 쪽은
+ * 버튼도 없는 순수 정보였다. 칩 하나로 합치고 상세(권역·근거·지도 표시)는 눌렀을 때
+ * 팝오버로 준다.
+ *
+ * 추천이 없거나 확인 전이면 누를 것이 없으므로 칩은 글자로만 남는다.
+ */
+export function ThemeExperienceChip({ result, stationName, locale, tr, mapVisible, onToggleMap }: {
   result: ThemeExperienceResult | null;
   stationName: string | null;
   locale: "ko" | "en";
@@ -45,85 +54,61 @@ export function ThemeExperienceCard({ result, stationName, locale, tr, mapVisibl
   mapVisible: boolean;
   onToggleMap: () => void;
 }) {
-  if (!result) return null;
+  const popoverRef = useRef<HTMLDivElement>(null);
+  // 조회 전·스냅샷 부재는 아는 게 없다 — 아무 말도 하지 않는다
+  if (result === null || result.status === "unavailable") return null;
+
+  const label = tr(result.status === "ok" ? "step3.chipThemeAvailable" : "step3.chipThemeNone");
+  const chipClass = "rounded-full border px-2 py-0.5 text-sc-muted";
 
   if (result.status !== "ok") {
-    const statusKey = result.status === "none" ? "theme.statusNone" : "theme.statusUnavailable";
-    const shortStatusKey = result.status === "none" ? "theme.statusNoneShort" : "theme.statusUnavailableShort";
-
-    return (
-      <StageUtilityPortal>
-        <details data-stage-utility="theme" className="group rounded-lg border bg-sc-surface">
-          <span role="status" className="sr-only">{tr(statusKey)}</span>
-          <summary className="flex min-h-11 list-none items-center justify-between gap-3 px-3 py-2.5 marker:content-none">
-            <span className="min-w-0">
-              <strong className="flex items-center gap-1.5 text-sm font-medium">
-                <Sparkles aria-hidden="true" className="size-4 shrink-0" />
-                <span>{tr("theme.dockTitle")}</span>
-              </strong>
-              <span className="block text-xs text-sc-muted">{tr(shortStatusKey)}</span>
-            </span>
-            <span aria-hidden className="shrink-0 text-sc-muted transition-transform group-open:rotate-180">⌄</span>
-          </summary>
-          <div className="border-t px-3 pb-3 pt-2">
-            <p className="text-xs text-sc-muted">{tr(statusKey)}</p>
-          </div>
-        </details>
-      </StageUtilityPortal>
-    );
+    return <span className={chipClass} title={tr("theme.statusNone")}>{label}</span>;
   }
 
+  const popoverId = "theme-experience-detail";
   return (
-    <StageUtilityPortal>
-      <details data-stage-utility="theme" className="group rounded-lg border bg-sc-surface">
-        <summary className="flex min-h-11 list-none items-center justify-between gap-3 px-3 py-2.5 marker:content-none">
-          <span className="min-w-0">
-            <span className="flex items-center gap-2">
-              <strong className="flex items-center gap-1.5 text-sm font-medium">
-                <Sparkles aria-hidden="true" className="size-4 shrink-0" />
-                <span>{tr("theme.dockTitle")}</span>
-              </strong>
-            </span>
-            <span className="block text-xs text-sc-muted">{tr("theme.statusAvailableShort")}</span>
-          </span>
-          <span aria-hidden className="shrink-0 text-sc-muted transition-transform group-open:rotate-180">⌄</span>
-        </summary>
-
-        <div className="border-t px-3 pb-3 pt-2">
-          <div className="flex flex-wrap items-center gap-2">
-            <strong className="text-sm font-medium">{result.theme[locale]}</strong>
-            <span className="rounded-full bg-sc-blue-soft px-2 py-0.5 text-[11px] text-sc-blue">
-              {tr("theme.badge")}
-            </span>
-          </div>
-          <p className="mt-0.5 text-xs text-sc-muted">{result.zoneName[locale]}</p>
-          <p className="mt-2 text-xs text-sc-text/80">{result.reason[locale]}</p>
-
-          <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-sc-muted">
-            {stationName && (
-              <span>
-                {tr("theme.routeBefore")}
-                {stationName}
-                {tr("theme.routeAfter")}
-              </span>
-            )}
-            <span>{tr("theme.policy")}</span>
-          </div>
-
-          {result.point && (
-            <button
-              type="button"
-              aria-pressed={mapVisible}
-              onClick={onToggleMap}
-              className="mt-2 rounded border px-2.5 py-1 text-xs text-sc-muted hover:border-sc-blue hover:text-sc-blue"
-            >
-              {tr(mapVisible ? "theme.hideOnMap" : "theme.showOnMap")}
-            </button>
+    <>
+      <button
+        type="button"
+        popoverTarget={popoverId}
+        aria-haspopup="dialog"
+        aria-controls={popoverId}
+        className={`${chipClass} hover:border-sc-blue hover:text-sc-blue`}
+      >
+        {label}
+      </button>
+      <div
+        ref={popoverRef}
+        id={popoverId}
+        popover="auto"
+        role="dialog"
+        aria-labelledby="theme-experience-detail-title"
+        className="m-auto w-[min(320px,calc(100vw-32px))] rounded-xl border bg-sc-surface p-3 text-left shadow-2xl backdrop:bg-black/20"
+      >
+        <p id="theme-experience-detail-title" className="flex items-center gap-1.5 text-sm font-semibold">
+          <Sparkles aria-hidden="true" className="size-4 shrink-0" />
+          {result.theme[locale]}
+        </p>
+        <p className="mt-0.5 text-xs text-sc-muted">{result.zoneName[locale]}</p>
+        <p className="mt-2 text-xs text-sc-text/80">{result.reason[locale]}</p>
+        <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-sc-muted">
+          {stationName && (
+            <span>{tr("theme.routeBefore")}{stationName}{tr("theme.routeAfter")}</span>
           )}
-
-          <p className="mt-2 text-[11px] text-sc-muted/70">{tr("theme.notice")}</p>
+          <span>{tr("theme.policy")}</span>
         </div>
-      </details>
-    </StageUtilityPortal>
+        {result.point && (
+          <button
+            type="button"
+            aria-pressed={mapVisible}
+            onClick={() => { popoverRef.current?.hidePopover(); onToggleMap(); }}
+            className="mt-2 min-h-10 rounded-lg border px-3 text-xs text-sc-muted hover:border-sc-blue hover:text-sc-blue"
+          >
+            {tr(mapVisible ? "theme.hideOnMap" : "theme.showOnMap")}
+          </button>
+        )}
+        <p className="mt-2 text-[11px] text-sc-muted/70">{tr("theme.notice")}</p>
+      </div>
+    </>
   );
 }

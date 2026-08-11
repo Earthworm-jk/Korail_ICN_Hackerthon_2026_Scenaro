@@ -15,6 +15,7 @@ export function PlaceRecommendationSheet({
   placedCount,
   unplacedCount,
   themeState,
+  themeChip,
   updating,
   updated,
   sortBy,
@@ -38,6 +39,13 @@ export function PlaceRecommendationSheet({
    * 모르는 것을 "추천 없음"이라고 하면 사용자가 없는 사실을 믿는다.
    */
   themeState: "available" | "none" | "unknown";
+  /**
+   * 테마체험 칩을 호출부가 직접 준다 (#146 — 하단 독 제거).
+   *
+   * 없으면 `themeState`로 글자만 만든다. 상세(권역·근거·지도 표시)까지 붙이려면
+   * 데이터가 필요한데, 그건 시트가 아니라 호출부가 갖고 있다.
+   */
+  themeChip?: ReactNode;
   updating: boolean;
   updated: boolean;
   sortBy: "relevance" | "official";
@@ -111,11 +119,11 @@ export function PlaceRecommendationSheet({
             <span className="rounded-full border border-sc-blue/30 px-2 py-0.5 text-sc-blue">
               {withValues(tr("step3.chipKCulture"), { n: String(selectedCount) })}
             </span>
-            {themeState !== "unknown" && (
+            {themeChip ?? (themeState !== "unknown" && (
               <span className="rounded-full border px-2 py-0.5 text-sc-muted">
                 {tr(themeState === "available" ? "step3.chipThemeAvailable" : "step3.chipThemeNone")}
               </span>
-            )}
+            ))}
           </div>
         </div>
         <label className={styles.sortControl}>

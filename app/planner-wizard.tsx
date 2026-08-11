@@ -91,7 +91,7 @@ import { PlaceBrowser } from "./place-browser";
 import sheetStyles from "./place-recommendation-sheet.module.css";
 import { airportLegsOf, itineraryRowsOf, rowKey, shouldNoteAirportRail, stationIdsOf } from "@/lib/itinerary-rows";
 import { MoveRow } from "./move-row";
-import { ThemeExperienceCard, ThemeExperienceMapOverlay } from "./theme-experience";
+import { ThemeExperienceChip, ThemeExperienceMapOverlay } from "./theme-experience";
 import { TrainLegModal, legDurationLabel, type TrainLegDetail } from "./train-leg-modal";
 import { getThemeExperience, type ThemeExperienceResult } from "@/lib/actions/theme-experience";
 import type { StationFacilitiesSnapshotT } from "@/lib/station-facilities";
@@ -1655,6 +1655,16 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
             placedCount={selectionStateShown ? selectionCapacity!.schedulableCount : null}
             unplacedCount={selectionStateShown ? selectionCapacity!.minimumExclusionCount : null}
             themeState={themeChipState(themeExperience)}
+            themeChip={(
+              <ThemeExperienceChip
+                result={themeExperience}
+                stationName={themeStationLabel(displayedDays ?? [], themeExperience, stationName)}
+                locale={locale}
+                tr={tr}
+                mapVisible={themeMapVisible}
+                onToggleMap={() => setThemeMapVisible((visible) => !visible)}
+              />
+            )}
             updating={updating}
             updated={lastItineraryDiff?.changed === true && !updating}
             sortBy={sortBy}
@@ -2262,14 +2272,6 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
                 </div>
               )}
               {/* #80 — 권역 단위 테마체험 제안. 일정에는 자동으로 포함되지 않는다 (#14 v0.6) */}
-              <ThemeExperienceCard
-                result={themeExperience}
-                stationName={themeStationLabel(displayedDays, themeExperience, stationName)}
-                locale={locale}
-                tr={tr}
-                mapVisible={themeMapVisible}
-                onToggleMap={() => setThemeMapVisible((visible) => !visible)}
-              />
               {/* #24 A5 역 시설·짐 보관 카드는 DAY 헤더 팝오버로 옮겼다 (#146).
                   같은 정보가 두 곳에 있으면 어느 쪽이 그 날 이야기인지 알 수 없다 */}
               </div>
