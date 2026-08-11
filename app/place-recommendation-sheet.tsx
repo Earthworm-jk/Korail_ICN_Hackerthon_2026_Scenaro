@@ -109,7 +109,10 @@ export function PlaceRecommendationSheet({
             분류 칩은 이 요약과 **다른 자리에 둔다.** 성격이 다른 숫자를 같은 줄에 섞으면
             둘 다 무슨 뜻인지 흐려진다.
           */}
-          <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs">
+          {/* 상태와 분류를 한 줄에 나란히 둔다 (#146 9번). compact 바는 62-90px 안에
+              들어가야 하는데 두 줄로 쌓으면 97px가 되어 칩이 잘린다. 자리는 여전히
+              다르다 — 성격이 다른 숫자를 같은 묶음으로 읽히게 하지 않는다 */}
+          <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
             <span className="text-sc-muted" data-selection-state>
               {placedCount === null || unplacedCount === null
                 ? selectedCountLabel
@@ -124,18 +127,18 @@ export function PlaceRecommendationSheet({
                 {tr("step3.unplacedHint")}
               </span>
             )}
-          </div>
 
-          {/* 분류 - K-컬처는 선택 수, 테마체험은 아직 선택할 수 없어 추천 유무만 말한다 */}
-          <div className="mt-1 flex flex-wrap items-center gap-1.5 text-xs" data-category-chips>
+            {/* 분류 - K-컬처는 선택 수, 테마체험은 아직 선택할 수 없어 추천 유무만 말한다 */}
+            <span className="flex flex-wrap items-center gap-1.5" data-category-chips>
             <span className="rounded-full border border-sc-blue/30 px-2 py-0.5 text-sc-blue">
               {withValues(tr("step3.chipKCulture"), { n: String(selectedCount) })}
             </span>
-            {themeChip ?? (themeState !== "unknown" && (
-              <span className="rounded-full border px-2 py-0.5 text-sc-muted">
-                {tr(themeState === "available" ? "step3.chipThemeAvailable" : "step3.chipThemeNone")}
-              </span>
-            ))}
+              {themeChip ?? (themeState !== "unknown" && (
+                <span className="rounded-full border px-2 py-0.5 text-sc-muted">
+                  {tr(themeState === "available" ? "step3.chipThemeAvailable" : "step3.chipThemeNone")}
+                </span>
+              ))}
+            </span>
           </div>
         </div>
         <label className={styles.sortControl}>
