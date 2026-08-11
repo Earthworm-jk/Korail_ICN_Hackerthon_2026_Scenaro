@@ -8,6 +8,7 @@ import type {
 import type { MessageKey } from "@/lib/i18n/messages";
 import type { ItineraryDiff } from "@/lib/itinerary-diff";
 import type { Clarification } from "@/lib/itinerary-command-resolver";
+import type { CommandProposal } from "@/lib/itinerary-command-executor";
 import { impactLinesOf } from "@/lib/itinerary-command-messages";
 
 type SuccessfulResult = Extract<CommandActionResult, { ok: true }>;
@@ -120,6 +121,24 @@ function diffExplanation(diff: ItineraryDiff | null, tr: Props["tr"]): string {
     dropped: diff.places.dropped.length,
     rides: Math.max(diff.rides.added.length, diff.rides.dropped.length),
   });
+}
+
+/**
+ * 제안 대상을 문장으로 (#146 10 — 날짜 통 드래그)
+ *
+ * 여러 장소를 한 번에 옮길 때 **한 곳처럼 말하면 안 된다.** 대표 이름만 적으면 나머지가
+ * 조용히 움직인 것처럼 보이고, 사용자는 확인 창에서 무엇에 동의하는지 모른다.
+ */
+function targetLabelOf(
+  proposal: CommandProposal,
+  single: string,
+  many: string,
+  placeName: (id: string) => string,
+): string {
+  const date = proposal.scheduledDate ?? proposal.requestedDate;
+  return proposal.placeIds.length > 1
+    ? withValues(many, { count: String(proposal.placeIds.length), date })
+    : withValues(single, { place: placeName(proposal.placeId), date });
 }
 
 export function ItineraryCommandPanel({
@@ -282,17 +301,12 @@ export function ItineraryCommandPanel({
             <>
               {feedback.outcome.proposal.decision === "impossible" ? (
                 <p className="mt-1 text-sc-orange-text">
-                  {withValues(tr("ai.impossible"), {
-                    place: placeName(feedback.outcome.proposal.placeId),
-                  })}
+                  {targetLabelOf(feedback.outcome.proposal, tr("ai.impossible"), tr("ai.impossibleDay"), placeName)}
                 </p>
               ) : feedback.applied ? (
                 <>
                   <p className="mt-1 font-medium text-sc-blue">
-                    {withValues(tr("ai.applied"), {
-                      place: placeName(feedback.outcome.proposal.placeId),
-                      date: feedback.outcome.proposal.scheduledDate ?? feedback.outcome.proposal.requestedDate,
-                    })}
+                    {targetLabelOf(feedback.outcome.proposal, tr("ai.applied"), tr("ai.appliedDay"), placeName)}
                   </p>
                   {/* 부작용 없는 변경은 즉시 적용하되 한 번에 되돌릴 수 있어야 한다 (#145) */}
                   {canUndo && (
@@ -310,9 +324,14 @@ export function ItineraryCommandPanel({
                   <p className="mt-1 font-medium text-sc-text">{tr("ai.confirmTitle")}</p>
                   <ul className="mt-2 space-y-1 text-xs text-sc-text/75">
                     {feedback.outcome.proposal.reasons.includes("date_adjusted") && (
-                      <li>{withValues(tr("ai.confirmAdjusted"), {
-                        date: feedback.outcome.proposal.scheduledDate ?? tr("common.nameUnavailable"),
-                      })}</li>
+                      /* 날짜를 말할 수 있을 때만 말한다. 통 이동에서 장소들이 흩어져 앉으면
+                         한 날짜로 요약할 수 없는데, 이름 폴백을 쓰면 날짜 자리에
+                         "이름을 불러오지 못했습니다"가 들어가 문장이 무너진다 */
+                      <li>{feedback.outcome.proposal.scheduledDate
+                        ? withValues(tr("ai.confirmAdjusted"), {
+                          date: feedback.outcome.proposal.scheduledDate,
+                        })
+                        : tr("ai.confirmAdjustedScattered")}</li>
                     )}
                     {feedback.outcome.proposal.displaced.map(({ placeId }) => (
                       <li key={`displaced-${placeId}`}>

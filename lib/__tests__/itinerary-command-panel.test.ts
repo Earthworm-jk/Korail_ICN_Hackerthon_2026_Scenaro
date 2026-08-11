@@ -104,7 +104,7 @@ describe("#109 실행 취소 버튼", () => {
     outcome: {
       kind: "proposal",
       proposal: {
-        decision: "ready", placeId: "p1", requestedDate: "2026-08-13",
+        decision: "ready", placeId: "p1", placeIds: ["p1"], requestedDate: "2026-08-13",
         scheduledDate: "2026-08-13", reasons: [], displaced: [], moved: [],
       },
       nextRequest: {} as never,
