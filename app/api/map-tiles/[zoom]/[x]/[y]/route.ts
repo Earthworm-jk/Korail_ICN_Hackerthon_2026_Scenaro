@@ -36,9 +36,15 @@ function parseCoordinate(raw: string): number | null {
   return Number(raw);
 }
 
-/** 배경 없음 — 오류가 아니라 "이 타일은 그리지 않는다"는 뜻이다 */
+/**
+ * 배경 없음 — 오류가 아니라 "이 타일은 그리지 않는다"는 뜻이다.
+ *
+ * **204도 캐시된다** (PR #158 리뷰). 키 없음·미활성 키·네트워크 실패가 전부 이 경로인데,
+ * 브라우저나 중간 CDN이 빈 응답을 보관하면 키가 살아나거나 공급자가 복구된 뒤에도 같은
+ * 좌표가 계속 비어 보인다. 실패는 절대 저장하지 않는다.
+ */
 function noTile(): NextResponse {
-  return new NextResponse(null, { status: 204 });
+  return new NextResponse(null, { status: 204, headers: { "Cache-Control": "no-store" } });
 }
 
 export async function GET(

@@ -141,6 +141,39 @@ describe("배경 타일 프록시", () => {
     });
   });
 
+  /**
+   * PR #158 리뷰 — 204가 캐시되면 키가 살아난 뒤에도 그 좌표가 계속 비어 보인다.
+   * 실패 경로 전부가 no-store를 달아야 한다.
+   */
+  describe("실패 응답은 저장되지 않는다", () => {
+    it("키 없음 204에 no-store가 붙는다", async () => {
+      const { GET } = await loadRoute({ keyed: false });
+      const res = await GET(new Request("http://t/"), params("10", "5", "5"));
+      expect(res.status).toBe(204);
+      expect(res.headers.get("Cache-Control")).toBe("no-store");
+    });
+
+    it("200이지만 PNG가 아닌 응답의 204에도 붙는다 — 미활성 키가 이 경로다", async () => {
+      fetchMock.mockResolvedValue(upstream(XML));
+      const { GET } = await loadRoute();
+      const res = await GET(new Request("http://t/"), params("10", "5", "5"));
+      expect(res.headers.get("Cache-Control")).toBe("no-store");
+    });
+
+    it("네트워크 오류 204에도 붙는다", async () => {
+      fetchMock.mockRejectedValue(new Error("timeout"));
+      const { GET } = await loadRoute();
+      const res = await GET(new Request("http://t/"), params("10", "5", "5"));
+      expect(res.headers.get("Cache-Control")).toBe("no-store");
+    });
+
+    it("좌표 범위 밖 204에도 붙는다", async () => {
+      const { GET } = await loadRoute();
+      const res = await GET(new Request("http://t/"), params("10", "1024", "5"));
+      expect(res.headers.get("Cache-Control")).toBe("no-store");
+    });
+  });
+
   describe("캐시 스위치", () => {
     it("꺼져 있으면 읽지도 쓰지도 않고 no-store로 답한다", async () => {
       fetchMock.mockResolvedValue(upstream(PNG));
