@@ -83,12 +83,47 @@
 .body {
   min-height: 0;
   padding: 10px 12px 12px;
+  /* 그리드는 줄이 늘어난다 — 시트가 지도 위에 떠 있어 세로가 유한하므로 여기서 스크롤한다.
+     시트를 지도 아래 독립 바로 빼는 것은 #146 1절의 별도 작업이다 */
+  max-height: min(46vh, 420px);
+  overflow-y: auto;
+  overscroll-behavior-block: contain;
 }
 
+/**
+ * 카드 그리드 (#146 1절).
+ *
+ * px로 열 수를 고정하지 않는다 — 웹앱이고 태블릿 크기가 제각각이다. 다만 비율만으로는
+ * 부족해 **최소 폭 하한**을 둔다. 폭이 계속 줄면 한글 장소 이름이 세 줄로 흐르거나 잘린다.
+ */
 .list {
   display: grid;
-  gap: 10px;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 12px;
   margin-top: 10px;
+}
+
+/** 사진이 카드다 — 어떤 폭에서도 모양이 유지되게 종횡비를 고정한다 */
+.photoCard {
+  position: relative;
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+  border-radius: 12px;
+}
+
+/**
+ * 사진 위 장소 이름.
+ *
+ * 흰 글자는 밝기가 최대라 대부분의 사진에서 살아남고, 얇은 검은 테두리가 밝은 사진을
+ * 받친다. **`paint-order`가 핵심이다** — 기본값은 fill 위에 stroke를 얹어 테두리가 글자를
+ * 바깥에서 깎아 들어가는데, 한글은 획 간격이 좁아 그게 곧 뭉갬으로 보인다.
+ * `stroke fill`로 두면 테두리가 뒤로 가서 획 두께가 유지된다.
+ */
+.photoCardTitle {
+  color: #fff;
+  -webkit-text-stroke: 1px rgba(0, 0, 0, 0.85);
+  paint-order: stroke fill;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
 }
 
 .list :global([data-recommendation-card]) {
@@ -97,11 +132,14 @@
 
 .more {
   width: 100%;
+  min-height: 44px;
   background: var(--sc-surface);
 }
 
+/** 더보기는 카드가 아니다 — 그리드 셀 높이에 맞춰 늘어나지 않게 한다 */
 .moreItem {
   display: flex;
+  align-self: start;
   min-width: 0;
   list-style: none;
 }
@@ -139,6 +177,15 @@
     linear-gradient(135deg, rgba(0, 91, 172, 0.14), rgba(0, 143, 152, 0.08)),
     repeating-linear-gradient(45deg, transparent 0 10px, rgba(255, 255, 255, 0.34) 10px 11px);
   color: var(--sc-blue);
+}
+
+/** 카드를 가득 채우는 사진 — 고정 82px 대신 카드 비율을 따른다 */
+.thumbnailCover {
+  width: 100%;
+  min-width: 0;
+  height: 100%;
+  border: 0;
+  border-radius: 0;
 }
 
 .thumbnailAdornment {
@@ -186,20 +233,10 @@
   }
 
   .list {
-    display: flex;
+    grid-template-columns: repeat(auto-fill, minmax(168px, 1fr));
     gap: 9px;
     margin-top: 0;
-    overflow-x: auto;
-    overscroll-behavior-inline: contain;
     padding: 1px 2px 8px;
-    scroll-snap-type: x proximity;
-  }
-
-  .list :global([data-recommendation-card]) {
-    flex: 0 0 270px;
-    height: 166px;
-    overflow-y: hidden;
-    scroll-snap-align: start;
   }
 
   .list :global([data-place-card-title]) {

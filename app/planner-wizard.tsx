@@ -82,6 +82,7 @@ import {
 } from "./itinerary-command-panel";
 import { ItineraryRouteMap, KoreaMapPanel, type MapPlace, type MapStation } from "./korea-map";
 import { PlaceRecommendationSheet, PlaceThumbnail } from "./place-recommendation-sheet";
+import sheetStyles from "./place-recommendation-sheet.module.css";
 import { ThemeExperienceCard, ThemeExperienceMapOverlay } from "./theme-experience";
 import { TrainLegModal, legDurationLabel, type TrainLegDetail } from "./train-leg-modal";
 import { getThemeExperience, type ThemeExperienceResult } from "@/lib/actions/theme-experience";
@@ -2229,55 +2230,64 @@ function PlaceCard({ candidate, locale, tr, selected, onToggle, stationName, wor
 
   return (
     <li
-      className={`rounded-lg border p-3 ${selected ? "border-sc-blue bg-sc-blue-soft/60" : ""}`}
+      className={`rounded-xl border ${selected ? "border-sc-blue ring-2 ring-sc-blue/40" : ""}`}
       data-recommendation-card
     >
-      <div className="flex items-start gap-2">
-        {/* 이름·좌표·이미지를 검증한 TourAPI 제1유형 사진만 쓴다. 나머지는 추정 사진
-            대신 동일한 플레이스홀더 프레임과 Lucide 장소 유형 표식을 유지한다. */}
+      {/* #146 1절 — 카드에는 사진과 이름만 둔다. 역·접근시간·운영시간·작품 근거는
+          전부 상세 팝업으로 넘겨 카드가 빡빡해지지 않게 한다 */}
+      <div className={sheetStyles.photoCard}>
         <PlaceThumbnail
           label={tr("step3.photoPlaceholder")}
           photo={photo}
           locale={locale}
+          variant="cover"
+          sizes="(max-width: 768px) 45vw, 240px"
         >
           <PlaceTypeIcon placeType={candidate.placeType} />
         </PlaceThumbnail>
-        <p className="min-w-0 flex-1 text-sm font-medium" data-place-card-title>
+
+        {/* 사진 위 이름은 어두운 그라디언트 없이도 읽혀야 한다 — CSS의 paint-order 참고 */}
+        <p
+          className={`absolute inset-x-0 bottom-0 p-2 text-sm font-semibold ${
+            // 사진 위에서만 흰 글자 + 검은 테두리를 쓴다. 플레이스홀더는 우리가 만든
+            // 밝은 배경이라 대비가 이미 보장되고, 흰 글자를 쓰면 오히려 안 읽힌다
+            photo ? sheetStyles.photoCardTitle : "text-sc-text"
+          }`}
+          data-place-card-title
+        >
           {candidate.name[locale]}
         </p>
+
         <button
           type="button"
-          className={`shrink-0 rounded px-3 py-1 text-sm ${selected ? "bg-sc-blue text-white" : "border"}`}
+          className={`absolute right-1.5 top-1.5 grid size-8 place-items-center rounded-full text-sm shadow ${
+            selected ? "bg-sc-blue text-white" : "border bg-sc-surface/90"
+          }`}
           onClick={onToggle}
           aria-label={tr(selected ? "step3.removePlace" : "step3.addPlace").replace("{place}", candidate.name[locale])}
           aria-pressed={selected}
         >
           {selected ? "✓" : "+"}
         </button>
-      </div>
 
-      <p className="mt-1.5 text-xs text-sc-muted" data-place-card-access>
-        {stationName(candidate.nearestStationId)} · {tr("access.byCar").replace("{n}", String(candidate.accessEstimate.minutes))}
-      </p>
-
-      <div className="mt-1.5 flex items-center justify-between gap-2">
-        {hoursLabel ? (
-          <span className="text-xs text-sc-muted">{hoursLabel}</span>
-        ) : (
-          <span className="inline-flex items-center gap-1 whitespace-nowrap rounded bg-sc-orange-soft px-1.5 py-0.5 text-xs text-sc-orange-text">
+        {/* 운영시간 미확인은 카드에서도 보여야 고르기 전에 알 수 있다 (#43) */}
+        {!hoursLabel && (
+          <span className="absolute left-1.5 top-1.5 inline-flex items-center gap-1 rounded bg-sc-orange-soft px-1.5 py-0.5 text-xs text-sc-orange-text shadow">
             <TriangleAlert aria-hidden="true" className="size-3.5 shrink-0" />
             {tr("step3.hoursUnverified")}
           </span>
         )}
+
         <button
           type="button"
           data-place-detail-toggle
           popoverTarget={detailPopoverId}
           aria-haspopup="dialog"
           aria-controls={detailPopoverId}
-          className="shrink-0 text-xs text-sc-blue underline underline-offset-2"
+          aria-label={tr("step3.showDetail")}
+          className="absolute bottom-1.5 right-1.5 grid size-8 place-items-center rounded-full border bg-sc-surface/90 text-sc-blue shadow"
         >
-          {tr("step3.showDetail")}
+          <Info aria-hidden="true" className="size-4" />
         </button>
       </div>
 
@@ -2301,6 +2311,13 @@ function PlaceCard({ candidate, locale, tr, selected, onToggle, stationName, wor
             <X aria-hidden="true" className="size-4" />
           </button>
         </div>
+        {/* 카드에서 내린 요약을 여기서 전부 보여 준다 (#146 1절) */}
+        <p className="mt-2 text-xs text-sc-muted" data-place-card-access>
+          {stationName(candidate.nearestStationId)} · {tr("access.byCar").replace("{n}", String(candidate.accessEstimate.minutes))}
+        </p>
+        <p className="mt-1 text-xs text-sc-muted">
+          {hoursLabel ?? tr("step3.hoursUnverified")}
+        </p>
         {candidate.selectionGroups.length > 0 && (
           <div className="mt-2 flex flex-wrap gap-1.5">
             {candidate.selectionGroups.map((group) => (
