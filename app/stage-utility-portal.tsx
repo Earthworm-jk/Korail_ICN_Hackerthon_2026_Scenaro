@@ -7,16 +7,30 @@ import { createPortal } from "react-dom";
  * Step 3의 보조 기능을 우측 일정 rail에서 떼어 화면 하단 utility dock으로 옮긴다.
  * 1024px 미만에서는 기존 위치를 유지한다 — Stage UI 자체가 desktop 전용이기 때문이다.
  */
-export function StageUtilityPortal({ children }: { children: ReactNode }) {
+export function StageUtilityPortal({
+  children,
+  targetId = "stage-utility-dock",
+}: {
+  children: ReactNode;
+  /** 옮겨 갈 곳. 기본은 옛 utility dock, `stage-sheet-actions`는 시트 헤더 오른쪽 끝 */
+  targetId?: string;
+}) {
   const [host, setHost] = useState<HTMLElement | null>(null);
 
   useEffect(() => {
     const media = window.matchMedia("(min-width: 1024px)");
-    const sync = () => setHost(media.matches ? document.getElementById("stage-utility-dock") : null);
+    // 대상이 시트 안에 있으면 시트가 렌더된 뒤에야 잡힌다. 한 번 놓치면 영영 제자리에
+    // 남으므로, 붙을 곳이 생기는지 DOM 변화까지 지켜본다.
+    const sync = () => setHost(media.matches ? document.getElementById(targetId) : null);
     sync();
     media.addEventListener("change", sync);
-    return () => media.removeEventListener("change", sync);
-  }, []);
+    const observer = new MutationObserver(sync);
+    observer.observe(document.body, { childList: true, subtree: true });
+    return () => {
+      media.removeEventListener("change", sync);
+      observer.disconnect();
+    };
+  }, [targetId]);
 
   return host ? createPortal(children, host) : children;
 }
@@ -86,45 +100,11 @@ export function StageUtilityDockController() {
     };
     document.addEventListener("keydown", onKeyDown);
 
-    const boundWarnings = new WeakSet<HTMLElement>();
-
-    const bindWarning = (node: HTMLElement) => {
-      if (boundWarnings.has(node)) return;
-      boundWarnings.add(node);
-      const count = node.querySelectorAll("li").length;
-      const heading = node.querySelector<HTMLElement>("h3");
-      if (heading) heading.dataset.stageCount = String(count);
-      node.dataset.stageWarning = "collapsed";
-      node.setAttribute("role", "button");
-      node.setAttribute("tabindex", "0");
-      node.setAttribute("aria-expanded", "false");
-
-      const toggle = () => {
-        const expanded = node.dataset.stageWarning === "expanded";
-        node.dataset.stageWarning = expanded ? "collapsed" : "expanded";
-        node.setAttribute("aria-expanded", String(!expanded));
-      };
-      node.addEventListener("click", toggle);
-      node.addEventListener("keydown", (event) => {
-        if (event.key !== "Enter" && event.key !== " ") return;
-        event.preventDefault();
-        toggle();
-      });
-    };
-
-    const markWarnings = () => {
-      document
-        .querySelectorAll<HTMLElement>("#place-picker + div[aria-busy] div.rounded-lg.border.border-sc-orange\\/30.bg-sc-orange-soft")
-        .forEach((node) => {
-          if (!node.querySelector("h3") || !node.querySelector("ul")) return;
-          if (node.querySelector('a[href="#place-picker"]')) return;
-          bindWarning(node);
-        });
-      scheduleGeometrySync();
-    };
-
-    markWarnings();
-    const observer = new MutationObserver(markWarnings);
+    // 경고 카드를 클래스 이름으로 찾아 클릭 가능한 디스클로저로 바꾸던 코드는 지웠다
+    // (#146). 경고는 이제 React가 아이콘 + 팝오버로 직접 그린다 — 마크업을 사후에
+    // 뜯어고치는 대신 컴포넌트가 자기 접근성 속성을 갖는다.
+    scheduleGeometrySync();
+    const observer = new MutationObserver(scheduleGeometrySync);
     observer.observe(document.body, { childList: true, subtree: true });
 
     return () => {

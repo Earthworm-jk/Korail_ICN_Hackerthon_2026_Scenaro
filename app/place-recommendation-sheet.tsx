@@ -25,7 +25,6 @@ export function PlaceRecommendationSheet({
   onBrowseAll,
   initialExpanded = true,
   map,
-  onBack,
   tr,
 }: {
   selectedCount: number;
@@ -67,7 +66,6 @@ export function PlaceRecommendationSheet({
    */
   initialExpanded?: boolean;
   map: ReactNode;
-  onBack: () => void;
   tr: Translator;
 }) {
   const [expanded, setExpanded] = useState(initialExpanded);
@@ -171,6 +169,15 @@ export function PlaceRecommendationSheet({
         >
           {tr(expanded ? "step3.sheetCollapse" : "step3.sheetExpand")}
         </button>
+        {/*
+          독 오른쪽 끝의 주 액션 자리 (#146).
+
+          시트가 바닥 독이 되면서 최종 일정·다시 계산이 여기로 온다. 버튼을 prop으로
+          받지 않고 **포털 호스트만 두는** 이유는, 그 버튼들이 모바일에서는 화면 아래
+          제자리에 남아야 하기 때문이다. 같은 버튼을 양쪽에 렌더하면 접근성 트리에
+          같은 조작이 두 벌 생긴다.
+        */}
+        <div id="stage-sheet-actions" className="flex shrink-0 items-center gap-2" />
       </div>
 
       {expanded && (
@@ -206,11 +213,6 @@ export function PlaceRecommendationSheet({
         </div>
       )}
 
-      <div className="mt-4" data-place-sheet-back>
-        <button type="button" className="rounded border px-4 py-2 text-sm" onClick={onBack}>
-          {tr("common.back")}
-        </button>
-      </div>
     </div>
   );
 }

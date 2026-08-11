@@ -861,7 +861,8 @@ export function KoreaMapPanel({
           </button>
         )}
         <div className="flex flex-wrap items-center justify-end gap-1.5">
-          <span className="text-xs text-sc-muted">{tr("map.modeBadge")}</span>
+          {/* "대한민국 지도" 배지는 지웠다 (#146) — 지도를 보면 아는 것을 적어
+              한 줄을 쓰고 있었다. 스크린리더용 이름은 svg의 aria-label에 남아 있다 */}
           {headingAction}
           {hasPoints && <ZoomControls view={view} onZoom={zoomBy} onReset={resetView} tr={tr} />}
         </div>

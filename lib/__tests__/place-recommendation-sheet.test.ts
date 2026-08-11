@@ -45,7 +45,6 @@ describe("지도 위 추천 장소 바텀시트", () => {
       sortBy: "relevance",
       onSortChange: () => undefined,
       onBrowseAll: () => undefined,
-      onBack: () => undefined,
       map: createElement("div", { "data-test-map": true }, "map"),
       tr,
     }, createElement("li", { "data-recommendation-card": true }, "월정사")));
@@ -80,7 +79,6 @@ describe("지도 위 추천 장소 바텀시트", () => {
       sortBy: "official",
       onSortChange: () => undefined,
       onBrowseAll: () => undefined,
-      onBack: () => undefined,
       map: null,
       tr,
     }));
@@ -101,7 +99,6 @@ describe("지도 위 추천 장소 바텀시트", () => {
       sortBy: "relevance",
       onSortChange: () => undefined,
       onBrowseAll: () => undefined,
-      onBack: () => undefined,
       map: null,
       routeRecommendations: createElement("li", { "data-route-card": true }, "영진해변"),
       tr,
@@ -125,7 +122,6 @@ describe("지도 위 추천 장소 바텀시트", () => {
       sortBy: "official",
       onSortChange: () => undefined,
       onBrowseAll: () => undefined,
-      onBack: () => undefined,
       map: null,
       tr,
     }));
@@ -178,7 +174,7 @@ describe("#146 ① 상태 요약과 분류", () => {
     selectedCount: 8, totalCount: 20, updating: false, updated: false,
     sortBy: "relevance" as const, onSortChange: () => undefined,
     onBrowseAll: () => undefined,
-    map: null, onBack: () => undefined, tr,
+    map: null, tr,
   };
   const render = (over: Record<string, unknown>) =>
     renderToStaticMarkup(createElement(PlaceRecommendationSheet, { ...base, ...over } as never));
@@ -236,7 +232,7 @@ describe("PR #156 리뷰 4 — 테마체험은 아는 것만 말한다", () => {
   const base = {
     selectedCount: 8, totalCount: 20, updating: false, updated: false,
     sortBy: "relevance" as const, onSortChange: () => undefined,
-    onBrowseAll: () => undefined, map: null, onBack: () => undefined, tr,
+    onBrowseAll: () => undefined, map: null, tr,
     placedCount: 7, unplacedCount: 1,
   };
   const render = (themeState: "available" | "none" | "unknown") =>

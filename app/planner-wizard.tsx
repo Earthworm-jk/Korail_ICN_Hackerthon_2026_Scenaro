@@ -7,6 +7,7 @@
  */
 import { useCallback, useEffect, useId, useMemo, useReducer, useRef, useState, useTransition } from "react";
 import { BusFront, Info, Sparkles, TrainFront, TriangleAlert, X } from "lucide-react";
+import { StageUtilityPortal } from "./stage-utility-portal";
 import {
   searchEntities,
   type ActorSummary,
@@ -1390,15 +1391,19 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
     // 지도 열이 시안의 minmax(320px) 아래로 눌린다.
     <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6">
       <div className="overflow-hidden rounded-2xl border bg-sc-surface shadow-[0_18px_50px_var(--sc-shadow)]">
-      <header className="flex flex-wrap items-center justify-between gap-3 border-b bg-sc-surface px-5 py-4">
-        <div className="flex items-center gap-2.5">
+      {/* `flex-wrap`을 걷었다 (#146 모바일). 390px에서 버튼 묶음이 아래로 접혀
+          제목 밑에 왼쪽 정렬로 한 줄을 더 쓰고 있었다. 한 줄에 두고 로고 쪽이
+          줄어들게 한다 — 버튼은 늘 오른쪽 윗줄이다 */}
+      <header className="flex items-center justify-between gap-3 border-b bg-sc-surface px-5 py-4">
+        <div className="flex min-w-0 items-center gap-2.5">
           <span aria-hidden className="grid h-9 w-9 place-items-center rounded-[10px] bg-sc-blue text-sm font-medium text-white">SC</span>
-          <div>
-            <h1 className="text-lg font-semibold tracking-wide">{tr("app.title")}</h1>
-            <p className="mt-0.5 text-xs text-sc-muted">{tr("app.tagline")}</p>
+          <div className="min-w-0">
+            <h1 className="truncate text-lg font-semibold tracking-wide">{tr("app.title")}</h1>
+            {/* 좁은 화면에서 태그라인은 버튼 자리를 뺏는다 — 386px 미만에서만 접는다 */}
+            <p className="mt-0.5 hidden truncate text-xs text-sc-muted sm:block">{tr("app.tagline")}</p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex shrink-0 items-center gap-2">
           <span className="rounded-full bg-sc-orange-soft px-2.5 py-1 text-xs text-sc-orange-text">{tr("app.snapshotBadge")}</span>
           <button className="rounded-[10px] border px-3 py-1.5 text-sm font-medium hover:border-sc-blue" onClick={saveStub.requestTrips}>
             {tr("trips.button")}
@@ -1708,7 +1713,6 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
             onSortChange={setSortBy}
             onBrowseAll={() => setBrowserOpen(true)}
             initialExpanded={false}
-            onBack={() => setStep(2)}
             tr={tr}
             map={candidateData ? (
               <KoreaMapPanel
@@ -2246,18 +2250,52 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
                   ) : undefined
                 }
               />
+              {/* #43 수용 기준: 경고 누락 0건 — 배치는 유지하되 방문 전 확인을 안내.
+                  카드 한 통이 목록 옆에 늘 펼쳐져 있던 것을 DAY 헤더 아이콘들과 같은
+                  방식으로 바꿨다 (#146) — 경고 아이콘 하나에 건수를 달고 팝오버로 연다.
+                  경고가 없으면 아이콘도 없다: 없는 것을 자리로 알리지 않는다 */}
               {viewWarnings.length > 0 && (
-                // #43 수용 기준: 경고 누락 0건 — 배치는 유지하되 방문 전 확인을 안내
-                <div className="rounded-lg border border-sc-orange/30 bg-sc-orange-soft p-4">
-                  <h3 className="text-sm font-medium text-sc-orange-text">{tr("step4.warningsTitle")}</h3>
-                  <ul className="mt-2 space-y-1 text-sm text-sc-orange-text">
-                    {viewWarnings.map((warning) => (
-                      <li key={warning.placeId} className="flex items-start gap-1.5">
-                        <TriangleAlert aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
-                        <span>{placeName(warning.placeId)} — {tr(`reason.${warning.detail}` as MessageKey)}</span>
-                      </li>
-                    ))}
-                  </ul>
+                <div data-stage-warnings>
+                  <button
+                    type="button"
+                    popoverTarget="stage-warnings-popover"
+                    aria-haspopup="dialog"
+                    aria-controls="stage-warnings-popover"
+                    className="inline-flex items-center gap-1.5 rounded-full border border-sc-orange/40 bg-sc-orange-soft px-2.5 py-1.5 text-xs font-medium text-sc-orange-text hover:border-sc-orange"
+                  >
+                    <TriangleAlert aria-hidden="true" className="size-4 shrink-0" />
+                    <span>{withValues(tr("step4.warningsCount"), { n: String(viewWarnings.length) })}</span>
+                  </button>
+                  <div
+                    id="stage-warnings-popover"
+                    popover="auto"
+                    role="dialog"
+                    aria-labelledby="stage-warnings-title"
+                    className="m-auto w-[min(420px,calc(100vw-32px))] rounded-xl border bg-sc-surface p-4 text-left shadow-2xl backdrop:bg-black/20"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <h3 id="stage-warnings-title" className="text-sm font-semibold text-sc-orange-text">
+                        {tr("step4.warningsTitle")}
+                      </h3>
+                      <button
+                        type="button"
+                        popoverTarget="stage-warnings-popover"
+                        popoverTargetAction="hide"
+                        aria-label={tr("common.close")}
+                        className="grid size-8 shrink-0 place-items-center rounded-full border text-sc-muted hover:border-sc-blue hover:text-sc-blue"
+                      >
+                        <X aria-hidden="true" className="size-4" />
+                      </button>
+                    </div>
+                    <ul className="mt-2 space-y-1 text-sm text-sc-orange-text">
+                      {viewWarnings.map((warning) => (
+                        <li key={warning.placeId} className="flex items-start gap-1.5">
+                          <TriangleAlert aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
+                          <span>{placeName(warning.placeId)} — {tr(`reason.${warning.detail}` as MessageKey)}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
                 </div>
               )}
               {uncoveredSelectionGroups.length > 0 && (
@@ -2316,25 +2354,30 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
             </div>
           )}
 
-          <div
-            className="mt-4 flex flex-wrap items-center justify-between gap-2"
-            data-stage-actions
-          >
-            {/* #85 — "촬영지 다시 선택"은 왕복이 사라져 필요 없다. 항공편만 1단계로 돌아간다 */}
-            <div className="flex gap-2">
-              <button className="rounded border px-3 py-2 text-sm" onClick={() => setStep(1)}>{tr("step4.editFlights")}</button>
-              <button className="rounded border px-3 py-2 text-sm" onClick={plan}>{tr("step4.recalculate")}</button>
-            </div>
-            <button
-              type="button"
-              className="rounded bg-sc-blue px-4 py-2 text-sm font-semibold text-white disabled:opacity-40"
-              disabled={!displayedDays || updating || needsSelection || selectionCapacity?.requiresAdjustment}
-              onClick={() => setShowFinalItinerary(true)}
-              data-open-final
+          {/*
+            액션 줄 (#146).
+
+            "항공편 시각 변경"은 뺐다 — 상단 `여행 조건` 탭이 같은 곳으로 가는 길이라
+            중복이었다. 남은 둘은 데스크톱에서 바닥 독(시트 헤더) 오른쪽 끝으로 간다.
+            순서는 왼쪽이 조작, 오른쪽 끝이 주 액션이다.
+          */}
+          <StageUtilityPortal targetId="stage-sheet-actions">
+            <div
+              className="mt-4 flex flex-wrap items-center gap-2 lg:mt-0"
+              data-stage-actions
             >
-              {tr("step4.openFinal")}
-            </button>
-          </div>
+              <button className="rounded border px-3 py-2 text-sm" onClick={plan}>{tr("step4.recalculate")}</button>
+              <button
+                type="button"
+                className="rounded bg-sc-blue px-4 py-2 text-sm font-semibold text-white disabled:opacity-40"
+                disabled={!displayedDays || updating || needsSelection || selectionCapacity?.requiresAdjustment}
+                onClick={() => setShowFinalItinerary(true)}
+                data-open-final
+              >
+                {tr("step4.openFinal")}
+              </button>
+            </div>
+          </StageUtilityPortal>
           </div>
           </div>
         </section>

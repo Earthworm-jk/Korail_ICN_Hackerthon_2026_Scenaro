@@ -102,40 +102,7 @@
     font-weight: 700 !important;
   }
 
-  /* ---- Non-blocking warnings: compact disclosure ---- */
-  [data-stage-warning] {
-    border-color: var(--sc-line) !important;
-    background: white !important;
-    padding: 10px 11px !important;
-    color: var(--sc-text) !important;
-    cursor: pointer;
-  }
-
-  [data-stage-warning] h3 {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    color: var(--sc-text) !important;
-    font-size: 12px !important;
-  }
-
-  [data-stage-warning] h3::after {
-    content: attr(data-stage-count) "건  ›";
-    margin-left: auto;
-    color: var(--sc-orange-text);
-    font-size: 11px;
-    font-weight: 600;
-  }
-
-  [data-stage-warning="collapsed"] ul {
-    display: none !important;
-  }
-
-  [data-stage-warning="expanded"] ul {
-    margin-top: 8px !important;
-    color: var(--sc-orange-text) !important;
-    font-size: 11px !important;
-  }
+  /* 경고는 아이콘 + 팝오버가 됐다 (#146) — 디스클로저 스타일은 겨냥할 대상이 없다 */
 
   /* ---- Bottom utility dock ---- */
   body:has(#place-picker) main {
@@ -283,7 +250,7 @@
     max-height: calc(100% - 42px) !important;
   }
 
-  #place-picker + div[aria-busy] [data-stage-warning] {
+  #place-picker + div[aria-busy] [data-stage-warnings] {
     grid-row: 4;
   }
 
@@ -330,8 +297,7 @@
     font-size: 0.8125rem !important;
   }
 
-  #place-picker + div[aria-busy] > div[class*="space-y"] > div.grid > div:first-child > div > h3,
-  [data-stage-warning] h3 {
+  #place-picker + div[aria-busy] > div[class*="space-y"] > div.grid > div:first-child > div > h3 {
     font-size: 0.9375rem !important;
   }
 
@@ -460,10 +426,25 @@
     flex-wrap: nowrap !important;
   }
 
-  /* 제목·상태 문구는 줄바꿈으로 헤더를 키우는 대신 한 줄에 붙어 있는다 */
+  /* 제목·상태·칩은 줄바꿈으로 헤더를 키우는 대신 한 줄에 붙어 있는다.
+     칩 안쪽 글자까지 막아야 한다 — 바깥만 nowrap이면 글자가 한 자씩 쌓인다 */
   div#place-picker[data-place-sheet] > [data-place-sheet-header] h3,
-  div#place-picker[data-place-sheet] > [data-place-sheet-header] [data-selection-state] {
+  div#place-picker[data-place-sheet] > [data-place-sheet-header] [data-selection-state],
+  div#place-picker[data-place-sheet] > [data-place-sheet-header] [data-category-chips] > * {
     white-space: nowrap !important;
+  }
+
+  /* 조작부는 폭을 내주지 않는다. 여기가 줄어들면 남는 폭이 글자 쪽으로 가는 게 아니라
+     양쪽이 같이 눌려 결국 둘 다 읽을 수 없게 된다 */
+  div#place-picker[data-place-sheet] > [data-place-sheet-header] > label,
+  div#place-picker[data-place-sheet] > [data-place-sheet-header] > button,
+  div#place-picker[data-place-sheet] > [data-place-sheet-header] > #stage-sheet-actions {
+    flex: 0 0 auto !important;
+  }
+
+  /* 글자 묶음이 남는 폭을 다 쓰고, 넘치면 잘린다 — 눌려서 세로로 쌓이지 않는다 */
+  div#place-picker[data-place-sheet] > [data-place-sheet-header] > div:first-of-type {
+    overflow: hidden !important;
   }
 
   /* 손잡이는 시트를 끌어 올리는 모바일 어포던스다. 화면에 고정된 독에는 끌 대상이
