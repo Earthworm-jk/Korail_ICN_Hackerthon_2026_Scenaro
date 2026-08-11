@@ -1642,9 +1642,47 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
 
       {!showFinalItinerary && step === 3 && (candidateData || view.reopened) && (
         <section>
-          <h2 className="text-lg font-semibold">{tr("step3.title")}</h2>
-          {/* #61 — 접근시간이 대중교통으로 읽히지 않도록 목록 위에 한 번 고지 */}
-          <p className="mt-3 text-xs text-sc-muted">{tr("access.notice")}</p>
+          {/* 제목은 한 단어, 설명은 팝오버 (#146). 두 줄짜리 안내가 상단을 먹으면
+              그만큼 지도가 줄어드는데 지도가 이 화면의 핵심이다. #61의 접근시간 고지도
+              여기 들어간다 — 없애는 게 아니라 자리를 옮기는 것이다 */}
+          <div className="flex flex-wrap items-center gap-2">
+            <h2 className="text-lg font-semibold">{tr("step3.title")}</h2>
+            <button
+              type="button"
+              popoverTarget="step3-guide-popover"
+              aria-haspopup="dialog"
+              aria-controls="step3-guide-popover"
+              aria-label={tr("step3.guideOpen")}
+              className="flex size-8 items-center justify-center rounded-full border text-sc-muted hover:border-sc-blue hover:text-sc-blue"
+            >
+              <Info aria-hidden="true" className="size-4" />
+            </button>
+          </div>
+          <div
+            id="step3-guide-popover"
+            popover="auto"
+            role="dialog"
+            aria-labelledby="step3-guide-title"
+            className="m-auto w-[min(400px,calc(100vw-32px))] rounded-xl border bg-sc-surface p-4 text-left shadow-2xl backdrop:bg-black/20"
+          >
+            <div className="flex items-start justify-between gap-3">
+              <h4 id="step3-guide-title" className="text-sm font-semibold text-sc-text">
+                {tr("step3.guideTitle")}
+              </h4>
+              <button
+                type="button"
+                popoverTarget="step3-guide-popover"
+                popoverTargetAction="hide"
+                aria-label={tr("common.close")}
+                className="grid size-8 shrink-0 place-items-center rounded-full border text-sc-muted hover:border-sc-blue hover:text-sc-blue"
+              >
+                <X aria-hidden="true" className="size-4" />
+              </button>
+            </div>
+            <p className="mt-2 text-xs text-sc-muted">{tr("step3.guideBody")}</p>
+            {/* #61 — 접근시간이 대중교통으로 읽히지 않도록 고지한다 */}
+            <p className="mt-2 border-t pt-2 text-xs text-sc-muted">{tr("access.notice")}</p>
+          </div>
 
           {/* #85 — 좌: 후보 선택 / 우: 계산 결과. 왕복 없이 같은 화면에서 판단한다 */}
           <div className="mt-3 grid gap-[18px] lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
@@ -1834,6 +1872,8 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
                 </button>
               </div>
               <p className="mt-2 text-xs text-sc-muted">{tr("step4.subtitle")}</p>
+              {/* 목록 위에 있던 고지 (#146 모바일) */}
+              <p className="mt-2 text-xs text-sc-muted">{tr("step4.estimatedNote")}</p>
               <p className="mt-2 border-t pt-2 text-xs text-sc-muted">
                 <strong className="font-medium text-sc-text">{tr("step4.dataNoticeTitle")}</strong>{" "}
                 {tr("step4.dataNotice")}
@@ -1936,9 +1976,9 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
                             {/* #14 v0.6 sc-result-grid — 좌측 일정 타임라인 + 우측 지도·경고·실행 지원 */}
               <div className="grid gap-[18px] md:grid-cols-[minmax(0,1fr)_minmax(360px,1fr)] md:items-start">
                 <div className="min-w-0 space-y-4">
-              {/* 장소 단위 시각을 카드에 적는 이상, 그게 예약 확정 시각이 아니라는 것을
-                  화면에서 한 번은 밝혀야 한다 (PR #154 리뷰) */}
-              <p className="text-xs text-sc-muted">{tr("step4.estimatedNote")}</p>
+              {/* 장소 단위 시각이 예약 확정 시각이 아니라는 고지는 유지하되, 자리는
+                  옆 (!) 팝오버다 (#146 모바일). 390px에서 이 한 줄이 목록 위를 차지해
+                  첫 화면에 DAY가 안 들어왔다 — 없애는 게 아니라 옮기는 것이다 */}
               {displayedDays.map((day, dayIndex) => {
                 const baseDay = baseDays?.find((d) => d.date === day.date);
                 return (
@@ -2036,7 +2076,7 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
 
                   {/* 장소 목록과 이동 구간을 따로 그리면 "몇 시에 어디로 이동해 무엇을 보는가"라는
                       하루의 흐름이 끊긴다. 시각순 한 줄씩으로 세운다 (#146 2절) */}
-                  <ul className="mt-2 space-y-1.5 text-sm">
+                  <ul className="mt-2 space-y-1.5 text-sm" data-day-rows>
                     {itineraryRowsOf(day).map((row) => {
                       /* 선택 가능한 버스 대안이 없으면 선택기가 통째로 숨는다. 그때는
                          무엇으로 공항에 드나드는지 알 길이 없으므로 이동 행에 사실만
@@ -2074,29 +2114,11 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
                               </span>
                               <span className="min-w-0 flex-1 text-sc-text/90">{placeName(item.placeId)}</span>
                             </div>
-                            <div className="mt-1 flex items-center justify-between gap-2 pl-9">
-                            <span className="shrink-0 text-xs text-sc-muted">{accessLabel(item.accessMinutes)}</span>
-                            <span className="flex shrink-0 items-center gap-1">
-                              {(displayedDays ?? []).map((target, index) => (
-                                <button
-                                  key={target.date}
-                                  type="button"
-                                  disabled={!visitDateEditable || target.date === day.date}
-                                  onClick={() => submitVisitDateEdit(item.placeId, target.date)}
-                                  aria-label={withValues(tr("step4.moveToDay"), {
-                                    place: placeName(item.placeId), day: String(index + 1),
-                                  })}
-                                  aria-current={target.date === day.date ? "true" : undefined}
-                                  className={`min-h-10 min-w-10 rounded border px-1.5 text-xs ${
-                                    target.date === day.date
-                                      ? "border-sc-blue bg-sc-blue text-white"
-                                      : "border-sc-blue/30 text-sc-blue hover:bg-sc-blue-soft disabled:opacity-40"
-                                  }`}
-                                >
-                                  {index + 1}
-                                </button>
-                              ))}
-                            </span>
+                            {/* 날짜별 숫자 버튼(1·2·3)은 뺐다 (#146) — 한 줄마다 세 개씩
+                                깔려 목록이 버튼밭이 됐다. 장소 하나를 옮기는 일은 드래그로,
+                                하루를 통째로 옮기는 일은 DAY 헤더의 이동 메뉴로 한다 */}
+                            <div className="mt-1 pl-9">
+                              <span className="text-xs text-sc-muted">{accessLabel(item.accessMinutes)}</span>
                             </div>
                           </li>
                         );

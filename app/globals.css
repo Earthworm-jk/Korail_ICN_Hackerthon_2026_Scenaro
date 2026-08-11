@@ -306,3 +306,32 @@
     }
   }
 }
+
+/**
+ * 모바일: 세로로 늘어나던 하루 일정을 가로 레일로 (#146).
+ *
+ * 390px에서 DAY 한 통이 234-270px씩 쌓여 문서가 3.5화면이 됐다. 하루의 흐름은
+ * 원래 시간순이라 **가로가 더 맞는 방향이다** - 카드를 옆으로 밀면 그 날을 따라간다.
+ *
+ * 데스크톱은 건드리지 않는다. 우측 rail은 세로로 스크롤되는 구조가 이미 맞고,
+ * 바닥 독 배치를 방금 맞춰 놨다.
+ */
+@media (max-width: 1023px) {
+  ul[data-day-rows] {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(210px, 240px);
+    gap: 8px;
+    overflow-x: auto;
+    /* 레일 안에서 가로로 튕겼을 때 페이지가 같이 밀리지 않게 한다 */
+    overscroll-behavior-inline: contain;
+    scroll-snap-type: x proximity;
+    padding-bottom: 6px;
+  }
+
+  /* `space-y-1.5`의 세로 마진은 가로 레일에서 첫 칸만 밀어낸다 */
+  ul[data-day-rows] > li {
+    margin-top: 0 !important;
+    scroll-snap-align: start;
+  }
+}

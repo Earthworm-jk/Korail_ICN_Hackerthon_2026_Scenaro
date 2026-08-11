@@ -10,26 +10,12 @@
   }
 
   /* Step 3 heading becomes a compact workspace header rather than a page intro. */
-  section:has(#place-picker) > h2 {
+  /* 제목은 이제 (!) 버튼과 한 줄에 있다 (#146) — `> h2`가 아니라 `h2`로 잡는다.
+     뒤따르던 설명 문단 두 개는 팝오버로 내려가 규칙 자체가 사라졌다. */
+  section:has(#place-picker) h2 {
     font-size: 1.25rem !important;
     line-height: 1.35 !important;
     letter-spacing: -0.015em;
-  }
-
-  section:has(#place-picker) > h2 + p {
-    margin-top: 2px !important;
-    font-size: 0.8125rem !important;
-  }
-
-  section:has(#place-picker) > h2 + p + p {
-    display: inline-flex;
-    margin-top: 7px !important;
-    border-radius: 999px;
-    background: rgba(255,255,255,.82);
-    padding: 4px 8px;
-    font-size: 0.6875rem !important;
-    line-height: 1.35;
-    box-shadow: inset 0 0 0 1px var(--sc-line);
   }
 
   /* 열·간격·높이는 stage-v4 단독 (#146). 여기 있던 3열 정의와 min-height는

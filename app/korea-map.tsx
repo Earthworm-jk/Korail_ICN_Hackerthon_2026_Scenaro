@@ -810,6 +810,7 @@ export function KoreaMapPanel({
   const hasPoints = placePoints.length > 0 || routeStations.length > 0;
   const zoomed = isZoomed(view);
   const hintId = `map-zoom-hint-${kind}`;
+  const noticeId = `map-route-notice-${kind}`;
 
   /**
    * 해안선 진하기 — 원천 해상도(1:50m)를 넘어선 배율에서 물러난다.
@@ -845,6 +846,20 @@ export function KoreaMapPanel({
         <h3 className="font-medium whitespace-nowrap">
           {tr(isRoute ? "map.routeTitle" : "map.placesTitle")}
         </h3>
+        {/* 동선 고지를 제목 옆 (!)로 옮겼다 (#146 모바일). 390px에서 이 82자가
+            지도 아래 48px을 먹었다. 고지 자체는 그대로 두고 자리만 옮긴다 */}
+        {isRoute && (
+          <button
+            type="button"
+            popoverTarget={noticeId}
+            aria-haspopup="dialog"
+            aria-controls={noticeId}
+            aria-label={tr("map.noticeOpen")}
+            className="flex size-8 shrink-0 items-center justify-center rounded-full border text-sc-muted hover:border-sc-blue hover:text-sc-blue"
+          >
+            <span aria-hidden="true" className="text-sm font-semibold">i</span>
+          </button>
+        )}
         <div className="flex flex-wrap items-center justify-end gap-1.5">
           <span className="text-xs text-sc-muted">{tr("map.modeBadge")}</span>
           {headingAction}
@@ -978,12 +993,23 @@ export function KoreaMapPanel({
         )}
       </div>
 
-      {/* #14 §6 — 실제 경로 계산으로 읽히지 않도록 동선 지도에는 항상 붙인다.
-          선로를 실제로 그린 화면에서는 어디까지가 실선형인지도 함께 밝힌다 */}
+      {/* #14 §6 — 실제 경로 계산으로 읽히지 않도록 동선 지도에 붙이는 고지다.
+          문구는 그대로이고 자리만 제목 옆 (!) 팝오버로 옮겼다 (#146) */}
       {isRoute && (
-        <p className="mt-2 text-xs text-sc-muted">
-          {tr(hasRailGeometry ? "map.routeNoticeRail" : "map.routeNotice")}
-        </p>
+        <div
+          id={noticeId}
+          popover="auto"
+          role="dialog"
+          aria-labelledby={`${noticeId}-title`}
+          className="m-auto w-[min(400px,calc(100vw-32px))] rounded-xl border bg-sc-surface p-4 text-left shadow-2xl backdrop:bg-black/20"
+        >
+          <h4 id={`${noticeId}-title`} className="text-sm font-semibold text-sc-text">
+            {tr("map.noticeTitle")}
+          </h4>
+          <p className="mt-2 text-xs text-sc-muted">
+            {tr(hasRailGeometry ? "map.routeNoticeRail" : "map.routeNotice")}
+          </p>
+        </div>
       )}
       {experienceNotice}
 

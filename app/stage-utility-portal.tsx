@@ -38,41 +38,32 @@ export function StageUtilityDockController() {
     let observedSheet: HTMLElement | null = null;
     let geometryFrame = 0;
 
+    /**
+     * 바닥에 고정된 것이 차지하는 높이를 `--sc-dock-h`로 알린다 — `main`이 그만큼
+     * padding-bottom을 두어야 마지막 액션 줄이 그 아래 숨지 않는다.
+     *
+     * 데스크톱에서 바닥을 차지하는 것은 **추천 시트다** (#146). 시트를 독 자리에
+     * 고정했으므로 `#stage-utility-dock`은 비어 `display: none`이고 높이가 0이다.
+     * 그래서 시트를 먼저 재고, 시트가 없을 때만 독을 잰다 — 모바일과 다른 화면에서는
+     * 여전히 독이 바닥을 차지할 수 있다.
+     *
+     * 펼침·접힘으로 시트 높이가 바뀌므로 시트도 관찰 대상이다.
+     */
     const syncGeometry = () => {
       geometryFrame = 0;
-      const dockHeight = host.offsetHeight;
-      root.style.setProperty("--sc-dock-h", `${dockHeight}px`);
 
       const sheet = document.querySelector<HTMLElement>("#place-picker[data-place-sheet]");
       if (sheet !== observedSheet) {
         if (observedSheet) geometryObserver.unobserve(observedSheet);
-        observedSheet?.style.removeProperty("--sc-sheet-dock-offset");
-        observedSheet?.style.removeProperty("--sc-sheet-available-h");
         observedSheet = sheet;
         if (sheet) geometryObserver.observe(sheet);
       }
-      if (!sheet || dockHeight === 0) {
-        sheet?.style.setProperty("--sc-sheet-dock-offset", "0px");
-        sheet?.style.removeProperty("--sc-sheet-available-h");
-        return;
-      }
 
-      // Preserve the sheet's natural top edge. Shrink its available height by exactly
-      // the collision amount, then translate that smaller box upward by the same value.
-      // scrollHeight retains the unconstrained content height, so repeated observer
-      // passes converge even while max-height changes.
-      const sheetRect = sheet.getBoundingClientRect();
-      const previousOffset = Number.parseFloat(
-        sheet.style.getPropertyValue("--sc-sheet-dock-offset"),
-      ) || 0;
-      const unshiftedSheetBottom = sheetRect.bottom + previousOffset;
-      const dockTop = host.getBoundingClientRect().top;
-      const nextOffset = Math.max(0, Math.ceil(unshiftedSheetBottom - dockTop + 12));
-      const borderHeight = Math.max(0, sheet.offsetHeight - sheet.clientHeight);
-      const naturalHeight = Math.min(270, sheet.scrollHeight + borderHeight);
-      const nextAvailableHeight = Math.max(62, naturalHeight - nextOffset);
-      sheet.style.setProperty("--sc-sheet-dock-offset", `${nextOffset}px`);
-      sheet.style.setProperty("--sc-sheet-available-h", `${nextAvailableHeight}px`);
+      // 시트가 바닥에 고정돼 있을 때만 그 높이를 쓴다. 문서 흐름 안에 있으면
+      // 이미 자기 자리를 차지하므로 따로 비워 둘 필요가 없다.
+      const sheetFixed = sheet ? getComputedStyle(sheet).position === "fixed" : false;
+      const bottomHeight = sheetFixed && sheet ? sheet.offsetHeight : host.offsetHeight;
+      root.style.setProperty("--sc-dock-h", `${bottomHeight}px`);
     };
 
     const scheduleGeometrySync = () => {
@@ -143,8 +134,6 @@ export function StageUtilityDockController() {
       geometryObserver.disconnect();
       if (geometryFrame) cancelAnimationFrame(geometryFrame);
       root.style.removeProperty("--sc-dock-h");
-      observedSheet?.style.removeProperty("--sc-sheet-dock-offset");
-      observedSheet?.style.removeProperty("--sc-sheet-available-h");
     };
   }, []);
 

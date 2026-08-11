@@ -305,13 +305,7 @@
     font-size: 0.8125rem !important;
   }
 
-  section:has(#place-picker) > h2 + p {
-    font-size: 0.875rem !important;
-  }
-
-  section:has(#place-picker) > h2 + p + p {
-    font-size: 0.75rem !important;
-  }
+  /* 제목 뒤 설명 문단 두 개는 팝오버로 내려갔다 (#146) - 겨냥할 대상이 없다 */
 
   #place-picker > ul > li p.font-medium {
     font-size: 0.875rem !important;
@@ -383,22 +377,39 @@
     row-gap: 8px !important;
   }
 
+  /**
+   * 시트는 **바닥 독 자리에 고정한다** (#146).
+   *
+   * 원래 지시는 "바닥독에 지도 위 추천 장소를 넣어라"였는데, 독을 비운 채 시트를
+   * 그리드 안에 두고 위로 띄우니 펼칠 때마다 지도 338px 중 286px(85%)을 덮었다.
+   * 지도가 이 화면의 핵심인데 그걸 가린 것이다.
+   *
+   * **DOM은 옮기지 않는다.** `#place-picker + div[aria-busy]`를 전제로 한 규칙이
+   * 다섯 파일에 88개 있다 - 포털로 독에 넣으면 형제 관계가 끊겨 우측 rail·지도·경고가
+   * 통째로 무너진다. 앞 세션의 시도가 깨진 것도 이 때문이다. 그래서 자리만 옮긴다:
+   * `#stage-utility-dock`과 같은 좌표에 `fixed`로 둔다. 화면 고정이라 그리드 높이를
+   * 전혀 먹지 않고, 그만큼 지도가 커진다.
+   */
   div#place-picker[data-place-sheet] {
-    grid-column: 1 !important;
-    grid-row: 1 / 6 !important;
-    align-self: end !important;
-    position: relative !important;
+    position: fixed !important;
+    /* 화면 폭을 다 쓴다. 옛 독은 우측 rail의 최종 CTA를 덮지 않으려고 462px을
+       비워 뒀지만, 시트가 바닥으로 내려간 지금 rail은 그리드 안(바닥 635)이고
+       시트는 그 아래(659)라 겹치지 않는다. 넓을수록 헤더가 한 줄에 들어간다.
+       `width` 대신 `left`/`right`를 쓴다 - 100vw는 스크롤바를 포함해 넘친다 */
+    left: 33px;
+    right: 33px;
+    bottom: 12px;
     top: auto !important;
-    z-index: 12;
-    width: calc(100% - 20px) !important;
+    z-index: 60;
+    width: auto !important;
     height: auto !important;
-    max-height: var(--sc-sheet-available-h, 270px) !important;
-    margin: 0 10px 10px !important;
-    overflow-y: auto !important;
-    border-radius: 14px !important;
+    max-height: none !important;
+    margin: 0 !important;
+    overflow: visible !important;
+    border-radius: 13px !important;
     padding: 0 !important;
-    box-shadow: 0 16px 40px rgba(16, 24, 40, .18) !important;
-    transform: translateY(calc(-1 * var(--sc-sheet-dock-offset, 0px)));
+    box-shadow: 0 12px 36px rgba(16, 24, 40, .16) !important;
+    transform: none !important;
   }
 
   /**
@@ -421,9 +432,44 @@
   div#place-picker[data-place-sheet] > [data-place-sheet-header] {
     position: relative !important;
     top: auto !important;
-    min-height: 58px !important;
+    min-height: 0 !important;
     margin: 0 !important;
-    padding: 12px 14px 9px !important;
+    padding: 8px 14px !important;
+    flex-wrap: nowrap !important;
+  }
+
+  /**
+   * 헤더를 한 줄로 (#146).
+   *
+   * 독은 가로로 길다 - 1024에서 562px, 1280에서 818px. 제목·상태 요약·분류 칩이
+   * 한 줄에 들어가므로 두 줄로 쌓을 이유가 없다. **쌓으면 그만큼 독이 높아지고,
+   * 펼친 카드 줄이 그만큼 위로 올라가 지도를 더 덮는다.** 여기서 아낀 높이가
+   * 그대로 지도가 보이는 높이다.
+   */
+  div#place-picker[data-place-sheet] > [data-place-sheet-header] > div {
+    display: flex !important;
+    align-items: baseline !important;
+    flex-wrap: nowrap !important;
+    gap: 14px !important;
+    min-width: 0 !important;
+  }
+
+  div#place-picker[data-place-sheet] > [data-place-sheet-header] > div > div,
+  div#place-picker[data-place-sheet] > [data-place-sheet-header] [data-category-chips] {
+    margin-top: 0 !important;
+    flex-wrap: nowrap !important;
+  }
+
+  /* 제목·상태 문구는 줄바꿈으로 헤더를 키우는 대신 한 줄에 붙어 있는다 */
+  div#place-picker[data-place-sheet] > [data-place-sheet-header] h3,
+  div#place-picker[data-place-sheet] > [data-place-sheet-header] [data-selection-state] {
+    white-space: nowrap !important;
+  }
+
+  /* 손잡이는 시트를 끌어 올리는 모바일 어포던스다. 화면에 고정된 독에는 끌 대상이
+     없고, 좁아진 헤더에서는 글자와 겹친다 */
+  div#place-picker[data-place-sheet] > [data-place-sheet-header] > span[aria-hidden] {
+    display: none !important;
   }
 
   /**
@@ -464,23 +510,9 @@
   }
 }
 
-/* The theme no-result state uses the same compact summary/detail pattern as the
-   other utilities, so the dock no longer needs a 1024-only height penalty. */
-@media (min-width: 1024px) and (max-width: 1279px) {
-  div#place-picker[data-place-sheet] {
-    margin-bottom: 10px !important;
-    max-height: var(--sc-sheet-available-h, 270px) !important;
-  }
-}
-
-/* The 720px-high projector viewport still needs the sheet lifted above the fixed
-   dock, but keep its full content height so cards never clip behind the shell. */
-@media (min-width: 1024px) and (max-height: 740px) {
-  div#place-picker[data-place-sheet] {
-    margin-bottom: 44px !important;
-    max-height: var(--sc-sheet-available-h, 270px) !important;
-  }
-}
+/* 시트를 독 자리에 직접 고정한 뒤로 (#146) 폭·높이별 띄우기 보정이 필요 없어졌다.
+   `margin-bottom`으로 독을 피하던 두 블록과 `--sc-sheet-available-h` 계산은
+   시트가 곧 독이 되면서 겨냥할 대상이 사라졌다. */
 
 @media (min-width: 1280px) {
   html body main section > div.grid:has(> div#place-picker[data-place-sheet]) {
