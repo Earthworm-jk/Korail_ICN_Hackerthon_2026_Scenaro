@@ -843,10 +843,13 @@ export function KoreaMapPanel({
       className={`min-w-0 rounded-2xl border bg-sc-surface p-4 sm:p-[18px] ${sticky ? "md:sticky md:top-4" : ""}`}
     >
       <div className="mb-2 flex flex-wrap items-center justify-between gap-x-2.5 gap-y-2">
+        {/* 제목과 (i)를 한 묶음으로 (#146). `justify-between`인 줄에 셋을 늘어놓으면
+            가운데 것이 화면 한복판으로 떠 어느 것에 딸린 버튼인지 읽히지 않는다 */}
+        <div className="flex min-w-0 items-center gap-2">
         <h3 className="font-medium whitespace-nowrap">
           {tr(isRoute ? "map.routeTitle" : "map.placesTitle")}
         </h3>
-        {/* 동선 고지를 제목 옆 (!)로 옮겼다 (#146 모바일). 390px에서 이 82자가
+        {/* 동선 고지를 제목 옆 (i)로 옮겼다 (#146 모바일). 390px에서 이 82자가
             지도 아래 48px을 먹었다. 고지 자체는 그대로 두고 자리만 옮긴다 */}
         {isRoute && (
           <button
@@ -861,6 +864,7 @@ export function KoreaMapPanel({
             <span aria-hidden="true" className="text-sm font-semibold">i</span>
           </button>
         )}
+        </div>
         <div className="flex flex-wrap items-center justify-end gap-1.5">
           {/* "대한민국 지도" 배지는 지웠다 (#146) — 지도를 보면 아는 것을 적어
               한 줄을 쓰고 있었다. 스크린리더용 이름은 svg의 aria-label에 남아 있다 */}

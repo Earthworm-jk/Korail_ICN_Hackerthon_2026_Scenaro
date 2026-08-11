@@ -29,6 +29,43 @@
   min-width: 0;
 }
 
+/**
+ * 좁은 화면에서 정렬·펼치기를 **제목 줄 오른쪽 끝**으로 (#146).
+ *
+ * 셋째 줄을 따로 쓰고 있었다 — 조작 둘이 줄 하나를 통째로 먹어 시트가 그만큼 높아졌다.
+ * 제목 옆은 어차피 비어 있다.
+ *
+ * DOM은 그대로 두고 `display: contents`로 제목 묶음의 껍데기만 걷어낸다. 그러면 제목
+ * 줄과 상태 줄이 헤더의 직접 자식이 되어 `order`로 갈라 놓을 수 있다 — 상태 줄만
+ * 100% 폭을 줘서 다음 줄로 내린다.
+ */
+@media (max-width: 1023px) {
+  .header > div:first-of-type {
+    display: contents;
+  }
+
+  /* 제목 줄 — 남는 폭을 쓰고, 조작이 들어올 자리를 남긴다 */
+  .header > div:first-of-type > div:first-child {
+    order: 1;
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  .sortControl { order: 2; }
+  .toggle { order: 3; }
+
+  /* 상태 요약과 분류 칩은 다음 줄 전체 */
+  .header > div:first-of-type > div:nth-child(2) {
+    order: 4;
+    flex: 1 1 100%;
+    margin-top: 2px;
+  }
+
+  .header > :global(#stage-sheet-actions) {
+    order: 5;
+  }
+}
+
 /* 각 문항은 한 줄씩 (#146 모바일). 줄바꿈으로 쪼개면 무슨 숫자인지 읽히지 않는다 */
 .header h3,
 .header [data-selection-state] {
@@ -251,23 +288,7 @@
   list-style: none;
 }
 
-.fallbackMap {
-  margin-top: 10px;
-  overflow: hidden;
-  border: 1px solid var(--sc-line);
-  border-radius: 10px;
-}
-
-.fallbackMap > summary {
-  padding: 10px 12px;
-  font-size: 0.875rem;
-  font-weight: 600;
-}
-
-.fallbackMap > div {
-  border-top: 1px solid var(--sc-line);
-  padding: 10px;
-}
+/* `.fallbackMap`은 지웠다 (#146) — 시트 안 촬영지 위치 지도가 사라져 대상이 없다 */
 
 .thumbnail {
   position: relative;
@@ -413,10 +434,7 @@
     white-space: nowrap;
   }
 
-  .fallbackMap,
-  .sheet > :global([data-place-sheet-back]) {
-    display: none;
-  }
+  /* 시트 안 지도와 `이전` 버튼은 지웠다 (#146) — 숨길 대상이 없다 */
 
   .thumbnail {
     width: 64px;

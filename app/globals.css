@@ -386,19 +386,21 @@
     padding-top: 14px;
   }
 
-  /* 카드 위를 가로지르는 선 — 마지막 칸은 오른쪽으로 더 잇지 않는다 */
-  ul[data-day-rows] > li::after {
-    content: "";
-    position: absolute;
-    top: 5px;
-    left: 8px;
-    right: -8px;
-    height: 1px;
-    background: var(--sc-line-strong, var(--sc-line));
-  }
-
-  ul[data-day-rows] > li:last-child::after {
-    right: 8px;
+  /**
+   * 카드 위를 가로지르는 선.
+   *
+   * **레일에 한 번 긋는다.** 칸마다 그으면 체류 타임라인처럼 빈 칸이 있는 줄에서
+   * 선이 끊긴다 - 체류는 도착 시각에 맞춰 칸을 건너뛰므로 실제로 그렇게 끊겼다.
+   * 배경으로 그리면 칸이 비어도 이어진다.
+   */
+  ul[data-day-rows] {
+    background-image: linear-gradient(
+      to right,
+      var(--sc-line-strong, var(--sc-line)) 0 100%
+    );
+    background-position: 8px 5px;
+    background-repeat: no-repeat;
+    background-size: calc(100% - 16px) 1px;
   }
 
   /* 그 선 위의 시각 표식 */
