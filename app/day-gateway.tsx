@@ -2,7 +2,7 @@
 
 import { Plane } from "lucide-react";
 import type { AirportLeg } from "@/lib/itinerary-rows";
-import { withValues, type MessageKey } from "@/lib/i18n/messages";
+import { withValues, type Locale, type MessageKey } from "@/lib/i18n/messages";
 
 /**
  * DAY 헤더의 공항 진입 조회 (#146)
@@ -21,12 +21,15 @@ export function DayGatewayInfo({
   legs,
   stationName,
   date,
+  locale,
   formatTime,
   tr,
 }: {
   legs: AirportLeg[];
   stationName: (id: string) => string;
   date: string;
+  /** 역 이름이 이미 locale을 따른다 — 노선명만 한국어로 굳으면 한 팝오버에서 언어가 섞인다 */
+  locale: Locale;
   formatTime: (iso: string) => string;
   tr: (key: MessageKey) => string;
 }) {
@@ -60,7 +63,7 @@ export function DayGatewayInfo({
         <p id={titleId} className="text-sm font-semibold text-sc-text">{tr("gateway.dockTitle")}</p>
         <ul className="mt-2 space-y-2">
           {legs.map((leg) => (
-            <li key={`${leg.serviceName}-${leg.departAt}`} className="rounded-lg border px-3 py-2">
+            <li key={`${leg.serviceName.ko}-${leg.departAt}`} className="rounded-lg border px-3 py-2">
               <p className="flex items-center gap-1.5 text-sm font-medium text-sc-text">
                 {tr(leg.direction === "to_airport" ? "step4.gatewayToAirport" : "step4.gatewayFromAirport")}
               </p>
@@ -71,7 +74,7 @@ export function DayGatewayInfo({
                 {formatTime(leg.departAt)} – {formatTime(leg.arriveAt)}
                 {" · "}
                 {tr(leg.kind === "rail" ? "step4.gatewayRail" : "step4.gatewayBus")}
-                {" "}{leg.serviceName}
+                {" "}{leg.serviceName[locale]}
               </p>
             </li>
           ))}

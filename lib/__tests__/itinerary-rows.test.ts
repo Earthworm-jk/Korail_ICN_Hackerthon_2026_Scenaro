@@ -193,7 +193,7 @@ describe("#146 — 그 날 공항 진입 구간", () => {
     expect(legs).toHaveLength(1);
     expect(legs[0].kind).toBe("rail");
     expect(legs[0].direction).toBe("to_airport");
-    expect(legs[0].serviceName).toBe("AREX");
+    expect(legs[0].serviceName).toEqual({ ko: "AREX", en: "AREX" });
   });
 
   it("공항에서 나오는 방향도 구분한다", () => {
@@ -211,9 +211,42 @@ describe("#146 — 그 날 공항 진입 구간", () => {
     expect(legs.map((leg) => leg.kind)).toEqual(["bus", "rail"]);
   });
 
-  it("공항역 목록이 비면 아무것도 잡지 않는다", () => {
+  it("공항역 목록이 비면 열차 구간은 잡지 않는다", () => {
     const legs = airportLegsOf(
       day({ rides: [ride("AREX", "05:00", "s1", "ST-AIRPORT")] }), new Set());
     expect(legs).toEqual([]);
+  });
+
+  /**
+   * **버스는 정의상 공항 진입 구간이다.** 소속 검사에 걸어 두면 공항역 메타데이터가
+   * 비었을 때 공항을 어떻게 드나드는지 말할 수단이 통째로 사라진다.
+   */
+  it("공항역 목록이 비어도 버스 구간은 남는다", () => {
+    const legs = airportLegsOf(
+      day({ rides: [], gatewayLegs: [gateway("ST-AIRPORT", "s2", "07:00")] }), new Set());
+    expect(legs).toHaveLength(1);
+    expect(legs[0].kind).toBe("bus");
+  });
+
+  /**
+   * 방향은 엔진 계약(`outbound`=공항 이탈, `inbound`=공항 귀환)을 그대로 옮긴다.
+   * 좌표로 다시 추론하면 **메타데이터가 비었을 때 귀환 구간이 반대로 표시된다.**
+   */
+  it("공항역 목록이 비어도 inbound는 공항으로 간다", () => {
+    const inbound = { ...gateway("s2", "ST-AIRPORT", "07:00"), direction: "inbound" as const };
+    const legs = airportLegsOf(day({ rides: [], gatewayLegs: [inbound] }), new Set());
+    expect(legs[0].direction).toBe("to_airport");
+  });
+
+  it("outbound는 공항에서 나온다", () => {
+    const outbound = { ...gateway("ST-AIRPORT", "s2", "07:00"), direction: "outbound" as const };
+    const legs = airportLegsOf(day({ rides: [], gatewayLegs: [outbound] }), new Set());
+    expect(legs[0].direction).toBe("from_airport");
+  });
+
+  it("버스 노선명은 다국어 그대로 옮긴다", () => {
+    const legs = airportLegsOf(
+      day({ rides: [], gatewayLegs: [gateway("ST-AIRPORT", "s2", "07:00")] }), airports);
+    expect(legs[0].serviceName).toEqual({ ko: "공항버스 6001", en: "Airport bus 6001" });
   });
 });

@@ -2016,6 +2016,7 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
                       legs={airportLegsOf(day, airportStationIds)}
                       stationName={stationName}
                       date={day.date}
+                      locale={locale}
                       formatTime={fmtTime}
                       tr={tr}
                     />

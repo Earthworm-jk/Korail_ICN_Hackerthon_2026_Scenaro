@@ -103,8 +103,12 @@ export function shouldNoteAirportRail({
 /** 그 날 공항을 드나드는 구간 — DAY 헤더 공항 진입 아이콘용 (#146) */
 export type AirportLeg = {
   kind: "rail" | "bus";
-  /** 열차번호나 버스 노선명 */
-  serviceName: string;
+  /**
+   * 열차번호나 버스 노선명. **다국어로 들고 간다** — 버스 노선명은 원본이 ko/en을
+   * 모두 갖고 있고, 역 이름은 이미 locale을 따르므로 여기서 한쪽으로 굳히면 같은
+   * 팝오버 안에서 언어가 섞인다. 열차번호는 번역 대상이 아니라 양쪽이 같다.
+   */
+  serviceName: { ko: string; en: string };
   fromStationId: string;
   toStationId: string;
   departAt: string;
@@ -122,36 +126,46 @@ export type AirportLeg = {
  *
  * 철도(공항철도)는 `rides`에, 검증 버스는 `gatewayLegs`에 있다. 사용자에게는 둘 다
  * "공항을 어떻게 드나드는가"라는 같은 질문의 답이므로 한 목록으로 합친다.
+ *
+ * **방향을 구하는 방법이 둘이다.**
+ * - 버스는 `GatewayRide.direction`이 이미 계약으로 말한다. `outbound`가 공항 이탈,
+ *   `inbound`가 공항 귀환이다. 있는 계약을 두고 좌표로 다시 추론하면, 공항역
+ *   메타데이터가 비거나 어긋났을 때 귀환 구간이 반대로 표시된다.
+ * - 열차는 그런 계약이 없다(일반 `rides`와 같은 타입이다). 그래서 공항역 소속으로
+ *   판별하고, 애초에 공항역을 지나지 않으면 목록에 넣지 않는다.
+ *
+ * `gatewayLegs`는 **정의상 공항 진입 구간**이라 소속 검사를 하지 않는다. 메타데이터가
+ * 비어 있어도 버스 구간은 그대로 나온다 - 그게 없으면 공항을 어떻게 드나드는지
+ * 말할 수단이 사라진다.
  */
 export function airportLegsOf(
   day: DayPlan,
   airportStationIds: ReadonlySet<string>,
 ): AirportLeg[] {
   const legs: AirportLeg[] = [];
-  const directionOf = (from: string, to: string) =>
-    airportStationIds.has(to) ? "to_airport" as const : "from_airport" as const;
 
   for (const ride of day.rides) {
     if (!airportStationIds.has(ride.fromStationId) && !airportStationIds.has(ride.toStationId)) continue;
     legs.push({
       kind: "rail",
-      serviceName: ride.trainNo,
+      serviceName: { ko: ride.trainNo, en: ride.trainNo },
       fromStationId: ride.fromStationId,
       toStationId: ride.toStationId,
       departAt: ride.departAt,
       arriveAt: ride.arriveAt,
-      direction: directionOf(ride.fromStationId, ride.toStationId),
+      direction: airportStationIds.has(ride.toStationId) ? "to_airport" : "from_airport",
     });
   }
   for (const leg of day.gatewayLegs ?? []) {
     legs.push({
       kind: "bus",
-      serviceName: leg.serviceName.ko,
+      serviceName: leg.serviceName,
       fromStationId: leg.fromStationId,
       toStationId: leg.toStationId,
       departAt: leg.departAt,
       arriveAt: leg.arriveAt,
-      direction: directionOf(leg.fromStationId, leg.toStationId),
+      // 엔진 계약을 그대로 옮긴다 — outbound가 공항 이탈, inbound가 공항 귀환이다
+      direction: leg.direction === "inbound" ? "to_airport" : "from_airport",
     });
   }
   return legs.sort((a, b) => Date.parse(a.departAt) - Date.parse(b.departAt));
