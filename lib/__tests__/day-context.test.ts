@@ -36,11 +36,7 @@ describe("수록 여부", () => {
     expect(html).not.toContain("ST-MISSING역");
   });
 
-  it("수록된 역이 하나도 없으면 배지 자체를 두지 않는다", () => {
-    expect(render(snapshotOf("ST-A"), ["ST-MISSING"])).toBe("");
-  });
-
-  it("역이 없는 날에도 배지를 두지 않는다", () => {
+  it("역이 없는 날에는 배지를 두지 않는다", () => {
     expect(render(snapshotOf("ST-A"), [])).toBe("");
   });
 
@@ -88,5 +84,41 @@ describe("히트 영역", () => {
     const html = render(snapshotOf("ST-A"), ["ST-A"]);
     expect(html).toMatch(/min-h-10/);
     expect(html).toMatch(/min-h-11/);
+  });
+});
+
+describe("#146 — 독 카드에서 옮겨온 것들", () => {
+  /**
+   * 조용히 빼면 사용자는 "그 역엔 시설이 없다"로 읽는다. **확보되지 않은 것과
+   * 없는 것은 다르다** — 독 카드에 있던 고지를 여기로 옮겼다.
+   */
+  it("수록되지 않은 역이 있으면 그 사실을 알린다", () => {
+    const html = render(snapshotOf("ST-A"), ["ST-A", "ST-MISSING"]);
+    expect(html).toContain("support.facilitiesMissing");
+  });
+
+  it("전부 수록됐으면 고지하지 않는다", () => {
+    expect(render(snapshotOf("ST-A"), ["ST-A"])).not.toContain("support.facilitiesMissing");
+  });
+
+  it("출처와 확인일을 함께 적는다", () => {
+    const html = render(snapshotOf("ST-A"), ["ST-A"]);
+    expect(html).toContain("support.facilitiesSource");
+    expect(html).toContain("2026-08-01");
+  });
+
+  /**
+   * #155에서는 "수록된 역이 없으면 배지를 두지 않는다"였다. 그때는 눌러도 빈 화면이라
+   * 그게 맞았지만, 이제 그 자리에 짐 보관 안내가 들어가므로 빈 화면이 아니다.
+   */
+  it("수록된 역이 없으면 짐 보관 안내를 대신 보여준다", () => {
+    const html = render(snapshotOf("ST-OTHER"), ["ST-A", "ST-B"]);
+    expect(html).not.toBe("");
+    expect(html).toContain("support.luggageTitle");
+    expect(html).toContain("support.luggageSource");
+  });
+
+  it("거치는 역이 아예 없는 날에는 여전히 두지 않는다", () => {
+    expect(render(snapshotOf("ST-A"), [])).toBe("");
   });
 });
