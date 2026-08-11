@@ -1,3 +1,7 @@
+"use client";
+
+import { useState } from "react";
+import { X } from "lucide-react";
 import type { MessageKey } from "@/lib/i18n/messages";
 import type { ItineraryDiff } from "@/lib/itinerary-diff";
 import { StageUtilityPortal } from "./stage-utility-portal";
@@ -24,6 +28,37 @@ function withValues(template: string, values: Record<string, string | number>): 
  * 태블릿 패널을 다시 긴 문장으로 채우지 않기 위해서다.
  */
 export function ItineraryChangeSummary({ diff, placeName, reasonLabel, tr }: Props) {
+  /**
+   * 사용자가 치울 수 있다 (#146).
+   *
+   * 다음 재계산 전까지 남는 상태 표시였는데, 시트가 바닥으로 내려오면서 그 위에 늘
+   * 한 겹이 더 얹혀 있게 됐다. 다 본 뒤에는 치울 수 있어야 한다.
+   *
+   * `diff`가 바뀌면 다시 연다 — **새 결과는 새 소식이다.** 한 번 닫았다고 다음
+   * 재계산 결과까지 삼키면 무엇이 달라졌는지 알 길이 사라진다.
+   */
+  const [dismissedDiff, setDismissedDiff] = useState<ItineraryDiff | null>(null);
+  // 치운 것이 **지금 이 결과**일 때만 숨긴다. 새 결과가 오면 참조가 달라져 저절로
+  // 다시 뜬다 - effect로 되돌리면 렌더가 한 번 더 돌고 그 사이 옛 요약이 비친다.
+  const dismissed = dismissedDiff === diff;
+  const closeButton = (
+    <button
+      type="button"
+      aria-label={tr("common.close")}
+      onClick={(event) => {
+        // summary 안이라 그대로 두면 클릭이 펼침/접힘으로도 먹는다
+        event.preventDefault();
+        event.stopPropagation();
+        setDismissedDiff(diff);
+      }}
+      className="grid size-8 shrink-0 place-items-center rounded-full border border-transparent text-sc-muted hover:border-sc-blue hover:text-sc-blue"
+    >
+      <X aria-hidden="true" className="size-4" />
+    </button>
+  );
+
+  if (dismissed) return null;
+
   if (!diff.changed) {
     return (
       <StageUtilityPortal>
@@ -41,6 +76,7 @@ export function ItineraryChangeSummary({ diff, placeName, reasonLabel, tr }: Pro
               <span className="block text-xs text-sc-text/70">{tr("step4.changeUnchangedShort")}</span>
             </span>
             <span aria-hidden className="shrink-0 text-sc-muted transition-transform group-open:rotate-180">⌄</span>
+            {closeButton}
           </summary>
           <div className="border-t border-sc-blue/15 px-3 pb-3 pt-2 text-sm text-sc-text/75">
             {tr("step4.changeUnchanged")}
@@ -88,6 +124,7 @@ export function ItineraryChangeSummary({ diff, placeName, reasonLabel, tr }: Pro
             </span>
           </span>
           <span aria-hidden className="shrink-0 text-sc-muted transition-transform group-open:rotate-180">⌄</span>
+          {closeButton}
         </summary>
 
         <div className="border-t border-sc-blue/15 px-3 pb-3 pt-2 text-sm text-sc-text/80">
