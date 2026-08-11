@@ -2287,9 +2287,8 @@ function PlaceCard({ candidate, locale, tr, selected, onToggle, stationName, wor
         </PlaceThumbnail>
 
         {/* 사진 위 이름은 어두운 그라디언트 없이도 읽혀야 한다 — CSS의 paint-order 참고.
-            `pr-10`으로 우하단 상세 버튼 자리를 비워 둔다 — 없으면 긴 이름이 버튼 밑으로 깔린다 */
-        }
-        <div className="absolute inset-x-0 bottom-0 flex flex-col items-start gap-1 p-2 pr-10">
+            우하단 상세 버튼 자리는 `.photoCardBar`가 버튼 기하에서 파생해 비워 둔다 */}
+        <div className={sheetStyles.photoCardBar}>
           {/* 운영시간 미확인은 고르기 전에 알아야 한다 (#43). 좌상단은 사진 출처가 쓰므로
               이름과 한 덩어리로 둔다 — 어차피 이 장소에 대한 단서다 */}
           {!hoursLabel && (
@@ -2312,7 +2311,7 @@ function PlaceCard({ candidate, locale, tr, selected, onToggle, stationName, wor
 
         <button
           type="button"
-          className={`absolute right-1.5 top-1.5 grid size-10 place-items-center rounded-full text-sm shadow ${
+          className={`${sheetStyles.cornerButton} ${sheetStyles.cornerButtonSelect} text-sm shadow ${
             selected ? "bg-sc-blue text-white" : "border bg-sc-surface/90"
           }`}
           onClick={onToggle}
@@ -2329,7 +2328,7 @@ function PlaceCard({ candidate, locale, tr, selected, onToggle, stationName, wor
           aria-haspopup="dialog"
           aria-controls={detailPopoverId}
           aria-label={tr("step3.showDetail")}
-          className="absolute bottom-1.5 right-1.5 grid size-10 place-items-center rounded-full border bg-sc-surface/90 text-sc-blue shadow"
+          className={`${sheetStyles.cornerButton} ${sheetStyles.cornerButtonDetail} border bg-sc-surface/90 text-sc-blue shadow`}
         >
           <Info aria-hidden="true" className="size-4" />
         </button>
