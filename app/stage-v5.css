@@ -1,0 +1,469 @@
+/* Stage workspace v5 — presentation-focused visual polish.
+   This layer intentionally changes visual hierarchy only. It does not alter itinerary
+   calculation, selection semantics, validation, or saved data contracts.
+
+   Goals:
+   1. Make Step 2 read as a K-content discovery experience, not a form.
+   2. Make the map/result workspace visually lead the page.
+   3. Present over-selection as an adjustment task instead of a product error.
+   4. Make the final itinerary scan like a travel timeline instead of a report. */
+
+:root {
+  --sc-adjust: #a45b00;
+  --sc-adjust-strong: #844700;
+  --sc-adjust-soft: #fff8e8;
+  --sc-ink-soft: #334155;
+  --sc-stage-shadow: 0 18px 54px rgba(16, 24, 40, 0.10);
+}
+
+/* -------------------------------------------------------------------------- */
+/* App shell / brand hierarchy                                                */
+/* -------------------------------------------------------------------------- */
+
+body {
+  background:
+    radial-gradient(circle at 12% 0%, rgba(0, 91, 172, 0.055), transparent 30rem),
+    radial-gradient(circle at 88% 18%, rgba(0, 143, 152, 0.045), transparent 28rem),
+    var(--sc-subtle);
+}
+
+body > main > div.mx-auto > div.overflow-hidden {
+  border-color: rgba(203, 211, 224, 0.92);
+  box-shadow: var(--sc-stage-shadow) !important;
+}
+
+body > main > div.mx-auto > div.overflow-hidden > header > div:first-child > span[aria-hidden="true"] {
+  position: relative;
+  overflow: hidden;
+  border-radius: 12px !important;
+  background: linear-gradient(145deg, #0067bd, #00498f) !important;
+  box-shadow: 0 8px 20px rgba(0, 91, 172, 0.20);
+}
+
+body > main > div.mx-auto > div.overflow-hidden > header > div:first-child > span[aria-hidden="true"]::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(125deg, rgba(255,255,255,.23), transparent 38%);
+  pointer-events: none;
+}
+
+body > main > div.mx-auto > div.overflow-hidden > nav {
+  background: #f5f7fa !important;
+}
+
+body > main > div.mx-auto > div.overflow-hidden > nav > div[aria-current="step"] {
+  position: relative;
+  background: linear-gradient(180deg, #eef6ff 0%, #e8f2ff 100%) !important;
+}
+
+body > main > div.mx-auto > div.overflow-hidden > nav > div[aria-current="step"]::after {
+  content: "";
+  position: absolute;
+  left: 22%;
+  right: 22%;
+  bottom: 0;
+  height: 3px;
+  border-radius: 999px 999px 0 0;
+  background: var(--sc-blue);
+}
+
+/* -------------------------------------------------------------------------- */
+/* Step 1 — airport window as a travel setup, not four identical form boxes   */
+/* -------------------------------------------------------------------------- */
+
+section:has(input[placeholder="KE123"]) > div[class*="grid"] > div[class*="rounded-lg"][class*="border"] {
+  position: relative;
+  overflow: hidden;
+  border-color: #d7e1ed !important;
+  background: linear-gradient(180deg, #ffffff 0%, #fbfdff 100%);
+  box-shadow: 0 7px 22px rgba(16, 24, 40, 0.045);
+}
+
+section:has(input[placeholder="KE123"]) > div[class*="grid"]:first-of-type > div[class*="rounded-lg"]::before {
+  content: "";
+  position: absolute;
+  inset-block: 0;
+  left: 0;
+  width: 4px;
+  background: var(--sc-airport);
+}
+
+section:has(input[placeholder="KE123"]) > div[class*="grid"]:nth-of-type(2) > div[class*="rounded-lg"]::before {
+  content: "";
+  position: absolute;
+  inset-block: 0;
+  left: 0;
+  width: 4px;
+  background: linear-gradient(var(--sc-blue), var(--sc-airport));
+}
+
+section:has(input[placeholder="KE123"]) input,
+section:has(input[placeholder="KE123"]) select {
+  border-color: #d5deea;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Step 2 — K-content discovery                                               */
+/* -------------------------------------------------------------------------- */
+
+section:has(> input[class*="w-full"]):has(> ul[class*="mt-3"]) {
+  position: relative;
+}
+
+section:has(> input[class*="w-full"]):has(> ul[class*="mt-3"]) > input {
+  min-height: 50px;
+  border-color: #cbd8e8 !important;
+  border-radius: 13px !important;
+  padding-inline: 16px !important;
+  background: #fff;
+  box-shadow: 0 8px 26px rgba(0, 91, 172, 0.07);
+  transition: box-shadow 160ms ease, border-color 160ms ease, transform 160ms ease;
+}
+
+section:has(> input[class*="w-full"]):has(> ul[class*="mt-3"]) > input:focus {
+  border-color: var(--sc-blue) !important;
+  box-shadow: 0 0 0 4px rgba(0, 91, 172, .10), 0 12px 30px rgba(0, 91, 172, .08);
+}
+
+/* Search results become a discovery shelf instead of a vertical menu. */
+section:has(> input[class*="w-full"]):has(> ul[class*="mt-3"]) > ul {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 9px;
+  margin-top: 12px !important;
+}
+
+section:has(> input[class*="w-full"]):has(> ul[class*="mt-3"]) > ul > li {
+  margin: 0 !important;
+}
+
+section:has(> input[class*="w-full"]):has(> ul[class*="mt-3"]) > ul > li > button {
+  position: relative;
+  min-height: 62px;
+  overflow: hidden;
+  border-color: #dbe3ed !important;
+  border-radius: 12px !important;
+  padding: 12px 14px 12px 20px !important;
+  background: linear-gradient(135deg, #fff 0%, #fbfcfe 75%);
+  box-shadow: 0 4px 14px rgba(16, 24, 40, .035);
+  font-weight: 650;
+  transition: transform 150ms ease, border-color 150ms ease, box-shadow 150ms ease, background 150ms ease;
+}
+
+section:has(> input[class*="w-full"]):has(> ul[class*="mt-3"]) > ul > li > button::before {
+  content: "";
+  position: absolute;
+  inset-block: 9px;
+  left: 7px;
+  width: 4px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, var(--sc-blue), var(--sc-airport));
+  opacity: .82;
+}
+
+section:has(> input[class*="w-full"]):has(> ul[class*="mt-3"]) > ul > li > button:hover {
+  transform: translateY(-1px);
+  border-color: rgba(0, 91, 172, .40) !important;
+  background: #f7fbff !important;
+  box-shadow: 0 10px 24px rgba(0, 91, 172, .08);
+}
+
+section:has(> input[class*="w-full"]):has(> ul[class*="mt-3"]) > ul > li > button span {
+  display: inline-block;
+  margin-left: 8px !important;
+  border-radius: 999px;
+  padding: 2px 7px;
+  background: #f0f4f8;
+  color: var(--sc-muted) !important;
+  font-weight: 500;
+}
+
+/* Selected content is the user's taste board. */
+section:has(> input[class*="w-full"]):has(> ul[class*="mt-3"]) > div[class*="bg-sc-subtle"] {
+  border-color: #d7e1ed !important;
+  border-radius: 14px !important;
+  background:
+    linear-gradient(135deg, rgba(234, 243, 255, .72), rgba(232, 248, 248, .60)),
+    #fff !important;
+  padding: 14px !important;
+}
+
+section:has(> input[class*="w-full"]):has(> ul[class*="mt-3"]) > div[class*="bg-sc-subtle"] h3 {
+  font-weight: 700 !important;
+  letter-spacing: -.01em;
+}
+
+section:has(> input[class*="w-full"]):has(> ul[class*="mt-3"]) > div[class*="bg-sc-subtle"] button {
+  min-height: 38px;
+  border: 1px solid rgba(0, 91, 172, .10);
+  box-shadow: 0 3px 9px rgba(16,24,40,.035);
+  transition: transform 140ms ease, box-shadow 140ms ease;
+}
+
+section:has(> input[class*="w-full"]):has(> ul[class*="mt-3"]) > div[class*="bg-sc-subtle"] button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 7px 16px rgba(16,24,40,.07);
+}
+
+/* -------------------------------------------------------------------------- */
+/* Step 3 — map/result workspace                                              */
+/* -------------------------------------------------------------------------- */
+
+section:has(#place-picker) svg[role="img"] {
+  border: 1px solid rgba(203, 211, 224, .72);
+  box-shadow: 0 12px 30px rgba(16, 24, 40, .055);
+}
+
+/* Map labels remain readable, but no longer dominate the route. */
+section:has(#place-picker) svg[role="img"] g:has(> rect) > rect {
+  opacity: .86 !important;
+  stroke-width: .5 !important;
+}
+
+section:has(#place-picker) svg[role="img"] g:has(> rect) > text {
+  font-weight: 600 !important;
+}
+
+/* Blocking over-selection is a normal adjustment task, not a failure state.
+   stage-v4 intentionally made this red; v5 restores a distinct amber language. */
+#place-picker + div[aria-busy] [role="status"]:has(a[href="#place-picker"]) {
+  border: 1px solid rgba(164, 91, 0, .34) !important;
+  border-left: 4px solid var(--sc-adjust) !important;
+  border-radius: 13px !important;
+  background:
+    linear-gradient(115deg, rgba(255, 248, 232, .98), rgba(255,255,255,.92)) !important;
+  padding: 15px 16px !important;
+  box-shadow: 0 8px 22px rgba(164, 91, 0, .075) !important;
+}
+
+#place-picker + div[aria-busy] [role="status"]:has(a[href="#place-picker"]) h3,
+#place-picker + div[aria-busy] [role="status"]:has(a[href="#place-picker"]) p {
+  color: var(--sc-adjust-strong) !important;
+}
+
+#place-picker + div[aria-busy] [role="status"]:has(a[href="#place-picker"]) h3 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: .9375rem !important;
+  font-weight: 800 !important;
+}
+
+#place-picker + div[aria-busy] [role="status"]:has(a[href="#place-picker"]) h3::before {
+  content: "↕" !important;
+  display: inline-grid;
+  width: 24px !important;
+  height: 24px !important;
+  margin-right: 0 !important;
+  place-items: center;
+  border: 1px solid rgba(164, 91, 0, .25);
+  border-radius: 8px !important;
+  background: rgba(255,255,255,.70) !important;
+  color: var(--sc-adjust-strong) !important;
+  font-size: 13px !important;
+  font-weight: 800;
+}
+
+#place-picker + div[aria-busy] [role="status"]:has(a[href="#place-picker"]) > p:nth-of-type(1) {
+  margin-top: 8px !important;
+  font-size: 1.02rem !important;
+  font-weight: 800 !important;
+  letter-spacing: -.018em;
+}
+
+#place-picker + div[aria-busy] [role="status"]:has(a[href="#place-picker"]) > p:nth-of-type(n+2) {
+  color: #6f5b3f !important;
+}
+
+#place-picker + div[aria-busy] [role="status"]:has(a[href="#place-picker"]) a[href="#place-picker"] {
+  border-color: rgba(164,91,0,.36) !important;
+  background: #fff !important;
+  color: var(--sc-adjust-strong) !important;
+  font-weight: 750 !important;
+  box-shadow: 0 3px 10px rgba(164,91,0,.06);
+}
+
+#place-picker + div[aria-busy] [role="status"]:has(a[href="#place-picker"]) a[href="#place-picker"]:hover {
+  border-color: var(--sc-adjust) !important;
+  background: var(--sc-adjust-soft) !important;
+}
+
+/* Long rejection lists read like a compact decision ledger rather than an error log. */
+#place-picker + div[aria-busy] div:has(> ul > li:nth-child(6)) > ul {
+  column-count: 2;
+  column-gap: 22px;
+  margin-top: 10px !important;
+}
+
+#place-picker + div[aria-busy] div:has(> ul > li:nth-child(6)) > ul > li {
+  break-inside: avoid;
+  position: relative;
+  margin-bottom: 6px;
+  padding-left: 11px;
+  line-height: 1.45;
+}
+
+#place-picker + div[aria-busy] div:has(> ul > li:nth-child(6)) > ul > li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: .62em;
+  width: 4px;
+  height: 4px;
+  border-radius: 999px;
+  background: currentColor;
+  opacity: .55;
+}
+
+/* Utility dock becomes quieter so the map and itinerary remain the visual lead. */
+#stage-utility-dock {
+  border-color: rgba(203, 211, 224, .82) !important;
+  box-shadow: 0 16px 42px rgba(16, 24, 40, .13) !important;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Final itinerary — travel timeline                                          */
+/* -------------------------------------------------------------------------- */
+
+[data-final-itinerary] > div:first-child {
+  align-items: center !important;
+}
+
+/* Turn three separate dashboard KPI cards into one compact trip summary rail. */
+[data-final-itinerary] > div:first-child dl {
+  gap: 0 !important;
+  overflow: hidden;
+  border: 1px solid var(--sc-line);
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 5px 16px rgba(16,24,40,.035);
+}
+
+[data-final-itinerary] > div:first-child dl > div {
+  min-width: 82px !important;
+  border: 0 !important;
+  border-right: 1px solid var(--sc-line) !important;
+  border-radius: 0 !important;
+  background: #fff !important;
+  padding: 9px 13px !important;
+}
+
+[data-final-itinerary] > div:first-child dl > div:last-child {
+  border-right: 0 !important;
+}
+
+[data-final-itinerary] article[data-final-day] {
+  border-color: #d9e1ec !important;
+  background: linear-gradient(180deg, #fff 0%, #fdfefe 100%) !important;
+  box-shadow: 0 10px 26px rgba(16,24,40,.055) !important;
+}
+
+/* Day header behaves like a travel ticket header. */
+[data-final-itinerary] article[data-final-day] > div:first-child {
+  margin: -16px -16px 0 !important;
+  padding: 14px 16px 13px !important;
+  border-bottom-color: #d9e5f2 !important;
+  border-radius: 12px 12px 0 0;
+  background: linear-gradient(135deg, #f4f9ff, #fbfdff 62%, #f2fbfb);
+}
+
+[data-final-itinerary] article[data-final-day] > div:first-child > span {
+  border: 1px solid rgba(0, 91, 172, .10);
+  background: rgba(255,255,255,.78) !important;
+}
+
+/* Movement window is a route ribbon, not a large report block. */
+[data-final-itinerary] article[data-final-day] > div:nth-child(2) {
+  position: relative;
+  margin-top: 12px !important;
+  border: 1px solid #dce6f1;
+  border-radius: 10px !important;
+  background: #f7faff !important;
+  padding: 9px 11px 9px 14px !important;
+}
+
+[data-final-itinerary] article[data-final-day] > div:nth-child(2)::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 8px;
+  bottom: 8px;
+  width: 3px;
+  border-radius: 999px;
+  background: linear-gradient(var(--sc-airport), var(--sc-blue));
+}
+
+/* Visit order becomes a real vertical trip timeline. */
+[data-final-itinerary] article[data-final-day] ol {
+  position: relative;
+  margin-top: 10px !important;
+  margin-left: 9px;
+  padding-left: 22px;
+  border-left: 2px solid #d6e0ec;
+}
+
+[data-final-itinerary] article[data-final-day] ol > li {
+  position: relative;
+  min-height: 32px;
+  align-items: flex-start;
+  margin-bottom: 8px;
+  line-height: 1.45;
+}
+
+[data-final-itinerary] article[data-final-day] ol > li:last-child {
+  margin-bottom: 0;
+}
+
+[data-final-itinerary] article[data-final-day] ol > li > span:first-child {
+  margin-left: -34px;
+  margin-top: 0;
+  border: 3px solid #fff;
+  box-shadow: 0 0 0 1px rgba(0,91,172,.14);
+}
+
+[data-final-itinerary] article[data-final-day] details {
+  overflow: hidden;
+  border-color: #dbe3ed !important;
+  background: #fafbfd !important;
+}
+
+[data-final-itinerary] article[data-final-day] details[data-final-warning] {
+  border-color: rgba(164,91,0,.26) !important;
+  background: var(--sc-adjust-soft) !important;
+}
+
+[data-final-itinerary] > div:last-child {
+  background: linear-gradient(180deg, rgba(255,255,255,0), rgba(255,255,255,.74));
+}
+
+/* -------------------------------------------------------------------------- */
+/* Responsive                                                                  */
+/* -------------------------------------------------------------------------- */
+
+@media (max-width: 767px) {
+  section:has(> input[class*="w-full"]):has(> ul[class*="mt-3"]) > ul {
+    grid-template-columns: 1fr;
+  }
+
+  #place-picker + div[aria-busy] div:has(> ul > li:nth-child(6)) > ul {
+    column-count: 1;
+  }
+
+  [data-final-itinerary] > div:first-child dl {
+    width: 100%;
+  }
+
+  [data-final-itinerary] > div:first-child dl > div {
+    min-width: 0 !important;
+    flex: 1 1 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  section:has(> input[class*="w-full"]):has(> ul[class*="mt-3"]) > input,
+  section:has(> input[class*="w-full"]):has(> ul[class*="mt-3"]) > ul > li > button,
+  section:has(> input[class*="w-full"]):has(> ul[class*="mt-3"]) > div[class*="bg-sc-subtle"] button {
+    transition: none !important;
+  }
+}
