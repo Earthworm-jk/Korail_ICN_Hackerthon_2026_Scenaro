@@ -108,18 +108,34 @@ describe("배경 타일 공급자", () => {
       expect(activeTileSource().id).toContain("alidade_smooth");
     });
 
-    it("키가 없어도 URL이 있다 — localhost 등록 도메인으로 통한다", async () => {
+    it("키가 없어도 URL이 있다 — localhost 뒷문으로 통한다(로컬 개발)", async () => {
       const { stadiaSource } = await load(undefined);
-      const url = stadiaSource("zxy").urlOf(7, 109, 49);
-      expect(url).toContain("/alidade_smooth/7/109/49.png");
-      expect(url).not.toContain("api_key");
+      expect(stadiaSource("zxy").urlOf(7, 109, 49)).toContain("/alidade_smooth/7/109/49.png");
     });
 
-    it("키가 있으면 붙인다 — 인코딩해서", async () => {
-      const { stadiaSource } = await load(undefined, undefined, "a b/c");
-      const url = stadiaSource("zxy").urlOf(7, 109, 49) ?? "";
-      expect(url).toContain(`api_key=${encodeURIComponent("a b/c")}`);
-      expect(url).not.toContain("a b/c");
+    /**
+     * PR #164 리뷰 2번 — 브라우저가 아니라 우리 프록시가 부르므로 Stadia 기준 서버 앱이고,
+     * 서버 앱의 인증은 도메인 검사가 아니라 API 키다. 쿼리스트링은 서버 로그·중간 캐시에
+     * 그대로 남으므로 헤더로 보낸다.
+     */
+    it("키는 URL이 아니라 Authorization 헤더로 간다", async () => {
+      const { stadiaSource } = await load(undefined, undefined, "SECRET");
+      const source = stadiaSource("zxy");
+      expect(source.headers.Authorization).toBe("Stadia-Auth SECRET");
+      expect(source.urlOf(7, 109, 49)).not.toContain("SECRET");
+      expect(source.urlOf(7, 109, 49)).not.toContain("api_key");
+    });
+
+    it("키가 있으면 Referer를 보내지 않는다 — 배포가 localhost인 척할 자리를 없앤다", async () => {
+      const { stadiaSource } = await load(undefined, undefined, "SECRET", "http://localhost:3000/");
+      expect(stadiaSource("zxy").headers.Referer).toBeUndefined();
+    });
+
+    it("키가 없으면 Referer 뒷문만 쓴다 — 인증 둘을 같이 보내지 않는다", async () => {
+      const { stadiaSource } = await load(undefined);
+      const source = stadiaSource("zxy");
+      expect(source.headers.Authorization).toBeUndefined();
+      expect(source.headers.Referer).toBeDefined();
     });
 
     it("슬리피 순서 zxy가 기본이다 — VWorld의 zyx와 반대다", async () => {
@@ -146,22 +162,16 @@ describe("배경 타일 공급자", () => {
       }
     });
 
-    describe("Referer는 어댑터가 들고 다닌다", () => {
-      it("환경변수가 없으면 개발 기본값이다", async () => {
+    describe("인증 헤더는 어댑터가 들고 다닌다", () => {
+      it("키 없는 로컬은 개발 기본 Referer다", async () => {
         const mod = await load(undefined);
-        expect(mod.activeTileSource().referer).toBe(mod.DEV_STADIA_REFERER);
+        expect(mod.activeTileSource().headers.Referer).toBe(mod.DEV_STADIA_REFERER);
       });
 
-      /** 배포에서 localhost를 그대로 보내면 우리 서버가 localhost인 척하는 것이 된다 (#162) */
-      it("환경변수가 있으면 그 값을 쓴다 — 배포 도메인", async () => {
-        const { activeTileSource } = await load(undefined, undefined, undefined, "https://scenaro.example/");
-        expect(activeTileSource().referer).toBe("https://scenaro.example/");
-      });
-
-      it("VWorld 어댑터는 자기 Referer를 들고 다닌다 — 공급자마다 다르다", async () => {
-        const { stadiaSource, vworldSource } = await load("K", "https://vworld.example/", undefined, "https://stadia.example/");
-        expect(vworldSource().referer).toBe("https://vworld.example/");
-        expect(stadiaSource().referer).toBe("https://stadia.example/");
+      it("VWorld는 여전히 Referer 검사다 — 공급자마다 방식이 다르다", async () => {
+        const { stadiaSource, vworldSource } = await load("K", "https://vworld.example/", "SECRET");
+        expect(vworldSource().headers.Referer).toBe("https://vworld.example/");
+        expect(stadiaSource().headers.Authorization).toBe("Stadia-Auth SECRET");
       });
     });
   });

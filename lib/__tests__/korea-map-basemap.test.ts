@@ -2,7 +2,7 @@ import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 
-import { KoreaMapPanel } from "@/app/korea-map";
+import { BasemapAttribution, KoreaMapPanel } from "@/app/korea-map";
 import { messages } from "@/lib/i18n/messages";
 import { tileZoomFor, tilesForView } from "@/lib/map-tiles";
 import { BASE_VIEWPORT } from "@/lib/map-viewport";
@@ -82,13 +82,43 @@ describe("배경 타일 레이어", () => {
     expect(html).not.toContain("Stadia Maps");
   });
 
-  it("배경 출처 문구에 필수 표기 셋이 모두 있다", () => {
-    for (const locale of ["ko", "en"] as const) {
-      const text = messages[locale]["map.sourceBasemap"];
-      for (const required of ["Stadia Maps", "OpenMapTiles", "OpenStreetMap"]) {
-        expect(text).toContain(required);
+  /**
+   * PR #164 리뷰 1번 — 셋을 한 링크로 묶으면 표기는 있지만 이용 조건은 못 지킨 것이 된다.
+   * 공급자·타일 스키마·원본 데이터가 각자 자기 페이지로 가야 한다.
+   */
+  describe("출처 표기", () => {
+    const attribution = (locale: "ko" | "en") =>
+      renderToStaticMarkup(
+        createElement(BasemapAttribution, { tr: (key: MessageKey) => messages[locale][key] ?? key }),
+      );
+
+    it("세 공급자가 각각 자기 페이지로 링크된다", () => {
+      const html = attribution("ko");
+      for (const href of [
+        "https://stadiamaps.com/",
+        "https://openmaptiles.org/",
+        "https://www.openstreetmap.org/copyright",
+      ]) {
+        expect(html).toContain(`href="${href}"`);
       }
-    }
+    });
+
+    it("링크가 셋이다 — 하나로 묶여 있지 않다", () => {
+      expect(attribution("ko").match(/<a /g)).toHaveLength(3);
+    });
+
+    it("두 로케일 모두 필수 표기 셋을 적는다", () => {
+      for (const locale of ["ko", "en"] as const) {
+        const html = attribution(locale);
+        for (const required of ["Stadia Maps", "OpenMapTiles", "OpenStreetMap"]) {
+          expect(html).toContain(required);
+        }
+      }
+    });
+
+    it("새 창으로 열되 참조를 넘기지 않는다", () => {
+      expect(attribution("ko").match(/rel="noreferrer"/g)).toHaveLength(3);
+    });
   });
 
   it("좌표가 하나도 없으면 지도를 그리지 않으므로 타일도 부르지 않는다", () => {

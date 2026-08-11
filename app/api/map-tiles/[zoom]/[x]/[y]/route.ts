@@ -5,8 +5,8 @@
  *
  * 1. **키가 클라이언트로 안 나간다.** 다른 키(`OPENAI`·`TRAIN`·`AIRPORT`)와 같은 원칙이다.
  *    공개 저장소라 번들에 들어가면 누구나 꺼내 쓸 수 있다.
- * 2. **등록 도메인 검사를 서버가 맞춘다.** 공급자는 `Referer`로 검사하는데, 서버가 등록한
- *    값을 명시해 보내므로 브라우저 없이도 호출이 성립한다. 어떤 값을 보낼지는 어댑터가 안다.
+ * 2. **인증을 서버가 맞춘다.** 공급자마다 방식이 다르고(키 헤더·등록 도메인 검사) 어느 쪽이든
+ *    브라우저 없이 성립해야 한다. 어떤 헤더를 보낼지는 어댑터가 알고 여기서는 그대로 얹는다.
  * 3. **캐시할 자리가 생긴다.** 오프라인 시연이 여기서 풀린다.
  *
  * 실패를 던지지 않는다. 배경이 없다고 지도가 깨지면 안 되므로, 키가 없거나 공급자가 죽으면
@@ -82,7 +82,7 @@ export async function GET(
 
   try {
     const upstream = await fetch(url, {
-      headers: { Referer: source.referer },
+      headers: { ...source.headers },
       cache: "no-store",
       signal: AbortSignal.timeout(UPSTREAM_TIMEOUT_MS),
     });

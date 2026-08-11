@@ -218,6 +218,50 @@ function BasemapTiles({ view, onShown }: { view: Viewport; onShown: () => void }
   );
 }
 
+/**
+ * 배경 타일 출처 표기 (PR #164 리뷰 1번).
+ *
+ * **세 곳을 각각 링크한다.** 한 링크로 묶으면 표기는 있지만 이용 조건은 못 지킨 것이 된다 —
+ * Stadia는 링크가 가능한 매체에서 공급자·타일 스키마·원본 데이터를 각자 자기 페이지로
+ * 연결하도록 안내한다. 우리가 웹이므로 예외가 없다.
+ *
+ * 상호는 고유명사라 번역하지 않고, 사람이 읽는 부분(`배경 지도`·`기여자`)만 i18n으로 둔다.
+ */
+const BASEMAP_CREDITS = [
+  { label: "© Stadia Maps", href: "https://stadiamaps.com/" },
+  { label: "© OpenMapTiles", href: "https://openmaptiles.org/" },
+] as const;
+
+export function BasemapAttribution({ tr }: { tr: (key: MessageKey) => string }) {
+  return (
+    <>
+      {" · "}
+      {tr("map.sourceBasemap")}:{" "}
+      {BASEMAP_CREDITS.map(({ label, href }) => (
+        <span key={href}>
+          <a
+            href={href}
+            target="_blank"
+            rel="noreferrer"
+            className="underline underline-offset-2 hover:text-sc-blue"
+          >
+            {label}
+          </a>
+          {" · "}
+        </span>
+      ))}
+      <a
+        href="https://www.openstreetmap.org/copyright"
+        target="_blank"
+        rel="noreferrer"
+        className="underline underline-offset-2 hover:text-sc-blue"
+      >
+        {tr("map.sourceBasemapOsm")}
+      </a>
+    </>
+  );
+}
+
 function subscribeReducedMotion(onChange: () => void): () => void {
   if (typeof window === "undefined" || !window.matchMedia) return () => {};
   const query = window.matchMedia(REDUCED_MOTION_QUERY);
@@ -952,19 +996,7 @@ export function KoreaMapPanel({
       <p className="mt-2 text-xs text-sc-muted">
         {tr("map.source")}
         {/* 배경 타일 공급자의 이용 조건 — 타일이 실제로 뜬 화면에만 붙인다 */}
-        {basemapShown && (
-          <>
-            {" · "}
-            <a
-              href="https://www.openstreetmap.org/copyright"
-              target="_blank"
-              rel="noreferrer"
-              className="underline underline-offset-2 hover:text-sc-blue"
-            >
-              {tr("map.sourceBasemap")}
-            </a>
-          </>
-        )}
+        {basemapShown && <BasemapAttribution tr={tr} />}
         {/* ODbL 1.0 의무 표기 — 라이선스 링크까지 함께 (OSM 저작권 안내 규정) */}
         {hasRailGeometry && (
           <>

@@ -380,7 +380,8 @@ export const messages = {
     // 실제 철로 선형 (OSM) — 선로를 실제로 그린 화면에서만 쓴다
     "map.routeNoticeRail": "철도 구간은 실제 선로 선형을 따라 그렸습니다. 그 밖의 구간은 권역이 이어지는 순서를 보여주는 보조 표시이며, 실제 도로나 이동 경로가 아닙니다.",
     "map.sourceRail": "철도 선형: © OpenStreetMap 기여자 (ODbL 1.0)",
-    "map.sourceBasemap": "배경 지도: © Stadia Maps · © OpenMapTiles · © OpenStreetMap 기여자",
+    "map.sourceBasemap": "배경 지도",
+    "map.sourceBasemapOsm": "© OpenStreetMap 기여자",
 
     // #85 즉시 재계산 — 갱신 중 표시와 "선택 필요" 상태
     "step4.updating": "갱신 중",
@@ -789,7 +790,8 @@ export const messages = {
     // Real rail alignment (OSM) — shown only where track geometry is actually drawn
     "map.routeNoticeRail": "Rail sections follow the actual track alignment. Other sections are a simplified view of the order your regions connect in, not an actual road or transit route.",
     "map.sourceRail": "Rail alignment: © OpenStreetMap contributors (ODbL 1.0)",
-    "map.sourceBasemap": "Basemap: © Stadia Maps · © OpenMapTiles · © OpenStreetMap contributors",
+    "map.sourceBasemap": "Basemap",
+    "map.sourceBasemapOsm": "© OpenStreetMap contributors",
 
     // #85 instant recalculation - updating badge and the "needs selection" state
     "step4.updating": "Updating",

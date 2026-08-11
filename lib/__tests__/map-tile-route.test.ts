@@ -30,7 +30,7 @@ async function loadRoute(options: {
       id: "test:Base:zyx",
       attribution: "테스트",
       axisOrder: "zyx" as const,
-      referer: "http://localhost:3000/",
+      headers: { Referer: "http://localhost:3000/" },
       urlOf: (z: number, x: number, y: number) =>
         keyed ? `https://example.invalid/${z}/${y}/${x}.png` : null,
     }),
@@ -131,7 +131,7 @@ describe("배경 타일 프록시", () => {
       expect(res.status).toBe(204);
     });
 
-    it("등록 도메인을 Referer로 보낸다", async () => {
+    it("어댑터가 준 인증 헤더를 그대로 얹는다", async () => {
       fetchMock.mockResolvedValue(upstream(PNG));
       const { GET } = await loadRoute();
       await GET(new Request("http://t/"), params("10", "5", "5"));
