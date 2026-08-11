@@ -28,18 +28,25 @@
   }
 }
 
+/**
+ * 모바일 최종 일정은 **세로로 쌓는다** (#146).
+ *
+ * 조율 화면에서 하루를 가로로 눕힌 것은 지도와 같이 봐야 해서였다 — 세로로 쌓으면
+ * 지도가 화면 밖으로 밀린다. **최종 일정에는 지도가 없다.** 실제로 들고 다니며 읽는
+ * 화면이라 옆으로 넘기게 하면 다음 날이 있는지조차 모르고, 한 손으로 훑기도 어렵다.
+ *
+ * 그래서 같은 제품 안에서 두 화면의 방향이 다르다. 기준은 화면 폭이 아니라
+ * **지도를 함께 보는가**이다.
+ */
 @media (max-width: 1023px) {
   .dayGrid {
-    grid-auto-columns: minmax(260px, 82vw);
-    grid-auto-flow: column;
-    grid-template-columns: none;
-    overflow-x: auto;
-    padding-bottom: 8px;
-    scroll-snap-type: x proximity;
+    grid-auto-flow: row;
+    grid-template-columns: minmax(0, 1fr);
   }
 
+  /* 세로로 쌓으면 카드마다 제 높이를 갖는다 — 안에서 또 스크롤할 이유가 없다 */
   .dayCard {
-    max-height: 62vh;
-    scroll-snap-align: start;
+    max-height: none;
+    overflow-y: visible;
   }
 }
