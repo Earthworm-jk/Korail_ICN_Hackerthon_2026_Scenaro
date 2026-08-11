@@ -179,8 +179,27 @@
   color: var(--sc-blue);
 }
 
-/** 카드를 가득 채우는 사진 — 고정 82px 대신 카드 비율을 따른다 */
-.thumbnailCover {
+/**
+ * 카드를 가득 채우는 사진 — 고정 82px 대신 카드 비율을 따른다.
+ *
+ * **선택자를 둘로 겹친 이유가 있다.** 아래 `@media (min-width: 1024px)`가 `.thumbnail`을
+ * 64px로 다시 잡는데, 명시도가 같으면 뒤에 오는 미디어 쿼리가 이긴다. 그래서 좁은 화면에서는
+ * 사진이 카드를 채우고 **넓은 화면에서만 작아지는** 증상이 났다. 클래스를 둘 겹쳐
+ * 명시도를 올리면 순서와 무관하게 이긴다.
+ */
+/**
+ * cover 카드에서는 출처 표기를 위로 올린다. 아래는 장소 이름 자리라 겹친다.
+ * 오른쪽 위는 선택 토글이 쓰므로 왼쪽 위에 붙이고 폭도 내용만큼만 잡는다.
+ */
+.thumbnail.thumbnailCover .thumbnailAttribution {
+  inset-inline: auto;
+  top: 4px;
+  bottom: auto;
+  left: 4px;
+  max-width: 60%;
+}
+
+.thumbnail.thumbnailCover {
   width: 100%;
   min-width: 0;
   height: 100%;
