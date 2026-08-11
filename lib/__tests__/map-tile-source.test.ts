@@ -8,9 +8,9 @@ import { afterEach, describe, expect, it, vi } from "vitest";
  * 좌표 계약이 흔들리지 않는다**는 것을 여기서 고정한다.
  */
 
-async function load(key: string | undefined) {
+async function load(key: string | undefined, referer?: string) {
   vi.resetModules();
-  vi.doMock("../env", () => ({ env: { VWORLD_API_KEY: key } }));
+  vi.doMock("../env", () => ({ env: { VWORLD_API_KEY: key, VWORLD_REFERER: referer } }));
   return await import("../map-tile-source");
 }
 
@@ -51,8 +51,42 @@ describe("배경 타일 공급자", () => {
     expect(url).not.toContain("a b/c");
   });
 
+  /**
+   * PR #158 리뷰 1번 — id가 고정이면 순서를 바꿔도 캐시가 안 갈려서 옛 타일이 그대로 맞는다.
+   * 배경이 어긋난 채 굳고, 원인은 화면에 안 보인다.
+   */
+  describe("캐시 분리", () => {
+    it("축 순서가 다르면 id가 다르다", async () => {
+      const { vworldSource } = await load("TESTKEY");
+      expect(vworldSource("zyx").id).not.toBe(vworldSource("zxy").id);
+    });
+
+    it("id에 레이어와 축 순서가 함께 들어간다", async () => {
+      const { vworldSource } = await load("TESTKEY");
+      expect(vworldSource("zyx").id).toContain("zyx");
+      expect(vworldSource("zyx").id).toContain("Base");
+    });
+
+    it("같은 설정이면 id가 같다 — 쓸데없이 캐시를 버리지 않는다", async () => {
+      const { vworldSource } = await load("TESTKEY");
+      expect(vworldSource("zyx").id).toBe(vworldSource("zyx").id);
+    });
+  });
+
+  describe("등록 도메인 Referer", () => {
+    it("환경변수가 없으면 개발 기본값이다", async () => {
+      const mod = await load("TESTKEY");
+      expect(mod.vworldReferer()).toBe(mod.DEV_VWORLD_REFERER);
+    });
+
+    it("환경변수가 있으면 그 값을 쓴다 — 배포 도메인", async () => {
+      const { vworldReferer } = await load("TESTKEY", "https://scenaro.example/");
+      expect(vworldReferer()).toBe("https://scenaro.example/");
+    });
+  });
+
   it("출처 표기를 들고 다닌다 — 화면에 반드시 붙여야 하는 이용 조건이다", async () => {
     const { activeTileSource } = await load("TESTKEY");
-    expect(activeTileSource().attribution).toContain("VWorld");
+    expect(activeTileSource().attribution).toBe("공간정보 오픈플랫폼(VWorld)");
   });
 });

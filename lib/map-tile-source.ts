@@ -47,8 +47,17 @@ const VWORLD_LAYER = "Base";
 /**
  * VWorld는 등록 도메인을 `Referer`로 검사한다. 서버에서 부르면 헤더가 없으므로 등록한 값을
  * 명시해 보낸다 — 이것이 프록시를 두는 실무적 이유 하나다(브라우저 없이도 호출이 성립한다).
+ *
+ * **환경마다 다르다** (PR #158 리뷰 2번). 지금 인증키에 등록된 주소는 개발용
+ * `http://localhost:3000/`뿐이라 그것을 기본값으로 두되, 배포에서는 반드시 그 환경의
+ * 도메인을 `VWORLD_REFERER`로 준다. 값이 등록 도메인과 다르면 공급자가 거부하고 배경만
+ * 조용히 빠지므로, 키만 넣으면 어디서나 된다고 오해하지 않도록 여기 적어 둔다.
  */
-export const VWORLD_REFERER = "http://localhost:3000/";
+export const DEV_VWORLD_REFERER = "http://localhost:3000/";
+
+export function vworldReferer(): string {
+  return env.VWORLD_REFERER ?? DEV_VWORLD_REFERER;
+}
 
 /**
  * 타일 캐시 스위치 — **지금은 꺼 둔다** (2026-08-11 팀 결정).
@@ -62,7 +71,13 @@ export const TILE_CACHE_ENABLED = false;
 export function vworldSource(axisOrder: TileAxisOrder = "zyx"): TileSource {
   const key = env.VWORLD_API_KEY;
   return {
-    id: "vworld",
+    /**
+     * 캐시 키의 일부다 — **설정이 바뀌면 id도 바뀌어야 한다** (PR #158 리뷰 1번).
+     *
+     * 공급자 이름만 넣으면 축 순서나 레이어를 바꿔도 같은 `(z,x,y)`가 예전 파일을 그대로
+     * 맞혀서, 배경이 어긋난 채 굳는다. 순서 판별이 끝나 값을 바꾸는 순간이 정확히 그 경우다.
+     */
+    id: `vworld:${VWORLD_LAYER}:${axisOrder}`,
     attribution: "공간정보 오픈플랫폼(VWorld)",
     axisOrder,
     urlOf: (zoom, x, y) => {

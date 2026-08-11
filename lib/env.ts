@@ -31,6 +31,12 @@ const EnvSchema = z.object({
     .trim()
     .optional()
     .transform((v) => (v === "" ? undefined : v)),
+  // 배경 타일 공급자가 등록 도메인을 Referer로 검사한다. 배포 환경에서는 그 도메인을 준다
+  VWORLD_REFERER: z
+    .string()
+    .trim()
+    .optional()
+    .transform((v) => (v === "" ? undefined : v)),
 });
 
 export type Env = z.infer<typeof EnvSchema>;
@@ -41,6 +47,7 @@ export function parseEnv(source: Record<string, string | undefined>): Env {
     AIRPORT_API_KEY: source.AIRPORT_API_KEY,
     OPENAI_API_KEY: source.OPENAI_API_KEY,
     VWORLD_API_KEY: source.VWORLD_API_KEY,
+    VWORLD_REFERER: source.VWORLD_REFERER,
   });
 }
 

@@ -15,7 +15,7 @@
 import { NextResponse } from "next/server";
 import { MAX_TILE_ZOOM, MIN_TILE_ZOOM } from "@/lib/map-tiles";
 import { readTile, writeTile } from "@/lib/map-tile-cache";
-import { TILE_CACHE_ENABLED, VWORLD_REFERER, activeTileSource } from "@/lib/map-tile-source";
+import { TILE_CACHE_ENABLED, activeTileSource, vworldReferer } from "@/lib/map-tile-source";
 
 /** 공급자 응답을 기다리는 한계. 배경 한 장 때문에 화면이 멎으면 안 된다 */
 const UPSTREAM_TIMEOUT_MS = 6_000;
@@ -69,7 +69,7 @@ export async function GET(
 
   try {
     const upstream = await fetch(url, {
-      headers: { Referer: VWORLD_REFERER },
+      headers: { Referer: vworldReferer() },
       cache: "no-store",
       signal: AbortSignal.timeout(UPSTREAM_TIMEOUT_MS),
     });
