@@ -13,7 +13,8 @@
  * 204(내용 없음)로 조용히 답하고 화면은 배경 없이 그대로 그린다.
  */
 import { NextResponse } from "next/server";
-import { MAX_TILE_ZOOM, MIN_TILE_ZOOM } from "@/lib/map-tiles";
+import { MAX_TILE_ZOOM, MIN_TILE_ZOOM, tileServesMap } from "@/lib/map-tiles";
+import { checkRateLimit } from "@/lib/map-tile-rate-limit";
 import { readTile, writeTile } from "@/lib/map-tile-cache";
 import { TILE_CACHE_ENABLED, activeTileSource } from "@/lib/map-tile-source";
 
@@ -54,8 +55,22 @@ function noTile(): NextResponse {
   return new NextResponse(null, { status: 204, headers: { "Cache-Control": "no-store" } });
 }
 
+/**
+ * 상한을 넘었다 — 204가 아니라 429다.
+ *
+ * 204는 "이 타일은 그리지 않는다"는 뜻이고 이건 "너무 많이 물었다"는 뜻이라 사실이 다르다.
+ * 화면에서는 어차피 배경이 빠지는 것으로 같지만, 로그에서 둘이 구분되지 않으면 배경이
+ * 안 뜨는 원인을 나중에 찾을 수 없다.
+ */
+function tooMany(retryAfterSeconds: number): NextResponse {
+  return new NextResponse(null, {
+    status: 429,
+    headers: { "Cache-Control": "no-store", "Retry-After": String(retryAfterSeconds) },
+  });
+}
+
 export async function GET(
-  _request: Request,
+  request: Request,
   { params }: { params: Promise<{ zoom: string; x: string; y: string }> },
 ) {
   const raw = await params;
@@ -68,6 +83,13 @@ export async function GET(
   // 줌 밖 좌표를 그대로 넘기면 공급자에 없는 타일을 묻게 된다
   const count = 2 ** zoom;
   if (x >= count || y >= count) return noTile();
+
+  // 화면이 갈 수 없는 자리를 묻는 것은 정상 사용이 아니다 — 공급자를 부르지 않는다
+  if (!tileServesMap(zoom, x, y)) return noTile();
+
+  // 여기까지가 "부를 수 있는 요청"이다. 얼마나 자주 부르는지는 그다음 문제다
+  const rate = checkRateLimit(request);
+  if (!rate.allowed) return tooMany(rate.retryAfterSeconds);
 
   const source = activeTileSource();
   const cached = TILE_CACHE_ENABLED ? await readTile(source.id, zoom, x, y) : null;

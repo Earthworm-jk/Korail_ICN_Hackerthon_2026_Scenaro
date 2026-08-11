@@ -119,6 +119,28 @@ export function tilesForView(view: Viewport, zoom: number): TilePlacement[] {
   return out;
 }
 
+/**
+ * 이 타일이 우리 지도가 보여줄 수 있는 자리인가 (PR #164 리뷰 · 공개 프록시 보호).
+ *
+ * 프록시는 배포되는 공개 경로다. 누가 좌표를 훑으면 **우리 키의 쿼터를 대신 소모한다.**
+ * 그런데 지도 창은 `clampViewport`가 `BASE_VIEWPORT` 안으로 묶어 두므로, 화면이 그 밖의
+ * 타일을 부를 일이 애초에 없다 — 밖을 묻는 요청은 정상 사용이 아니다.
+ *
+ * 그래서 별도 상수를 새로 정하지 않고 **화면이 실제로 갈 수 있는 범위 그대로**를 기준으로
+ * 삼는다. 나중에 지도 창이 넓어지면 이 검사도 따라 넓어진다 — 두 값이 어긋날 자리가 없다.
+ */
+export function tileServesMap(zoom: number, x: number, y: number): boolean {
+  const size = tileUnits(zoom);
+  const left = xAtTile(x, zoom);
+  const top = yAtTile(y, zoom);
+  return (
+    left < BASE_VIEWPORT.x + BASE_VIEWPORT.width &&
+    left + size > BASE_VIEWPORT.x &&
+    top < BASE_VIEWPORT.y + BASE_VIEWPORT.height &&
+    top + size > BASE_VIEWPORT.y
+  );
+}
+
 /** 기본 창(남한 전체)을 덮는 줌 — 미리 받아둘 범위를 정할 때 쓴다 */
 export function baseZoom(renderPixels = 720): number {
   return tileZoomFor(BASE_VIEWPORT, renderPixels);
