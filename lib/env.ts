@@ -31,7 +31,18 @@ const EnvSchema = z.object({
     .trim()
     .optional()
     .transform((v) => (v === "" ? undefined : v)),
+  // 배경 타일(Stadia Maps). 없으면 지도는 배경 없이 그대로 그린다 — 앱이 죽지 않는다
+  STADIA_API_KEY: z
+    .string()
+    .trim()
+    .optional()
+    .transform((v) => (v === "" ? undefined : v)),
   // 배경 타일 공급자가 등록 도메인을 Referer로 검사한다. 배포 환경에서는 그 도메인을 준다
+  STADIA_REFERER: z
+    .string()
+    .trim()
+    .optional()
+    .transform((v) => (v === "" ? undefined : v)),
   VWORLD_REFERER: z
     .string()
     .trim()
@@ -46,6 +57,8 @@ export function parseEnv(source: Record<string, string | undefined>): Env {
   return EnvSchema.parse({
     AIRPORT_API_KEY: source.AIRPORT_API_KEY,
     OPENAI_API_KEY: source.OPENAI_API_KEY,
+    STADIA_API_KEY: source.STADIA_API_KEY,
+    STADIA_REFERER: source.STADIA_REFERER,
     VWORLD_API_KEY: source.VWORLD_API_KEY,
     VWORLD_REFERER: source.VWORLD_REFERER,
   });
