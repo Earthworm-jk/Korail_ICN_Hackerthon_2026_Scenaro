@@ -1896,7 +1896,7 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
                                     place: placeName(item.placeId), day: String(index + 1),
                                   })}
                                   aria-current={target.date === day.date ? "true" : undefined}
-                                  className={`min-h-7 min-w-7 rounded border px-1.5 text-xs ${
+                                  className={`min-h-10 min-w-10 rounded border px-1.5 text-xs ${
                                     target.date === day.date
                                       ? "border-sc-blue bg-sc-blue text-white"
                                       : "border-sc-blue/30 text-sc-blue hover:bg-sc-blue-soft disabled:opacity-40"

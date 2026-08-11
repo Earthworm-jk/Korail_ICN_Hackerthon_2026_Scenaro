@@ -5,7 +5,6 @@ import { Luggage } from "lucide-react";
 import type { StationFacilitiesSnapshotT } from "@/lib/station-facilities";
 import type { MessageKey } from "@/lib/i18n/messages";
 import { StationFacilityModal } from "./station-facility-modal";
-import styles from "./day-context.module.css";
 
 /**
  * DAY 헤더의 그 날 맥락 (#146 2절)
@@ -64,7 +63,7 @@ export function DayStationFacilities({
         aria-haspopup="dialog"
         aria-controls={popoverId}
         aria-label={tr("step4.dayFacilities").replace("{n}", String(covered.length))}
-        className={`${styles.trigger} inline-flex items-center gap-1 rounded-full border border-sc-blue/25 px-3 text-xs text-sc-blue hover:bg-sc-blue-soft`}
+        className="inline-flex min-h-10 items-center gap-1 rounded-full border border-sc-blue/25 px-3 text-xs text-sc-blue hover:bg-sc-blue-soft"
       >
         <Luggage aria-hidden="true" className="size-4" />
         {covered.length}
@@ -85,7 +84,7 @@ export function DayStationFacilities({
               <button
                 type="button"
                 onClick={() => openFacilityModal(id)}
-                className={`${styles.stationButton} w-full rounded-lg border px-3 text-left text-sm hover:border-sc-blue`}
+                className="min-h-11 w-full rounded-lg border px-3 text-left text-sm hover:border-sc-blue"
               >
                 {stationName(id)}
               </button>

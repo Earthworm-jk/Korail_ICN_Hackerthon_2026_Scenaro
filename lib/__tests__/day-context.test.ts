@@ -80,15 +80,13 @@ describe("팝오버 접근성", () => {
 
 describe("히트 영역", () => {
   /**
-   * **Tailwind 유틸리티로는 안 된다.** `stage-v4.css`의
-   * `#place-picker button { min-height: 36px }`가 ID 선택자라 `min-h-10`을 이긴다.
-   * 그래서 두 버튼은 전용 모듈 클래스를 써야 하고, 그 클래스가 붙어 있는지를 본다.
+   * 유틸리티로 선언한다. `stage-v4.css`의 하한이 `:not([class*="min-h-"])`로 좁혀져
+   * **스스로 높이를 선언한 버튼은 비켜 간다** — 그 계약이 이 클래스들의 전제다.
    * 실제 px는 여기서 못 재므로 실측으로 확인하고 PR 본문에 남긴다.
    */
-  it("두 버튼이 전용 모듈 클래스를 쓴다 — 유틸리티는 스테이지 CSS에 진다", () => {
+  it("배지 40px, 역 버튼 44px를 유틸리티로 선언한다", () => {
     const html = render(snapshotOf("ST-A"), ["ST-A"]);
-    expect(html).toMatch(/class="[^"]*trigger[^"]*"/);
-    expect(html).toMatch(/class="[^"]*stationButton[^"]*"/);
-    expect(html).not.toMatch(/min-h-\d/);
+    expect(html).toMatch(/min-h-10/);
+    expect(html).toMatch(/min-h-11/);
   });
 });
