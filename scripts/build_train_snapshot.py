@@ -46,7 +46,11 @@ SNAPSHOT_PATH = REPO_ROOT / "data" / "train-snapshot.json"
 
 # ---- 조회 대상 (필요 시 여기만 수정) -------------------------------------------------
 # 데모 기준일 (SOURCES.md와 동일하게 유지)
-DATES = ["20260812", "20260813", "20260814"]
+# 기존 데모 창(08-12-14)은 실시드 회귀 테스트가 하드코딩하고 있어 남긴다.
+# 새 창(08-16-18)을 더해 기본값·시연을 옮기고, 예전 날짜는 회귀용으로 보존한다.
+# 08-15를 비우면 두 창 사이에 29시간 공백이 생겨 #178 심야 침묵 하한 파생이 뒤틀린다 —
+# engine.test.ts의 실스냅샷 하한 검사가 이를 잡아냈다. 날짜는 반드시 연속으로 채운다.
+DATES = ["20260812", "20260813", "20260814", "20260815", "20260816", "20260817", "20260818"]
 
 # (우리 역 id, API 역 이름, KTX 전용 필터) — OD 양방향 모두 조회한다.
 # 시종착 OD만 가능(운행계획 v2의 한계, #56 실측). 운행계획 응답에는 열차 종류 필드가 없어
@@ -83,6 +87,11 @@ STOPOVER_SOURCE_OFFSET_DAYS = 7  # 같은 요일 매핑 — SOURCES.md에 기준
 
 # 이 역이 낀 구간은 API로 갱신하지 않고 기존 스냅샷에서 보존 (공항철도)
 PRESERVE_STATION = "station-incheon-airport-t1"
+# 보존 구간이 매여 있던 이전 데모 날짜 — DATES와 같은 순서로 짝지어 날짜만 이월한다.
+# 이월하지 않으면 새 데모일에 공항 진입·복귀 수단이 없어 일정이 성립하지 않는다.
+PRESERVE_SOURCE_DATES = ["20260812", "20260813", "20260814"]
+# 새 창으로 이월할 목적지 날짜 — 원본도 함께 남겨 두 창 모두에서 공항 진입이 가능하다.
+PRESERVE_TARGET_DATES = ["20260816", "20260817", "20260818"]
 
 # ---- TAGO (국토교통부 열차정보) — 교차검증용 ------------------------------------------
 # 2026-03-06 개정 명세(#49 지영 확인): Base가 TrainInfoService → TrainInfo,
@@ -351,6 +360,41 @@ def stopover_leg(seq: list[dict], a_name: str, b_name: str) -> tuple[str, str] |
     return str(depart), str(arrive)
 
 
+def shift_iso_days(value: str, days: int) -> str:
+    """ISO(+09:00) 시각의 날짜만 days만큼 이월 — 시분초와 자정 넘김 구조는 그대로 둔다."""
+    date = datetime.date.fromisoformat(value[0:10]) + datetime.timedelta(days=days)
+    return f"{date.isoformat()}{value[10:]}"
+
+
+def shift_preserved_legs(preserved: list[dict]) -> list[dict]:
+    """공항철도 보존 구간을 새 데모 날짜 창으로 이월한다.
+
+    보존 구간은 API에 없어 기존 스냅샷에서 그대로 가져오는데, 날짜를 옮기지 않으면
+    새 데모일에 공항 진입·복귀 수단이 없어 일정이 성립하지 않는다. 원본 날짜가 이전
+    창(PRESERVE_SOURCE_DATES) 밖이면 조용히 넘기지 않고 멈춘다.
+    """
+    mapping = dict(zip(PRESERVE_SOURCE_DATES, PRESERVE_TARGET_DATES))
+    # 재실행하면 지난번 이월본이 다시 입력으로 들어온다. 목적지 날짜 위의 것은 버리고
+    # 원본에서 다시 만들어 결과가 실행 횟수에 좌우되지 않게 한다(멱등).
+    preserved = [leg for leg in preserved
+                 if leg["departAt"][0:10].replace("-", "") not in set(PRESERVE_TARGET_DATES)]
+    shifted: list[dict] = []
+    for leg in preserved:
+        source = leg["departAt"][0:10].replace("-", "")
+        target = mapping.get(source)
+        if target is None:
+            raise ApiError(
+                f"[방어] 보존 구간의 원본 날짜 {source}가 PRESERVE_SOURCE_DATES 밖입니다 "
+                f"({leg['fromStationId']}->{leg['toStationId']}) — 기존 스냅샷을 변경하지 않습니다")
+        days = (datetime.date.fromisoformat(f"{target[0:4]}-{target[4:6]}-{target[6:8]}")
+                - datetime.date.fromisoformat(leg["departAt"][0:10])).days
+        record = dict(leg)
+        record["departAt"] = shift_iso_days(leg["departAt"], days)
+        record["arriveAt"] = shift_iso_days(leg["arriveAt"], days)
+        shifted.append(record)
+    return shifted
+
+
 def fetch_korail_stopover_legs(key: str, allowed_by_date: dict[str, set[str]],
                                grades: dict[str, str]) -> list[Leg]:
     """중간 정차 OD legs — 데모일 D의 시각으로 D-7일(같은 요일) runInfo2 실적 원값을 날짜만
@@ -516,8 +560,17 @@ def main_with_args(argv: list[str], service_key: str | None = None) -> int:
         return 2
 
     existing = json.loads(SNAPSHOT_PATH.read_text(encoding="utf-8"))
-    preserved = [leg for leg in existing
-                 if PRESERVE_STATION in (leg["fromStationId"], leg["toStationId"])]
+    preserved_raw = [leg for leg in existing
+                     if PRESERVE_STATION in (leg["fromStationId"], leg["toStationId"])]
+
+    try:
+        preserved_source = [leg for leg in preserved_raw
+                            if leg["departAt"][0:10].replace("-", "") in set(PRESERVE_SOURCE_DATES)]
+        preserved = [*preserved_source, *shift_preserved_legs(preserved_raw)]
+    except ApiError as error:
+        print(f"실패: {error}", file=sys.stderr)
+        print("\n기존 스냅샷은 변경하지 않았습니다.", file=sys.stderr)
+        return 1
 
     try:
         fetched = fetch_tago_legs(key) if args.source == "tago" else fetch_korail_legs(key)

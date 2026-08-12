@@ -417,13 +417,13 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
   }, []);
 
   // step 1 — 여행 조건
-  const [arrival, setArrival] = useState<FlightField>({ flightNo: "", at: "2026-08-12T10:00", notFound: false });
-  const [departure, setDeparture] = useState<FlightField>({ flightNo: "", at: "2026-08-14T18:00", notFound: false });
+  const [arrival, setArrival] = useState<FlightField>({ flightNo: "", at: "2026-08-16T10:00", notFound: false });
+  const [departure, setDeparture] = useState<FlightField>({ flightNo: "", at: "2026-08-18T18:00", notFound: false });
   // #14 차단 2: 주 입력은 절대 시각 — 항공편 시각에서 파생한 기본 제안값을 두되,
   // 사용자가 직접 수정하면(touched) 항공편 변경에도 덮어쓰지 않는다.
   // 파생 여유는 #3 확정 기본값 유지: 입국 +120분, 출국 안전 버퍼 120분(PRD §8.1) — 표현만 절대 시각
-  const [airportReady, setAirportReady] = useState({ at: "2026-08-12T12:00", touched: false });
-  const [airportDeadline, setAirportDeadline] = useState({ at: "2026-08-14T16:00", touched: false });
+  const [airportReady, setAirportReady] = useState({ at: "2026-08-16T12:00", touched: false });
+  const [airportDeadline, setAirportDeadline] = useState({ at: "2026-08-18T16:00", touched: false });
   const [airportAdvisories, setAirportAdvisories] = useState<AirportPassengerAdvisoryPair | null>(null);
   const [dismissedAirportAdvisories, setDismissedAirportAdvisories] = useState<Set<string>>(new Set());
   const airportAdvisoryRequest = useRef(0);
