@@ -2520,7 +2520,53 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
                     */}
                     {day.regionWindows.length > 0 && (
                       <div className="mt-3">
-                        <h4 className="text-xs font-medium text-sc-muted">{tr("step4.stayTitle")}</h4>
+                        {/*
+                          숫자는 그대로 두고 (i)만 단다 (#84 P1). 이 값은 "역 경계 안에서
+                          확보된 분"이라 이동·접근이 포함돼 있는데, 화면에는 시간만 적혀
+                          있어 그만큼 자유시간이 있는 것으로 읽힌다. 엔진 쪽 경고
+                          (`region-windows.ts` 창의 성격)를 화면에도 옮긴다.
+
+                          제목은 `체류`를 유지한다 — 이 창은 실제로 그 권역에 있는
+                          시간이 맞고, `활용 가능`은 PR #107 리뷰에서 오해를 낳는다고
+                          판정된 표현이다.
+                        */}
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          <h4 className="text-xs font-medium text-sc-muted">{tr("step4.stayTitle")}</h4>
+                          <button
+                            type="button"
+                            popoverTarget={`stay-guide-${day.date}`}
+                            aria-haspopup="dialog"
+                            aria-controls={`stay-guide-${day.date}`}
+                            aria-label={tr("region.stayGuideOpen")}
+                            className="flex size-6 items-center justify-center rounded-full border text-sc-muted hover:border-sc-blue hover:text-sc-blue"
+                          >
+                            <Info aria-hidden="true" className="size-3" />
+                          </button>
+                        </div>
+                        <div
+                          id={`stay-guide-${day.date}`}
+                          popover="auto"
+                          role="dialog"
+                          aria-labelledby={`stay-guide-${day.date}-title`}
+                          className="m-auto w-[min(400px,calc(100vw-32px))] rounded-xl border bg-sc-surface p-4 text-left shadow-2xl backdrop:bg-black/20"
+                        >
+                          <div className="flex items-start justify-between gap-3">
+                            <h4 id={`stay-guide-${day.date}-title`} className="text-sm font-semibold text-sc-text">
+                              {tr("region.stayGuideTitle")}
+                            </h4>
+                            <button
+                              type="button"
+                              popoverTarget={`stay-guide-${day.date}`}
+                              popoverTargetAction="hide"
+                              aria-label={tr("common.close")}
+                              className="grid size-8 shrink-0 place-items-center rounded-full border text-sc-muted hover:border-sc-blue hover:text-sc-blue"
+                            >
+                              <X aria-hidden="true" className="size-4" />
+                            </button>
+                          </div>
+                          <p className="mt-2 text-xs text-sc-muted">{tr("region.stayGuideBody")}</p>
+                          <p className="mt-2 border-t pt-2 text-xs text-sc-muted">{tr("region.stayGuideWindow")}</p>
+                        </div>
                         <ul className="mt-2 space-y-1.5 text-sm" data-day-rows data-day-stays>
                           {day.regionWindows.map((window) => {
                             const presentation = regionWindowPresentationOf(window, day);

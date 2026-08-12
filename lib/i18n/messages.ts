@@ -309,7 +309,14 @@ export const messages = {
     "region.about": "약",
     "region.hours": "시간",
     "region.minutes": "분",
+    // #107 리뷰에서 오해를 낳는다고 판정돼 화면에서 쓰지 않는다. 키는 남겨 두되
+    // 이 값을 "쓸 수 있는 시간"으로 부르지 않는다는 기록으로 둔다
     "region.available": "활용 가능",
+    // #84 P1 — 이동·접근이 포함된 값임을 화면에서 밝힌다. 숫자는 그대로 둔다
+    "region.stayGuideOpen": "체류·환승 시간 안내 보기",
+    "region.stayGuideTitle": "이 시간은 무엇인가요",
+    "region.stayGuideBody": "열차가 도착해서 다음 열차로 떠날 때까지 그 권역에 있는 시간입니다. 촬영지를 오가는 이동·접근 시간이 포함돼 있어 전부 자유롭게 쓸 수 있는 시간은 아닙니다.",
+    "region.stayGuideWindow": "하루 활동 시간 09:00-21:00 기준으로 잘라 보수적으로 셉니다.",
     "region.transfer": "환승",
     "region.nextTrainIn": "다음 열차까지 {duration}",
     "region.throughStop": "통과 정차",
@@ -743,6 +750,10 @@ export const messages = {
     "region.hours": "h",
     "region.minutes": "m",
     "region.available": "available",
+    "region.stayGuideOpen": "About stop and transfer times",
+    "region.stayGuideTitle": "What this time means",
+    "region.stayGuideBody": "Time spent in this station area between arriving and leaving on the next train. It includes travel to and from filming spots, so it is not all free time.",
+    "region.stayGuideWindow": "Counted conservatively within a 09:00-21:00 activity window.",
     "region.transfer": "transfer",
     "region.nextTrainIn": "Next train in {duration}",
     "region.throughStop": "through stop",
