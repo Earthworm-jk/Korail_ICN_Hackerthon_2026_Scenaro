@@ -22,6 +22,13 @@ const copy: Partial<Record<MessageKey, string>> = {
   "ai.appliedDay": "{count}곳을 {date}로 옮겼습니다.",
   "ai.disabled": "Create an itinerary first.",
   "ai.disabledOverselection": "Reduce your selection first.",
+  "ai.overselectionTitle": "{keep} of your {selected} places can fit.",
+  "ai.overselectionBasis": "Covers your works evenly, then fits as many as possible.",
+  "ai.overselectionKeepLabel": "Places that fit",
+  "ai.overselectionApply": "Keep these {keep}",
+  "ai.overselectionPickMyself": "I'll choose myself",
+  "ai.overselectionApplied": "Recalculated with the trimmed selection.",
+  "ai.overselectionUndo": "Undo",
   "ai.sourceDeterministic": "Verified result",
   "ai.recommendReady.one": "{count} verified filming location that fits the {date} route is pinned.",
   "ai.recommendReady.other": "{count} verified filming locations that fit the {date} route are pinned.",
@@ -36,6 +43,8 @@ function render(options: {
   feedback?: CommandFeedback | null;
   canUndo?: boolean;
   closeDisabled?: boolean;
+  overselection?: { keepPlaceIds: string[]; dropCount: number; selectedCount: number } | null;
+  onUndoOverselection?: () => void;
 } = {}) {
   return renderToStaticMarkup(createElement(ItineraryCommandPanel, {
     value: "",
@@ -55,6 +64,9 @@ function render(options: {
     onDismiss: () => undefined,
     placeName: (id: string) => id,
     tr,
+    overselection: options.overselection ?? null,
+    onApplyOverselection: () => undefined,
+    onUndoOverselection: options.onUndoOverselection,
   }));
 }
 
@@ -211,5 +223,68 @@ describe("PR #157 리뷰 1 — 적용 후 문구는 결과를 과장하지 않�
     const pending = feedbackWith(
       proposalWith({ placeId: "p1", placeIds: ["p1"], scheduledDate: undefined }), false);
     expect(render({ feedback: pending })).not.toContain("ai.appliedDayPartial");
+  });
+});
+
+/**
+ * 과선택 정리 제안 (#171).
+ *
+ * 재란님이 보고한 세 문제를 한 화면으로 닫는다 — AI가 회색이다, 9곳이 어디인지 모른다,
+ * "제외할 장소 선택"을 눌러도 아무 일이 없다.
+ */
+describe("과선택 정리 제안", () => {
+  const overselection = {
+    keepPlaceIds: ["place-a", "place-b", "place-c"],
+    dropCount: 11,
+    selectedCount: 14,
+  };
+
+  it("고른 수와 들어가는 수를 함께 말한다", () => {
+    const html = render({ overselection, disabled: true });
+    expect(html).toContain("3 of your 14 places can fit.");
+  });
+
+  /** 지금까지 어느 곳이 들어가는지 아무 데도 없었다 (#183) */
+  it("들어가는 곳을 이름으로 나열한다", () => {
+    const html = render({ overselection, disabled: true });
+    for (const placeId of overselection.keepPlaceIds) expect(html).toContain(placeId);
+  });
+
+  it("기준을 밝힌다 — 무엇이 고른 조합인지", () => {
+    expect(render({ overselection, disabled: true }))
+      .toContain("Covers your works evenly");
+  });
+
+  it("한 번에 정리하는 버튼과 직접 고르는 길을 함께 준다", () => {
+    const html = render({ overselection, disabled: true });
+    expect(html).toContain("Keep these 3");
+    // #84가 지킨 "사용자가 제외를 결정한다"는 길도 남긴다
+    expect(html).toContain("I&#x27;ll choose myself");
+    expect(html).toContain('href="#place-picker"');
+  });
+
+  /** 입력은 막혀 있어도 이유가 보여야 한다 — 이유 없는 회색이 문제였다 */
+  it("입력이 막힌 이유를 함께 보여준다", () => {
+    expect(render({ overselection, disabled: true, disabledMessage: "ai.disabledOverselection" }))
+      .toContain("Reduce your selection first.");
+  });
+
+  it("과선택이 아니면 카드를 그리지 않는다", () => {
+    const html = render({ overselection: null });
+    expect(html).not.toContain("places can fit");
+  });
+
+  describe("되돌리기", () => {
+    it("정리한 뒤에는 되돌리기를 준다", () => {
+      const html = render({ overselection: null, onUndoOverselection: () => undefined });
+      expect(html).toContain("Recalculated with the trimmed selection.");
+      expect(html).toContain("Undo");
+    });
+
+    /** 아직 과선택이면 되돌릴 것이 없다 — 두 줄이 같이 뜨면 무엇이 현재인지 모른다 */
+    it("아직 과선택이면 되돌리기를 숨긴다", () => {
+      const html = render({ overselection, onUndoOverselection: () => undefined });
+      expect(html).not.toContain("Recalculated with the trimmed selection.");
+    });
   });
 });

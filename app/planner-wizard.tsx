@@ -31,6 +31,7 @@ import {
 import { excludedPlaceIdsFrom, initialCandidateIds } from "@/lib/candidates";
 import { initialPlaceIdsFromItinerary } from "@/lib/initial-place-selection";
 import {
+  commandInputUnavailable,
   commandPanelUnavailable,
   canEditVisitDate,
   panelDismissable,
@@ -439,6 +440,8 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
   const [aiPanelOpen, setAiPanelOpen] = useState(false);
   /** 발견성 보완 라벨. 한 번 열면 다시 보여 주지 않는다 */
   const aiTriggerRef = useRef<HTMLButtonElement>(null);
+  /** 정리 제안을 적용하기 직전 선택 — 되돌리기용 (#171) */
+  const [selectionUndo, setSelectionUndo] = useState<Set<string> | null>(null);
   const [undoPoint, setUndoPoint] = useState<
     UndoPoint<ItineraryView["selectedAlt"], typeof saveStub.saveStatus> | null
   >(null);
@@ -1066,13 +1069,45 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
     );
   }, [updating, selectionCapacity, displayedDays, selectedPlaceIds, view]);
 
-  const aiCommandDisabled = commandPanelUnavailable({
+  const panelGate = {
     hasCandidates: candidateData !== null,
     hasPlannedResult: view.result?.status === "planned",
     reopened: view.reopened !== null,
     alternativeSelected: view.selectedAlt !== null,
     requiresSelectionAdjustment: selectionCapacity?.requiresAdjustment === true,
-  });
+  };
+  /** 패널을 열 수조차 없는가 — 과선택은 여기서 빠졌다 (#171) */
+  const aiPanelBlocked = commandPanelUnavailable(panelGate);
+  /** 자연어 입력을 받을 수 있는가 — 과선택이면 정리가 먼저다 */
+  const aiCommandDisabled = commandInputUnavailable(panelGate);
+
+  /**
+   * 과선택 정리 제안 — **AI가 먼저 말을 거는 자리** (#171).
+   *
+   * 엔진이 어느 곳이 들어가는지 이미 알고 있다(#183). 사용자가 20곳에서 11곳을 손으로
+   * 지우게 하는 대신, 들어가는 목록을 보여주고 한 번에 줄인다.
+   */
+  const overselectionProposal = selectionCapacity?.requiresAdjustment
+    ? {
+        keepPlaceIds: selectionCapacity.scheduledPlaceIds,
+        dropCount: selectionCapacity.minimumExclusionCount,
+        selectedCount: selectionCapacity.selectedCount,
+      }
+    : null;
+
+  const applyOverselectionProposal = useCallback(() => {
+    if (!selectionCapacity?.requiresAdjustment) return;
+    // 되돌릴 수 있게 직전 선택을 남긴다 — 무엇을 잃었는지 모른 채 진행하면 안 된다 (#84)
+    setSelectionUndo(new Set(selectedPlaceIds));
+    setAiFeedback(null);
+    setSelectedPlaceIds(new Set(selectionCapacity.scheduledPlaceIds));
+  }, [selectionCapacity, selectedPlaceIds]);
+
+  const undoOverselectionProposal = useCallback(() => {
+    if (selectionUndo === null) return;
+    setSelectedPlaceIds(new Set(selectionUndo));
+    setSelectionUndo(null);
+  }, [selectionUndo]);
 
   /**
    * 날짜 편집을 지금 허용해도 되는가 (PR #150 리뷰 1번).
@@ -2077,7 +2112,7 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
             <button
               ref={aiTriggerRef}
               type="button"
-              disabled={aiCommandDisabled}
+              disabled={aiPanelBlocked}
               aria-expanded={aiPanelOpen}
               aria-controls="itinerary-ai-panel"
               aria-label={tr("ai.entryLabel")}
@@ -2146,6 +2181,9 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
             disabledMessage={selectionCapacity?.requiresAdjustment
               ? "ai.disabledOverselection"
               : "ai.disabled"}
+            overselection={overselectionProposal}
+            onApplyOverselection={applyOverselectionProposal}
+            onUndoOverselection={selectionUndo !== null ? undoOverselectionProposal : undefined}
             feedback={aiFeedback}
             lastDiff={lastItineraryDiff}
             onChange={setAiSentence}

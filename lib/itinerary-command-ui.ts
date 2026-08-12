@@ -10,18 +10,39 @@ export function commandResponseIsCurrent(submitted: number, current: number): bo
   return submitted === current;
 }
 
-export function commandPanelUnavailable(input: {
+type PanelGate = {
   hasCandidates: boolean;
   hasPlannedResult: boolean;
   reopened: boolean;
   alternativeSelected: boolean;
   requiresSelectionAdjustment: boolean;
-}): boolean {
+};
+
+/**
+ * 패널을 **열 수조차 없는가** (#171).
+ *
+ * 과선택은 여기서 빠졌다. 앞서는 이 조건에 묶여 있어서 패널을 여는 버튼까지 잠겼고,
+ * 그래서 **왜 잠겼는지 설명하는 문구를 볼 방법이 없었다** — 사용자에게는 이유 없이
+ * 회색인 버튼이었다. AI를 표방하는 화면에서 가장 도움이 필요한 순간에 그랬다.
+ *
+ * 지금은 연다. 열어서 지금 상황을 설명하고 정리를 제안한다.
+ */
+export function commandPanelUnavailable(input: PanelGate): boolean {
   return !input.hasCandidates
     || !input.hasPlannedResult
     || input.reopened
-    || input.alternativeSelected
-    || input.requiresSelectionAdjustment;
+    || input.alternativeSelected;
+}
+
+/**
+ * 자연어 **입력**을 받을 수 있는가.
+ *
+ * 과선택 상태에서는 막는다. 지금 일정은 최종 확정이 아니라 제외 판단용 미리보기라
+ * (#84), 그 위에서 "둘째 날로 옮겨줘" 같은 편집을 받으면 확정되지 않은 것을 편집하게
+ * 된다. 대신 패널이 정리 제안을 먼저 내놓는다.
+ */
+export function commandInputUnavailable(input: PanelGate): boolean {
+  return commandPanelUnavailable(input) || input.requiresSelectionAdjustment;
 }
 
 export function selectionAfterCommand(input: {
