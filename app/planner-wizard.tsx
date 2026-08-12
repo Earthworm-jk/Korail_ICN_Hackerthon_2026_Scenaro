@@ -32,6 +32,7 @@ import { excludedPlaceIdsFrom, initialCandidateIds } from "@/lib/candidates";
 import { initialPlaceIdsFromItinerary } from "@/lib/initial-place-selection";
 import {
   commandInputUnavailable,
+  overselectionProposalOf,
   commandPanelUnavailable,
   canEditVisitDate,
   panelDismissable,
@@ -1087,21 +1088,20 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
    * 엔진이 어느 곳이 들어가는지 이미 알고 있다(#183). 사용자가 20곳에서 11곳을 손으로
    * 지우게 하는 대신, 들어가는 목록을 보여주고 한 번에 줄인다.
    */
-  const overselectionProposal = selectionCapacity?.requiresAdjustment
-    ? {
-        keepPlaceIds: selectionCapacity.scheduledPlaceIds,
-        dropCount: selectionCapacity.minimumExclusionCount,
-        selectedCount: selectionCapacity.selectedCount,
-      }
-    : null;
+  const overselectionProposal = overselectionProposalOf({
+    capacity: selectionCapacity,
+    selectionStateShown,
+  });
 
   const applyOverselectionProposal = useCallback(() => {
-    if (!selectionCapacity?.requiresAdjustment) return;
+    // 표시와 실행이 같은 값을 본다 — 표시만 숨기면 오래된 closure 로 다시 적용된다
+    const proposal = overselectionProposalOf({ capacity: selectionCapacity, selectionStateShown });
+    if (proposal === null) return;
     // 되돌릴 수 있게 직전 선택을 남긴다 — 무엇을 잃었는지 모른 채 진행하면 안 된다 (#84)
     setSelectionUndo(new Set(selectedPlaceIds));
     setAiFeedback(null);
-    setSelectedPlaceIds(new Set(selectionCapacity.scheduledPlaceIds));
-  }, [selectionCapacity, selectedPlaceIds]);
+    setSelectedPlaceIds(new Set(proposal.keepPlaceIds));
+  }, [selectionCapacity, selectionStateShown, selectedPlaceIds]);
 
   const undoOverselectionProposal = useCallback(() => {
     if (selectionUndo === null) return;
@@ -2183,7 +2183,10 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
               : "ai.disabled"}
             overselection={overselectionProposal}
             onApplyOverselection={applyOverselectionProposal}
-            onUndoOverselection={selectionUndo !== null ? undoOverselectionProposal : undefined}
+            /* 완료형 문구는 재계산이 실제로 끝난 뒤에만 — 아직 계산 중이거나 실패했을 수 있다 */
+            onUndoOverselection={selectionUndo !== null && selectionStateShown
+              ? undoOverselectionProposal
+              : undefined}
             feedback={aiFeedback}
             lastDiff={lastItineraryDiff}
             onChange={setAiSentence}

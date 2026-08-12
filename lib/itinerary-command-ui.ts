@@ -223,3 +223,38 @@ export function itineraryBasisKey(input: {
     input.reopened ? "reopened" : "live",
   ].join("\u0000");
 }
+
+/**
+ * 과선택 정리 제안을 지금 내놓아도 되는가 (#171 · PR #185 리뷰).
+ *
+ * **표시 중인 일정이 현재 선택으로 계산된 것일 때만** 낸다. 선택은 즉시 바뀌고 일정은
+ * 응답 후에 바뀌므로, 그 사이에는 방금 고른 장소가 "이전 일정에 없다"는 이유만으로
+ * 미배치로 찍힌다. 그 상태로 "이 N곳으로 정리하기"를 누르면 **방금 고른 장소까지
+ * 버린다.** 재계산이 실패해 이전 결과가 남으면 그 오판이 계속된다.
+ *
+ * #156이 같은 이유로 `selectionResultIsCurrent`를 넣었는데 카드가 그 경계를 우회했다.
+ *
+ * 표시와 실행을 **한 값으로 묶는다.** 표시만 숨기고 핸들러를 열어 두면 이벤트 시점의
+ * 오래된 closure나 상태 전이에서 다시 적용될 수 있다.
+ */
+export function overselectionProposalOf(input: {
+  capacity: {
+    requiresAdjustment: boolean;
+    scheduledPlaceIds: readonly string[];
+    minimumExclusionCount: number;
+    selectedCount: number;
+  } | null;
+  selectionStateShown: boolean;
+}): {
+  keepPlaceIds: readonly string[];
+  dropCount: number;
+  selectedCount: number;
+} | null {
+  if (!input.selectionStateShown) return null;
+  if (!input.capacity?.requiresAdjustment) return null;
+  return {
+    keepPlaceIds: input.capacity.scheduledPlaceIds,
+    dropCount: input.capacity.minimumExclusionCount,
+    selectedCount: input.capacity.selectedCount,
+  };
+}
