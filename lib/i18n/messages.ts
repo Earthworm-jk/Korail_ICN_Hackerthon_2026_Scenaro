@@ -10,7 +10,7 @@ export const messages = {
     "app.snapshotBadge": "데모 스냅샷",
     "nav.step1": "여행 조건",
     "nav.step2": "K-콘텐츠",
-    "nav.step3": "촬영지",
+    "nav.step3": "추천일정",
     "common.next": "다음",
     "common.back": "이전",
     "common.close": "닫기",
@@ -100,9 +100,9 @@ export const messages = {
     "step3.photoPlaceholder": "장소 이미지 준비 중",
     "step3.addPlace": "{place} 일정에 추가",
     "step3.removePlace": "{place} 일정에서 제외",
-    // 화면 전체가 '추천일정'이 됐으므로 (#146), 그 안의 날짜별 내역은 '상세 일정'이다.
-    // 같은 이름을 두 층에 쓰면 어느 쪽을 가리키는지 화면에서 갈리지 않는다.
-    "step4.title": "상세 일정",
+    // 상단 제목 줄을 걷으면서 이름이 하나로 합쳐졌다 (#146). nav도 같은 말을 쓴다 —
+    // `여행 조건 / K-콘텐츠 / 추천일정`이 nav와 화면 안에서 동시에 성립한다.
+    "step4.title": "추천일정",
     "ai.title": "AI에게 일정 조율 요청",
     "ai.subtitle": "말로 요청하면 검증된 일정 엔진이 가능 여부와 전체 동선을 다시 계산합니다.",
     "ai.inputLabel": "AI 일정 조율 요청",
@@ -451,7 +451,7 @@ export const messages = {
     "app.snapshotBadge": "Demo snapshot",
     "nav.step1": "Trip window",
     "nav.step2": "K-content",
-    "nav.step3": "Filming spots",
+    "nav.step3": "Itinerary",
     "common.next": "Next",
     "common.back": "Back",
     "common.close": "Close",
@@ -535,7 +535,7 @@ export const messages = {
     "step3.photoPlaceholder": "Place image coming soon",
     "step3.addPlace": "Add {place} to itinerary",
     "step3.removePlace": "Remove {place} from itinerary",
-    "step4.title": "Daily breakdown",
+    "step4.title": "Your itinerary",
     "ai.title": "Ask AI to tune your itinerary",
     "ai.subtitle": "Describe a change and the verified itinerary engine recalculates feasibility and the full route.",
     "ai.inputLabel": "AI itinerary tuning request",
