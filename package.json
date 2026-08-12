@@ -8,6 +8,8 @@
     "start": "next start",
     "lint": "eslint",
     "test": "vitest run",
+    "eval:golden": "vitest run --config vitest.evaluation.config.ts",
+    "eval:golden:record": "EVALUATION_REPORT_DIR=reports vitest run --config vitest.evaluation.config.ts",
     "typecheck": "tsc --noEmit",
     "verify:stay-sources": "python3 scripts/verify_stay_sources.py"
   },

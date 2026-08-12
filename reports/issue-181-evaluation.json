@@ -1,0 +1,492 @@
+{
+  "schemaVersion": 1,
+  "issue": 181,
+  "generatedAt": "2026-08-12T15:08:43.654Z",
+  "scenarioCount": 20,
+  "passedCount": 20,
+  "failedCount": 0,
+  "metrics": {
+    "hardConstraintCompliance": {
+      "numerator": 11,
+      "denominator": 11,
+      "rate": 1,
+      "failureCondition": "planned/recalculated output has at least one hard-constraint violation code"
+    },
+    "feasibleSuccess": {
+      "numerator": 8,
+      "denominator": 8,
+      "rate": 1,
+      "failureCondition": "feasible scenario is not planned or has a validator violation"
+    },
+    "infeasibleAccuracy": {
+      "numerator": 5,
+      "denominator": 5,
+      "rate": 1,
+      "failureCondition": "invalid scenario is accepted or produces an itinerary"
+    },
+    "changeResponseSuccess": {
+      "numerator": 1,
+      "denominator": 1,
+      "rate": 1,
+      "failureCondition": "paired flight change lacks a valid new itinerary or explicit infeasible result"
+    },
+    "passengerAdvisoryAccuracy": {
+      "numerator": 3,
+      "denominator": 3,
+      "rate": 1,
+      "failureCondition": "advisory status differs from the fixture expectation"
+    },
+    "determinismAndFallbackCompletion": {
+      "numerator": 3,
+      "denominator": 3,
+      "rate": 1,
+      "failureCondition": "repeated output differs or snapshot fallback does not complete"
+    },
+    "recomputationTimeMs": {
+      "sampleCount": 14,
+      "p50": 86.42,
+      "p95": 318.03
+    }
+  },
+  "deferredMetrics": [
+    {
+      "name": "AI explanation factual consistency",
+      "reason": "Phase 2: explanation claims need a stable claim schema before they can be matched to structured itinerary diff without heuristic text parsing."
+    }
+  ],
+  "scenarios": [
+    {
+      "id": "G01",
+      "title": "입국 · 김고은 배우 일정",
+      "category": "feasible",
+      "expectedStatus": "planned",
+      "actualStatus": "planned",
+      "passed": true,
+      "durationMs": 321.26,
+      "invariants": [
+        "hard_constraints_zero",
+        "selected_group_covered"
+      ],
+      "allowedOutcomes": [
+        "planned"
+      ],
+      "violations": [],
+      "details": {
+        "visitedPlaceCount": 9,
+        "rejectedPlaceCount": 11,
+        "warningCount": 5
+      }
+    },
+    {
+      "id": "G02",
+      "title": "입국 · 도깨비 작품 일정",
+      "category": "feasible",
+      "expectedStatus": "planned",
+      "actualStatus": "planned",
+      "passed": true,
+      "durationMs": 88.33,
+      "invariants": [
+        "hard_constraints_zero",
+        "selected_group_covered"
+      ],
+      "allowedOutcomes": [
+        "planned"
+      ],
+      "violations": [],
+      "details": {
+        "visitedPlaceCount": 8,
+        "rejectedPlaceCount": 2,
+        "warningCount": 4
+      }
+    },
+    {
+      "id": "G03",
+      "title": "입국 · 박보검과 도깨비 복합 일정",
+      "category": "feasible",
+      "expectedStatus": "planned",
+      "actualStatus": "planned",
+      "passed": true,
+      "durationMs": 183.68,
+      "invariants": [
+        "hard_constraints_zero",
+        "selected_group_covered"
+      ],
+      "allowedOutcomes": [
+        "planned"
+      ],
+      "violations": [],
+      "details": {
+        "visitedPlaceCount": 8,
+        "rejectedPlaceCount": 11,
+        "warningCount": 2
+      }
+    },
+    {
+      "id": "G04",
+      "title": "입출국 · 공유 배우 일정",
+      "category": "feasible",
+      "expectedStatus": "planned",
+      "actualStatus": "planned",
+      "passed": true,
+      "durationMs": 7.45,
+      "invariants": [
+        "hard_constraints_zero",
+        "selected_group_covered"
+      ],
+      "allowedOutcomes": [
+        "planned"
+      ],
+      "violations": [],
+      "details": {
+        "visitedPlaceCount": 6,
+        "rejectedPlaceCount": 0,
+        "warningCount": 3
+      }
+    },
+    {
+      "id": "G05",
+      "title": "입출국 · 이민호 배우 일정",
+      "category": "feasible",
+      "expectedStatus": "planned",
+      "actualStatus": "planned",
+      "passed": true,
+      "durationMs": 5.27,
+      "invariants": [
+        "hard_constraints_zero",
+        "selected_group_covered"
+      ],
+      "allowedOutcomes": [
+        "planned"
+      ],
+      "violations": [],
+      "details": {
+        "visitedPlaceCount": 5,
+        "rejectedPlaceCount": 0,
+        "warningCount": 4
+      }
+    },
+    {
+      "id": "G06",
+      "title": "입출국 · 김태리 배우 일정",
+      "category": "feasible",
+      "expectedStatus": "planned",
+      "actualStatus": "planned",
+      "passed": true,
+      "durationMs": 4.89,
+      "invariants": [
+        "hard_constraints_zero",
+        "selected_group_covered"
+      ],
+      "allowedOutcomes": [
+        "planned"
+      ],
+      "violations": [],
+      "details": {
+        "visitedPlaceCount": 5,
+        "rejectedPlaceCount": 0,
+        "warningCount": 5
+      }
+    },
+    {
+      "id": "G07",
+      "title": "출국 마감 · 남자친구 작품 일정",
+      "category": "feasible",
+      "expectedStatus": "planned",
+      "actualStatus": "planned",
+      "passed": true,
+      "durationMs": 12.32,
+      "invariants": [
+        "hard_constraints_zero",
+        "selected_group_covered"
+      ],
+      "allowedOutcomes": [
+        "planned"
+      ],
+      "violations": [],
+      "details": {
+        "visitedPlaceCount": 6,
+        "rejectedPlaceCount": 0,
+        "warningCount": 3
+      }
+    },
+    {
+      "id": "G08",
+      "title": "출국 마감 · 청춘기록 작품 일정",
+      "category": "feasible",
+      "expectedStatus": "planned",
+      "actualStatus": "planned",
+      "passed": true,
+      "durationMs": 2.92,
+      "invariants": [
+        "hard_constraints_zero",
+        "selected_group_covered"
+      ],
+      "allowedOutcomes": [
+        "planned"
+      ],
+      "violations": [],
+      "details": {
+        "visitedPlaceCount": 4,
+        "rejectedPlaceCount": 0,
+        "warningCount": 3
+      }
+    },
+    {
+      "id": "G09",
+      "title": "항공 도착보다 이른 출국",
+      "category": "infeasible",
+      "expectedStatus": "invalid",
+      "actualStatus": "invalid",
+      "passed": true,
+      "durationMs": 0.34,
+      "invariants": [
+        "no_forced_itinerary",
+        "structured_invalid_result"
+      ],
+      "allowedOutcomes": [
+        "invalid"
+      ],
+      "violations": [],
+      "details": {
+        "fields": [
+          "departureAt",
+          "airportArrivalDeadline"
+        ]
+      }
+    },
+    {
+      "id": "G10",
+      "title": "입국 전 공항 출발 가능 시각",
+      "category": "infeasible",
+      "expectedStatus": "invalid",
+      "actualStatus": "invalid",
+      "passed": true,
+      "durationMs": 0.05,
+      "invariants": [
+        "no_forced_itinerary",
+        "structured_invalid_result"
+      ],
+      "allowedOutcomes": [
+        "invalid"
+      ],
+      "violations": [],
+      "details": {
+        "fields": [
+          "airportReadyAt"
+        ]
+      }
+    },
+    {
+      "id": "G11",
+      "title": "항공 출국 뒤 공항 도착 마감",
+      "category": "infeasible",
+      "expectedStatus": "invalid",
+      "actualStatus": "invalid",
+      "passed": true,
+      "durationMs": 0.03,
+      "invariants": [
+        "no_forced_itinerary",
+        "structured_invalid_result"
+      ],
+      "allowedOutcomes": [
+        "invalid"
+      ],
+      "violations": [],
+      "details": {
+        "fields": [
+          "airportArrivalDeadline"
+        ]
+      }
+    },
+    {
+      "id": "G12",
+      "title": "공항 출발 가능 시각과 도착 마감 역전",
+      "category": "infeasible",
+      "expectedStatus": "invalid",
+      "actualStatus": "invalid",
+      "passed": true,
+      "durationMs": 0.03,
+      "invariants": [
+        "no_forced_itinerary",
+        "structured_invalid_result"
+      ],
+      "allowedOutcomes": [
+        "invalid"
+      ],
+      "violations": [],
+      "details": {
+        "fields": [
+          "airportArrivalDeadline"
+        ]
+      }
+    },
+    {
+      "id": "G13",
+      "title": "유효한 입력 · 마지막 연결이 성립하지 않는 5분 시간 창",
+      "category": "infeasible",
+      "expectedStatus": "empty",
+      "actualStatus": "empty",
+      "passed": true,
+      "durationMs": 0.7,
+      "invariants": [
+        "valid_input",
+        "no_forced_itinerary",
+        "explicit_empty_result"
+      ],
+      "allowedOutcomes": [
+        "empty"
+      ],
+      "violations": [],
+      "details": {
+        "rejectedPlaceCount": 20
+      }
+    },
+    {
+      "id": "G14",
+      "title": "항공편 2시간 지연 paired recalculation",
+      "category": "flight_change",
+      "expectedStatus": "changed_and_feasible",
+      "actualStatus": "changed_and_feasible",
+      "passed": true,
+      "durationMs": 474.1,
+      "invariants": [
+        "both_results_hard_constraints_zero",
+        "structured_diff_changed",
+        "missed_ride_is_scoped"
+      ],
+      "allowedOutcomes": [
+        "changed_and_feasible",
+        "explicitly_infeasible"
+      ],
+      "violations": [],
+      "details": {
+        "missedRideCount": 1,
+        "replacementRideCount": 3,
+        "movedPlaceCount": 1,
+        "droppedPlaceCount": 1
+      }
+    },
+    {
+      "id": "G15",
+      "title": "승객예고 동일 시간대 · 여유 120→150분 paired test",
+      "category": "passenger_advisory_change",
+      "expectedStatus": "elevated_to_clear",
+      "actualStatus": "elevated_to_clear",
+      "passed": true,
+      "durationMs": 7.04,
+      "invariants": [
+        "relative_signal_only",
+        "slack_threshold_120_minutes"
+      ],
+      "allowedOutcomes": [
+        "elevated_to_clear"
+      ],
+      "violations": [],
+      "details": {
+        "before": "elevated",
+        "after": "clear",
+        "threshold": 900
+      }
+    },
+    {
+      "id": "G16",
+      "title": "승객예고 동일 여유 · 상위→비상위 시간대 paired test",
+      "category": "passenger_advisory_change",
+      "expectedStatus": "elevated_to_clear",
+      "actualStatus": "elevated_to_clear",
+      "passed": true,
+      "durationMs": 0.21,
+      "invariants": [
+        "same_date_direction_terminal_bucket",
+        "non_peak_is_clear"
+      ],
+      "allowedOutcomes": [
+        "elevated_to_clear"
+      ],
+      "violations": [],
+      "details": {
+        "beforeHour": 11,
+        "afterHour": 10,
+        "threshold": 900
+      }
+    },
+    {
+      "id": "G17",
+      "title": "승객예고 D+1→D+2 범위 변경 paired test",
+      "category": "passenger_advisory_change",
+      "expectedStatus": "elevated_to_out_of_range",
+      "actualStatus": "elevated_to_out_of_range",
+      "passed": true,
+      "durationMs": 0.16,
+      "invariants": [
+        "d_day_and_d_plus_1_only",
+        "no_future_congestion_inference"
+      ],
+      "allowedOutcomes": [
+        "elevated_to_out_of_range"
+      ],
+      "violations": []
+    },
+    {
+      "id": "G18",
+      "title": "동일 일정 입력 3회 결정성",
+      "category": "determinism",
+      "expectedStatus": "deterministic",
+      "actualStatus": "deterministic",
+      "passed": true,
+      "durationMs": 688.54,
+      "invariants": [
+        "byte_equivalent_structured_output"
+      ],
+      "allowedOutcomes": [
+        "deterministic"
+      ],
+      "violations": [],
+      "details": {
+        "repetitions": 3
+      }
+    },
+    {
+      "id": "G19",
+      "title": "외부 호출 없는 항공편 스냅샷 폴백 완주",
+      "category": "offline_fallback",
+      "expectedStatus": "snapshot_planned",
+      "actualStatus": "snapshot_planned",
+      "passed": true,
+      "durationMs": 234.16,
+      "invariants": [
+        "no_live_request_without_search_date",
+        "snapshot_to_planner_completion"
+      ],
+      "allowedOutcomes": [
+        "snapshot_planned"
+      ],
+      "violations": [],
+      "details": {
+        "flightNo": "AF264",
+        "source": "snapshot"
+      }
+    },
+    {
+      "id": "G20",
+      "title": "D+1 승객예고 스냅샷 3회 결정성",
+      "category": "determinism",
+      "expectedStatus": "deterministic_elevated",
+      "actualStatus": "deterministic_elevated",
+      "passed": true,
+      "durationMs": 0.58,
+      "invariants": [
+        "same_fixture_same_advisory",
+        "d_plus_1_supported"
+      ],
+      "allowedOutcomes": [
+        "deterministic_elevated"
+      ],
+      "violations": [],
+      "details": {
+        "repetitions": 3,
+        "advisory": "elevated"
+      }
+    }
+  ]
+}
