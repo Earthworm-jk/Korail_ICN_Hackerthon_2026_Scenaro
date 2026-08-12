@@ -123,6 +123,35 @@ export function resolveCommand(
       : { ok: true, command: { intent: "recommend_along_route", targetDate } };
   }
 
+  if (raw.intent === "limit_places") {
+    /**
+     * 이름을 장소 ID로 푼다 (#171 6번). 못 찾거나 여러 곳에 걸리면 **되묻는다** —
+     * 사용자가 "꼭"이라고 한 장소를 우리가 임의로 고르면 그건 약속을 무르는 것이다.
+     */
+    const pinnedPlaceIds: string[] = [];
+    for (const name of raw.pinnedPlaceNames ?? []) {
+      const found = matchPlaces(name, context.candidates);
+      if (found.length === 0) {
+        return { ok: false, clarification: { code: "PLACE_NOT_FOUND", query: name } };
+      }
+      if (found.length > 1) {
+        return {
+          ok: false,
+          clarification: { code: "PLACE_AMBIGUOUS", query: name, matches: found },
+        };
+      }
+      if (!pinnedPlaceIds.includes(found[0].id)) pinnedPlaceIds.push(found[0].id);
+    }
+    return {
+      ok: true,
+      command: {
+        intent: "limit_places",
+        targetPlaceCount: raw.targetPlaceCount,
+        pinnedPlaceIds,
+      },
+    };
+  }
+
   const matches = matchPlaces(raw.placeName, context.candidates);
   if (matches.length === 0) {
     return { ok: false, clarification: { code: "PLACE_NOT_FOUND", query: raw.placeName } };

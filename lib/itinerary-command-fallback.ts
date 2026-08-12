@@ -29,6 +29,48 @@ const EN_ORDINALS = ["first", "second", "third", "fourth", "fifth", "sixth", "se
  */
 const MOVE_VERBS = /(옮겨|이동|보내)/;
 const ADD_VERBS = /(넣어|추가|포함)/;
+/**
+ * "7곳만 남겨줘" (#171 6번).
+ *
+ * **개수 뒤에 남기다·줄이다 계열이 와야 한다.** `7곳 추천해줘`처럼 개수만 있는 문장까지
+ * 잡으면 추천 요청이 정리 명령으로 읽힌다. 여기서 못 알아듣는 편이 잘못 실행하는 것보다 낫다.
+ */
+const LIMIT_PATTERNS = [
+  /(\d+)\s*(?:곳|개|군데)\s*(?:만|으로|로)?\s*(?:남기|남겨|줄이|줄여|추리|추려|골라)/,
+  /(?:keep|leave|limit|reduce)\D{0,12}(\d+)\s*(?:places?|spots?)/i,
+  /(?:only|just)\s*(\d+)\s*(?:places?|spots?)/i,
+];
+
+/**
+ * "영진해변은 꼭" — 어느 안에서도 빼지 않을 장소.
+ *
+ * 조사·동사를 떼어 이름처럼 보이는 덩어리만 남긴다. 카탈로그 대조는 resolver 몫이다.
+ */
+const PINNED_PATTERNS = [
+  // 공백을 포함하지 않는다 — 포함하면 앞 문장까지 통째로 먹는다
+  /([가-힣A-Za-z][가-힣A-Za-z0-9·]{1,19})\s*(?:은|는|이|가)?\s*(?:꼭|반드시|무조건)\s*(?:유지|남기|남겨|넣|가|빼지)/,
+  // 숫자로 시작하면 개수 표현이다 — `keep 7 places`가 장소 이름으로 읽히면 안 된다
+  /(?:must\s*keep|definitely\s*keep|keep)\s+([A-Za-z][A-Za-z'-]{1,29})(?:\s*[,.]|\s|$)/i,
+];
+
+function parseLimit(text: string): { targetPlaceCount: number; pinnedPlaceNames: string[] } | null {
+  for (const pattern of LIMIT_PATTERNS) {
+    const match = text.match(pattern);
+    if (!match) continue;
+    const count = Number(match[1]);
+    if (!Number.isInteger(count) || count < 1 || count > 50) continue;
+    const pinned: string[] = [];
+    for (const pinPattern of PINNED_PATTERNS) {
+      const pin = text.match(pinPattern);
+      // 붙은 조사를 뗀다 — 카탈로그 대조는 resolver 가 하므로 이름만 넘긴다
+      const name = pin?.[1]?.trim().replace(/(?:은|는|이|가|을|를)$/, "");
+      if (name && !pinned.includes(name)) pinned.push(name);
+    }
+    return { targetPlaceCount: count, pinnedPlaceNames: pinned };
+  }
+  return null;
+}
+
 const ROUTE_RECOMMEND_PATTERNS = [
   /(동선|경로).*(맞|가까|근처).*(추천|촬영지|장소)/,
   /(추천|촬영지|장소).*(동선|경로).*(맞|가까|근처)/,
@@ -106,6 +148,17 @@ export function parseCommand(input: string): RawItineraryCommand {
 
   if (EXPLAIN_PATTERNS.some((pattern) => pattern.test(text))) {
     return { intent: "explain_changes" };
+  }
+
+  // 개수 정리는 날짜·장소보다 먼저 본다 — "7곳만 남겨줘"에는 둘 다 없다
+  const limit = parseLimit(text);
+  if (limit) {
+    const parsedLimit = RawItineraryCommandSchema.safeParse({
+      intent: "limit_places",
+      targetPlaceCount: limit.targetPlaceCount,
+      ...(limit.pinnedPlaceNames.length > 0 ? { pinnedPlaceNames: limit.pinnedPlaceNames } : {}),
+    });
+    if (parsedLimit.success) return parsedLimit.data;
   }
 
   const dayIndex = parseDayIndex(text);

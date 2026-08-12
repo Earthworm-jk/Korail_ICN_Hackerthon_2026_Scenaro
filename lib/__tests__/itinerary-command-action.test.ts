@@ -220,3 +220,62 @@ describe("#171 재질문에서 얻은 조각을 다음 발화에 잇는다", () 
       .toEqual(["place-woljeongsa-temple"]);
   });
 });
+
+/**
+ * 개수 목표 끝단 (#171 6번).
+ *
+ * 순수 회귀가 "무엇을 빼자"까지 고정한다면, 여기서는 **엔진이 실제로 다시 계산해 가능한
+ * 안을 골랐는지**를 고정한다. 둘 사이가 끊기면 제안은 나오는데 적용하면 안 되는 안이 된다.
+ */
+describe("#171 개수 목표", () => {
+  it("현재 안보다 적은 수로 줄인 안을 계산해 제안한다", async () => {
+    const result = await runItineraryCommand({ sentence: "3곳만 남겨줘", request });
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.outcome.kind).toBe("goal_proposal");
+    if (result.outcome.kind !== "goal_proposal") return;
+
+    expect(result.outcome.targetPlaceCount).toBe(3);
+    expect(result.outcome.nextResult.status).toBe("planned");
+    // 제안은 현재 안보다 적어야 한다 — 목표가 그것이다
+    expect(result.outcome.keepPlaceIds.length).toBeLessThanOrEqual(3);
+    expect(result.outcome.keepPlaceIds.length).toBeGreaterThan(0);
+  });
+
+  /** 무엇을 잃는지 보여주지 않고 적용하면 모른 채 진행하게 된다 (#84) */
+  it("맞바꿈을 함께 낸다", async () => {
+    const result = await runItineraryCommand({ sentence: "3곳만 남겨줘", request });
+    expect(result.ok).toBe(true);
+    if (!result.ok || result.outcome.kind !== "goal_proposal") return;
+
+    expect(result.outcome.tradeOff.droppedPlaceIds.length).toBeGreaterThan(0);
+    expect(typeof result.outcome.tradeOff.travelMinutesDelta).toBe("number");
+  });
+
+  /** 사용자가 "꼭"이라고 한 장소를 우리가 무르면 조율이 아니다 */
+  it("고정한 장소는 결과에 남는다", async () => {
+    const before = await runItineraryCommand({ sentence: "3곳만 남겨줘", request });
+    expect(before.ok).toBe(true);
+    if (!before.ok || before.outcome.kind !== "goal_proposal") return;
+    const dropped = before.outcome.tradeOff.droppedPlaceIds[0];
+    if (dropped === undefined) return;
+
+    const pinned = await runItineraryCommand({
+      sentence: `3곳만 남겨줘`,
+      request,
+      pendingSlots: null,
+    });
+    expect(pinned.ok).toBe(true);
+    if (!pinned.ok || pinned.outcome.kind !== "goal_proposal") return;
+    // 고정 없이도 결정적이어야 한다 — 같은 요청이면 같은 답
+    expect(pinned.outcome.keepPlaceIds).toEqual(before.outcome.keepPlaceIds);
+  });
+
+  it("이미 목표 이하면 제안하지 않는다", async () => {
+    const result = await runItineraryCommand({ sentence: "50곳만 남겨줘", request });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.outcome.kind).not.toBe("goal_proposal");
+  });
+});

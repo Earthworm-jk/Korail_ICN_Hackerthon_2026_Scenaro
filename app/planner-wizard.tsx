@@ -700,6 +700,29 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
   }, [candidateData, selectedPlaceIds, preferredVisitDates, arrival.at, departure.at, airportReady.at, airportDeadline.at, selectedActors, selectedWorks]);
 
   /** 서버가 돌려준 제안을 실제 화면 상태에 반영한다. 확인 전에는 절대 호출하지 않는다. */
+  /**
+   * 개수 목표 제안 승인 (#171 6번).
+   *
+   * 선택을 결과의 장소들로 줄이면 기존 재계산 경로가 나머지를 한다 — 새 적용 경로를
+   * 만들지 않는다. 되돌리기도 정리 제안과 **같은 스냅샷**을 쓴다.
+   */
+  const applyGoalOutcome = useCallback((
+    outcome: { keepPlaceIds: string[] },
+    submittedSequence: number,
+  ) => {
+    if (!commandResponseIsCurrent(submittedSequence, planSequence.current)) {
+      setAiFeedback({ kind: "cancelled" });
+      return;
+    }
+    if (outcome.keepPlaceIds.length === 0) return;
+    setSelectionUndo({
+      previousPlaceIds: [...selectedPlaceIds],
+      appliedPlaceIds: [...outcome.keepPlaceIds],
+    });
+    setAiFeedback(null);
+    setSelectedPlaceIds(new Set(outcome.keepPlaceIds));
+  }, [selectedPlaceIds]);
+
   const applyCommandOutcome = useCallback((outcome: ProposalOutcome, submittedSequence: number) => {
     if (!candidateData || outcome.proposal.decision === "impossible") return;
     // 자동·수동 적용 모두 제출 당시 화면에만 유효하다. 응답 뒤 다시 계산하거나 항공 시각을
@@ -843,6 +866,21 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
         if (result.outcome.kind === "recommendations") {
           setAiFeedback({
             kind: "recommendations",
+            interpretation: result.interpretation,
+            outcome: result.outcome,
+            submittedSequence,
+          });
+          return;
+        }
+        if (result.outcome.kind === "goal_proposal") {
+          /**
+           * 개수 목표 제안 (#171 6번) — **자동 적용하지 않는다.**
+           *
+           * 날짜 이동은 `decision === "ready"`면 바로 적용하지만, 개수 정리는 여러 곳이
+           * 한 번에 빠진다. 무엇이 빠지는지 보여주고 승인을 받는다 (#84).
+           */
+          setAiFeedback({
+            kind: "goal_proposal",
             interpretation: result.interpretation,
             outcome: result.outcome,
             submittedSequence,
@@ -2235,6 +2273,7 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
             overselection={overselectionProposal}
             keptPlaceIds={keptPlaceIds}
             onToggleKeep={toggleProposalKeep}
+            onApplyGoal={applyGoalOutcome}
             onApplyOverselection={applyOverselectionProposal}
             /* 완료형 문구는 재계산이 실제로 끝난 뒤에만 — 아직 계산 중이거나 실패했을 수 있다 */
             onUndoOverselection={
