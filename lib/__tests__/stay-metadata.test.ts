@@ -30,14 +30,22 @@ const EXPECTED_OFFICIAL_SOURCES = {
   "place-woljeongsa-fir-forest": {
     minutes: 60,
     source: "https://tour.pc.go.kr/Home/H20000/H20100/H20106/html",
+    verifiedAt: "2026-08-10",
   },
   "place-samyang-ranch": {
     minutes: 120,
     source: "https://www.samyangroundhill.com/enjoy/course",
+    verifiedAt: "2026-08-10",
   },
   "place-gyeonggijeon-shrine": {
     minutes: 60,
     source: "https://tour.jeonju.go.kr/index.jeonju?menuCd=DOM_000000106005001000",
+    verifiedAt: "2026-08-10",
+  },
+  "place-omokdae-gil": {
+    minutes: 60,
+    source: "https://tour.jeonju.go.kr/index.jeonju?menuCd=DOM_000000106008000000",
+    verifiedAt: "2026-08-12",
   },
 } as const;
 
@@ -78,7 +86,7 @@ describe("보수 체류 추정 기준 (#84 P0-4)", () => {
         expect(place.stayMetadata.sourceFormat, place.id).toBe("html");
         expect(place.stayMetadata.sourceQuote.length, place.id).toBeGreaterThan(0);
         expect(place.stayMetadata.sourceLocator.length, place.id).toBeGreaterThan(0);
-        expect(place.stayMetadata.verifiedAt, place.id).toBe("2026-08-10");
+        expect(place.stayMetadata.verifiedAt, place.id).toBe(official.verifiedAt);
         expect(place.stayMinutes, place.id).toBe(official.minutes);
       } else {
         expect(place.stayMetadata?.basis, place.id).toBe("category_default");
@@ -93,7 +101,7 @@ describe("보수 체류 추정 기준 (#84 P0-4)", () => {
     const places = loadRepositories().places.filter(
       ({ stayMetadata }) => stayMetadata?.basis === "official_source",
     );
-    expect(places).toHaveLength(3);
+    expect(places).toHaveLength(4);
     for (const place of places) {
       expect(place.stayMinutes, place.id).toBe(
         STAY_CATEGORY_DEFAULT_MINUTES[place.stayMetadata!.category],

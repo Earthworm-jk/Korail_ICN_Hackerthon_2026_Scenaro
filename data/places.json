@@ -1208,7 +1208,17 @@
     "stayMinutes": 60,
     "stayMetadata": {
       "category": "nature_walk",
-      "basis": "category_default"
+      "basis": "official_source",
+      "sourceMinutes": 60,
+      "sourceScope": {
+        "ko": "전주시 도보해설 정기투어 '태조 이성계 로드 투어'(태조로쉼터→오목대→자만벽화마을→이목대→최담 유허비→한벽당) 코스 전체 소요시간 — 오목대길 일대를 걷는 코스이며 오목대길 단독 시간은 아님",
+        "en": "Total duration of Jeonju's guided 'Taejo Yi Seong-gye Road Tour' walking course through the Omokdae-gil area (Omokdae, Jaman Mural Village, Imokdae, Hanbyeokdang), not a standalone time for the road itself"
+      },
+      "source": "https://tour.jeonju.go.kr/index.jeonju?menuCd=DOM_000000106008000000",
+      "sourceFormat": "html",
+      "sourceQuote": "태조 이성계 로드 투어 소요시간 1시간",
+      "sourceLocator": "여행도우미 > 도보해설투어 > Course 3. 태조 이성계 로드 투어",
+      "verifiedAt": "2026-08-12"
     },
     "placeType": "walkway",
     "verificationLevel": "원본확인",
