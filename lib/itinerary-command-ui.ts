@@ -145,16 +145,58 @@ export function pendingSlotsOf(
 /**
  * 조각이 유효한 "일정 기준" 식별자.
  *
- * 이 값이 달라지면 같은 "둘째 날"이 다른 일정의 둘째 날을 가리킨다. 선택·대안·재열람이
- * 모두 기준을 바꾸므로 셋을 함께 접는다.
+ * 이 값이 달라지면 같은 "둘째 날"이 **다른 일정의** 둘째 날을 가리킨다.
+ *
+ * **요청에서 직접 만든다** (PR #175 리뷰 3회차). 앞서는 선택·대안·재열람 세 축만 넣었는데,
+ * 항공편 시각이나 공항 마감을 바꿔 다시 계산하면 세 축이 그대로라 조각이 살아남았다. 여행
+ * 날짜 경계까지 달라졌는데도 옛 명령이 새 일정에 적용될 수 있었다.
+ *
+ * 축을 손으로 세는 대신 **계산에 들어가는 값 전체**를 접는다. 새 입력이 생겨도 따로
+ * 기억할 것이 없다 — 요청에 들어가면 기준에도 들어간다.
+ *
+ * ## 이 방어가 못 잡는 것
+ *
+ * 기준이 **똑같은 값으로 돌아오는** 왕복은 못 잡는다(대안을 골랐다 그대로 되돌리기).
+ * 그때는 일정도 실제로 같으므로 조각이 유효하다고 보는 편이 맞지만, 그 사이에 사용자가
+ * 무엇을 보고 있었는지는 다르다. 그래서 명시적 폐기(`chooseAlternative`의
+ * `setAiFeedback(null)`)를 함께 둔다 — **두 겹이고 각자 잡는 것이 다르다.**
  */
 export function itineraryBasisKey(input: {
-  selectionKey: string;
+  request: {
+    arrivalAt: string;
+    departureAt: string;
+    airportReadyAt: string;
+    airportArrivalDeadline: string;
+    selectedActorIds: readonly string[];
+    selectedWorkIds: readonly string[];
+    excludedPlaceIds: readonly string[];
+    preferredVisitDates?: Record<string, string>;
+    preferredOrder?: ReadonlyArray<readonly [string, string]>;
+  };
   selectedAltId: string | null;
   reopened: boolean;
 }): string {
+  const { request } = input;
+  const sorted = (values: readonly string[]) => [...values].sort().join(",");
+  const dates = Object.entries(request.preferredVisitDates ?? {})
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([placeId, date]) => `${placeId}=${date}`)
+    .join(",");
+  const order = (request.preferredOrder ?? [])
+    .map(([first, second]) => `${first}>${second}`)
+    .sort()
+    .join(",");
+
   return [
-    input.selectionKey,
+    request.arrivalAt,
+    request.departureAt,
+    request.airportReadyAt,
+    request.airportArrivalDeadline,
+    sorted(request.selectedActorIds),
+    sorted(request.selectedWorkIds),
+    sorted(request.excludedPlaceIds),
+    dates,
+    order,
     input.selectedAltId ?? "base",
     input.reopened ? "reopened" : "live",
   ].join("\u0000");

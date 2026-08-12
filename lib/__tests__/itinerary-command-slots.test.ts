@@ -165,16 +165,32 @@ describe("재질문 조각 잇기", () => {
    * 조각이 남은 채 기준 일정이 바뀌면 "둘째 날"이 **다른 일정의** 둘째 날에 적용된다.
    * 조각을 재질문 피드백에서만 꺼내므로, 피드백을 비우는 곳이 곧 무효화 지점이다.
    */
+  const BASE_REQUEST = {
+    arrivalAt: "2026-08-12T10:00:00+09:00",
+    departureAt: "2026-08-14T18:00:00+09:00",
+    airportReadyAt: "2026-08-12T12:00:00+09:00",
+    airportArrivalDeadline: "2026-08-14T16:00:00+09:00",
+    selectedActorIds: [],
+    selectedWorkIds: ["work-goblin"],
+    excludedPlaceIds: ["place-a"],
+  };
+  const keyOf = (over: Partial<Parameters<typeof itineraryBasisKey>[0]["request"]> = {}, rest: {
+    selectedAltId?: string | null; reopened?: boolean;
+  } = {}) => itineraryBasisKey({
+    request: { ...BASE_REQUEST, ...over },
+    selectedAltId: rest.selectedAltId ?? null,
+    reopened: rest.reopened ?? false,
+  });
+
   describe("조각은 재질문 피드백에만 산다", () => {
     const slots: PendingCommandSlots = { intent: "move_place", placeName: "영진해변" };
-    const basis = itineraryBasisKey({ selectionKey: "a|b", selectedAltId: null, reopened: false });
+    const basis = keyOf();
     const clarify = { kind: "clarify", pendingSlots: slots, basisKey: basis };
 
     it("재질문 피드백에서만 나온다", () => {
       expect(pendingSlotsOf(clarify, basis)).toEqual(slots);
     });
 
-    /** 피드백을 비우는 모든 경로(선택 토글·재계산·재열람)가 여기로 수렴한다 */
     it("피드백이 비면 조각도 없다", () => {
       expect(pendingSlotsOf(null, basis)).toBeNull();
     });
@@ -191,57 +207,69 @@ describe("재질문 조각 잇기", () => {
   });
 
   /**
-   * PR #175 리뷰 2회차 — "피드백을 비우는 곳이 곧 무효화 지점"은 **비우는 걸 잊지 않았을
-   * 때만** 참이다. 실제로 `chooseAlternative`가 비우지 않아, 대안을 골랐다 기본안으로
-   * 돌아오면 옛 조각이 되살아났다.
-   *
-   * 그래서 호출부의 성실함에 기대지 않는다. 조각에 기준을 새겨 두고 지금 기준과 다르면
-   * 쓰지 않는다 — **누가 어디서 비우는 걸 빠뜨려도** 낡은 조각이 적용되지 않는다.
+   * PR #175 리뷰 3회차 — 앞 회차 테스트는 **컴포넌트가 만들지 않는 상태**를 지어냈다.
+   * 조각은 만들어진 기준을 계속 들고 있으므로 `basisKey`가 도중에 갱신되지 않는다.
+   * 그래서 실제 `clarify` 객체를 그대로 두고 검사한다.
    */
   describe("기준이 바뀌면 조각을 쓰지 않는다", () => {
     const slots: PendingCommandSlots = { intent: "move_place", placeName: "영진해변" };
-    const base = { selectionKey: "a|b", selectedAltId: null, reopened: false };
-    const madeAt = itineraryBasisKey(base);
+    const madeAt = keyOf();
     const clarify = { kind: "clarify", pendingSlots: slots, basisKey: madeAt };
 
     it("같은 기준이면 쓴다", () => {
-      expect(pendingSlotsOf(clarify, itineraryBasisKey(base))).toEqual(slots);
+      expect(pendingSlotsOf(clarify, keyOf())).toEqual(slots);
     });
 
-    /** 리뷰가 짚은 재현 경로 — 대안을 골랐다 기본안으로 돌아와도 되살아나지 않는다 */
-    it("대안을 골랐다 기본안으로 돌아와도 되살아나지 않는다", () => {
-      const swapped = itineraryBasisKey({ ...base, selectedAltId: "alt-bus-1" });
-      expect(pendingSlotsOf(clarify, swapped)).toBeNull();
-
-      // 기본안 복귀 — 기준 문자열은 같아 보이지만 그 사이 피드백이 비워졌다.
-      // 설령 비우는 것을 또 빠뜨려도, 조각을 만든 기준과 지금 기준이 같을 때만 살아난다
-      const backToBase = itineraryBasisKey(base);
-      const staleAfterSwap = { ...clarify, basisKey: swapped };
-      expect(pendingSlotsOf(staleAfterSwap, backToBase)).toBeNull();
+    /**
+     * 리뷰가 짚은 항목 — 항공 시각·공항 마감을 바꿔 다시 계산하면 세 축(선택·대안·재열람)은
+     * 그대로다. 요청에서 기준을 만들기 때문에 이 경로가 막힌다.
+     */
+    it("항공·공항 시각이 바뀌면 쓰지 않는다", () => {
+      for (const over of [
+        { departureAt: "2026-08-15T18:00:00+09:00" },
+        { airportReadyAt: "2026-08-12T14:00:00+09:00" },
+        { airportArrivalDeadline: "2026-08-14T12:00:00+09:00" },
+        { arrivalAt: "2026-08-12T08:00:00+09:00" },
+      ]) {
+        expect(pendingSlotsOf(clarify, keyOf(over)), JSON.stringify(over)).toBeNull();
+      }
     });
 
-    it("선택이 바뀌면 쓰지 않는다", () => {
-      expect(pendingSlotsOf(clarify, itineraryBasisKey({ ...base, selectionKey: "a|b|c" })))
-        .toBeNull();
+    it("선택·콘텐츠가 바뀌면 쓰지 않는다", () => {
+      expect(pendingSlotsOf(clarify, keyOf({ excludedPlaceIds: ["place-a", "place-b"] }))).toBeNull();
+      expect(pendingSlotsOf(clarify, keyOf({ selectedWorkIds: ["work-goblin", "work-king"] }))).toBeNull();
+    });
+
+    it("방문일·순서 선호가 바뀌면 쓰지 않는다", () => {
+      expect(pendingSlotsOf(clarify, keyOf({ preferredVisitDates: { "place-c": "2026-08-13" } }))).toBeNull();
+      expect(pendingSlotsOf(clarify, keyOf({ preferredOrder: [["place-c", "place-d"]] }))).toBeNull();
+    });
+
+    it("대안을 고른 동안에는 쓰지 않는다", () => {
+      expect(pendingSlotsOf(clarify, keyOf({}, { selectedAltId: "alt-bus-1" }))).toBeNull();
     });
 
     it("재열람 화면이면 쓰지 않는다", () => {
-      expect(pendingSlotsOf(clarify, itineraryBasisKey({ ...base, reopened: true }))).toBeNull();
+      expect(pendingSlotsOf(clarify, keyOf({}, { reopened: true }))).toBeNull();
     });
 
     it("기준이 없는 옛 피드백은 쓰지 않는다", () => {
       expect(pendingSlotsOf({ kind: "clarify", pendingSlots: slots }, madeAt)).toBeNull();
     });
 
-    /** 값이 붙어 만들어지므로 한 칸만 달라도 다른 기준이다 */
-    it("세 축이 각각 기준을 가른다", () => {
-      const keys = new Set([
-        itineraryBasisKey(base),
-        itineraryBasisKey({ ...base, selectionKey: "a" }),
-        itineraryBasisKey({ ...base, selectedAltId: "alt-1" }),
-        itineraryBasisKey({ ...base, reopened: true }),
-      ]);
-      expect(keys.size).toBe(4);
+    it("값 순서가 달라도 같은 기준이다 — 화면이 흔들리지 않는다", () => {
+      expect(keyOf({ excludedPlaceIds: ["b", "a"] })).toBe(keyOf({ excludedPlaceIds: ["a", "b"] }));
+    });
+
+    /**
+     * **이 방어가 못 잡는 것을 함께 적어 둔다.** 기준이 똑같은 값으로 돌아오는 왕복
+     * (대안을 골랐다 그대로 되돌리기)은 기준만으로는 못 가른다 — 그때는 일정도 실제로
+     * 같다. 그 경로는 `chooseAlternative`의 명시적 폐기가 맡는다. **두 겹이고 각자
+     * 잡는 것이 다르다.**
+     */
+    it("똑같은 기준으로 돌아오는 왕복은 기준만으로 못 가른다", () => {
+      const backToBase = keyOf();
+      expect(pendingSlotsOf(clarify, backToBase)).toEqual(slots);
     });
   });
 
