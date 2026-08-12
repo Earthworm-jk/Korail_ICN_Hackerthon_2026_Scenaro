@@ -20,4 +20,11 @@ describe("번역 키 패리티 (#4 — 핵심 데모 경로 누락 0건)", () =>
     expect(messages.ko["step3.aiReasonLabel"]).toBe("검증된 장면 근거");
     expect(messages.en["step3.aiReasonLabel"]).toBe("Verified scene evidence");
   });
+
+  it("환승 대기와 통과 정차를 활용 가능 체류와 다른 말로 표시한다 (#101)", () => {
+    expect(messages.ko["region.nextTrainIn"]).toBe("다음 열차까지 {duration}");
+    expect(messages.en["region.nextTrainIn"]).toBe("Next train in {duration}");
+    expect(messages.ko["region.sameTrainContinues"]).toBe("같은 열차로 계속 이동");
+    expect(messages.en["region.sameTrainContinues"]).toBe("Continue on the same train");
+  });
 });

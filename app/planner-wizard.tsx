@@ -91,7 +91,14 @@ import { ItineraryRouteMap, type MapPlace, type MapStation } from "./korea-map";
 import { PlaceRecommendationSheet, PlaceThumbnail } from "./place-recommendation-sheet";
 import { PlaceBrowser } from "./place-browser";
 import sheetStyles from "./place-recommendation-sheet.module.css";
-import { airportLegsOf, itineraryRowsOf, rowKey, shouldNoteAirportRail, stationIdsOf } from "@/lib/itinerary-rows";
+import {
+  airportLegsOf,
+  itineraryRowsOf,
+  regionWindowPresentationOf,
+  rowKey,
+  shouldNoteAirportRail,
+  stationIdsOf,
+} from "@/lib/itinerary-rows";
 import { MoveRow } from "./move-row";
 import { ThemeExperienceChip, ThemeExperienceMapOverlay } from "./theme-experience";
 import { TrainLegModal, legDurationLabel, type TrainLegDetail } from "./train-leg-modal";
@@ -100,6 +107,7 @@ import type { StationFacilitiesSnapshotT } from "@/lib/station-facilities";
 import type { StationCoordinatesSnapshotT } from "@/lib/station-coordinates";
 import type { RailGeometrySnapshotT } from "@/lib/rail-geometry";
 import type { DayPlan } from "@/lib/engine/types";
+import type { RegionWindowKind } from "@/lib/engine/region-windows";
 import { undoPointOf, type UndoPoint } from "@/lib/itinerary-undo";
 import { displayRejectionCode, groupRejections } from "@/lib/rejection-groups";
 
@@ -128,6 +136,41 @@ const STEPS: MessageKey[] = ["nav.step1", "nav.step2", "nav.step3"];
 
 /** 3단계 후보 목록을 한 번에 보여주는 개수 — 나머지는 "더보기" */
 const PLACES_PAGE_SIZE = 5;
+
+/** #101 — 창 종류별 표현을 한곳에 모아 새 종류가 생기면 타입 검사가 누락을 잡는다. */
+const REGION_WINDOW_CARD = {
+  transfer_wait: {
+    frameClass: "border-sc-blue/40 bg-sc-blue-soft/70",
+    iconClass: "bg-sc-blue-soft text-sc-blue",
+    metaClass: "text-sc-blue",
+    icon: TrainFront,
+    titleKey: "region.transfer",
+    detailKey: "region.nextTrainIn",
+  },
+  through_stop: {
+    frameClass: "border-sc-line bg-sc-subtle",
+    iconClass: "bg-sc-surface text-sc-muted",
+    metaClass: "text-sc-muted",
+    icon: TrainFront,
+    titleKey: "region.throughStop",
+    detailKey: "region.sameTrainContinues",
+  },
+  stay: {
+    frameClass: "border-sc-orange/40 bg-sc-orange-soft/70",
+    iconClass: "bg-sc-orange-soft text-sc-orange-text",
+    metaClass: "text-sc-orange-text",
+    icon: Hourglass,
+    titleKey: "region.block",
+    detailKey: null,
+  },
+} satisfies Record<RegionWindowKind, {
+  frameClass: string;
+  iconClass: string;
+  metaClass: string;
+  icon: typeof Hourglass;
+  titleKey: MessageKey;
+  detailKey: MessageKey | null;
+}>;
 
 /**
  * 장소 토글 후 자동 재계산까지의 대기(ms) — #85 성능 실측 기준.
@@ -1309,17 +1352,17 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
   /**
    * 체류 시간 포맷 (#33 — 엔진 값 포맷 전용, 재계산 금지).
    *
-   * 옛 문구는 `약 2시간 2분 활용 가능`이었다. 카드 폭이 240px이라 "활용 가능"까지
-   * 넣으면 두 줄이 되고, 제목이 이미 `체류 시간`이라 매 칸마다 되풀이할 이유가 없다.
+   * 카드 폭이 240px이라 짧은 단위를 사용한다. 환승 대기는 이 보수 활동시간이 아니라
+   * 실제 창 길이를 같은 포맷으로 표시한다 (#101).
    */
-  const stayLabel = (minutes: number) => {
+  const durationLabel = (minutes: number) => {
     const hours = Math.floor(minutes / 60);
     const mins = minutes % 60;
-    const duration = hours > 0
+    return hours > 0
       ? `${hours}${tr("region.hours")}${mins > 0 ? ` ${mins}${tr("region.minutes")}` : ""}`
       : `${mins}${tr("region.minutes")}`;
-    return `${tr("region.about")} ${duration}`;
   };
+  const stayLabel = (minutes: number) => `${tr("region.about")} ${durationLabel(minutes)}`;
 
   // 3단계 시트 안의 촬영지 위치 지도와 "선택한 장소만 보기" 토글은 지웠다 (#146).
   // 화면에 전체 이동 동선 지도가 이미 있어 같은 것을 두 벌 그리고 있었다.
@@ -2459,29 +2502,41 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
                       <div className="mt-3">
                         <h4 className="text-xs font-medium text-sc-muted">{tr("step4.stayTitle")}</h4>
                         <ul className="mt-2 space-y-1.5 text-sm" data-day-rows data-day-stays>
-                          {day.regionWindows.map((window) => (
-                            <li
-                              key={window.startAt}
-                              className="rounded-lg border border-sc-orange/40 bg-sc-orange-soft/70 px-2 py-1.5"
-                              data-itinerary-row="stay"
-                              style={{ gridColumnStart: stayColumn(window.startAt) }}
-                            >
-                              <span className="block tabular-nums text-xs text-sc-muted" data-row-time>
-                                {fmtTime(window.startAt)}
-                              </span>
-                              <span className="mt-1 flex items-start gap-2" data-row-main>
-                                <span className="grid size-7 shrink-0 place-items-center rounded-md bg-sc-orange-soft text-sc-orange-text">
-                                  <Hourglass aria-hidden="true" className="size-4" />
+                          {day.regionWindows.map((window) => {
+                            const presentation = regionWindowPresentationOf(window, day);
+                            const card = REGION_WINDOW_CARD[presentation.kind];
+                            const WindowIcon = card.icon;
+                            const title = `${stationName(window.stationId)} ${tr(card.titleKey)}`;
+                            const detail = card.detailKey === null
+                              ? stayLabel(presentation.minutes)
+                              : tr(card.detailKey).replace(
+                                "{duration}",
+                                durationLabel(presentation.minutes),
+                              );
+                            return (
+                              <li
+                                key={window.startAt}
+                                className={`rounded-lg border px-2 py-1.5 ${card.frameClass}`}
+                                data-itinerary-row={presentation.kind}
+                                style={{ gridColumnStart: stayColumn(window.startAt) }}
+                              >
+                                <span className="block tabular-nums text-xs text-sc-muted" data-row-time>
+                                  {fmtTime(window.startAt)}
                                 </span>
-                                <span className="min-w-0 flex-1 text-sc-text/90" data-row-name>
-                                  {stationName(window.stationId)} {tr("region.block")}
+                                <span className="mt-1 flex items-start gap-2" data-row-main>
+                                  <span className={`grid size-7 shrink-0 place-items-center rounded-md ${card.iconClass}`}>
+                                    <WindowIcon aria-hidden="true" className="size-4" />
+                                  </span>
+                                  <span className="min-w-0 flex-1 text-sc-text/90" data-row-name>
+                                    {title}
+                                  </span>
                                 </span>
-                              </span>
-                              <span className="mt-auto block pt-1 text-xs text-sc-orange-text" data-row-meta>
-                                {stayLabel(window.availableMinutes)}
-                              </span>
-                            </li>
-                          ))}
+                                <span className={`mt-auto block pt-1 text-xs ${card.metaClass}`} data-row-meta>
+                                  {detail}
+                                </span>
+                              </li>
+                            );
+                          })}
                         </ul>
                       </div>
                     )}

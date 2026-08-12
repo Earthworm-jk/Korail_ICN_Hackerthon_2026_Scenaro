@@ -8,7 +8,8 @@
  * 시각 정렬과 동률 처리를 눈으로 확인할 수 없기 때문이다 — 이동과 방문이 같은 분에
  * 걸리면 **이동이 먼저**여야 한다. 사람은 이동한 뒤에 도착한다.
  */
-import type { DayPlan, GatewayRide, ItineraryItem, TrainRide } from "./engine/types";
+import { classifyRegionWindow, type RegionWindowKind } from "./engine/region-windows";
+import type { DayPlan, GatewayRide, ItineraryItem, RegionWindow, TrainRide } from "./engine/types";
 
 export type ItineraryRow =
   | { kind: "place"; at: number; item: ItineraryItem }
@@ -78,6 +79,29 @@ export function stationIdsOf(day: DayPlan): string[] {
   }
   return [...ids].sort((a, b) => a.localeCompare(b, "en"));
 }
+
+/**
+ * 권역 창을 화면에 표시할 성격과 시간으로 바꾼다 (#101).
+ *
+ * `availableMinutes`는 09:00-21:00 활동 시간대로 잘린 값이라 실제 환승 간격과 다를 수
+ * 있다. 체류에는 그 보수 활동시간을 그대로 쓰되, "다음 열차까지"라고 말하는 환승에는
+ * 반드시 창의 실제 시작-끝 간격을 쓴다. 그렇지 않으면 같은 날 20:30-22:00 환승을
+ * 30분이라고 표시하게 된다.
+ *
+ * 자정을 넘는 창은 엔진이 `DAY_END` / `DAY_START`로 나누며 현재 분류 계약상 `stay`다.
+ * 이 헬퍼는 이미 분류된 창의 표시값만 정하고 분할 조각을 다시 잇지는 않는다.
+ */
+export function regionWindowPresentationOf(
+  window: RegionWindow,
+  day: Pick<DayPlan, "items" | "rides">,
+): { kind: RegionWindowKind; minutes: number } {
+  const kind = classifyRegionWindow(window, day.items, day.rides);
+  if (kind === "stay") return { kind, minutes: window.availableMinutes };
+
+  const duration = Date.parse(window.endAt) - Date.parse(window.startAt);
+  return { kind, minutes: Math.max(0, Math.round(duration / 60_000)) };
+}
+
 /**
  * 이 구간이 "공항철도로 간다"는 사실을 적어야 하는가 (#146 결정)
  *
