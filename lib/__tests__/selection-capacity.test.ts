@@ -24,6 +24,76 @@ describe("#84 과선택 수용량 요약", () => {
       schedulableCount: 2,
       minimumExclusionCount: 1,
       requiresAdjustment: true,
+      scheduledPlaceIds: ["place-a", "place-b"],
+      unscheduledPlaceIds: ["place-c"],
+    });
+  });
+
+  /**
+   * 어느 곳이 들어가고 어느 곳이 빠지는가 (#171).
+   *
+   * 지금까지는 이 집합을 만들어 **개수만 세고 버렸다.** 그래서 화면은 "9곳이 들어갑니다"라고
+   * 말하면서 어느 9곳인지는 보여주지 못했고, 사용자는 미리보기 일정을 스크롤해 역산해야 했다.
+   */
+  describe("유지·제외 목록", () => {
+    it("방문 순서대로 들어간 곳을 준다 — 화면에서 보는 차례와 같아야 읽힌다", () => {
+      const summary = summarizeSelectionCapacity(
+        ["place-c", "place-a", "place-b"],
+        [day("2026-08-12", ["place-b", "place-a"]), day("2026-08-13", ["place-c"])],
+      );
+      expect(summary.scheduledPlaceIds).toEqual(["place-b", "place-a", "place-c"]);
+    });
+
+    it("선택 순서대로 빠진 곳을 준다 — 사용자가 고른 차례다", () => {
+      const summary = summarizeSelectionCapacity(
+        ["place-c", "place-a", "place-b"],
+        [day("2026-08-12", ["place-a"])],
+      );
+      expect(summary.unscheduledPlaceIds).toEqual(["place-c", "place-b"]);
+    });
+
+    /** 개수와 목록이 어긋나면 "11곳"이라 적고 10줄을 그리게 된다 */
+    it("개수와 목록 길이가 항상 맞는다", () => {
+      const summary = summarizeSelectionCapacity(
+        ["place-a", "place-b", "place-c", "place-d"],
+        [day("2026-08-12", ["place-a", "place-b"])],
+      );
+      expect(summary.scheduledPlaceIds).toHaveLength(summary.schedulableCount);
+      expect(summary.unscheduledPlaceIds).toHaveLength(summary.minimumExclusionCount);
+    });
+
+    it("같은 장소가 여러 일차에 있어도 목록에 한 번만 담는다", () => {
+      const summary = summarizeSelectionCapacity(
+        ["place-a", "place-b"],
+        [day("2026-08-12", ["place-a"]), day("2026-08-13", ["place-a", "place-b"])],
+      );
+      expect(summary.scheduledPlaceIds).toEqual(["place-a", "place-b"]);
+      expect(summary.unscheduledPlaceIds).toEqual([]);
+    });
+
+    /** 선택하지 않은 장소가 일정에 남아 있어도 우리 목록은 선택 기준이다 */
+    it("선택하지 않은 장소는 어느 목록에도 넣지 않는다", () => {
+      const summary = summarizeSelectionCapacity(
+        ["place-a"],
+        [day("2026-08-12", ["place-a", "place-stale"])],
+      );
+      expect(summary.scheduledPlaceIds).toEqual(["place-a"]);
+      expect(summary.unscheduledPlaceIds).toEqual([]);
+    });
+
+    it("과선택이 아니면 빠진 목록이 비어 있다", () => {
+      const summary = summarizeSelectionCapacity(
+        ["place-a", "place-b"],
+        [day("2026-08-12", ["place-a", "place-b"])],
+      );
+      expect(summary.requiresAdjustment).toBe(false);
+      expect(summary.unscheduledPlaceIds).toEqual([]);
+    });
+
+    it("일정이 비면 선택 전부가 빠진 목록이다", () => {
+      const summary = summarizeSelectionCapacity(["place-a", "place-b"], []);
+      expect(summary.scheduledPlaceIds).toEqual([]);
+      expect(summary.unscheduledPlaceIds).toEqual(["place-a", "place-b"]);
     });
   });
 
