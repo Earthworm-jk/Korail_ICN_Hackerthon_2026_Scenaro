@@ -30,16 +30,30 @@ const EXPECTED_OFFICIAL_SOURCES = {
   "place-woljeongsa-fir-forest": {
     minutes: 60,
     source: "https://tour.pc.go.kr/Home/H20000/H20100/H20106/html",
+    verifiedAt: "2026-08-10",
   },
   "place-samyang-ranch": {
     minutes: 120,
     source: "https://www.samyangroundhill.com/enjoy/course",
+    verifiedAt: "2026-08-10",
   },
   "place-gyeonggijeon-shrine": {
     minutes: 60,
     source: "https://tour.jeonju.go.kr/index.jeonju?menuCd=DOM_000000106005001000",
+    verifiedAt: "2026-08-10",
+  },
+  "place-busan-cinema-center": {
+    minutes: 40,
+    source: "https://www.dureraum.org/bcc/contents/contentsView.do?rbsIdx=385",
+    verifiedAt: "2026-08-12",
   },
 } as const;
+
+// 공식값이 유형 기본값과 달라 엔진 시간예산 입력이 실제로 바뀌는 곳.
+// 여기에 없는 승격이 기본값과 달라지면 아래 회귀가 막는다 — 일정 영향은 PR에서 명시적으로 검토한다.
+const OFFICIAL_DIFFERS_FROM_DEFAULT: Partial<Record<string, number>> = {
+  "place-busan-cinema-center": 40,
+};
 
 describe("보수 체류 추정 기준 (#84 P0-4)", () => {
   it("유형표는 기존 45·60·90·120분 엔진 값을 보존한다", () => {
@@ -78,7 +92,7 @@ describe("보수 체류 추정 기준 (#84 P0-4)", () => {
         expect(place.stayMetadata.sourceFormat, place.id).toBe("html");
         expect(place.stayMetadata.sourceQuote.length, place.id).toBeGreaterThan(0);
         expect(place.stayMetadata.sourceLocator.length, place.id).toBeGreaterThan(0);
-        expect(place.stayMetadata.verifiedAt, place.id).toBe("2026-08-10");
+        expect(place.stayMetadata.verifiedAt, place.id).toBe(official.verifiedAt);
         expect(place.stayMinutes, place.id).toBe(official.minutes);
       } else {
         expect(place.stayMetadata?.basis, place.id).toBe("category_default");
@@ -89,15 +103,20 @@ describe("보수 체류 추정 기준 (#84 P0-4)", () => {
     }
   });
 
-  it("공식 근거 승격은 기존 유형 기본값과 같아 일정 엔진 입력을 바꾸지 않는다", () => {
+  it("공식 근거 승격이 기본값과 달라지는 곳은 명시 목록으로만 허용한다", () => {
     const places = loadRepositories().places.filter(
       ({ stayMetadata }) => stayMetadata?.basis === "official_source",
     );
-    expect(places).toHaveLength(3);
+    expect(places).toHaveLength(4);
     for (const place of places) {
-      expect(place.stayMinutes, place.id).toBe(
-        STAY_CATEGORY_DEFAULT_MINUTES[place.stayMetadata!.category],
-      );
+      const differing = OFFICIAL_DIFFERS_FROM_DEFAULT[place.id];
+      if (differing !== undefined) {
+        expect(place.stayMinutes, place.id).toBe(differing);
+      } else {
+        expect(place.stayMinutes, place.id).toBe(
+          STAY_CATEGORY_DEFAULT_MINUTES[place.stayMetadata!.category],
+        );
+      }
     }
   });
 
