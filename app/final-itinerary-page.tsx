@@ -1,5 +1,5 @@
 import type { CSSProperties } from "react";
-import type { CandidateWarning, DayPlan } from "@/lib/engine/types";
+import type { CandidateWarning, DayPlan, ItineraryMetrics } from "@/lib/engine/types";
 import type { Locale, MessageKey } from "@/lib/i18n/messages";
 import type { SaveStatus } from "./save-stub";
 import styles from "./final-itinerary-page.module.css";
@@ -61,6 +61,36 @@ function dayLegs(
 }
 
 /**
+ * 소요시간 문구 — 엔진은 분만 내리고 포맷은 화면이 한다 (`engine/types.ts` 계약).
+ */
+function fmtMinutes(total: number, locale: Locale): string {
+  const hours = Math.floor(total / 60);
+  const minutes = total % 60;
+  if (hours === 0) return locale === "ko" ? `${minutes}분` : `${minutes}m`;
+  if (minutes === 0) return locale === "ko" ? `${hours}시간` : `${hours}h`;
+  return locale === "ko" ? `${hours}시간 ${minutes}분` : `${hours}h ${minutes}m`;
+}
+
+/**
+ * 가장 긴 단일 교통 구간(분) — #198 B.
+ *
+ * **열차·공항 진입 구간만 센다.** `metrics.totalTravelMinutes`는 역-장소 접근시간까지
+ * 더한 값이라 분모가 다르다. 접근시간을 여기 섞으면 무엇을 한 구간으로 보는지 모호해져서
+ * 총합과 최댓값이 서로를 설명하지 못한다 (#198 결정). 분모 차이는 각주로 밝힌다.
+ *
+ * `gatewayLegs`는 저장 레코드 호환용 optional이라 없을 수 있는데, 이 수치는 엔진 metrics가
+ * 있을 때만 렌더되고 재열람 스냅샷은 metrics를 복원하지 않으므로 그 경로로는 오지 않는다.
+ */
+function longestLegMinutes(days: DayPlan[]): number | null {
+  const spans = days.flatMap((day) =>
+    [...(day.gatewayLegs ?? []), ...day.rides].map((leg) =>
+      Math.round(
+        (new Date(leg.arriveAt).getTime() - new Date(leg.departAt).getTime()) / 60_000,
+      )));
+  return spans.length === 0 ? null : Math.max(...spans);
+}
+
+/**
  * 개수 문구 (#131).
  *
  * 영어는 1일 때만 단수형을 쓴다. 한국어는 수에 따라 형태가 바뀌지 않으므로 항상 `other`를
@@ -82,6 +112,7 @@ function countLabel(
 export function FinalItineraryPage({
   days,
   locale,
+  metrics,
   placeName,
   stationName,
   warnings,
@@ -94,6 +125,8 @@ export function FinalItineraryPage({
 }: {
   days: DayPlan[];
   locale: Locale;
+  /** 엔진이 계산한 이동 부담 수치. 재열람 스냅샷·목업 대안에는 없다 (#198 B) */
+  metrics: ItineraryMetrics | null;
   placeName: (id: string) => string;
   stationName: (id: string) => string;
   warnings: CandidateWarning[];
@@ -113,6 +146,29 @@ export function FinalItineraryPage({
     "--final-day-count": Math.max(1, days.length),
   } as CSSProperties;
 
+  /**
+   * 이동 부담은 수치만 공개한다 (#198 B).
+   *
+   * 임의 임계값으로 "이동이 많습니다" 같은 경고를 만들지 않는다 — 긴 이동을 감수할
+   * 사용자가 있고, 근거 없는 임계값은 사용자 선택을 대신 판단하는 셈이다. 판단은
+   * 사용자가 하고 우리는 숫자를 준다.
+   */
+  const longestLeg = metrics === null ? null : longestLegMinutes(days);
+  const tiles: [string, string | number][] = [
+    [tr("final.days"), days.length],
+    [tr("final.places"), placeCount],
+    [tr("final.legs"), legCount],
+    ...(metrics
+      ? ([
+        [tr("final.travelTotal"), fmtMinutes(metrics.totalTravelMinutes, locale)],
+        [tr("final.transfers"), metrics.transferCount],
+      ] as [string, string | number][])
+      : []),
+    ...(longestLeg === null
+      ? []
+      : ([[tr("final.longestLeg"), fmtMinutes(longestLeg, locale)]] as [string, string][])),
+  ];
+
   return (
     <section className={styles.page} data-final-itinerary>
       <div className="flex flex-wrap items-start justify-between gap-4 border-b pb-4">
@@ -123,18 +179,22 @@ export function FinalItineraryPage({
           <h2 className="mt-1 text-2xl font-semibold">{tr("final.title")}</h2>
           <p className="mt-1 text-sm text-sc-muted">{tr("final.subtitle")}</p>
         </div>
-        <dl className="grid grid-cols-3 gap-2 text-center">
-          {[
-            [tr("final.days"), days.length],
-            [tr("final.places"), placeCount],
-            [tr("final.legs"), legCount],
-          ].map(([label, value]) => (
-            <div key={label} className="min-w-[76px] rounded-lg border bg-sc-subtle px-3 py-2">
-              <dt className="text-xs text-sc-muted">{label}</dt>
-              <dd className="text-lg font-semibold text-sc-blue">{value}</dd>
-            </div>
-          ))}
-        </dl>
+        <div>
+          <dl className="grid grid-cols-3 gap-2 text-center">
+            {tiles.map(([label, value]) => (
+              <div key={label} className="min-w-[76px] rounded-lg border bg-sc-subtle px-3 py-2">
+                <dt className="text-xs text-sc-muted">{label}</dt>
+                <dd className="text-lg font-semibold text-sc-blue">{value}</dd>
+              </div>
+            ))}
+          </dl>
+          {metrics && (
+            /* 총합은 접근시간을 포함하고 최댓값은 교통편만이라 분모가 다르다 — 밝혀 둔다 */
+            <p className="mt-2 max-w-[280px] text-[11px] leading-snug text-sc-muted">
+              {tr("final.travelBasis")}
+            </p>
+          )}
+        </div>
       </div>
 
       <div className={`${styles.dayGrid} mt-4`} style={dayCountStyle}>

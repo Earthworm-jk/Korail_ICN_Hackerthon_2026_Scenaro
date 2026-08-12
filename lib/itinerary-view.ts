@@ -16,7 +16,12 @@
  * - 선택이 0곳이 되면 직전 일정을 남기지 않는다 (SELECTION_CLEARED). 고를 게 없는데
  *   이전 선택의 결과가 남아 있으면 그걸 저장할 수 있게 된다.
  */
-import type { DayPlan, GatewayAlternative, ItineraryResult } from "./engine/types";
+import type {
+  DayPlan,
+  GatewayAlternative,
+  ItineraryMetrics,
+  ItineraryResult,
+} from "./engine/types";
 import type { MockAlternative } from "./alternatives-mock";
 import type { SavedItineraryStub } from "./saved-itineraries-stub";
 import { summarizeSelectionCapacity } from "./selection-capacity";
@@ -125,6 +130,22 @@ export function itineraryWarnings(view: ItineraryView) {
   if (view.result?.status !== "planned") return [];
   if (view.selectedAlt?.kind === "gateway_bus") return view.selectedAlt.warnings;
   return view.result.warnings;
+}
+
+/**
+ * 이동 부담 수치 (#198 B) — **엔진이 계산한 결과에만 있다.**
+ *
+ * 재열람 스냅샷(`SavedItineraryStub`)과 목업 대안(`MockAlternative`)에는 `metrics`가
+ * 없다. 없는 값을 화면에서 다시 세면 엔진 숫자와 어긋난 수치를 사실처럼 보여주게 된다 —
+ * 특히 환승 횟수는 #101에서 환승 대기와 통과 정차를 갈라 놓았으므로 `rides.length`로
+ * 유추하면 틀린다. 그래서 없으면 `null`이고 화면은 그 칸을 아예 그리지 않는다.
+ */
+export function itineraryMetrics(view: ItineraryView): ItineraryMetrics | null {
+  if (view.reopened) return null;
+  if (view.selectedAlt?.kind === "gateway_bus") return view.selectedAlt.metrics;
+  if (view.selectedAlt?.kind === "mock") return null;
+  if (view.result?.status !== "planned") return null;
+  return view.result.metrics;
 }
 
 export function banner(view: ItineraryView): "reopened" | "swapped" | "gateway" | null {

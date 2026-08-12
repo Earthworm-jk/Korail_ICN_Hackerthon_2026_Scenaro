@@ -255,6 +255,12 @@ export const messages = {
     "final.days": "여행 일수",
     "final.places": "방문 장소",
     "final.legs": "이동 구간",
+    // #198 B — 수치만 공개하고 판단은 사용자가 한다. 임의 임계값 경고를 붙이지 않는다
+    "final.travelTotal": "총 이동시간",
+    "final.transfers": "환승",
+    // 접근시간을 섞지 않는다는 것을 이름에서부터 밝힌다 (#198 결정)
+    "final.longestLeg": "가장 긴 단일 교통 구간",
+    "final.travelBasis": "총 이동시간은 역-장소 접근시간을 포함하고, 가장 긴 단일 교통 구간은 열차·공항 구간만 셉니다.",
     "final.dayNumber": "DAY {n}",
     // #131 — 개수 문구는 one/other 쌍으로 둔다. 한국어는 두 값이 같지만, 키를 한쪽만
     // 만들면 ko/en 키 대칭(i18n.test)이 깨지고 화면 헬퍼가 locale마다 다른 길을 타게 된다.
@@ -726,6 +732,10 @@ export const messages = {
     "final.days": "Days",
     "final.places": "Places",
     "final.legs": "Travel legs",
+    "final.travelTotal": "Total travel",
+    "final.transfers": "Transfers",
+    "final.longestLeg": "Longest single leg",
+    "final.travelBasis": "Total travel includes station-to-place access time; the longest single leg counts train and airport legs only.",
     "final.dayNumber": "DAY {n}",
     // #131 — `1 places`가 되지 않게 단수형을 따로 둔다
     "final.dayPlaceCount.one": "{n} place",

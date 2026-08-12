@@ -65,6 +65,7 @@ import {
   type ItineraryView,
   displayedDays as deriveDisplayedDays,
   initialItineraryView,
+  itineraryMetrics as deriveMetrics,
   itineraryWarnings as deriveWarnings,
   recommendedDays,
   reduceItineraryView,
@@ -1840,6 +1841,7 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
         <FinalItineraryPage
           days={displayedDays}
           locale={locale}
+          metrics={deriveMetrics(view)}
           placeName={placeName}
           stationName={stationName}
           warnings={viewWarnings}

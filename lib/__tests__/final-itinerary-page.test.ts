@@ -2,7 +2,7 @@ import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { FinalItineraryPage } from "../../app/final-itinerary-page";
-import type { CandidateWarning, DayPlan } from "../engine/types";
+import type { CandidateWarning, DayPlan, ItineraryMetrics } from "../engine/types";
 import type { MessageKey } from "../i18n/messages";
 
 const copy: Partial<Record<MessageKey, string>> = {
@@ -62,6 +62,7 @@ describe("최종 일정 한눈에 보기", () => {
     const markup = renderToStaticMarkup(createElement(FinalItineraryPage, {
       days,
       locale: "ko",
+      metrics: null,
       placeName: (id: string) => ({
         seoullo: "서울로7017",
         woljeongsa: "월정사 전나무 숲길",
@@ -92,6 +93,7 @@ describe("최종 일정 한눈에 보기", () => {
     const markup = renderToStaticMarkup(createElement(FinalItineraryPage, {
       days: [day("2026-08-12", "seoullo", "KTX-1")],
       locale: "ko",
+      metrics: null,
       placeName: () => "서울로7017",
       stationName: (id: string) => id === "seoul" ? "서울역" : "강릉역",
       warnings: [],
@@ -117,6 +119,7 @@ describe("최종 일정 한눈에 보기", () => {
         day("2026-08-13", "woljeongsa"),
       ],
       locale: "ko",
+      metrics: null,
       placeName: (id: string) => id === "seoullo" ? "서울로7017" : "월정사 전나무 숲길",
       stationName: (id: string) => id,
       warnings: [{
@@ -162,10 +165,16 @@ describe("영어 개수 표기", () => {
   };
   const trEn = (key: MessageKey) => en[key] ?? key;
 
-  function render(days: DayPlan[], warnings: CandidateWarning[] = [], locale: "ko" | "en" = "en") {
+  function render(
+    days: DayPlan[],
+    warnings: CandidateWarning[] = [],
+    locale: "ko" | "en" = "en",
+    metrics: ItineraryMetrics | null = null,
+  ) {
     return renderToStaticMarkup(createElement(FinalItineraryPage, {
       days,
       locale,
+      metrics,
       placeName: (id: string) => id,
       stationName: (id: string) => id,
       warnings,
@@ -242,5 +251,77 @@ describe("영어 개수 표기", () => {
     expect(one).toContain("이동 1");
     expect(many).toContain("장소 3");
     expect(many).toContain("이동 2");
+  });
+});
+
+/**
+ * 이동 부담 수치 (#198 B)
+ *
+ * 고정하는 계약 둘. **엔진 metrics가 없으면 칸을 그리지 않는다** — 재열람 스냅샷에서
+ * 화면이 숫자를 다시 세면 엔진과 어긋난 값이 사실처럼 나간다. 그리고 **분모가 다르다는
+ * 각주를 함께 낸다** — 총합은 접근시간을 포함하고 최댓값은 교통편만 센다.
+ */
+describe("이동 부담 수치", () => {
+  const loadCopy: Partial<Record<MessageKey, string>> = {
+    ...copy,
+    "final.travelTotal": "총 이동시간",
+    "final.transfers": "환승",
+    "final.longestLeg": "가장 긴 단일 교통 구간",
+    "final.travelBasis": "총 이동시간은 역-장소 접근시간을 포함하고, 가장 긴 단일 교통 구간은 열차·공항 구간만 셉니다.",
+  };
+  const trLoad = (key: MessageKey) => loadCopy[key] ?? key;
+
+  const metrics: ItineraryMetrics = {
+    totalTravelMinutes: 185,
+    totalRailMinutes: 150,
+    transferCount: 2,
+    departureSlackMinutes: 90,
+  };
+
+  /** KTX-1은 00:00 -> 02:00 = 120분 */
+  const days = [day("2026-08-12", "seoullo", "KTX-1")];
+
+  function renderLoad(value: ItineraryMetrics | null) {
+    return renderToStaticMarkup(createElement(FinalItineraryPage, {
+      days,
+      locale: "ko" as const,
+      metrics: value,
+      placeName: (id: string) => id,
+      stationName: (id: string) => id,
+      warnings: [],
+      warningLabel: (detail) => detail,
+      saveStatus: "none" as const,
+      saveStatusLabel: "저장되지 않은 일정",
+      onBackToAdjust: () => undefined,
+      onSave: () => undefined,
+      tr: trLoad,
+    }));
+  }
+
+  it("엔진 수치가 있으면 총 이동시간·환승·최장 구간을 공개한다", () => {
+    const markup = renderLoad(metrics);
+    expect(markup).toContain("총 이동시간");
+    expect(markup).toContain("3시간 5분");
+    expect(markup).toContain("환승");
+    expect(markup).toContain("가장 긴 단일 교통 구간");
+    expect(markup).toContain("2시간");
+  });
+
+  it("분모가 다르다는 각주를 함께 낸다", () => {
+    expect(renderLoad(metrics)).toContain("열차·공항 구간만 셉니다");
+  });
+
+  it("수치가 없으면 칸도 각주도 없다", () => {
+    const markup = renderLoad(null);
+    expect(markup).not.toContain("총 이동시간");
+    expect(markup).not.toContain("가장 긴 단일 교통 구간");
+    expect(markup).not.toContain("열차·공항 구간만 셉니다");
+  });
+
+  it("임의 임계값 경고를 만들지 않는다 — 수치만 준다", () => {
+    const heavy = renderLoad({ ...metrics, totalTravelMinutes: 600 });
+    expect(heavy).toContain("10시간");
+    // 경고 배지·주의 문구를 붙이지 않는다 (#198 결정)
+    expect(heavy).not.toContain("이동이 많");
   });
 });
