@@ -145,6 +145,83 @@ describe("권역을 비우는 방향도 함께 만든다", () => {
     expect(new Set(keys).size).toBe(keys.length);
   });
 
+  /**
+   * PR #179 리뷰 — 뺄 수 있는 것만 모아 권역을 세면, 고정 장소가 있는 권역도 "나머지"만
+   * 담긴 버킷이 생긴다. 그걸 고르면 고정이 그 권역에 남아 **왕복이 사라지지 않는데**
+   * 결과에는 `fewest_regions`가 붙는다 — 화면이 잘못된 이유를 말하고, 이동이 줄지 않는
+   * 안에 후보 자리를 쓴다.
+   */
+  describe("고정이 있는 권역은 비울 수 없다", () => {
+    it("고정과 제거 가능 장소가 같은 권역이면 그 권역은 후보가 아니다", () => {
+      const plans = exclusionPlansFor(
+        { targetPlaceCount: 2, pinnedPlaceIds: ["p-seoul-pinned"] },
+        {
+          scheduledPlaceIds: ["p-seoul-pinned", "p-seoul-other", "p-busan-1", "p-busan-2"],
+          rankingScores: new Map([
+            ["p-seoul-pinned", 0.9], ["p-seoul-other", 0.1],
+            ["p-busan-1", 0.5], ["p-busan-2", 0.4],
+          ]),
+          regionOf: new Map([
+            ["p-seoul-pinned", "seoul"], ["p-seoul-other", "seoul"],
+            ["p-busan-1", "busan"], ["p-busan-2", "busan"],
+          ]),
+        },
+      );
+
+      // 서울만 비우는 안(= p-seoul-other 하나만 빼는 안)은 나오면 안 된다
+      for (const plan of plans.filter((p) => p.strategy === "fewest_regions")) {
+        expect(plan.droppedPlaceIds).not.toEqual(["p-seoul-other"]);
+      }
+    });
+
+    /**
+     * 막는 것이 과하면 안 된다 — 통째로 비울 수 있는 권역은 계속 후보다.
+     *
+     * 관련성 순으로는 서울 한 곳 + 부산 한 곳이 빠지고(이동은 양쪽에 그대로 남는다),
+     * 권역 방향으로는 부산이 통째로 빠진다. **두 방향이 실제로 다른 안**이어야 비교가
+     * 의미를 갖는다 — 같은 안이면 중복으로 걸러진다.
+     */
+    it("완전히 비울 수 있는 권역은 그대로 후보가 된다", () => {
+      const plans = exclusionPlansFor(
+        { targetPlaceCount: 2, pinnedPlaceIds: ["p-seoul-pinned"] },
+        {
+          scheduledPlaceIds: ["p-seoul-pinned", "p-seoul-other", "p-busan-1", "p-busan-2"],
+          rankingScores: new Map([
+            ["p-seoul-pinned", 0.9], ["p-seoul-other", 0.1],
+            ["p-busan-1", 0.5], ["p-busan-2", 0.4],
+          ]),
+          regionOf: new Map([
+            ["p-seoul-pinned", "seoul"], ["p-seoul-other", "seoul"],
+            ["p-busan-1", "busan"], ["p-busan-2", "busan"],
+          ]),
+        },
+      );
+
+      expect(plans[0].droppedPlaceIds).toEqual(["p-seoul-other", "p-busan-2"]);
+      const emptied = plans.find((plan) => plan.strategy === "fewest_regions");
+      expect(emptied).toBeDefined();
+      expect(emptied?.droppedPlaceIds).toEqual(["p-busan-1", "p-busan-2"]);
+    });
+
+    /** 고정이 없으면 지금까지와 같다 */
+    it("고정이 없으면 권역 후보가 그대로 나온다", () => {
+      const plans = exclusionPlansFor(
+        { targetPlaceCount: 2 },
+        {
+          scheduledPlaceIds: ["p-seoul-1", "p-seoul-2", "p-busan-1", "p-busan-2"],
+          rankingScores: new Map([
+            ["p-seoul-1", 0.9], ["p-seoul-2", 0.8], ["p-busan-1", 0.5], ["p-busan-2", 0.4],
+          ]),
+          regionOf: new Map([
+            ["p-seoul-1", "seoul"], ["p-seoul-2", "seoul"],
+            ["p-busan-1", "busan"], ["p-busan-2", "busan"],
+          ]),
+        },
+      );
+      expect(plans.map((plan) => plan.strategy)).toContain("fewest_regions");
+    });
+  });
+
   /** 안 하나마다 엔진을 다시 돌리므로 곧 응답 시간이다 */
   it("상한을 넘지 않는다", () => {
     const many = Array.from({ length: 30 }, (_, i) => `p${i}`);

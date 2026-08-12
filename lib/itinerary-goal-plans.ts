@@ -103,16 +103,25 @@ export function exclusionPlansFor(goal: ItineraryGoal, context: PlanContext): Ex
    */
   const regions = context.regionOf;
   if (regions !== undefined) {
-    const byRegion = new Map<string, string[]>();
-    for (const id of removable) {
+    /**
+     * 권역 구성원은 **일정 전체**로 센다 (PR #179 리뷰).
+     *
+     * 뺄 수 있는 것만 모으면, 고정 장소가 있는 권역도 "나머지"만 담긴 버킷이 생긴다.
+     * 그걸 고르면 고정 장소가 그 권역에 남으므로 **왕복이 사라지지 않는데** 결과에는
+     * `fewest_regions`가 붙는다 — 화면이 잘못된 이유를 말하게 되고, 이동이 줄지 않는
+     * 안에 후보 자리 하나를 쓴다.
+     */
+    const membersByRegion = new Map<string, string[]>();
+    for (const id of context.scheduledPlaceIds) {
       const region = regions.get(id);
       if (region === undefined) continue;
-      const bucket = byRegion.get(region);
+      const bucket = membersByRegion.get(region);
       if (bucket) bucket.push(id);
-      else byRegion.set(region, [id]);
+      else membersByRegion.set(region, [id]);
     }
-    const candidates = [...byRegion.entries()]
-      .filter(([, ids]) => ids.length > 0 && ids.length <= count)
+    const candidates = [...membersByRegion.entries()]
+      // 통째로 비울 수 있는 권역만 — 고정이 하나라도 있으면 비워지지 않는다
+      .filter(([, ids]) => ids.length > 0 && ids.length <= count && ids.every((id) => !pinned.has(id)))
       .sort(([regionA, idsA], [regionB, idsB]) =>
         idsB.length - idsA.length || regionA.localeCompare(regionB));
 
