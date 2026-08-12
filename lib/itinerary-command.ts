@@ -83,6 +83,17 @@ export const RawItineraryCommandSchema = z.discriminatedUnion("intent", [
     placeName: PlaceNameSchema,
     dayIndex: DayIndexSchema,
   }),
+  /**
+   * "7곳만 남겨줘" — 개수 목표와 꼭 지킬 장소 (#171 6번).
+   *
+   * 엔진 입력은 늘리지 않는다. 후보 제외안을 만들어 **기존 `excludedPlaceIds`로 다시
+   * 계산**하고, 어느 안이 나은지는 기존 사전식 비교가 정한다 (#179).
+   */
+  z.object({
+    intent: z.literal("limit_places"),
+    targetPlaceCount: z.number().int().min(1).max(50),
+    pinnedPlaceNames: z.array(PlaceNameSchema).max(5).optional(),
+  }),
   z.object({ intent: z.literal("explain_changes") }),
   z.object({
     intent: z.literal("recommend_along_route"),
@@ -113,6 +124,12 @@ export const ItineraryCommandSchema = z.discriminatedUnion("intent", [
   z.object({
     intent: z.literal("recommend_along_route"),
     targetDate: KstDateSchema,
+  }),
+  /** 이름은 여기서 이미 장소 ID로 풀렸다 — 못 찾으면 resolver 가 되묻는다 */
+  z.object({
+    intent: z.literal("limit_places"),
+    targetPlaceCount: z.number().int().min(1).max(50),
+    pinnedPlaceIds: z.array(z.string().min(1)).max(5),
   }),
 ]);
 

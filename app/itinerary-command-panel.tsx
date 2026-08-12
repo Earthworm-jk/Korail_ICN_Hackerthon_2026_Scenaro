@@ -1,7 +1,7 @@
 "use client";
 
 import { Sparkles, X } from "lucide-react";
-import type {
+import type { GoalProposalOutcomePayload,
   CommandActionInterpretation,
   CommandActionResult,
 } from "@/lib/actions/itinerary-command";
@@ -31,6 +31,13 @@ export type CommandFeedback =
       pendingSlots: PendingCommandSlots | null;
       /** 이 조각이 만들어진 시점의 일정 기준 — 달라지면 조각을 쓰지 않는다 */
       basisKey: string;
+    }
+  /** 개수 목표 제안 (#171 6번) — 승인 전에는 아무것도 바꾸지 않는다 */
+  | {
+      kind: "goal_proposal";
+      interpretation: CommandActionInterpretation;
+      outcome: GoalProposalOutcomePayload;
+      submittedSequence: number;
     }
   | {
       kind: "proposal";
@@ -67,6 +74,11 @@ type Props = {
   } | null;
   onApplyOverselection?: () => void;
   onUndoOverselection?: () => void;
+  /** 적용 전 개별 수정 (#84 개정) — 제안된 목록에서 하나씩 뺀다 */
+  keptPlaceIds?: readonly string[];
+  onToggleKeep?: (placeId: string) => void;
+  /** 개수 목표 제안 승인 (#171 6번) */
+  onApplyGoal?: (outcome: GoalProposalOutcomePayload, submittedSequence: number) => void;
   /**
    * 채우기 제안 (#171) — 여유가 남을 때 **먼저 말을 건다.**
    *
@@ -202,6 +214,13 @@ function targetLabelOf(
   });
 }
 
+/** 이동 시간 변화 — 부호를 문장으로 옮기는 것은 화면 몫이다 (숫자는 엔진이 낸다) */
+function travelDeltaLabel(delta: number, tr: (key: MessageKey) => string): string {
+  if (delta === 0) return tr("ai.goalTravelSame");
+  const key = delta < 0 ? "ai.goalTravelLess" : "ai.goalTravelMore";
+  return tr(key).replace("{minutes}", String(Math.abs(delta)));
+}
+
 export function ItineraryCommandPanel({
   value,
   pending,
@@ -210,6 +229,9 @@ export function ItineraryCommandPanel({
   overselection = null,
   onApplyOverselection,
   onUndoOverselection,
+  keptPlaceIds,
+  onToggleKeep,
+  onApplyGoal,
   recommendDayCount = 0,
   onRecommendDay,
   feedback,
@@ -278,17 +300,39 @@ export function ItineraryCommandPanel({
           <p className="mt-2 text-xs font-medium text-sc-orange-text">
             {tr("ai.overselectionKeepLabel")}
           </p>
-          <p className="mt-0.5 text-xs text-sc-orange-text/85">
-            {overselection.keepPlaceIds.map((placeId) => placeName(placeId)).join(" · ")}
-          </p>
+          {/* 적용 전에 하나씩 뺄 수 있다 (#84 개정) — 전부 아니면 전무면 제안을 버리고
+              처음부터 다시 골라야 하는데, 그건 우리가 없애려던 그 노동이다 */}
+          <ul className="mt-1 flex flex-wrap gap-1.5">
+            {overselection.keepPlaceIds.map((placeId) => {
+              const kept = keptPlaceIds === undefined || keptPlaceIds.includes(placeId);
+              return (
+                <li key={placeId}>
+                  <button
+                    type="button"
+                    aria-pressed={kept}
+                    onClick={() => onToggleKeep?.(placeId)}
+                    className={`rounded-full border px-2.5 py-1 text-xs ${
+                      kept
+                        ? "border-sc-orange/50 bg-sc-surface text-sc-orange-text"
+                        : "border-dashed text-sc-muted line-through"
+                    }`}
+                  >
+                    {placeName(placeId)}
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
 
           <div className="mt-3 flex flex-wrap gap-2">
             <button
               type="button"
+              disabled={(keptPlaceIds?.length ?? overselection.keepPlaceIds.length) === 0}
               onClick={onApplyOverselection}
-              className="rounded border border-sc-orange/50 bg-sc-surface px-3 py-2 text-sm font-medium text-sc-orange-text"
+              className="rounded border border-sc-orange/50 bg-sc-surface px-3 py-2 text-sm font-medium text-sc-orange-text disabled:opacity-40"
             >
-              {tr("ai.overselectionApply").replace("{keep}", String(overselection.keepPlaceIds.length))}
+              {tr("ai.overselectionApply")
+                .replace("{keep}", String(keptPlaceIds?.length ?? overselection.keepPlaceIds.length))}
             </button>
             {/* 직접 고르는 길도 남긴다 — #84가 지킨 "사용자가 제외를 결정한다" */}
             <a
@@ -311,6 +355,48 @@ export function ItineraryCommandPanel({
           >
             {tr("ai.overselectionUndo")}
           </button>
+        </div>
+      )}
+
+      {feedback?.kind === "goal_proposal" && (
+        <div className="mt-3 rounded-lg border border-sc-blue/25 bg-sc-surface p-3" role="status">
+          <p className="text-sm font-medium text-sc-text">
+            {tr("ai.goalTitle").replace("{keep}", String(feedback.outcome.keepPlaceIds.length))}
+          </p>
+          {feedback.outcome.pinnedPlaceIds.length > 0 && (
+            <p className="mt-0.5 text-xs text-sc-muted">
+              {tr("ai.goalKeepPinned")
+                .replace("{places}", feedback.outcome.pinnedPlaceIds.map(placeName).join(" · "))}
+            </p>
+          )}
+          {/* 맞바꿈을 먼저 보여준다 — 무엇을 잃는지 안 보여주고 적용하면 모른 채 진행한다 */}
+          <p className="mt-2 text-xs text-sc-text">
+            {travelDeltaLabel(feedback.outcome.tradeOff.travelMinutesDelta, tr)}
+          </p>
+          {feedback.outcome.tradeOff.droppedPlaceIds.length > 0 && (
+            <p className="mt-0.5 text-xs text-sc-orange-text">
+              {tr("ai.goalDropped").replace(
+                "{places}",
+                feedback.outcome.tradeOff.droppedPlaceIds.map(placeName).join(" · "),
+              )}
+            </p>
+          )}
+          <div className="mt-3 flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => onApplyGoal?.(feedback.outcome, feedback.submittedSequence)}
+              className="rounded bg-sc-blue px-3 py-2 text-sm font-semibold text-white"
+            >
+              {tr("ai.goalApplyButton")}
+            </button>
+            <button
+              type="button"
+              onClick={onDismiss}
+              className="rounded border px-3 py-2 text-sm text-sc-muted hover:border-sc-blue hover:text-sc-blue"
+            >
+              {tr("ai.goalKeepCurrent")}
+            </button>
+          </div>
         </div>
       )}
 

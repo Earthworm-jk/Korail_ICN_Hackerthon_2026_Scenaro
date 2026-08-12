@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { runItineraryCommand } from "../actions/itinerary-command";
+import { planItinerary } from "../actions/itinerary";
 import type { PlanRequest } from "../actions/itinerary";
 
 const request: PlanRequest = {
@@ -218,5 +219,120 @@ describe("#171 재질문에서 얻은 조각을 다음 발화에 잇는다", () 
     if (!result.ok || result.outcome.kind !== "proposal") return;
     expect(Object.keys(result.outcome.nextRequest.preferredVisitDates ?? {}))
       .toEqual(["place-woljeongsa-temple"]);
+  });
+});
+
+/**
+ * 개수 목표 끝단 (#171 6번).
+ *
+ * 순수 회귀가 "무엇을 빼자"까지 고정한다면, 여기서는 **엔진이 실제로 다시 계산해 가능한
+ * 안을 골랐는지**를 고정한다. 둘 사이가 끊기면 제안은 나오는데 적용하면 안 되는 안이 된다.
+ */
+describe("#171 개수 목표", () => {
+  it("현재 안보다 적은 수로 줄인 안을 계산해 제안한다", async () => {
+    const result = await runItineraryCommand({ sentence: "3곳만 남겨줘", request });
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.outcome.kind).toBe("goal_proposal");
+    if (result.outcome.kind !== "goal_proposal") return;
+
+    expect(result.outcome.targetPlaceCount).toBe(3);
+    expect(result.outcome.nextResult.status).toBe("planned");
+    // 제안은 현재 안보다 적어야 한다 — 목표가 그것이다
+    expect(result.outcome.keepPlaceIds.length).toBeLessThanOrEqual(3);
+    expect(result.outcome.keepPlaceIds.length).toBeGreaterThan(0);
+  });
+
+  /** 무엇을 잃는지 보여주지 않고 적용하면 모른 채 진행하게 된다 (#84) */
+  it("맞바꿈을 함께 낸다", async () => {
+    const result = await runItineraryCommand({ sentence: "3곳만 남겨줘", request });
+    expect(result.ok).toBe(true);
+    if (!result.ok || result.outcome.kind !== "goal_proposal") return;
+
+    expect(result.outcome.tradeOff.droppedPlaceIds.length).toBeGreaterThan(0);
+    expect(typeof result.outcome.tradeOff.travelMinutesDelta).toBe("number");
+  });
+
+  it("같은 요청이면 같은 답이다", async () => {
+    const first = await runItineraryCommand({ sentence: "3곳만 남겨줘", request });
+    const second = await runItineraryCommand({ sentence: "3곳만 남겨줘", request });
+    expect(first.ok && second.ok).toBe(true);
+    if (!first.ok || !second.ok) return;
+    if (first.outcome.kind !== "goal_proposal" || second.outcome.kind !== "goal_proposal") return;
+    expect(first.outcome.keepPlaceIds).toEqual(second.outcome.keepPlaceIds);
+  });
+
+  /**
+   * PR #190 리뷰 1번 — **고정 장소가 지금 일정에 없는 경우.**
+   *
+   * 과선택이면 고른 곳 중 일부는 미배치다. 앞서는 `keep`을 배치된 곳에서만 만들어서,
+   * 그 상태로 "꼭 유지"라고 하면 그 장소가 오히려 명시적으로 제외되는데 응답에는
+   * `pinnedPlaceIds`가 남아 화면이 **"유지했습니다"라고 거짓을 말했다.**
+   */
+  /**
+   * PR #190 리뷰 1번 — **고정 장소가 지금 일정에 없는 경우.**
+   *
+   * 과선택이면 고른 곳 중 일부는 미배치다. 앞서는 `keep`을 배치된 곳에서만 만들어서,
+   * 그 상태로 "꼭 유지"라고 하면 그 장소가 오히려 **명시적으로 제외**되는데 응답의
+   * `pinnedPlaceIds`에는 남아 화면이 **"유지했습니다"라고 거짓을 말했다.**
+   *
+   * 앞선 테스트는 고정 문장을 아예 보내지 않아 이 경로를 지나가지 못했다.
+   */
+  describe("고정 장소는 약속대로 남는다", () => {
+    /** 이 요청에서 라라무리는 선택돼 있지만 일정에 배치되지 못한다 */
+    const unscheduled = { id: "place-lala-muri", name: "라라무리" };
+
+    it("전제 확인 — 고정할 장소가 실제로 미배치다", async () => {
+      const base = await planItinerary(request);
+      expect(base.ok).toBe(true);
+      if (!base.ok || base.result.status !== "planned") return;
+      const scheduled = base.result.days.flatMap((day) => day.items.map((item) => item.placeId));
+      expect(scheduled).not.toContain(unscheduled.id);
+      expect(base.result.rejectedPlaces.map(({ placeId }) => placeId)).toContain(unscheduled.id);
+    });
+
+    it("미배치 장소를 고정하면 결과에 실제로 들어간다", async () => {
+      const result = await runItineraryCommand({
+        sentence: `3곳만 남겨줘 ${unscheduled.name}은 꼭 남겨줘`,
+        request,
+      });
+      expect(result.ok).toBe(true);
+      if (!result.ok || result.outcome.kind !== "goal_proposal") return;
+
+      expect(result.outcome.pinnedPlaceIds).toContain(unscheduled.id);
+      // 수정 전에는 이 줄이 깨졌다 — 고정이라 말하고 결과에서는 뺐다
+      expect(result.outcome.keepPlaceIds).toContain(unscheduled.id);
+      expect(result.outcome.nextRequest.excludedPlaceIds).not.toContain(unscheduled.id);
+    });
+
+    it("개수 목표도 함께 지킨다", async () => {
+      const result = await runItineraryCommand({
+        sentence: `3곳만 남겨줘 ${unscheduled.name}은 꼭 남겨줘`,
+        request,
+      });
+      if (!result.ok || result.outcome.kind !== "goal_proposal") return;
+      expect(result.outcome.keepPlaceIds).toHaveLength(3);
+    });
+
+    /** 고정을 지키지 못하는 안은 버린다 — 못 지킬 약속은 아예 하지 않는다 */
+    it("응답의 고정 목록은 언제나 결과에 포함된다", async () => {
+      for (const sentence of ["3곳만 남겨줘", `2곳만 남겨줘 ${unscheduled.name}은 꼭 남겨줘`]) {
+        const result = await runItineraryCommand({ sentence, request });
+        if (!result.ok || result.outcome.kind !== "goal_proposal") continue;
+        const keep = new Set(result.outcome.keepPlaceIds);
+        expect(
+          result.outcome.pinnedPlaceIds.every((id) => keep.has(id)),
+          `"${sentence}" 의 고정은 결과에 있어야 한다`,
+        ).toBe(true);
+      }
+    });
+  });
+
+  it("이미 목표 이하면 제안하지 않는다", async () => {
+    const result = await runItineraryCommand({ sentence: "50곳만 남겨줘", request });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.outcome.kind).not.toBe("goal_proposal");
   });
 });

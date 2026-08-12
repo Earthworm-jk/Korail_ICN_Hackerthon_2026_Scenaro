@@ -31,6 +31,9 @@ import {
 import { excludedPlaceIdsFrom, initialCandidateIds } from "@/lib/candidates";
 import { initialPlaceIdsFromItinerary } from "@/lib/initial-place-selection";
 import {
+  editedKeepPlaceIds,
+  proposalEditAfterChange,
+  proposalSignature,
   commandInputUnavailable,
   overselectionProposalOf,
   selectionUndoAfterChange,
@@ -483,6 +486,10 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
    * 정리 제안 되돌리기 (#171). 직전 선택과 **적용 결과**를 함께 들고 있는다 —
    * 지금 선택이 적용 결과와 다르면 그 사이에 다른 변경이 있었다는 뜻이라 되돌리지 않는다.
    */
+  /** 제안을 적용 전에 손본 것 (#84 개정) — 서명이 다르면 다른 제안이므로 버린다 */
+  const [proposalEdit, setProposalEdit] = useState<
+    { signature: string; removedPlaceIds: string[] } | null
+  >(null);
   const [selectionUndo, setSelectionUndo] = useState<
     { previousPlaceIds: string[]; appliedPlaceIds: string[] } | null
   >(null);
@@ -766,6 +773,29 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
   }, [candidateData, selectedPlaceIds, preferredVisitDates, arrival.at, departure.at, airportReady.at, airportDeadline.at, selectedActors, selectedWorks]);
 
   /** 서버가 돌려준 제안을 실제 화면 상태에 반영한다. 확인 전에는 절대 호출하지 않는다. */
+  /**
+   * 개수 목표 제안 승인 (#171 6번).
+   *
+   * 선택을 결과의 장소들로 줄이면 기존 재계산 경로가 나머지를 한다 — 새 적용 경로를
+   * 만들지 않는다. 되돌리기도 정리 제안과 **같은 스냅샷**을 쓴다.
+   */
+  const applyGoalOutcome = useCallback((
+    outcome: { keepPlaceIds: string[] },
+    submittedSequence: number,
+  ) => {
+    if (!commandResponseIsCurrent(submittedSequence, planSequence.current)) {
+      setAiFeedback({ kind: "cancelled" });
+      return;
+    }
+    if (outcome.keepPlaceIds.length === 0) return;
+    setSelectionUndo({
+      previousPlaceIds: [...selectedPlaceIds],
+      appliedPlaceIds: [...outcome.keepPlaceIds],
+    });
+    setAiFeedback(null);
+    setSelectedPlaceIds(new Set(outcome.keepPlaceIds));
+  }, [selectedPlaceIds]);
+
   const applyCommandOutcome = useCallback((outcome: ProposalOutcome, submittedSequence: number) => {
     if (!candidateData || outcome.proposal.decision === "impossible") return;
     // 자동·수동 적용 모두 제출 당시 화면에만 유효하다. 응답 뒤 다시 계산하거나 항공 시각을
@@ -909,6 +939,21 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
         if (result.outcome.kind === "recommendations") {
           setAiFeedback({
             kind: "recommendations",
+            interpretation: result.interpretation,
+            outcome: result.outcome,
+            submittedSequence,
+          });
+          return;
+        }
+        if (result.outcome.kind === "goal_proposal") {
+          /**
+           * 개수 목표 제안 (#171 6번) — **자동 적용하지 않는다.**
+           *
+           * 날짜 이동은 `decision === "ready"`면 바로 적용하지만, 개수 정리는 여러 곳이
+           * 한 번에 빠진다. 무엇이 빠지는지 보여주고 승인을 받는다 (#84).
+           */
+          setAiFeedback({
+            kind: "goal_proposal",
             interpretation: result.interpretation,
             outcome: result.outcome,
             submittedSequence,
@@ -1171,18 +1216,53 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
     selectionStateShown,
   });
 
+  /**
+   * 제안이 사라지거나 바뀌면 편집을 버린다 (PR #190 리뷰 2번) — 숨기기만 하면 나중에
+   * 같은 조합이 다시 나왔을 때 하지도 않은 편집이 되살아난다.
+   */
+  const liveProposalEdit = proposalEditAfterChange(
+    proposalEdit,
+    overselectionProposal?.keepPlaceIds ?? null,
+  );
+  if (liveProposalEdit === null && proposalEdit !== null) setProposalEdit(null);
+
+  /** 제안에서 실제로 남길 곳 — 사용자가 손봤으면 그 결과다 */
+  const keptPlaceIds = overselectionProposal
+    ? editedKeepPlaceIds(overselectionProposal.keepPlaceIds, liveProposalEdit)
+    : [];
+
+  const toggleProposalKeep = useCallback((placeId: string) => {
+    if (!overselectionProposal) return;
+    const signature = proposalSignature(overselectionProposal.keepPlaceIds);
+    setProposalEdit((current) => {
+      const removed = new Set<string>(
+        current !== null && current.signature === signature ? current.removedPlaceIds : [],
+      );
+      if (removed.has(placeId)) removed.delete(placeId);
+      else removed.add(placeId);
+      return { signature, removedPlaceIds: [...removed] };
+    });
+  }, [overselectionProposal]);
+
   const applyOverselectionProposal = useCallback(() => {
     // 표시와 실행이 같은 값을 본다 — 표시만 숨기면 오래된 closure 로 다시 적용된다
     const proposal = overselectionProposalOf({ capacity: selectionCapacity, selectionStateShown });
     if (proposal === null) return;
+    // 손본 결과를 적용한다 — 화면이 보여준 것과 같은 값이어야 한다
+    const keep = editedKeepPlaceIds(
+      proposal.keepPlaceIds,
+      proposalEditAfterChange(proposalEdit, proposal.keepPlaceIds),
+    );
+    if (keep.length === 0) return;
     // 되돌릴 수 있게 직전 선택을 남긴다 — 무엇을 잃었는지 모른 채 진행하면 안 된다 (#84)
     setSelectionUndo({
       previousPlaceIds: [...selectedPlaceIds],
-      appliedPlaceIds: [...proposal.keepPlaceIds],
+      appliedPlaceIds: keep,
     });
+    setProposalEdit(null);
     setAiFeedback(null);
-    setSelectedPlaceIds(new Set(proposal.keepPlaceIds));
-  }, [selectionCapacity, selectionStateShown, selectedPlaceIds]);
+    setSelectedPlaceIds(new Set(keep));
+  }, [selectionCapacity, selectionStateShown, selectedPlaceIds, proposalEdit]);
 
   /**
    * 선택이 적용 결과에서 벗어나면 **그 자리에서 버린다** (PR #185 리뷰 3회차).
@@ -2318,6 +2398,9 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
             onRecommendDay={(dayIndex) =>
               submitItineraryCommand(tr("ai.fillPrompt").replace("{day}", String(dayIndex)))}
             overselection={overselectionProposal}
+            keptPlaceIds={keptPlaceIds}
+            onToggleKeep={toggleProposalKeep}
+            onApplyGoal={applyGoalOutcome}
             onApplyOverselection={applyOverselectionProposal}
             /* 완료형 문구는 재계산이 실제로 끝난 뒤에만 — 아직 계산 중이거나 실패했을 수 있다 */
             onUndoOverselection={

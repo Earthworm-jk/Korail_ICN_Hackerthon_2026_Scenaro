@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
+  editedKeepPlaceIds,
+  proposalEditAfterChange,
+  proposalSignature,
   commandInputUnavailable,
   overselectionProposalOf,
   selectionUndoAfterChange,
@@ -216,5 +219,86 @@ describe("정리 되돌리기 스냅샷 수명", () => {
   /** 실행 뒤에는 화면이 null 로 바꾸므로 통과시켜도 그대로 없다 */
   it("실행 뒤에는 다시 노출되지 않는다", () => {
     expect(selectionUndoAfterChange(null, ["a", "b", "c", "d"])).toBeNull();
+  });
+});
+
+/**
+ * 적용 전 개별 수정 (#84 개정 · #171 4번).
+ *
+ * #84 개정문이 요구하는 것은 승인·취소만이 아니라 **적용 전 개별 수정**이다. 전부 아니면
+ * 전무면, 제안된 9곳 중 하나가 마음에 안 들 때 제안을 버리고 처음부터 다시 골라야 한다 —
+ * 그게 우리가 없애려던 노동이다.
+ */
+describe("제안 개별 수정", () => {
+  const keep = ["a", "b", "c"];
+  const signature = proposalSignature(keep);
+
+  it("손대지 않으면 제안 그대로다", () => {
+    expect(editedKeepPlaceIds(keep, null)).toEqual(keep);
+  });
+
+  it("뺀 곳만 빠지고 순서는 유지된다", () => {
+    expect(editedKeepPlaceIds(keep, { signature, removedPlaceIds: ["b"] })).toEqual(["a", "c"]);
+  });
+
+  it("전부 빼면 빈 목록이다 — 화면은 적용을 막는다", () => {
+    expect(editedKeepPlaceIds(keep, { signature, removedPlaceIds: keep })).toEqual([]);
+  });
+
+  /**
+   * 제안이 바뀌면 사용자가 손본 대상 자체가 사라진 것이다. 값으로 살려 두면 우연히 같은
+   * 조합이 다시 나왔을 때 **하지도 않은 편집이 되살아난다** (#185에서 같은 실수를 했다).
+   */
+  it("다른 제안에는 옛 편집을 쓰지 않는다", () => {
+    const other = ["a", "b", "z"];
+    expect(editedKeepPlaceIds(other, { signature, removedPlaceIds: ["b"] })).toEqual(other);
+  });
+
+  it("서명은 순서와 무관하다 — 같은 조합이면 편집이 유지된다", () => {
+    expect(proposalSignature(["c", "a", "b"])).toBe(signature);
+    expect(editedKeepPlaceIds(["c", "a", "b"], { signature, removedPlaceIds: ["b"] }))
+      .toEqual(["c", "a"]);
+  });
+
+  it("제안에 없는 장소를 빼라고 해도 결과가 흔들리지 않는다", () => {
+    expect(editedKeepPlaceIds(keep, { signature, removedPlaceIds: ["zzz"] })).toEqual(keep);
+  });
+});
+
+/**
+ * 편집도 한 번 벗어나면 돌아오지 않는다 (PR #190 리뷰 2번).
+ *
+ * 서명 비교만으로는 중간 사건을 못 본다 — 제안 A에서 하나를 끈 뒤 제안이 사라졌다가
+ * 나중에 다시 A가 나오면 서명이 같아 **하지도 않은 편집이 되살아난다.**
+ */
+describe("제안 편집 수명", () => {
+  const keepA = ["a", "b", "c"];
+  const edit = { signature: proposalSignature(keepA), removedPlaceIds: ["b"] };
+  /** 화면이 하는 일을 그대로 흉내낸다 — 제안이 바뀔 때마다 통과시킨다 */
+  const walk = (proposals: (string[] | null)[]) =>
+    proposals.reduce<typeof edit | null>(
+      (state, keep) => proposalEditAfterChange(state, keep),
+      edit,
+    );
+
+  it("같은 제안이면 편집이 남는다", () => {
+    expect(walk([keepA])).toEqual(edit);
+  });
+
+  /** 이 경로가 리뷰에서 지적된 재활성화다 */
+  it("제안이 사라졌다 같은 조합으로 돌아와도 되살아나지 않는다", () => {
+    expect(walk([keepA, null, keepA])).toBeNull();
+  });
+
+  it("다른 제안을 거쳐 돌아와도 되살아나지 않는다", () => {
+    expect(walk([keepA, ["a", "b", "z"], keepA])).toBeNull();
+  });
+
+  it("제안이 없으면 버린다", () => {
+    expect(proposalEditAfterChange(edit, null)).toBeNull();
+  });
+
+  it("버릴 편집이 없으면 그대로 없다", () => {
+    expect(proposalEditAfterChange(null, keepA)).toBeNull();
   });
 });

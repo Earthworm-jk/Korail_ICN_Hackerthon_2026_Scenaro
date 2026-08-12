@@ -49,6 +49,7 @@ function render(options: {
   onUndoOverselection?: () => void;
   recommendDayCount?: number;
   onRecommendDay?: (dayIndex: number) => void;
+  keptPlaceIds?: string[];
 } = {}) {
   return renderToStaticMarkup(createElement(ItineraryCommandPanel, {
     value: "",
@@ -73,6 +74,8 @@ function render(options: {
     onUndoOverselection: options.onUndoOverselection,
     recommendDayCount: options.recommendDayCount ?? 0,
     onRecommendDay: options.onRecommendDay,
+    keptPlaceIds: options.keptPlaceIds,
+    onToggleKeep: () => undefined,
   }));
 }
 
@@ -359,5 +362,34 @@ describe("채우기 제안", () => {
     }));
     expect(buttons).toHaveLength(3);
     for (const button of buttons) expect(isDisabled(button)).toBe(false);
+  });
+});
+
+/** 적용 전 개별 수정 (#84 개정) */
+describe("제안 목록 개별 수정", () => {
+  const overselection = { keepPlaceIds: ["place-a", "place-b"], dropCount: 3, selectedCount: 5 };
+
+  it("각 장소를 누를 수 있는 칩으로 그린다", () => {
+    const html = render({ overselection, disabled: true });
+    expect(html).toContain('aria-pressed="true"');
+    expect((html.match(/aria-pressed/g) ?? []).length).toBe(2);
+  });
+
+  it("뺀 곳은 눌리지 않은 상태로 보인다", () => {
+    const html = render({ overselection, disabled: true, keptPlaceIds: ["place-a"] });
+    expect(html).toContain('aria-pressed="false"');
+    expect(html).toContain("line-through");
+  });
+
+  /** 버튼 문구가 제안 수 그대로면 사용자가 손본 결과와 어긋난다 */
+  it("적용 버튼이 손본 수를 말한다", () => {
+    expect(render({ overselection, disabled: true, keptPlaceIds: ["place-a"] }))
+      .toContain("Keep these 1");
+  });
+
+  it("전부 빼면 적용을 막는다", () => {
+    const html = render({ overselection, disabled: true, keptPlaceIds: [] });
+    const apply = html.match(/<button[^>]*>Keep these 0<\/button>/)?.[0] ?? "";
+    expect(apply).toMatch(/ disabled=""/);
   });
 });

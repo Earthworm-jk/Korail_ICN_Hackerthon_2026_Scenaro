@@ -33,6 +33,13 @@ import {
   type CommandProposal,
 } from "../itinerary-command-executor";
 import type { PlanRequest } from "./itinerary";
+import {
+  exclusionPlansFor,
+  tradeOffBetween,
+  type ItineraryTradeOff,
+} from "@/lib/itinerary-goal-plans";
+import { compareCandidates } from "@/lib/engine/compare";
+import { loadPlaceRankings } from "@/lib/place-rankings-snapshot";
 import { planItinerary } from "./itinerary";
 import { getCandidatePlaces, type PlaceCandidate } from "./places";
 import { loadRepositories } from "../repositories/json";
@@ -67,6 +74,23 @@ export type RouteRecommendation = {
   movedPlaceIds: string[];
 };
 
+/**
+ * 개수 목표 제안 (#171 6번).
+ *
+ * 기존 `proposal`과 갈래를 나눈다 — 그쪽은 날짜·순서 이동의 확인 규칙(`decision`·`displaced`)을
+ * 다섯 자리에서 공유하는데, 개수 정리는 그 규칙이 아니라 **무엇이 빠지는가**가 판단 근거다.
+ * 같은 타입에 밀어 넣으면 그 다섯 자리에 두 번째 분기가 생긴다.
+ */
+export type GoalProposalOutcomePayload = {
+  kind: "goal_proposal";
+  targetPlaceCount: number;
+  keepPlaceIds: string[];
+  pinnedPlaceIds: string[];
+  tradeOff: ItineraryTradeOff;
+  nextRequest: PlanRequest;
+  nextResult: ItineraryResult;
+};
+
 export type ProposalOutcomePayload = {
   kind: "proposal";
   proposal: CommandProposal;
@@ -88,6 +112,7 @@ export type CommandActionResult =
       interpretation: CommandActionInterpretation;
       outcome:
         | { kind: "clarify"; clarification: Clarification; pendingSlots: PendingCommandSlots | null }
+        | GoalProposalOutcomePayload
         | { kind: "explain" }
         | {
             kind: "recommendations";
@@ -381,11 +406,141 @@ export async function runItineraryCommand(input: {
     };
   }
 
+  if (resolved.command.intent === "limit_places") {
+    const goal = await buildGoalProposal(
+      resolved.command,
+      request,
+      beforeAction.result,
+      candidates.candidates,
+    );
+    return goal === null
+      ? {
+        ok: true,
+        interpretation,
+        outcome: {
+          kind: "clarify",
+          clarification: { code: "UNSUPPORTED", detail: { source: "deterministic", reason: "UNSUPPORTED_INTENT" } },
+          pendingSlots: null,
+        },
+      }
+      : { ok: true, interpretation, outcome: goal };
+  }
+
   const outcome = await buildProposalOutcome(resolved.command, request, beforeAction.result);
   if ("invalid" in outcome) {
     return { ok: false, code: "INVALID_REQUEST", fieldErrors: outcome.invalid };
   }
   return { ok: true, interpretation, outcome };
+}
+
+/**
+ * 개수 목표를 후보 제외안으로 바꾸고, 엔진이 다시 계산해 **가장 나은 안**을 고른다 (#171 6번).
+ *
+ * 새 엔진 키를 만들지 않는다. 제외안마다 기존 `excludedPlaceIds`로 다시 계산하고, 어느 안이
+ * 나은지는 **기존 사전식 비교**(`compareCandidates`)가 정한다 — 랭킹 하위를 빼면 최선 N곳이
+ * 된다는 보장이 없기 때문이다(랭킹은 관련성이지 배치 효율이 아니다).
+ */
+async function buildGoalProposal(
+  command: { targetPlaceCount: number; pinnedPlaceIds: string[] },
+  request: PlanRequest,
+  before: ItineraryResult,
+  candidates: readonly { id: string; nearestStationId: string }[],
+): Promise<GoalProposalOutcomePayload | null> {
+  if (before.status !== "planned") return null;
+
+  /**
+   * 고정 장소가 **지금 일정에 없을 수 있다** (PR #190 리뷰 1번).
+   *
+   * 과선택이면 사용자가 고른 곳 중 일부는 미배치다. 그 상태로 "영진해변은 꼭"이라고 하면
+   * 영진해변은 `scheduledPlaceIds`에 없고, keep 밖은 전부 제외되므로 **명시적으로 빠진다** —
+   * 그런데 응답의 `pinnedPlaceIds`에는 남아 화면이 "유지했습니다"라고 거짓을 말한다.
+   *
+   * 그래서 후보를 만들 때부터 고정을 **일정 안팎을 가리지 않고** 포함하고, 재계산 뒤
+   * 실제로 남았는지 확인한다.
+   */
+  const scheduledPlaceIds = [
+    ...new Set([
+      ...before.days.flatMap((day) => day.items.map((item) => item.placeId)),
+      ...command.pinnedPlaceIds,
+    ]),
+  ];
+  const rankingScores = new Map(
+    (loadPlaceRankings()?.rankings ?? []).map(({ placeId, score }) => [placeId, score]),
+  );
+  const plans = exclusionPlansFor(
+    { targetPlaceCount: command.targetPlaceCount, pinnedPlaceIds: command.pinnedPlaceIds },
+    {
+      scheduledPlaceIds,
+      rankingScores,
+      regionOf: new Map(candidates.map(({ id, nearestStationId }) => [id, nearestStationId])),
+    },
+  );
+  if (plans.length === 0) return null;
+
+  // 안마다 다시 계산하고 기존 기준으로 고른다 — 가능한지도 여기서 판정된다
+  const evaluated: { keepPlaceIds: string[]; request: PlanRequest; result: ItineraryResult }[] = [];
+  const excludedNow = new Set(request.excludedPlaceIds);
+  const selectedPlaceIds = candidates
+    .map(({ id }) => id)
+    .filter((id) => !excludedNow.has(id));
+
+  for (const plan of plans) {
+    /**
+     * **남길 집합 밖을 전부 제외한다.**
+     *
+     * 빠진 곳만 제외하면 그 자리에 **원래 미배치였던 다른 선택지가 들어와** 개수가 다시
+     * 는다("3곳만"에 4곳이 나온다). 사용자가 말한 것은 목표 수이므로 그 수를 지킨다.
+     */
+    const dropped = new Set(plan.droppedPlaceIds);
+    const keep = new Set(scheduledPlaceIds.filter((id) => !dropped.has(id)));
+    const planRequest: PlanRequest = {
+      ...request,
+      excludedPlaceIds: [
+        ...new Set([
+          ...request.excludedPlaceIds,
+          ...selectedPlaceIds.filter((id) => !keep.has(id)),
+        ]),
+      ],
+    };
+    const action = await planItinerary(planRequest);
+    if (!action.ok || action.result.status !== "planned") continue;
+    const placed = [
+      ...new Set(action.result.days.flatMap((day) => day.items.map((item) => item.placeId))),
+    ];
+    /**
+     * **약속을 못 지키는 안은 버린다** (PR #190 리뷰 1번).
+     *
+     * 고정을 후보에 넣어도 엔진이 실제로 배치한다는 보장은 없다(시간이 안 맞을 수 있다).
+     * 확인하지 않고 제안하면 "유지했습니다"가 거짓이 된다 — 사용자가 "꼭"이라고 한 것을
+     * 우리가 무르면 그건 조율이 아니다.
+     */
+    if (!command.pinnedPlaceIds.every((placeId) => placed.includes(placeId))) continue;
+    evaluated.push({ keepPlaceIds: placed, request: planRequest, result: action.result });
+  }
+  if (evaluated.length === 0) return null;
+
+  evaluated.sort((a, b) => {
+    if (a.result.status !== "planned" || b.result.status !== "planned") return 0;
+    return compareCandidates(
+      { keys: a.result.comparisonKeys, departureSlackMinutes: a.result.metrics.departureSlackMinutes, stableId: a.keepPlaceIds.join(",") },
+      { keys: b.result.comparisonKeys, departureSlackMinutes: b.result.metrics.departureSlackMinutes, stableId: b.keepPlaceIds.join(",") },
+    );
+  });
+
+  const best = evaluated[0];
+  if (best.result.status !== "planned") return null;
+  return {
+    kind: "goal_proposal",
+    targetPlaceCount: command.targetPlaceCount,
+    keepPlaceIds: best.keepPlaceIds,
+    pinnedPlaceIds: command.pinnedPlaceIds,
+    tradeOff: tradeOffBetween(
+      { days: before.days, metrics: before.metrics },
+      { days: best.result.days, metrics: best.result.metrics },
+    ),
+    nextRequest: best.request,
+    nextResult: best.result,
+  };
 }
 
 /**
