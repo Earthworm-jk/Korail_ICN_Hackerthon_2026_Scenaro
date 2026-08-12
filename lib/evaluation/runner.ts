@@ -159,8 +159,8 @@ ${failed.length === 0 ? "실패 없음." : failed.map((scenario) => `### ${scena
 
 export function writeEvaluationReports(
   report: EvaluationReport,
-  jsonPath = "reports/issue-181-evaluation.json",
-  markdownPath = "reports/issue-181-evaluation.md",
+  jsonPath: string,
+  markdownPath: string,
 ): void {
   mkdirSync(dirname(jsonPath), { recursive: true });
   mkdirSync(dirname(markdownPath), { recursive: true });

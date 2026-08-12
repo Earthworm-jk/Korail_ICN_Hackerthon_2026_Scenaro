@@ -49,6 +49,9 @@ jobs:
       - name: Test
         run: pnpm test
 
+      - name: Golden evaluation (#181)
+        run: pnpm eval:golden
+
       - name: Pipeline and source verifier unit tests (Python)
         run: >-
           python3 -m unittest

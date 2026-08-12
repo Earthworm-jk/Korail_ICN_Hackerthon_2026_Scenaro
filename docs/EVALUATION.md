@@ -6,12 +6,22 @@
 pnpm eval:golden
 ```
 
-실행은 고정 fixture 20개를 평가하고 다음 두 파일을 덮어씁니다.
+실행은 고정 fixture 20개를 평가하고 gitignore된 실행 산출물을 만듭니다.
 
-- `reports/issue-181-evaluation.json`: 자동 처리용 원본
-- `reports/issue-181-evaluation.md`: 발표·사람 검토용 요약
+- `artifacts/evaluation/issue-181-evaluation.json`: 자동 처리용 원본
+- `artifacts/evaluation/issue-181-evaluation.md`: 사람 검토용 요약
 
 실패는 평균값에 숨기지 않습니다. 두 리포트 모두 scenario ID와 위반 코드를 기록하며 평가 명령도 실패합니다.
+
+CI는 `dev`·`main` 대상 PR과 두 브랜치 push에서 `pnpm eval:golden`을 실행합니다. 따라서 validator 회귀는 일반 테스트와 별도 단계에서 자동 차단됩니다.
+
+발표 기준으로 보존할 실제 측정값을 의도적으로 갱신할 때만 다음 명령을 사용합니다.
+
+```bash
+pnpm eval:golden:record
+```
+
+이 명령은 커밋 대상인 `reports/issue-181-evaluation.json`과 `.md`를 덮어씁니다. 생성 시각과 실행 환경별 timing이 달라지므로 발표 기준을 새로 기록할 때만 실행합니다.
 
 ## 출력 schema에서 검증하는 필드
 
