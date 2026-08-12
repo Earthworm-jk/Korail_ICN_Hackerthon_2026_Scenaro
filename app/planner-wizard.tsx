@@ -867,6 +867,13 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
     const previousResult = view.selectedAlt === null ? view.result : null;
     dispatchView({ type: "PLAN_START" });
     setLastItineraryDiff(null);
+    /**
+     * 재계산은 그 자체로 재질문 조각을 무효로 만든다 (PR #175 리뷰 4회차).
+     *
+     * 기준 지문만으로는 부족하다 — 시각을 A에서 B로 바꿨다 A로 되돌리면 지문이 다시
+     * 같아져서 옛 조각이 살아난다. **값이 아니라 사건**으로 끊어야 하는 자리다.
+     */
+    setAiFeedback(null);
     setThemeExperience(null);
     try {
       const res = await planItinerary(constraints);

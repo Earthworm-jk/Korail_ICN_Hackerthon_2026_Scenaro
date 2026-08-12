@@ -174,7 +174,7 @@ describe("재질문 조각 잇기", () => {
     selectedWorkIds: ["work-goblin"],
     excludedPlaceIds: ["place-a"],
   };
-  const keyOf = (over: Partial<Parameters<typeof itineraryBasisKey>[0]["request"]> = {}, rest: {
+  const keyOf = (over: Record<string, unknown> = {}, rest: {
     selectedAltId?: string | null; reopened?: boolean;
   } = {}) => itineraryBasisKey({
     request: { ...BASE_REQUEST, ...over },
@@ -262,14 +262,52 @@ describe("재질문 조각 잇기", () => {
     });
 
     /**
-     * **이 방어가 못 잡는 것을 함께 적어 둔다.** 기준이 똑같은 값으로 돌아오는 왕복
-     * (대안을 골랐다 그대로 되돌리기)은 기준만으로는 못 가른다 — 그때는 일정도 실제로
-     * 같다. 그 경로는 `chooseAlternative`의 명시적 폐기가 맡는다. **두 겹이고 각자
-     * 잡는 것이 다르다.**
+     * **이 방어가 못 잡는 것을 함께 적어 둔다.** 값이 같은 값으로 돌아오는 왕복은
+     * 지문으로 못 가른다 — 지문은 값이고 왕복은 값을 되돌리는 일이다.
+     *
+     * 그 경로는 **사건 자체로 끊는** 명시적 폐기가 맡는다.
+     *   대안 왕복  -> `chooseAlternative`의 `setAiFeedback(null)`
+     *   재계산 왕복 -> `plan()`의 `setAiFeedback(null)`
+     *
+     * 두 겹이고 각자 잡는 것이 다르며, 어느 한쪽도 혼자서는 충분하지 않다.
      */
-    it("똑같은 기준으로 돌아오는 왕복은 기준만으로 못 가른다", () => {
-      const backToBase = keyOf();
-      expect(pendingSlotsOf(clarify, backToBase)).toEqual(slots);
+    it("값이 같은 값으로 돌아오는 왕복은 지문으로 못 가른다", () => {
+      // 대안 왕복 · 재계산 왕복 둘 다 지문이 원래대로 돌아온다
+      expect(pendingSlotsOf(clarify, keyOf())).toEqual(slots);
+      expect(pendingSlotsOf(clarify, keyOf({ departureAt: "2026-08-15T18:00:00+09:00" })))
+        .toBeNull();
+      expect(pendingSlotsOf(clarify, keyOf())).toEqual(slots);
+    });
+
+    /**
+     * PR #175 리뷰 4회차 — 앞서는 `PlanRequest` 필드를 손으로 나열해서, 새 입력이
+     * 생기면 조용히 빠졌다. 지금은 요청을 구조적으로 훑으므로 필드가 늘어도 들어온다.
+     */
+    it("나열하지 않은 새 입력도 기준을 가른다", () => {
+      const withNewField = itineraryBasisKey({
+        request: { ...BASE_REQUEST, someFutureInput: "x" },
+        selectedAltId: null,
+        reopened: false,
+      });
+      expect(withNewField).not.toBe(keyOf());
+    });
+
+    it("요청의 모든 필드가 기준을 가른다", () => {
+      for (const key of Object.keys(BASE_REQUEST)) {
+        const changed = { ...BASE_REQUEST, [key]: "__changed__" };
+        expect(
+          itineraryBasisKey({ request: changed, selectedAltId: null, reopened: false }),
+          key,
+        ).not.toBe(keyOf());
+      }
+    });
+
+    it("중첩된 값이 바뀌어도 가른다", () => {
+      expect(pendingSlotsOf(clarify, keyOf({ preferredVisitDates: { "p": "2026-08-13" } })))
+        .toBeNull();
+      const a = keyOf({ preferredVisitDates: { "p": "2026-08-13" } });
+      const b = keyOf({ preferredVisitDates: { "p": "2026-08-14" } });
+      expect(a).not.toBe(b);
     });
   });
 
