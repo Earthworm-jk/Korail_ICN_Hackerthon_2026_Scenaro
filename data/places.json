@@ -509,10 +509,20 @@
     "openingHours": {
       "type": "unverified"
     },
-    "stayMinutes": 60,
+    "stayMinutes": 40,
     "stayMetadata": {
       "category": "culture_venue",
-      "basis": "category_default"
+      "basis": "official_source",
+      "sourceMinutes": 40,
+      "sourceScope": {
+        "ko": "(재)영화의전당 공식 건축투어(전문해설사 동행, 사전예약제) 소요시간 — 자유관람 시간이 아닌 해설 투어 기준",
+        "en": "Duration of the Busan Cinema Center's official guided Architecture Tour (docent-led, reservation required), not a free-viewing estimate"
+      },
+      "source": "https://www.dureraum.org/bcc/contents/contentsView.do?rbsIdx=385",
+      "sourceFormat": "html",
+      "sourceQuote": "소요시간 : 40분 내외",
+      "sourceLocator": "영화 > 투어 > 영화의전당 투어 프로그램 : 건축투어 > 투어정보",
+      "verifiedAt": "2026-08-12"
     },
     "placeType": "cinema",
     "verificationLevel": "교차확인",
