@@ -91,12 +91,17 @@ async function expectReadyScenario(
 
   const previewVisited = visitedPlaceIds(preview.result.days);
   const previewCapacity = summarizeSelectionCapacity(candidateIds, preview.result.days);
-  expect(previewCapacity).toEqual({
+  // 이 fixture가 지키는 것은 세 수치다 — 목록 자체는 selection-capacity.test.ts 소관이다
+  expect(previewCapacity).toMatchObject({
     selectedCount: candidateIds.length,
     schedulableCount: previewVisited.length,
     minimumExclusionCount: candidateIds.length - previewVisited.length,
     requiresAdjustment: candidateIds.length > previewVisited.length,
   });
+  // 다만 목록과 수치가 어긋나면 화면이 "N곳"이라 적고 다른 줄 수를 그린다 (#171)
+  expect(previewCapacity.scheduledPlaceIds).toHaveLength(previewCapacity.schedulableCount);
+  expect(previewCapacity.unscheduledPlaceIds)
+    .toHaveLength(previewCapacity.minimumExclusionCount);
 
   // 엔진이 장소를 자동 제외해 확정하는 것이 아니다. 테스트가 한 사용자의 선택을 재현한다:
   // 미리보기에서 빠진 후보를 사용자가 직접 끈 뒤 같은 Action으로 전체 재계산한다.

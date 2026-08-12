@@ -9,6 +9,26 @@ export type SelectionCapacitySummary = {
   schedulableCount: number;
   minimumExclusionCount: number;
   requiresAdjustment: boolean;
+  /**
+   * 일정에 들어간 장소 — **어느 곳인지** (#171).
+   *
+   * 지금까지는 이 집합을 만들어 개수만 세고 버렸다. 그래서 화면은 "9곳이 들어갑니다"라고
+   * 말하면서 **어느 9곳인지는 아무 데도 보여주지 못했다.** 사용자는 미리보기 일정을
+   * 스크롤해 역산해야 했다.
+   *
+   * 방문 순서를 따른다 — 사용자가 화면에서 보는 차례와 같아야 목록이 읽힌다.
+   */
+  scheduledPlaceIds: string[];
+  /**
+   * 선택했지만 못 들어간 장소.
+   *
+   * 엔진의 `rejectedPlaces`와 다르다. 그쪽은 **사유가 붙은 것**만 담고, 이쪽은 선택과
+   * 결과를 대조해 남는 전부다 — 사유를 못 만든 경우까지 포함해야 개수(`minimumExclusionCount`)와
+   * 목록이 어긋나지 않는다.
+   *
+   * 선택 순서를 따른다 — 사용자가 고른 차례다.
+   */
+  unscheduledPlaceIds: string[];
 };
 
 export function summarizeSelectionCapacity(
@@ -16,10 +36,13 @@ export function summarizeSelectionCapacity(
   days: DayPlan[],
 ): SelectionCapacitySummary {
   const selected = new Set(selectedPlaceIds);
-  const scheduled = new Set(
-    days.flatMap((day) => day.items.map((item) => item.placeId))
-      .filter((placeId) => selected.has(placeId)),
-  );
+  const scheduledIds = [
+    ...new Set(
+      days.flatMap((day) => day.items.map((item) => item.placeId))
+        .filter((placeId) => selected.has(placeId)),
+    ),
+  ];
+  const scheduled = new Set(scheduledIds);
   const minimumExclusionCount = Math.max(0, selected.size - scheduled.size);
 
   return {
@@ -27,6 +50,8 @@ export function summarizeSelectionCapacity(
     schedulableCount: scheduled.size,
     minimumExclusionCount,
     requiresAdjustment: minimumExclusionCount > 0,
+    scheduledPlaceIds: scheduledIds,
+    unscheduledPlaceIds: [...selected].filter((placeId) => !scheduled.has(placeId)),
   };
 }
 
