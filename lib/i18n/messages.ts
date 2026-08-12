@@ -3,10 +3,15 @@
  * 핵심 데모 경로 문구는 ko/en 모두 필수이며 키 누락은 테스트가 실패시킨다.
  * 컴포넌트에 문구를 하드코딩하지 않는다.
  */
+import { resolveJosa } from "./josa";
+
 export const messages = {
   ko: {
-    "app.title": "씬나로",
-    "app.tagline": "당신의 시나리오대로 갑니다.",
+    // 워드마크는 로케일과 무관하게 `SCENARO` 하나다 (#146). 타깃이 외국인이라
+    // 헤더에서 두 이름을 병기할 이유가 없다 — 국문 표기는 EN 토글이 아니라
+    // 이름 자체를 갈라 놓는 일이었다.
+    "app.title": "SCENARO",
+    "app.tagline": "Your scenes, your scenaro.",
     "app.snapshotBadge": "데모 스냅샷",
     "nav.step1": "여행 조건",
     "nav.step2": "K-콘텐츠",
@@ -146,14 +151,14 @@ export const messages = {
     // #145 — 혼합 권역에서는 열차 시간표 탓에 요청한 앞뒤가 자주 조정된다(성립률 63%)
     "ai.confirmOrderAdjusted": "열차 시간표에 따라 일부 순서 변경이 조정될 수 있어요.",
     "ai.confirmAdjustedScattered": "요청한 날짜에 전부 들어가지 못해 일부는 다른 날로 조정됩니다.",
-    "ai.confirmDisplaced": "{place}이 일정에서 제외됩니다.",
+    "ai.confirmDisplaced": "{place}이(가) 일정에서 제외됩니다.",
     "ai.impossibleDay": "이 날 일정을 통째로 옮길 수 없습니다.",
     "ai.appliedDay": "{count}곳을 {date}로 옮겼습니다.",
     // #145 — 순서 요청에는 날짜가 없다. 날짜 문구를 그대로 쓰면 옮긴 것처럼 읽힌다
     "ai.appliedOrder": "{first}을(를) {second} 앞으로 옮겼습니다.",
     "ai.impossibleOrder": "{first}을(를) {second} 앞에 둘 수 없습니다.",
     "ai.appliedDayPartial": "DAY 일정 변경을 반영했습니다. 일부는 다른 날로 조정됐습니다.",
-    "ai.confirmMoved": "{place}이 {from}에서 {to}로 이동합니다.",
+    "ai.confirmMoved": "{place}이(가) {from}에서 {to}로 이동합니다.",
     "step4.dayHeading": "DAY {day}",
     "step4.stayTitle": "체류 시간",
     "step4.dayMoveLabel": "이 날 일정을 다른 날로 옮기기",
@@ -447,7 +452,7 @@ export const messages = {
   },
   en: {
     "app.title": "SCENARO",
-    "app.tagline": "Your scenario, your route.",
+    "app.tagline": "Your scenes, your scenaro.",
     "app.snapshotBadge": "Demo snapshot",
     "nav.step1": "Trip window",
     "nav.step2": "K-content",
@@ -878,10 +883,19 @@ export function t(locale: Locale, key: MessageKey): string {
   return messages[locale][key];
 }
 
-/** `{key}` 자리표시자를 값으로 채운다. 메시지를 쓰는 쪽이 모두 같은 치환을 쓴다 */
-export function withValues(template: string, values: Record<string, string>): string {
-  return Object.entries(values).reduce(
-    (text, [key, value]) => text.replaceAll(`{${key}}`, value),
+/**
+ * `{key}` 자리표시자를 값으로 채운다. 메시지를 쓰는 쪽이 모두 같은 치환을 쓴다.
+ *
+ * 채운 **뒤에** 조사를 고른다 (#145) - 앞 글자가 값으로 바뀌어야 받침을 볼 수 있다.
+ * 이 한 곳에서 처리하므로 문구를 새로 쓸 때 `{place}을(를)`이라고만 적으면 된다.
+ */
+export function withValues(
+  template: string,
+  values: Record<string, string | number>,
+): string {
+  const filled = Object.entries(values).reduce(
+    (text, [key, value]) => text.replaceAll(`{${key}}`, String(value)),
     template,
   );
+  return resolveJosa(filled);
 }

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { X } from "lucide-react";
-import type { MessageKey } from "@/lib/i18n/messages";
+import { withValues, type MessageKey } from "@/lib/i18n/messages";
 import type { ItineraryDiff } from "@/lib/itinerary-diff";
 import { StageUtilityPortal } from "./stage-utility-portal";
 
@@ -13,12 +13,6 @@ type Props = {
   tr: (key: MessageKey) => string;
 };
 
-function withValues(template: string, values: Record<string, string | number>): string {
-  return Object.entries(values).reduce(
-    (text, [key, value]) => text.replaceAll(`{${key}}`, String(value)),
-    template,
-  );
-}
 
 /**
  * 재계산 전후 변화 요약 (#118 P0-2).

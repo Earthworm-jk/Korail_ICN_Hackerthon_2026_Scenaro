@@ -1485,13 +1485,12 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
           제목 밑에 왼쪽 정렬로 한 줄을 더 쓰고 있었다. 한 줄에 두고 로고 쪽이
           줄어들게 한다 — 버튼은 늘 오른쪽 윗줄이다 */}
       <header className="flex items-center justify-between gap-3 border-b bg-sc-surface px-5 py-4">
-        <div className="flex min-w-0 items-center gap-2.5">
-          <span aria-hidden className="grid h-9 w-9 place-items-center rounded-[10px] bg-sc-blue text-sm font-medium text-white">SC</span>
-          <div className="min-w-0">
-            <h1 className="truncate text-lg font-semibold tracking-wide">{tr("app.title")}</h1>
-            {/* 좁은 화면에서 태그라인은 버튼 자리를 뺏는다 — 386px 미만에서만 접는다 */}
-            <p className="mt-0.5 hidden truncate text-xs text-sc-muted sm:block">{tr("app.tagline")}</p>
-          </div>
+        {/* `SC` 마크는 걷었다 (#146). 코레일 안에 들어가는 화면을 전제하면 왼쪽 위는
+            우리 마크 자리가 아니다. 이름은 남긴다 — 지우면 화면에 자기 이름이 없어진다 */}
+        <div className="min-w-0">
+          <h1 className="truncate text-lg font-semibold tracking-wide">{tr("app.title")}</h1>
+          {/* 좁은 화면에서 태그라인은 버튼 자리를 뺏는다 — 386px 미만에서만 접는다 */}
+          <p className="mt-0.5 hidden truncate text-xs text-sc-muted sm:block">{tr("app.tagline")}</p>
         </div>
         <div className="flex shrink-0 items-center gap-2">
           <span className="rounded-full bg-sc-orange-soft px-2.5 py-1 text-xs text-sc-orange-text">{tr("app.snapshotBadge")}</span>
