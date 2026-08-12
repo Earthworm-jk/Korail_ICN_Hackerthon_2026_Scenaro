@@ -370,6 +370,8 @@ export const messages = {
     "step4.errInvalid": "입력 조건이 올바르지 않습니다 — 여행 조건을 다시 확인해 주세요.",
     "step4.errUnexpected": "일시적인 오류로 계산하지 못했습니다 — 잠시 후 다시 시도해 주세요.",
     "reason.TRAIN_UNAVAILABLE": "입력한 일정 안에 이용 가능한 KTX가 없습니다",
+    // #178 — 심야 환승 제외로만 실패한 경우. 열차 부재와 원인이 다르므로 문구를 나눈다
+    "reason.OVERNIGHT_TRANSFER_REQUIRED": "현재 시간표로는 역에서 밤샘 대기가 필요한 연결만 가능합니다",
     // #61 — 같은 사유 코드를 커버리지로 나눠 표시한다 (공개 코드 추가 없음)
     "reason.TRAIN_OUT_OF_COVERAGE": "현재 제공하는 KTX 시간표 범위 밖의 장소입니다",
     "reason.DAILY_CAPACITY_EXCEEDED": "하루별 장소 수 상한 때문에 현재 일정에 넣지 못했습니다",
@@ -835,6 +837,7 @@ export const messages = {
     "step4.errInvalid": "The travel conditions are invalid — please review them and try again.",
     "step4.errUnexpected": "A temporary error prevented the calculation — please try again shortly.",
     "reason.TRAIN_UNAVAILABLE": "No KTX available within your trip window",
+    "reason.OVERNIGHT_TRANSFER_REQUIRED": "Only connections with an overnight station wait are possible on the current timetable",
     "reason.TRAIN_OUT_OF_COVERAGE": "Outside the KTX timetable range we currently provide",
     "reason.DAILY_CAPACITY_EXCEEDED": "Could not fit because of the per-day place limit",
     "reason.DEPARTURE_DEADLINE_EXCEEDED": "Cannot keep the departure buffer",

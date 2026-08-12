@@ -89,13 +89,49 @@ type IndexedLeg = { leg: TrainLegT; departMs: number; arriveMs: number };
 type RouteContext = {
   legs: IndexedLeg[]; // 출발 시각 오름차순, 동시각은 trainNo — 기존 per-call 정렬과 동일 순서
   cache: Map<string, TrainLegT[] | null>;
+  /** #178 — 역별 출발 시각 오름차순. 도착 순간이 그 역의 심야 침묵 안인지 판정하는 데 쓴다 */
+  stationDeparts: Map<string, number[]>;
+  /** #178 — 이 시간표에서 "심야 침묵"으로 보는 무출발 구간 길이의 하한 (ms) */
+  overnightSilenceFloorMs: number;
 };
+
+/**
+ * 심야 침묵 판정 하한 — 시간표에서만 파생한다 (#178).
+ *
+ * 전체 시간표의 출발 시각을 정렬해 이웃 간 최대 공백을 재고, 그 절반을 하한으로 쓴다.
+ * 실스냅샷(data/train-snapshot.json, 2026-08-12 기준) 실측:
+ *   - 심야 무운행 공백: 매일 23:47 → 익일 05:06 = 319분
+ *   - 그 외 최대 침묵: 25분(23:22-23:47), 주간 최대 24분
+ * 두 값 사이 어느 하한이든 판정이 같으므로 임의 상수를 두지 않고, 간극(약 12.7배)의
+ * 중앙인 "최대 공백의 절반"(실측 159.5분)을 쓴다 — 시간표가 다소 변해도 뒤집히지 않는다.
+ * 같은 입력이면 같은 값이다(결정성). 출발이 두 시각 미만이면 판정 근거가 없으므로
+ * 어떤 침묵도 심야로 보지 않는다(Infinity) — 판정할 수 없으면 주장하지 않는다.
+ */
+export function overnightSilenceFloorOf(departMsAscending: readonly number[]): number {
+  let maxGap = 0;
+  for (let index = 1; index < departMsAscending.length; index += 1) {
+    const gap = departMsAscending[index] - departMsAscending[index - 1];
+    if (gap > maxGap) maxGap = gap;
+  }
+  return maxGap > 0 ? maxGap / 2 : Number.POSITIVE_INFINITY;
+}
 
 function buildRouteContext(trainLegs: TrainLegT[]): RouteContext {
   const legs = trainLegs
     .map((leg) => ({ leg, departMs: Date.parse(leg.departAt), arriveMs: Date.parse(leg.arriveAt) }))
     .sort((a, b) => a.departMs - b.departMs || a.leg.trainNo.localeCompare(b.leg.trainNo, "en"));
-  return { legs, cache: new Map() };
+  const stationDeparts = new Map<string, number[]>();
+  for (const { leg, departMs } of legs) {
+    const departs = stationDeparts.get(leg.fromStationId);
+    if (departs) departs.push(departMs); // legs가 출발 시각 오름차순이라 역별 배열도 정렬 상태
+    else stationDeparts.set(leg.fromStationId, [departMs]);
+  }
+  return {
+    legs,
+    cache: new Map(),
+    stationDeparts,
+    overnightSilenceFloorMs: overnightSilenceFloorOf(legs.map(({ departMs }) => departMs)),
+  };
 }
 
 // #56 A+B 합의(A): KST 날짜·시각 변환 메모. 프로파일 결과 비용의 45%가 같은 값의
@@ -334,6 +370,76 @@ function assertDerivedIntegrity(states: PlannerState[], ctx: PlanContext): void 
       );
     }
   }
+}
+
+const ACTIVITY_START_MINUTES = minutesOfDay(DAY_ACTIVITY_START);
+const ACTIVITY_END_MINUTES = minutesOfDay(DAY_ACTIVITY_END);
+
+function minutesOfDay(time: string): number {
+  const [hours, minutes] = time.split(":").map(Number);
+  return hours * 60 + minutes;
+}
+
+/**
+ * 구간 [startMs, endMs]가 KST 활동 가능 시간(#33 — 09:00-21:00)과 겹치는가.
+ *
+ * 걸친 **모든** KST 날짜를 본다 (#178 안전선 2). 도착일만 보면 "전날 저녁 도착 →
+ * 다음 날 오전 활동 → 정오 공항철도" 같은 정상 다일 체류가 심야 대기로 오판된다.
+ */
+function activityOverlapExists(startMs: number, endMs: number): boolean {
+  let dayStart = Math.floor((startMs + KOREA_OFFSET_MS) / DAY_MS) * DAY_MS - KOREA_OFFSET_MS;
+  for (; dayStart < endMs; dayStart += DAY_MS) {
+    const activityStart = dayStart + ACTIVITY_START_MINUTES * MINUTE_MS;
+    const activityEnd = dayStart + ACTIVITY_END_MINUTES * MINUTE_MS;
+    if (Math.min(endMs, activityEnd) > Math.max(startMs, activityStart)) return true;
+  }
+  return false;
+}
+
+/** 정렬 배열에서 value보다 큰 첫 위치 (upper bound) */
+function firstGreaterIndex(sorted: readonly number[], value: number): number {
+  let low = 0;
+  let high = sorted.length;
+  while (low < high) {
+    const mid = (low + high) >> 1;
+    if (sorted[mid] <= value) low = mid + 1;
+    else high = mid;
+  }
+  return low;
+}
+
+/**
+ * 심야 도착 후 환승인가 (#178).
+ *
+ * 표시 계층(#173)이 아니라 경로 구성 단계에서 "역에서 밤을 새우는 연결"을 차단한다.
+ * 두 조건을 **모두** 만족할 때만 심야 환승이다.
+ *
+ *   1. 도착 순간이 **그 역의** 심야 침묵 구간 안이다 — 도착 시각을 포함하는
+ *      직전·다음 출발 사이 공백이 `overnightSilenceFloorMs`보다 길다.
+ *      역 단위로 판정한다: 부산역 환승 가능 여부가 같은 시각 서울역의 무관한 열차로
+ *      바뀌면 안 된다. "대기 중 다른 출발 유무"로 판정하지 않는 이유는 첫차(05:09)만
+ *      막고 후속편(05:19)은 사이의 첫차 존재 때문에 통과시켜 규칙이 우회되기 때문이다 —
+ *      도착 순간 기준이면 첫차든 후속편이든 같은 침묵에서 출발하므로 함께 걸린다.
+ *   2. 대기 [도착, 출발] 전체가 활동 가능 시간과 한 분도 겹치지 않는다 (다일 합산).
+ *      전날 도착해 다음 날 활동하고 이동하는 정상 다일 체류를 지키는 조건이다.
+ *
+ * 짧은 자정 횡단 환승(예: 23:50 도착 → 00:20 출발)은 도착을 포함한 침묵이 짧아
+ * 1을 통과하지 못하므로 유지된다 — 달력 자정은 판정 기준이 아니다.
+ * 그 역의 직전 출발 정보가 없으면 판정하지 않는다(false) — 주장할 근거가 없다.
+ */
+function isOvernightTransferWait(
+  routes: RouteContext,
+  stationId: string,
+  arriveAtMs: number,
+  departMs: number,
+): boolean {
+  const departs = routes.stationDeparts.get(stationId);
+  if (!departs || departs.length === 0) return false;
+  const nextIndex = firstGreaterIndex(departs, arriveAtMs);
+  if (nextIndex === 0 || nextIndex >= departs.length) return false; // 침묵 경계를 못 정한다
+  const silenceMs = departs[nextIndex] - departs[nextIndex - 1];
+  if (silenceMs <= routes.overnightSilenceFloorMs) return false;
+  return !activityOverlapExists(arriveAtMs, departMs);
 }
 
 /** legs에서 departMs >= notBefore인 첫 위치 — 기존의 "departAt < notBefore면 skip"과 동치 */
@@ -632,6 +738,7 @@ function appendVisit(
   ctx: PlanContext,
   deadline: number,
   onlyDate?: string,
+  ignoreOvernightRule = false, // #178 진단 전용 — completionFailure의 사유 가르기에서만 true
 ): Transition {
   const place = candidate.place;
   const route = findEarliestRoute(
@@ -640,6 +747,7 @@ function appendVisit(
     place.nearestStationId,
     state.readyAt,
     deadline,
+    ignoreOvernightRule,
   );
   if (!route) {
     return { ok: false, reason: { code: "TRAIN_UNAVAILABLE", placeId: place.id } };
@@ -927,9 +1035,12 @@ function findEarliestRoute(
   toStationId: string,
   notBefore: number,
   deadline: number,
+  // #178 진단 전용 — 실패 사유를 가를 때만 true(completionFailure). 탐색 본선은 항상 규칙을 켠다.
+  ignoreOvernightRule = false,
 ): TrainLegT[] | null {
   if (fromStationId === toStationId) return [];
-  const cacheKey = `${fromStationId}|${toStationId}|${notBefore}|${deadline}`;
+  const cacheKey =
+    `${fromStationId}|${toStationId}|${notBefore}|${deadline}|${ignoreOvernightRule ? 1 : 0}`;
   const cached = routes.cache.get(cacheKey);
   if (cached !== undefined) return cached;
 
@@ -941,10 +1052,13 @@ function findEarliestRoute(
     const origin = arrivals.get(leg.fromStationId);
     if (!origin) continue;
     const previous = origin.path.at(-1);
-    const minimumConnection = previous && previous.trainNo !== leg.trainNo
-      ? MIN_TRANSFER_MINUTES * MINUTE_MS
-      : 0;
-    if (origin.at + minimumConnection > departMs) continue;
+    if (previous && previous.trainNo !== leg.trainNo) {
+      // 서로 다른 편성의 연결(환승)에만 하한·심야 규칙을 적용한다.
+      // 같은 편성의 자정 통과 연속 구간은 환승이 아니므로 규칙 밖이다 (#178 완료 조건 2).
+      if (origin.at + MIN_TRANSFER_MINUTES * MINUTE_MS > departMs) continue;
+      if (!ignoreOvernightRule
+        && isOvernightTransferWait(routes, leg.fromStationId, origin.at, departMs)) continue;
+    } else if (origin.at > departMs) continue;
     const current = arrivals.get(leg.toStationId);
     const path = [...origin.path, leg];
     if (!current || arriveMs < current.at
@@ -1406,6 +1520,21 @@ function completionFailure(
       if (withoutDepartureBuffer.ok) {
         return { code: "DEPARTURE_DEADLINE_EXCEEDED", placeId: candidate.place.id };
       }
+      // #178 — 심야 규칙을 켠 탐색은 실패했는데 끈 탐색이 성공하면, 원인은 "열차가 없다"가
+      // 아니라 "밤샘 대기 연결만 남는다"이다. 실패 경로에서만 도는 진단 재탐색이라(#84 P0-1과
+      // 같은 방식) 정상 배치 비용은 그대로고, 둘 다 실패하면 기존 TRAIN_UNAVAILABLE로 남는다.
+      const withoutOvernightRule = appendVisit(
+        state,
+        candidate,
+        constraints,
+        ctx,
+        deadline,
+        undefined,
+        true,
+      );
+      if (withoutOvernightRule.ok) {
+        return { code: "OVERNIGHT_TRANSFER_REQUIRED", placeId: candidate.place.id };
+      }
     }
     return transition.reason;
   }
@@ -1427,8 +1556,20 @@ function completionFailure(
     transition.state.readyAt,
     departureAt,
   );
-  return returnBeforeDeparture
-    ? { code: "DEPARTURE_DEADLINE_EXCEEDED", placeId: candidate.place.id }
+  if (returnBeforeDeparture) {
+    return { code: "DEPARTURE_DEADLINE_EXCEEDED", placeId: candidate.place.id };
+  }
+  // #178 — 귀환 경로도 같은 진단: 심야 규칙 없이는 닿는다면 밤샘 연결이 원인이다
+  const returnWithoutOvernightRule = findEarliestRoute(
+    ctx.routes,
+    transition.state.stationId,
+    endpointStationId,
+    transition.state.readyAt,
+    deadline,
+    true,
+  );
+  return returnWithoutOvernightRule
+    ? { code: "OVERNIGHT_TRANSFER_REQUIRED", placeId: candidate.place.id }
     : { code: "TRAIN_UNAVAILABLE", placeId: candidate.place.id };
 }
 
