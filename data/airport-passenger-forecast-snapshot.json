@@ -1,0 +1,28 @@
+{
+  "sourceUrl": "https://www.data.go.kr/data/15095066/openapi.do",
+  "verifiedAt": "2026-08-12",
+  "kind": "demo_fixture",
+  "notice": "승객예고 API의 시간대별 예상 승객 수 구조를 재현한 날짜 독립 결정적 데모·평가 픽스처이며 공식 혼잡 등급이 아닙니다.",
+  "profiles": [
+    {
+      "terminal": "T1",
+      "direction": "arrival",
+      "hourlyPassengerCounts": [200, 180, 160, 150, 140, 130, 160, 300, 620, 840, 1320, 910, 1480, 760, 680, 720, 900, 1100, 980, 700, 600, 500, 400, 300]
+    },
+    {
+      "terminal": "T2",
+      "direction": "arrival",
+      "hourlyPassengerCounts": [120, 110, 100, 90, 80, 80, 110, 230, 480, 650, 990, 700, 1160, 580, 520, 560, 710, 850, 760, 540, 450, 380, 300, 220]
+    },
+    {
+      "terminal": "T1",
+      "direction": "departure",
+      "hourlyPassengerCounts": [180, 160, 140, 120, 110, 100, 180, 350, 560, 730, 920, 1180, 1050, 720, 880, 1410, 1530, 970, 810, 690, 580, 470, 360, 260]
+    },
+    {
+      "terminal": "T2",
+      "direction": "departure",
+      "hourlyPassengerCounts": [100, 90, 80, 70, 70, 60, 120, 240, 390, 510, 680, 850, 760, 520, 640, 1020, 1120, 710, 590, 500, 420, 340, 260, 180]
+    }
+  ]
+}
