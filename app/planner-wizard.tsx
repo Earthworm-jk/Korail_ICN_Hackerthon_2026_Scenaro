@@ -33,7 +33,7 @@ import { initialPlaceIdsFromItinerary } from "@/lib/initial-place-selection";
 import {
   commandInputUnavailable,
   overselectionProposalOf,
-  selectionUndoAvailable,
+  selectionUndoAfterChange,
   commandPanelUnavailable,
   canEditVisitDate,
   panelDismissable,
@@ -1112,10 +1112,20 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
     setSelectedPlaceIds(new Set(proposal.keepPlaceIds));
   }, [selectionCapacity, selectionStateShown, selectedPlaceIds]);
 
+  /**
+   * 선택이 적용 결과에서 벗어나면 **그 자리에서 버린다** (PR #185 리뷰 3회차).
+   *
+   * 숨기기만 하면 껐다 켜서 같은 집합으로 돌아왔을 때 오래된 되돌리기가 되살아난다.
+   * 렌더 중 상태 조정이라 다음 렌더가 아니라 이번 렌더부터 없는 것으로 보인다.
+   */
+  const liveSelectionUndo = selectionUndoAfterChange(selectionUndo, selectedPlaceIds);
+  if (liveSelectionUndo === null && selectionUndo !== null) setSelectionUndo(null);
+
   const undoOverselectionProposal = useCallback(() => {
     // 표시와 실행이 같은 조건을 본다 — 표시만 숨기면 오래된 closure 로 다시 복원된다
-    if (!selectionUndoAvailable(selectionUndo, selectedPlaceIds)) return;
-    setSelectedPlaceIds(new Set(selectionUndo!.previousPlaceIds));
+    const undo = selectionUndoAfterChange(selectionUndo, selectedPlaceIds);
+    if (undo === null) return;
+    setSelectedPlaceIds(new Set(undo.previousPlaceIds));
     setSelectionUndo(null);
   }, [selectionUndo, selectedPlaceIds]);
 
@@ -2195,7 +2205,7 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
             onApplyOverselection={applyOverselectionProposal}
             /* 완료형 문구는 재계산이 실제로 끝난 뒤에만 — 아직 계산 중이거나 실패했을 수 있다 */
             onUndoOverselection={
-              selectionStateShown && selectionUndoAvailable(selectionUndo, selectedPlaceIds)
+              selectionStateShown && liveSelectionUndo !== null
                 ? undoOverselectionProposal
                 : undefined}
             feedback={aiFeedback}

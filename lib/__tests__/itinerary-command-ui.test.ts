@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   commandInputUnavailable,
   overselectionProposalOf,
+  selectionUndoAfterChange,
   selectionUndoAvailable,
   commandPanelUnavailable,
   commandResponseIsCurrent,
@@ -172,5 +173,48 @@ describe("정리 되돌리기는 적용 직후에만", () => {
 
   it("선택이 비면 닫힌다", () => {
     expect(selectionUndoAvailable(undo, [])).toBe(false);
+  });
+});
+
+/**
+ * 스냅샷은 한 번 벗어나면 돌아오지 않는다 (PR #185 리뷰 3회차).
+ *
+ * 집합 비교만으로는 **중간 사건을 못 본다** — A에서 하나를 껐다 다시 켜면 집합이 다시 A라
+ * 오래된 되돌리기가 되살아난다. #175의 기준 왕복과 같은 한계다. 화면은 매 렌더에서
+ * 이 함수를 통과시켜 상태 자체를 없앤다.
+ */
+describe("정리 되돌리기 스냅샷 수명", () => {
+  const undo = { previousPlaceIds: ["a", "b", "c", "d"], appliedPlaceIds: ["a", "b", "c"] };
+  /** 화면이 하는 일을 그대로 흉내낸다 — 선택이 바뀔 때마다 통과시킨다 */
+  const walk = (selections: string[][]) =>
+    selections.reduce<typeof undo | null>(
+      (state, selection) => selectionUndoAfterChange(state, selection),
+      undo,
+    );
+
+  it("적용 직후에는 남아 있다", () => {
+    expect(walk([["a", "b", "c"]])).toEqual(undo);
+  });
+
+  it("하나를 끄면 버린다", () => {
+    expect(walk([["a", "b", "c"], ["a", "b"]])).toBeNull();
+  });
+
+  /** 이 경우가 앞 회차에서 되살아났다 */
+  it("껐다 다시 켜서 같은 집합으로 돌아와도 되살아나지 않는다", () => {
+    expect(walk([["a", "b", "c"], ["a", "b"], ["a", "b", "c"]])).toBeNull();
+  });
+
+  it("다른 같은 크기 집합을 거쳐 돌아와도 되살아나지 않는다", () => {
+    expect(walk([["a", "b", "c"], ["a", "b", "z"], ["a", "b", "c"]])).toBeNull();
+  });
+
+  it("한 번 버린 뒤에는 어떤 선택으로도 돌아오지 않는다", () => {
+    expect(walk([["a", "b", "c"], [], ["a", "b", "c"], ["a", "b", "c"]])).toBeNull();
+  });
+
+  /** 실행 뒤에는 화면이 null 로 바꾸므로 통과시켜도 그대로 없다 */
+  it("실행 뒤에는 다시 노출되지 않는다", () => {
+    expect(selectionUndoAfterChange(null, ["a", "b", "c", "d"])).toBeNull();
   });
 });

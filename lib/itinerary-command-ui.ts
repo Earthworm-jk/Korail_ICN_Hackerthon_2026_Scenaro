@@ -278,3 +278,23 @@ export function selectionUndoAvailable(
   if (current.size !== undo.appliedPlaceIds.length) return false;
   return undo.appliedPlaceIds.every((placeId) => current.has(placeId));
 }
+
+/**
+ * 선택이 적용 결과에서 벗어났으면 스냅샷을 **영구 폐기**한다 (PR #185 리뷰 3회차).
+ *
+ * `selectionUndoAvailable`은 현재 집합만 본다. 그래서 A에서 하나를 껐다 다시 켜면 집합이
+ * 다시 A가 되어 **오래된 되돌리기가 되살아난다** — 그 사이에 무슨 일이 있었는지 값만으로는
+ * 알 수 없다. #175의 기준 왕복과 같은 한계다.
+ *
+ * "정리 적용 직후에만 유효한 한 단계"라는 계약을 지키려면 **한 번이라도 벗어나는 순간
+ * 버려야** 한다. 화면은 매 렌더에서 이 함수를 통과시켜 상태 자체를 없앤다 — 없앤 뒤에는
+ * 집합이 우연히 같아져도 돌아올 것이 없다.
+ *
+ * 집합 비교는 그대로 두되 **유일한 방어가 아니라 폐기의 방아쇠**로 쓴다.
+ */
+export function selectionUndoAfterChange<T extends { appliedPlaceIds: readonly string[] }>(
+  undo: T | null,
+  currentSelection: Iterable<string>,
+): T | null {
+  return selectionUndoAvailable(undo, currentSelection) ? undo : null;
+}
