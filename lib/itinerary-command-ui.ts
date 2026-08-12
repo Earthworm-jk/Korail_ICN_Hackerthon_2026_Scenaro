@@ -298,3 +298,27 @@ export function selectionUndoAfterChange<T extends { appliedPlaceIds: readonly s
 ): T | null {
   return selectionUndoAvailable(undo, currentSelection) ? undo : null;
 }
+
+/**
+ * 제안을 적용 전에 손본 결과 (#84 개정 · #171 4번).
+ *
+ * #84 개정문이 요구하는 것은 승인·취소만이 아니라 **적용 전 개별 수정**이다. 전부 아니면
+ * 전무면, 제안된 9곳 중 하나가 마음에 안 들 때 사용자는 제안을 버리고 처음부터 다시
+ * 골라야 한다 — 그건 우리가 없애려던 그 노동이다.
+ *
+ * 편집은 **이번 제안에만 붙는다.** 제안이 바뀌면(재계산으로 다른 조합이 나오면) 옛 편집은
+ * 버린다 — 서명이 다르면 사용자가 손본 대상 자체가 사라진 것이다. 값 비교로 살려 두면
+ * 우연히 같은 조합이 다시 나왔을 때 하지도 않은 편집이 되살아난다(#185에서 같은 실수).
+ */
+export function proposalSignature(keepPlaceIds: readonly string[]): string {
+  return [...keepPlaceIds].sort().join("\u0000");
+}
+
+export function editedKeepPlaceIds(
+  keepPlaceIds: readonly string[],
+  edit: { signature: string; removedPlaceIds: readonly string[] } | null,
+): string[] {
+  if (edit === null || edit.signature !== proposalSignature(keepPlaceIds)) return [...keepPlaceIds];
+  const removed = new Set(edit.removedPlaceIds);
+  return keepPlaceIds.filter((placeId) => !removed.has(placeId));
+}

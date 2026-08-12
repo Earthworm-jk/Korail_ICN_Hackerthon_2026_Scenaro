@@ -67,6 +67,9 @@ type Props = {
   } | null;
   onApplyOverselection?: () => void;
   onUndoOverselection?: () => void;
+  /** 적용 전 개별 수정 (#84 개정) — 제안된 목록에서 하나씩 뺀다 */
+  keptPlaceIds?: readonly string[];
+  onToggleKeep?: (placeId: string) => void;
   /**
    * 채우기 제안 (#171) — 여유가 남을 때 **먼저 말을 건다.**
    *
@@ -210,6 +213,8 @@ export function ItineraryCommandPanel({
   overselection = null,
   onApplyOverselection,
   onUndoOverselection,
+  keptPlaceIds,
+  onToggleKeep,
   recommendDayCount = 0,
   onRecommendDay,
   feedback,
@@ -278,17 +283,39 @@ export function ItineraryCommandPanel({
           <p className="mt-2 text-xs font-medium text-sc-orange-text">
             {tr("ai.overselectionKeepLabel")}
           </p>
-          <p className="mt-0.5 text-xs text-sc-orange-text/85">
-            {overselection.keepPlaceIds.map((placeId) => placeName(placeId)).join(" · ")}
-          </p>
+          {/* 적용 전에 하나씩 뺄 수 있다 (#84 개정) — 전부 아니면 전무면 제안을 버리고
+              처음부터 다시 골라야 하는데, 그건 우리가 없애려던 그 노동이다 */}
+          <ul className="mt-1 flex flex-wrap gap-1.5">
+            {overselection.keepPlaceIds.map((placeId) => {
+              const kept = keptPlaceIds === undefined || keptPlaceIds.includes(placeId);
+              return (
+                <li key={placeId}>
+                  <button
+                    type="button"
+                    aria-pressed={kept}
+                    onClick={() => onToggleKeep?.(placeId)}
+                    className={`rounded-full border px-2.5 py-1 text-xs ${
+                      kept
+                        ? "border-sc-orange/50 bg-sc-surface text-sc-orange-text"
+                        : "border-dashed text-sc-muted line-through"
+                    }`}
+                  >
+                    {placeName(placeId)}
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
 
           <div className="mt-3 flex flex-wrap gap-2">
             <button
               type="button"
+              disabled={(keptPlaceIds?.length ?? overselection.keepPlaceIds.length) === 0}
               onClick={onApplyOverselection}
-              className="rounded border border-sc-orange/50 bg-sc-surface px-3 py-2 text-sm font-medium text-sc-orange-text"
+              className="rounded border border-sc-orange/50 bg-sc-surface px-3 py-2 text-sm font-medium text-sc-orange-text disabled:opacity-40"
             >
-              {tr("ai.overselectionApply").replace("{keep}", String(overselection.keepPlaceIds.length))}
+              {tr("ai.overselectionApply")
+                .replace("{keep}", String(keptPlaceIds?.length ?? overselection.keepPlaceIds.length))}
             </button>
             {/* 직접 고르는 길도 남긴다 — #84가 지킨 "사용자가 제외를 결정한다" */}
             <a
