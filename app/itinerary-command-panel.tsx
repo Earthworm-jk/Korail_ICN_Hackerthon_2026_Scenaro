@@ -67,6 +67,19 @@ type Props = {
   } | null;
   onApplyOverselection?: () => void;
   onUndoOverselection?: () => void;
+  /**
+   * 채우기 제안 (#171) — 여유가 남을 때 **먼저 말을 건다.**
+   *
+   * 지금은 사용자가 "2일차에 뭐 더 없어?"라고 물어야만 추천이 나온다. 기능은
+   * `recommend_along_route`로 이미 끝까지 있는데 **진입점이 없어서** 화면이 먼저
+   * 말하지 않는다. 과선택 쪽과 완전히 대칭인 빈자리다.
+   *
+   * 남은 시간을 분으로 주장하지 않는다 — `availableMinutes`는 접근·체류를 빼지 않은
+   * 창이라 그 숫자를 그대로 "N시간 남았다"고 하면 사실이 아니다. 실제로 들어갈 곳이
+   * 있는지는 추천이 답한다.
+   */
+  recommendDayCount?: number;
+  onRecommendDay?: (dayIndex: number) => void;
   feedback: CommandFeedback | null;
   lastDiff: ItineraryDiff | null;
   onChange: (value: string) => void;
@@ -197,6 +210,8 @@ export function ItineraryCommandPanel({
   overselection = null,
   onApplyOverselection,
   onUndoOverselection,
+  recommendDayCount = 0,
+  onRecommendDay,
   feedback,
   lastDiff,
   onChange,
@@ -296,6 +311,25 @@ export function ItineraryCommandPanel({
           >
             {tr("ai.overselectionUndo")}
           </button>
+        </div>
+      )}
+
+      {!overselection && recommendDayCount > 0 && onRecommendDay && (
+        <div className="mt-3 rounded-lg border border-sc-blue/25 bg-sc-surface p-3">
+          <p className="text-sm text-sc-text">{tr("ai.fillTitle")}</p>
+          <div className="mt-2 flex flex-wrap gap-1.5">
+            {Array.from({ length: recommendDayCount }, (_, index) => (
+              <button
+                key={index}
+                type="button"
+                disabled={pending}
+                onClick={() => onRecommendDay(index + 1)}
+                className="rounded-full border px-3 py-1 text-xs text-sc-muted hover:border-sc-blue hover:text-sc-blue disabled:opacity-40"
+              >
+                {tr("ai.fillDay").replace("{day}", String(index + 1))}
+              </button>
+            ))}
+          </div>
         </div>
       )}
 

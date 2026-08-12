@@ -2201,6 +2201,9 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
             disabledMessage={selectionCapacity?.requiresAdjustment
               ? "ai.disabledOverselection"
               : "ai.disabled"}
+            recommendDayCount={overselectionProposal ? 0 : displayedDays?.length ?? 0}
+            onRecommendDay={(dayIndex) =>
+              submitItineraryCommand(tr("ai.fillPrompt").replace("{day}", String(dayIndex)))}
             overselection={overselectionProposal}
             onApplyOverselection={applyOverselectionProposal}
             /* 완료형 문구는 재계산이 실제로 끝난 뒤에만 — 아직 계산 중이거나 실패했을 수 있다 */
