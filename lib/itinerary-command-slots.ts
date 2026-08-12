@@ -100,21 +100,48 @@ export function pendingSlotsFrom(raw: RawItineraryCommand): PendingCommandSlots 
  * 조금이라도 다른 말이 섞이면 그건 사용자가 다른 것을 요청한 것이고, 거기에 옛 장소를
  * 붙이면 **말하지 않은 장소가 조용히 적용된다.**
  */
+/**
+ * 날짜 뒤에 붙을 수 있는 조사·존댓말 (PR #175 리뷰 6회차).
+ *
+ * 앞서는 문자 클래스 하나로 지웠는데, 그러면 허용 목록이 **글자 단위로 흩어져** 무엇을
+ * 받는지 읽히지 않고 `이에요` 같은 조합이 조용히 빠진다. 뒤에서부터 통째로 떼어내
+ * **허용 목록이 곧 계약**이 되게 한다.
+ *
+ * 긴 것부터 본다 — `이요`를 먼저 떼면 `이에요`가 `에`만 남는다.
+ */
+const ANSWER_SUFFIXES = [
+  "이에요", "예요", "입니다", "이요", "으로", "에서", "이야",
+  "요", "에", "로", "야", "please",
+];
+
+function stripAnswerSuffixes(text: string): string {
+  let rest = text;
+  for (let changed = true; changed; ) {
+    changed = false;
+    for (const suffix of ANSWER_SUFFIXES) {
+      if (rest.toLowerCase().endsWith(suffix)) {
+        rest = rest.slice(0, rest.length - suffix.length);
+        changed = true;
+        break;
+      }
+    }
+  }
+  return rest;
+}
+
 export function dayOnlyAnswer(sentence: string): number | undefined {
   const dayIndex = parseDayIndex(sentence);
   if (dayIndex === undefined) return undefined;
 
-  const rest = sentence
+  const withoutDate = sentence
     .replace(/\d+\s*(?:일\s*차|일째|번째\s*날)/g, "")
     .replace(/day\s*\d+/gi, "")
     .replace(/(?:첫|둘|셋|넷|다섯|여섯|일곱|여덟|아홉|열)(?:째)?\s*날/g, "")
     .replace(/(?:하루|이틀|사흘|나흘|닷새|엿새|이레|여드레|아흐레|열흘)째/g, "")
     .replace(/\b(?:first|second|third|fourth|fifth|sixth|seventh|eighth|ninth|tenth)\s+day\b/gi, "")
-    // 남는 조사·존댓말·구두점만 허용한다
-    .replace(/[에서로으요\s.!?~,·]|입니다|이요|please/gi, "")
-    .trim();
+    .replace(/[\s.!?~,·]/g, "");
 
-  return rest.length === 0 ? dayIndex : undefined;
+  return stripAnswerSuffixes(withoutDate).length === 0 ? dayIndex : undefined;
 }
 
 /**
