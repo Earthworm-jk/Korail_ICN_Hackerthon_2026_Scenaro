@@ -29,6 +29,8 @@ const copy: Partial<Record<MessageKey, string>> = {
   "ai.overselectionPickMyself": "I'll choose myself",
   "ai.overselectionApplied": "Recalculated with the trimmed selection.",
   "ai.overselectionUndo": "Undo",
+  "ai.fillTitle": "Want to look for more filming locations to fit in?",
+  "ai.fillDay": "Day {day}",
   "ai.sourceDeterministic": "Verified result",
   "ai.recommendReady.one": "{count} verified filming location that fits the {date} route is pinned.",
   "ai.recommendReady.other": "{count} verified filming locations that fit the {date} route are pinned.",
@@ -45,6 +47,8 @@ function render(options: {
   closeDisabled?: boolean;
   overselection?: { keepPlaceIds: string[]; dropCount: number; selectedCount: number } | null;
   onUndoOverselection?: () => void;
+  recommendDayCount?: number;
+  onRecommendDay?: (dayIndex: number) => void;
 } = {}) {
   return renderToStaticMarkup(createElement(ItineraryCommandPanel, {
     value: "",
@@ -67,6 +71,8 @@ function render(options: {
     overselection: options.overselection ?? null,
     onApplyOverselection: () => undefined,
     onUndoOverselection: options.onUndoOverselection,
+    recommendDayCount: options.recommendDayCount ?? 0,
+    onRecommendDay: options.onRecommendDay,
   }));
 }
 
@@ -286,5 +292,72 @@ describe("과선택 정리 제안", () => {
       const html = render({ overselection, onUndoOverselection: () => undefined });
       expect(html).not.toContain("Recalculated with the trimmed selection.");
     });
+  });
+});
+
+/**
+ * 채우기 제안 (#171).
+ *
+ * 과선택 쪽과 대칭인 빈자리다 — 여유가 남을 때 화면이 **먼저 말하지 않았다.**
+ * `recommend_along_route`는 이미 끝까지 구현돼 있고 진입점만 없었다.
+ */
+describe("채우기 제안", () => {
+  const onRecommendDay = () => undefined;
+
+  it("날짜만큼 버튼을 준다", () => {
+    const html = render({ recommendDayCount: 3, onRecommendDay });
+    expect(html).toContain("Want to look for more filming locations to fit in?");
+    for (const day of ["Day 1", "Day 2", "Day 3"]) expect(html).toContain(day);
+  });
+
+  /** 남은 시간을 분으로 주장하지 않는다 — 창 값은 접근·체류를 빼지 않아 사실이 아니다 */
+  it("남은 시간을 숫자로 말하지 않는다", () => {
+    const html = render({ recommendDayCount: 2, onRecommendDay });
+    expect(html).not.toMatch(/\d+\s*(분|시간|minutes|hours)/);
+  });
+
+  /** 정리가 먼저다 — 두 제안이 같이 뜨면 무엇을 하라는 것인지 알 수 없다 */
+  it("과선택이면 채우기 제안을 숨긴다", () => {
+    const html = render({
+      recommendDayCount: 3,
+      onRecommendDay,
+      overselection: { keepPlaceIds: ["a"], dropCount: 2, selectedCount: 3 },
+    });
+    expect(html).not.toContain("Want to look for more filming locations to fit in?");
+  });
+
+  it("일정이 없으면 그리지 않는다", () => {
+    expect(render({ recommendDayCount: 0, onRecommendDay }))
+      .not.toContain("Want to look for more filming locations to fit in?");
+  });
+
+  /**
+   * PR #186 리뷰 — 다른 진입점(입력·제출·예시)은 전부 `disabled || pending`을 본다.
+   * `pending`만 보면 재열람·대안 화면에서 **눌리는데 아무 반응이 없는 버튼**이 된다:
+   * `submitItineraryCommand`의 가드에서 조용히 return 되기 때문이다.
+   */
+  const dayButtons = (html: string) =>
+    [...html.matchAll(/<button[^>]*>Day \d<\/button>/g)].map(([tag]) => tag);
+  // 클래스명에 `disabled:opacity-40`이 있으므로 속성으로 좁힌다
+  const isDisabled = (tag: string) => / disabled=""/.test(tag);
+
+  it("계산 중에는 누를 수 없다", () => {
+    const buttons = dayButtons(render({ recommendDayCount: 2, onRecommendDay, pending: true }));
+    expect(buttons).toHaveLength(2);
+    for (const button of buttons) expect(isDisabled(button)).toBe(true);
+  });
+
+  it("명령을 받을 수 없는 화면에서는 누를 수 없다", () => {
+    const buttons = dayButtons(render({ recommendDayCount: 3, onRecommendDay, disabled: true }));
+    expect(buttons).toHaveLength(3);
+    for (const button of buttons) expect(isDisabled(button)).toBe(true);
+  });
+
+  it("받을 수 있으면 눌린다", () => {
+    const buttons = dayButtons(render({
+      recommendDayCount: 3, onRecommendDay, disabled: false, pending: false,
+    }));
+    expect(buttons).toHaveLength(3);
+    for (const button of buttons) expect(isDisabled(button)).toBe(false);
   });
 });
