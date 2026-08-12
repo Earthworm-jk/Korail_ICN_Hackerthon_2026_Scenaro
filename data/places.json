@@ -392,10 +392,20 @@
       "source": "한국관광공사 열린관광 00:00~24:00·연중무휴 안내 https://access.visitkorea.or.kr/ms/detail.do?cotId=cbe43eae-f99e-49db-8b6a-905b1942ef43",
       "verifiedAt": "2026-08-08"
     },
-    "stayMinutes": 45,
+    "stayMinutes": 30,
     "stayMetadata": {
       "category": "brief_exterior",
-      "basis": "category_default"
+      "basis": "official_source",
+      "sourceMinutes": 30,
+      "sourceScope": {
+        "ko": "덕수궁 대한문 옆에서 새문안로2길까지 돌담길 1km 전 구간 도보 시간 — 원문은 20~30분 범위이며 상한을 채택",
+        "en": "Walking the full 1 km stone wall path from beside Daehanmun Gate to Saemunan-ro 2-gil; the source states 20-30 minutes and the upper bound is adopted"
+      },
+      "source": "https://www.junggu.seoul.kr/tour/content.do?cmsid=15027&contentId=3506",
+      "sourceFormat": "html",
+      "sourceQuote": "거리가 짧아 20~30분이면 충분히 걸을 수 있는 거리입니다.",
+      "sourceLocator": "중구관광 > 스토리여행 100선 > 덕수궁 돌담길",
+      "verifiedAt": "2026-08-12"
     },
     "placeType": "walkway",
     "verificationLevel": "교차확인",

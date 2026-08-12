@@ -47,12 +47,18 @@ const EXPECTED_OFFICIAL_SOURCES = {
     source: "https://www.dureraum.org/bcc/contents/contentsView.do?rbsIdx=385",
     verifiedAt: "2026-08-12",
   },
+  "place-deoksugung-stone-wall-road": {
+    minutes: 30,
+    source: "https://www.junggu.seoul.kr/tour/content.do?cmsid=15027&contentId=3506",
+    verifiedAt: "2026-08-12",
+  },
 } as const;
 
 // 공식값이 유형 기본값과 달라 엔진 시간예산 입력이 실제로 바뀌는 곳.
 // 여기에 없는 승격이 기본값과 달라지면 아래 회귀가 막는다 — 일정 영향은 PR에서 명시적으로 검토한다.
 const OFFICIAL_DIFFERS_FROM_DEFAULT: Partial<Record<string, number>> = {
   "place-busan-cinema-center": 40,
+  "place-deoksugung-stone-wall-road": 30,
 };
 
 describe("보수 체류 추정 기준 (#84 P0-4)", () => {
@@ -107,7 +113,7 @@ describe("보수 체류 추정 기준 (#84 P0-4)", () => {
     const places = loadRepositories().places.filter(
       ({ stayMetadata }) => stayMetadata?.basis === "official_source",
     );
-    expect(places).toHaveLength(4);
+    expect(places).toHaveLength(5);
     for (const place of places) {
       const differing = OFFICIAL_DIFFERS_FROM_DEFAULT[place.id];
       if (differing !== undefined) {
