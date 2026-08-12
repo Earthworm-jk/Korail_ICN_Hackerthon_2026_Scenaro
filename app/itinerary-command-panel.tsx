@@ -56,6 +56,17 @@ type Props = {
   pending: boolean;
   disabled: boolean;
   disabledMessage?: MessageKey;
+  /**
+   * 과선택 정리 제안 (#171). 있으면 패널 첫 화면이 이 카드다 — 사용자가 먼저 말을 걸
+   * 필요 없이 **AI가 상황을 설명하고 정리를 제안한다.**
+   */
+  overselection?: {
+    keepPlaceIds: readonly string[];
+    dropCount: number;
+    selectedCount: number;
+  } | null;
+  onApplyOverselection?: () => void;
+  onUndoOverselection?: () => void;
   feedback: CommandFeedback | null;
   lastDiff: ItineraryDiff | null;
   onChange: (value: string) => void;
@@ -183,6 +194,9 @@ export function ItineraryCommandPanel({
   pending,
   disabled,
   disabledMessage = "ai.disabled",
+  overselection = null,
+  onApplyOverselection,
+  onUndoOverselection,
   feedback,
   lastDiff,
   onChange,
@@ -235,6 +249,55 @@ export function ItineraryCommandPanel({
           <X aria-hidden="true" className="size-4" />
         </button>
       </div>
+
+      {overselection && (
+        <div className="mt-3 rounded-lg border border-sc-orange/40 bg-sc-orange-soft p-3" role="status">
+          <p className="text-sm font-medium text-sc-orange-text">
+            {tr("ai.overselectionTitle")
+              .replace("{selected}", String(overselection.selectedCount))
+              .replace("{keep}", String(overselection.keepPlaceIds.length))}
+          </p>
+          <p className="mt-1 text-xs text-sc-orange-text">{tr("ai.overselectionBasis")}</p>
+
+          {/* 어느 곳이 들어가는지 — 지금까지 아무 데도 없던 정보다 (#183) */}
+          <p className="mt-2 text-xs font-medium text-sc-orange-text">
+            {tr("ai.overselectionKeepLabel")}
+          </p>
+          <p className="mt-0.5 text-xs text-sc-orange-text/85">
+            {overselection.keepPlaceIds.map((placeId) => placeName(placeId)).join(" · ")}
+          </p>
+
+          <div className="mt-3 flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={onApplyOverselection}
+              className="rounded border border-sc-orange/50 bg-sc-surface px-3 py-2 text-sm font-medium text-sc-orange-text"
+            >
+              {tr("ai.overselectionApply").replace("{keep}", String(overselection.keepPlaceIds.length))}
+            </button>
+            {/* 직접 고르는 길도 남긴다 — #84가 지킨 "사용자가 제외를 결정한다" */}
+            <a
+              href="#place-picker"
+              className="rounded border px-3 py-2 text-sm text-sc-muted hover:border-sc-blue hover:text-sc-blue"
+            >
+              {tr("ai.overselectionPickMyself")}
+            </a>
+          </div>
+        </div>
+      )}
+
+      {onUndoOverselection && !overselection && (
+        <div className="mt-3 flex items-center justify-between gap-2 rounded-lg border bg-sc-subtle p-2">
+          <span className="text-xs text-sc-muted">{tr("ai.overselectionApplied")}</span>
+          <button
+            type="button"
+            onClick={onUndoOverselection}
+            className="shrink-0 rounded border px-2 py-1 text-xs text-sc-muted hover:border-sc-blue hover:text-sc-blue"
+          >
+            {tr("ai.overselectionUndo")}
+          </button>
+        </div>
+      )}
 
       <form
         className="mt-3 flex gap-2"

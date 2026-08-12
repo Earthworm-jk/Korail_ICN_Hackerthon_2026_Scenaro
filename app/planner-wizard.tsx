@@ -31,6 +31,9 @@ import {
 import { excludedPlaceIdsFrom, initialCandidateIds } from "@/lib/candidates";
 import { initialPlaceIdsFromItinerary } from "@/lib/initial-place-selection";
 import {
+  commandInputUnavailable,
+  overselectionProposalOf,
+  selectionUndoAfterChange,
   commandPanelUnavailable,
   canEditVisitDate,
   panelDismissable,
@@ -439,6 +442,13 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
   const [aiPanelOpen, setAiPanelOpen] = useState(false);
   /** 발견성 보완 라벨. 한 번 열면 다시 보여 주지 않는다 */
   const aiTriggerRef = useRef<HTMLButtonElement>(null);
+  /**
+   * 정리 제안 되돌리기 (#171). 직전 선택과 **적용 결과**를 함께 들고 있는다 —
+   * 지금 선택이 적용 결과와 다르면 그 사이에 다른 변경이 있었다는 뜻이라 되돌리지 않는다.
+   */
+  const [selectionUndo, setSelectionUndo] = useState<
+    { previousPlaceIds: string[]; appliedPlaceIds: string[] } | null
+  >(null);
   const [undoPoint, setUndoPoint] = useState<
     UndoPoint<ItineraryView["selectedAlt"], typeof saveStub.saveStatus> | null
   >(null);
@@ -1066,13 +1076,58 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
     );
   }, [updating, selectionCapacity, displayedDays, selectedPlaceIds, view]);
 
-  const aiCommandDisabled = commandPanelUnavailable({
+  const panelGate = {
     hasCandidates: candidateData !== null,
     hasPlannedResult: view.result?.status === "planned",
     reopened: view.reopened !== null,
     alternativeSelected: view.selectedAlt !== null,
     requiresSelectionAdjustment: selectionCapacity?.requiresAdjustment === true,
+  };
+  /** 패널을 열 수조차 없는가 — 과선택은 여기서 빠졌다 (#171) */
+  const aiPanelBlocked = commandPanelUnavailable(panelGate);
+  /** 자연어 입력을 받을 수 있는가 — 과선택이면 정리가 먼저다 */
+  const aiCommandDisabled = commandInputUnavailable(panelGate);
+
+  /**
+   * 과선택 정리 제안 — **AI가 먼저 말을 거는 자리** (#171).
+   *
+   * 엔진이 어느 곳이 들어가는지 이미 알고 있다(#183). 사용자가 20곳에서 11곳을 손으로
+   * 지우게 하는 대신, 들어가는 목록을 보여주고 한 번에 줄인다.
+   */
+  const overselectionProposal = overselectionProposalOf({
+    capacity: selectionCapacity,
+    selectionStateShown,
   });
+
+  const applyOverselectionProposal = useCallback(() => {
+    // 표시와 실행이 같은 값을 본다 — 표시만 숨기면 오래된 closure 로 다시 적용된다
+    const proposal = overselectionProposalOf({ capacity: selectionCapacity, selectionStateShown });
+    if (proposal === null) return;
+    // 되돌릴 수 있게 직전 선택을 남긴다 — 무엇을 잃었는지 모른 채 진행하면 안 된다 (#84)
+    setSelectionUndo({
+      previousPlaceIds: [...selectedPlaceIds],
+      appliedPlaceIds: [...proposal.keepPlaceIds],
+    });
+    setAiFeedback(null);
+    setSelectedPlaceIds(new Set(proposal.keepPlaceIds));
+  }, [selectionCapacity, selectionStateShown, selectedPlaceIds]);
+
+  /**
+   * 선택이 적용 결과에서 벗어나면 **그 자리에서 버린다** (PR #185 리뷰 3회차).
+   *
+   * 숨기기만 하면 껐다 켜서 같은 집합으로 돌아왔을 때 오래된 되돌리기가 되살아난다.
+   * 렌더 중 상태 조정이라 다음 렌더가 아니라 이번 렌더부터 없는 것으로 보인다.
+   */
+  const liveSelectionUndo = selectionUndoAfterChange(selectionUndo, selectedPlaceIds);
+  if (liveSelectionUndo === null && selectionUndo !== null) setSelectionUndo(null);
+
+  const undoOverselectionProposal = useCallback(() => {
+    // 표시와 실행이 같은 조건을 본다 — 표시만 숨기면 오래된 closure 로 다시 복원된다
+    const undo = selectionUndoAfterChange(selectionUndo, selectedPlaceIds);
+    if (undo === null) return;
+    setSelectedPlaceIds(new Set(undo.previousPlaceIds));
+    setSelectionUndo(null);
+  }, [selectionUndo, selectedPlaceIds]);
 
   /**
    * 날짜 편집을 지금 허용해도 되는가 (PR #150 리뷰 1번).
@@ -2077,7 +2132,7 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
             <button
               ref={aiTriggerRef}
               type="button"
-              disabled={aiCommandDisabled}
+              disabled={aiPanelBlocked}
               aria-expanded={aiPanelOpen}
               aria-controls="itinerary-ai-panel"
               aria-label={tr("ai.entryLabel")}
@@ -2146,6 +2201,13 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
             disabledMessage={selectionCapacity?.requiresAdjustment
               ? "ai.disabledOverselection"
               : "ai.disabled"}
+            overselection={overselectionProposal}
+            onApplyOverselection={applyOverselectionProposal}
+            /* 완료형 문구는 재계산이 실제로 끝난 뒤에만 — 아직 계산 중이거나 실패했을 수 있다 */
+            onUndoOverselection={
+              selectionStateShown && liveSelectionUndo !== null
+                ? undoOverselectionProposal
+                : undefined}
             feedback={aiFeedback}
             lastDiff={lastItineraryDiff}
             onChange={setAiSentence}

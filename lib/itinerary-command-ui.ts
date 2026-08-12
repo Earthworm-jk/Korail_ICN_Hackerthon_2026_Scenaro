@@ -10,18 +10,39 @@ export function commandResponseIsCurrent(submitted: number, current: number): bo
   return submitted === current;
 }
 
-export function commandPanelUnavailable(input: {
+type PanelGate = {
   hasCandidates: boolean;
   hasPlannedResult: boolean;
   reopened: boolean;
   alternativeSelected: boolean;
   requiresSelectionAdjustment: boolean;
-}): boolean {
+};
+
+/**
+ * 패널을 **열 수조차 없는가** (#171).
+ *
+ * 과선택은 여기서 빠졌다. 앞서는 이 조건에 묶여 있어서 패널을 여는 버튼까지 잠겼고,
+ * 그래서 **왜 잠겼는지 설명하는 문구를 볼 방법이 없었다** — 사용자에게는 이유 없이
+ * 회색인 버튼이었다. AI를 표방하는 화면에서 가장 도움이 필요한 순간에 그랬다.
+ *
+ * 지금은 연다. 열어서 지금 상황을 설명하고 정리를 제안한다.
+ */
+export function commandPanelUnavailable(input: PanelGate): boolean {
   return !input.hasCandidates
     || !input.hasPlannedResult
     || input.reopened
-    || input.alternativeSelected
-    || input.requiresSelectionAdjustment;
+    || input.alternativeSelected;
+}
+
+/**
+ * 자연어 **입력**을 받을 수 있는가.
+ *
+ * 과선택 상태에서는 막는다. 지금 일정은 최종 확정이 아니라 제외 판단용 미리보기라
+ * (#84), 그 위에서 "둘째 날로 옮겨줘" 같은 편집을 받으면 확정되지 않은 것을 편집하게
+ * 된다. 대신 패널이 정리 제안을 먼저 내놓는다.
+ */
+export function commandInputUnavailable(input: PanelGate): boolean {
+  return commandPanelUnavailable(input) || input.requiresSelectionAdjustment;
 }
 
 export function selectionAfterCommand(input: {
@@ -201,4 +222,79 @@ export function itineraryBasisKey(input: {
     input.selectedAltId ?? "base",
     input.reopened ? "reopened" : "live",
   ].join("\u0000");
+}
+
+/**
+ * 과선택 정리 제안을 지금 내놓아도 되는가 (#171 · PR #185 리뷰).
+ *
+ * **표시 중인 일정이 현재 선택으로 계산된 것일 때만** 낸다. 선택은 즉시 바뀌고 일정은
+ * 응답 후에 바뀌므로, 그 사이에는 방금 고른 장소가 "이전 일정에 없다"는 이유만으로
+ * 미배치로 찍힌다. 그 상태로 "이 N곳으로 정리하기"를 누르면 **방금 고른 장소까지
+ * 버린다.** 재계산이 실패해 이전 결과가 남으면 그 오판이 계속된다.
+ *
+ * #156이 같은 이유로 `selectionResultIsCurrent`를 넣었는데 카드가 그 경계를 우회했다.
+ *
+ * 표시와 실행을 **한 값으로 묶는다.** 표시만 숨기고 핸들러를 열어 두면 이벤트 시점의
+ * 오래된 closure나 상태 전이에서 다시 적용될 수 있다.
+ */
+export function overselectionProposalOf(input: {
+  capacity: {
+    requiresAdjustment: boolean;
+    scheduledPlaceIds: readonly string[];
+    minimumExclusionCount: number;
+    selectedCount: number;
+  } | null;
+  selectionStateShown: boolean;
+}): {
+  keepPlaceIds: readonly string[];
+  dropCount: number;
+  selectedCount: number;
+} | null {
+  if (!input.selectionStateShown) return null;
+  if (!input.capacity?.requiresAdjustment) return null;
+  return {
+    keepPlaceIds: input.capacity.scheduledPlaceIds,
+    dropCount: input.capacity.minimumExclusionCount,
+    selectedCount: input.capacity.selectedCount,
+  };
+}
+
+/**
+ * 과선택 정리를 되돌릴 수 있는가 (PR #185 리뷰).
+ *
+ * 이 되돌리기는 **정리 적용 직후에만 유효한 한 단계**다. 그 뒤에 사용자가 후보를 토글하거나
+ * 다른 명령이 선택을 바꾸면, 옛 스냅샷을 복원하는 순간 **그 사이 작업이 통째로 덮인다.**
+ *
+ * 호출부마다 지우게 하지 않는다 — 그러면 새 경로가 생길 때마다 또 빠뜨린다(#175에서 같은
+ * 실수를 두 번 했다). 대신 **적용 직후의 선택을 함께 저장하고, 지금 선택이 그것과 같을
+ * 때만** 되돌리기를 연다. 선택을 바꾸는 경로가 무엇이든 자동으로 닫힌다.
+ */
+export function selectionUndoAvailable(
+  undo: { appliedPlaceIds: readonly string[] } | null,
+  currentSelection: Iterable<string>,
+): boolean {
+  if (undo === null) return false;
+  const current = new Set(currentSelection);
+  if (current.size !== undo.appliedPlaceIds.length) return false;
+  return undo.appliedPlaceIds.every((placeId) => current.has(placeId));
+}
+
+/**
+ * 선택이 적용 결과에서 벗어났으면 스냅샷을 **영구 폐기**한다 (PR #185 리뷰 3회차).
+ *
+ * `selectionUndoAvailable`은 현재 집합만 본다. 그래서 A에서 하나를 껐다 다시 켜면 집합이
+ * 다시 A가 되어 **오래된 되돌리기가 되살아난다** — 그 사이에 무슨 일이 있었는지 값만으로는
+ * 알 수 없다. #175의 기준 왕복과 같은 한계다.
+ *
+ * "정리 적용 직후에만 유효한 한 단계"라는 계약을 지키려면 **한 번이라도 벗어나는 순간
+ * 버려야** 한다. 화면은 매 렌더에서 이 함수를 통과시켜 상태 자체를 없앤다 — 없앤 뒤에는
+ * 집합이 우연히 같아져도 돌아올 것이 없다.
+ *
+ * 집합 비교는 그대로 두되 **유일한 방어가 아니라 폐기의 방아쇠**로 쓴다.
+ */
+export function selectionUndoAfterChange<T extends { appliedPlaceIds: readonly string[] }>(
+  undo: T | null,
+  currentSelection: Iterable<string>,
+): T | null {
+  return selectionUndoAvailable(undo, currentSelection) ? undo : null;
 }
