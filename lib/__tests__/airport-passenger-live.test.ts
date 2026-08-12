@@ -10,10 +10,12 @@ describe("normalizePassengerRecords — 승객예고 응답 정규화", () => {
     expect(normalizePassengerRecords([{
       adate: "20260812",
       atime: "1000",
-      t1sum1: 100,
-      t1sum2: 200,
-      t2sum1: 30,
-      t2sum2: 40,
+      t1eg1: 40,
+      t1eg2: 60,
+      t1eg3: 80,
+      t1eg4: 120,
+      t2eg1: 30,
+      t2eg2: 40,
       t1dg1: 10,
       t1dg2: 20,
       t1dg3: 30,
@@ -79,5 +81,30 @@ describe("lookupLivePassengerForecast", () => {
       direction: "departure",
       passengerCount: 900,
     });
+  });
+
+  it("KST 자정을 넘기면 5분 이내여도 전날 캐시를 재사용하지 않는다", async () => {
+    let fetchCount = 0;
+    let timestamp = Date.parse("2026-08-12T14:59:00Z"); // KST 23:59
+    const fetchImpl = async () => {
+      fetchCount += 1;
+      return {
+        ok: true,
+        status: 200,
+        json: async () => ({
+          response: {
+            header: { resultCode: "00", resultMsg: "NORMAL SERVICE." },
+            body: { items: [{ adate: fetchCount === 1 ? "20260812" : "20260813", atime: "1000", t1sum1: 100 }] },
+          },
+        }),
+      };
+    };
+
+    await lookupLivePassengerForecast(0, { serviceKey: "test-key", fetchImpl, now: () => timestamp });
+    timestamp = Date.parse("2026-08-12T15:01:00Z"); // KST 00:01, two minutes later
+    const next = await lookupLivePassengerForecast(0, { serviceKey: "test-key", fetchImpl, now: () => timestamp });
+
+    expect(fetchCount).toBe(2);
+    expect(next[0]?.date).toBe("2026-08-13");
   });
 });

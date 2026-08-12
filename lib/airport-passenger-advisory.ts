@@ -11,6 +11,12 @@ export type AirportPassengerPoint = {
   passengerCount: number;
 };
 
+export type AirportPassengerProfile = {
+  terminal: AirportTerminal;
+  direction: AirportDirection;
+  hourlyPassengerCounts: number[];
+};
+
 export type AirportPassengerAdvisory = {
   direction: AirportDirection;
   status: "elevated" | "clear" | "unavailable" | "out_of_range";
@@ -40,6 +46,19 @@ export function forecastDayOffset(date: string, now = new Date()): 0 | 1 | null 
   const targetMs = Date.parse(`${date}T00:00:00+09:00`);
   const offset = Math.round((targetMs - todayMs) / 86_400_000);
   return offset === 0 || offset === 1 ? offset : null;
+}
+
+export function materializeAirportPassengerSnapshot(
+  profiles: AirportPassengerProfile[],
+  dates: string[],
+): AirportPassengerPoint[] {
+  return [...new Set(dates)].flatMap((date) => profiles.flatMap((profile) =>
+    profile.hourlyPassengerCounts.flatMap((passengerCount, hour) =>
+      Number.isFinite(passengerCount) && passengerCount > 0
+        ? [{ date, hour, terminal: profile.terminal, direction: profile.direction, passengerCount }]
+        : [],
+    ),
+  ));
 }
 
 function percentile75(values: number[]): number | null {
@@ -95,7 +114,7 @@ export function evaluateAirportPassengerAdvisory(input: {
   }
 
   // 공식 혼잡 등급이 아니다. 같은 날짜·방향·터미널 안에서 예상 승객 상위 시간대인지와
-  // 사용자가 기본값보다 넉넉한 여유를 두었는지만 결합한 결정적 경고 신호다 (#177).
+  // 사용자가 둔 여유가 기본값 이하여서 촉박한지만 결합한 결정적 경고 신호다 (#177).
   const elevated = passengerCount >= elevatedThreshold
     && input.selectedSlackMinutes !== null
     && input.selectedSlackMinutes <= DEFAULT_AIRPORT_SLACK_MINUTES;

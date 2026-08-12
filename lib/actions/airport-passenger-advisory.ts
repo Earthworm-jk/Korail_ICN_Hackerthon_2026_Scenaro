@@ -6,7 +6,9 @@ import { flightMode } from "../env";
 import {
   evaluateAirportPassengerAdvisory,
   forecastDayOffset,
+  materializeAirportPassengerSnapshot,
   type AirportPassengerAdvisory,
+  type AirportPassengerProfile,
   type AirportPassengerPoint,
 } from "../airport-passenger-advisory";
 import { lookupLivePassengerForecast } from "../adapters/airport-passenger-live";
@@ -24,12 +26,20 @@ export type AirportPassengerAdvisoryPair = {
 export async function getAirportPassengerAdvisories(raw: z.input<typeof Input>): Promise<AirportPassengerAdvisoryPair> {
   const input = Input.parse(raw);
   const now = new Date();
-  const snapshotPoints = snapshot.points as AirportPassengerPoint[];
   const offsets = new Set<0 | 1>();
+  const snapshotDates: string[] = [];
   for (const selectedAt of [input.arrival.selectedAt, input.departure.selectedAt]) {
-    const offset = forecastDayOffset(selectedAt.slice(0, 10), now);
-    if (offset !== null) offsets.add(offset);
+    const date = selectedAt.slice(0, 10);
+    const offset = forecastDayOffset(date, now);
+    if (offset !== null) {
+      offsets.add(offset);
+      snapshotDates.push(date);
+    }
   }
+  const snapshotPoints = materializeAirportPassengerSnapshot(
+    snapshot.profiles as AirportPassengerProfile[],
+    snapshotDates,
+  );
 
   let livePoints: AirportPassengerPoint[] = [];
   if (flightMode() === "live") {

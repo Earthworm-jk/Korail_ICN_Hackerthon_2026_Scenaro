@@ -16,10 +16,19 @@ type FetchLike = (url: string, init: { signal: AbortSignal }) => Promise<{
 }>;
 type Deps = { fetchImpl?: FetchLike; timeoutMs?: number; now?: () => number; serviceKey?: string };
 
-const cache = new Map<number, { at: number; points: AirportPassengerPoint[] }>();
+const cache = new Map<string, { at: number; points: AirportPassengerPoint[] }>();
 
 export function clearLivePassengerForecastCache(): void {
   cache.clear();
+}
+
+function kstDateKey(timestamp: number): string {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Seoul",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date(timestamp));
 }
 
 function numberOf(record: LivePassengerRecord, key: string): number {
@@ -54,8 +63,8 @@ function point(
 }
 
 /**
- * 2025-11 응답 변경 후 T1 출국장은 t1dg1..6이다. T2와 입국장은 기존 합계 필드를
- * 유지한다. 입국은 입국장 동·서(또는 1·2) 출현 인원만 합쳐 심사장과 중복 집계하지 않는다.
+ * 현재 응답은 입국장(eg)·출국장(dg) 게이트별 필드를 제공한다. 구 응답의 합계 필드도
+ * 폴백으로 유지해 API 전환 중에도 같은 방향·터미널 단위로 정규화한다.
  */
 export function normalizePassengerRecords(records: LivePassengerRecord[]): AirportPassengerPoint[] {
   return records.flatMap((record) => {
@@ -63,8 +72,8 @@ export function normalizePassengerRecords(records: LivePassengerRecord[]): Airpo
     const hour = normalizeHour(record.atime);
     if (!date || hour === null) return [];
     return [
-      point(date, hour, "T1", "arrival", sum(record, ["t1sum1", "t1sum2"])),
-      point(date, hour, "T2", "arrival", sum(record, ["t2sum1", "t2sum2"])),
+      point(date, hour, "T1", "arrival", sum(record, ["t1eg1", "t1eg2", "t1eg3", "t1eg4"]) || sum(record, ["t1sum1", "t1sum2"])),
+      point(date, hour, "T2", "arrival", sum(record, ["t2eg1", "t2eg2"]) || sum(record, ["t2sum1", "t2sum2"])),
       point(date, hour, "T1", "departure", sum(record, ["t1dg1", "t1dg2", "t1dg3", "t1dg4", "t1dg5", "t1dg6"]) || sum(record, ["t1sum5", "t1sum6", "t1sum7", "t1sum8"])),
       point(date, hour, "T2", "departure", sum(record, ["t2dg1", "t2dg2"]) || sum(record, ["t2sum3", "t2sum4"])),
     ].filter((value): value is AirportPassengerPoint => value !== null);
@@ -93,8 +102,10 @@ export async function lookupLivePassengerForecast(
   const key = deps.serviceKey ?? env.AIRPORT_API_KEY;
   if (!key) throw new AirportApiError("AIRPORT_API_KEY missing", true);
   const now = deps.now ?? Date.now;
-  const cached = cache.get(dayOffset);
-  if (cached && now() - cached.at < CACHE_TTL_MS) return cached.points;
+  const requestedAt = now();
+  const cacheKey = `${kstDateKey(requestedAt)}:${dayOffset}`;
+  const cached = cache.get(cacheKey);
+  if (cached && requestedAt - cached.at < CACHE_TTL_MS) return cached.points;
 
   const fetchImpl = deps.fetchImpl ?? (fetch as unknown as FetchLike);
   const controller = new AbortController();
@@ -107,7 +118,7 @@ export async function lookupLivePassengerForecast(
         const response = await fetchImpl(url, { signal: controller.signal });
         if (!response.ok) throw new AirportApiError(`HTTP ${response.status}`, false);
         const points = normalizePassengerRecords(extractRecords(await response.json()));
-        cache.set(dayOffset, { at: now(), points });
+        cache.set(cacheKey, { at: requestedAt, points });
         return points;
       } catch (error) {
         if (error instanceof AirportApiError && error.isKeyError) {

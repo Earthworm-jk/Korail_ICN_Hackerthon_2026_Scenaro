@@ -202,11 +202,12 @@ const pad2 = (n: number) => String(n).padStart(2, "0");
 const HOURS = Array.from({ length: 24 }, (_, i) => pad2(i));
 const MINUTES = Array.from({ length: 60 }, (_, i) => pad2(i));
 
-function DateTimeField({ value, onChange, className, inputId }: {
+function DateTimeField({ value, onChange, className, dateInputId, hourInputId }: {
   value: string;
   onChange: (value: string) => void;
   className?: string;
-  inputId?: string;
+  dateInputId?: string;
+  hourInputId?: string;
 }) {
   const [date = "", time = ""] = value.split("T");
   const [hour = "00", minute = "00"] = time.split(":");
@@ -214,13 +215,14 @@ function DateTimeField({ value, onChange, className, inputId }: {
   return (
     <div className={`flex items-center gap-1.5 ${className ?? ""}`}>
       <input
-        id={inputId}
+        id={dateInputId}
         type="date"
         className="min-w-0 flex-1 rounded border px-2 py-1 text-sm"
         value={date}
         onChange={(e) => emit(e.target.value, hour, minute)}
       />
       <select
+        id={hourInputId}
         className="rounded border px-1.5 py-1 text-sm"
         value={hour}
         onChange={(e) => emit(date, e.target.value, minute)}
@@ -235,6 +237,33 @@ function DateTimeField({ value, onChange, className, inputId }: {
       >
         {MINUTES.map((m) => <option key={m} value={m}>{m}</option>)}
       </select>
+    </div>
+  );
+}
+
+function AirportAdvisoryAlert({ title, body, sourceLabel, changeLabel, keepLabel, onChange, onKeep }: {
+  title: string;
+  body: string;
+  sourceLabel: string;
+  changeLabel: string;
+  keepLabel: string;
+  onChange: () => void;
+  onKeep: () => void;
+}) {
+  return (
+    <div role="alert" className="mt-3 rounded-lg border border-sc-orange/50 bg-sc-orange-soft p-3 text-sm text-sc-orange-text">
+      <div className="flex items-start gap-2">
+        <TriangleAlert aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
+        <div>
+          <p className="font-medium">{title}</p>
+          <p className="mt-1 text-xs">{body}</p>
+          <p className="mt-1 text-[11px] opacity-80">{sourceLabel}</p>
+          <div className="mt-2 flex flex-wrap gap-2">
+            <button type="button" className="rounded bg-sc-orange px-2.5 py-1 text-xs text-white" onClick={onChange}>{changeLabel}</button>
+            <button type="button" className="rounded border border-current px-2.5 py-1 text-xs" onClick={onKeep}>{keepLabel}</button>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
@@ -559,22 +588,25 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
       const value = Math.round((Date.parse(fromLocalInput(later)) - Date.parse(fromLocalInput(earlier))) / 60_000);
       return Number.isFinite(value) ? value : null;
     };
-    void getAirportPassengerAdvisories({
-      arrival: {
-        selectedAt: airportReady.at,
-        slackMinutes: minutesBetween(airportReady.at, arrival.at),
-        terminal: arrival.terminal,
-      },
-      departure: {
-        selectedAt: airportDeadline.at,
-        slackMinutes: minutesBetween(departure.at, airportDeadline.at),
-        terminal: departure.terminal,
-      },
-    }).then((next) => {
-      if (sequence === airportAdvisoryRequest.current) setAirportAdvisories(next);
-    }).catch(() => {
-      if (sequence === airportAdvisoryRequest.current) setAirportAdvisories(null);
-    });
+    const timer = window.setTimeout(() => {
+      void getAirportPassengerAdvisories({
+        arrival: {
+          selectedAt: airportReady.at,
+          slackMinutes: minutesBetween(airportReady.at, arrival.at),
+          terminal: arrival.terminal,
+        },
+        departure: {
+          selectedAt: airportDeadline.at,
+          slackMinutes: minutesBetween(departure.at, airportDeadline.at),
+          terminal: departure.terminal,
+        },
+      }).then((next) => {
+        if (sequence === airportAdvisoryRequest.current) setAirportAdvisories(next);
+      }).catch(() => {
+        if (sequence === airportAdvisoryRequest.current) setAirportAdvisories(null);
+      });
+    }, 300);
+    return () => window.clearTimeout(timer);
   }, [arrival.at, arrival.terminal, departure.at, departure.terminal, airportReady.at, airportDeadline.at]);
 
   // #78 P1 — LLM 보조는 결정적 검색 0건일 때 서버에서만 실행된다.
@@ -1777,7 +1809,8 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
               <label htmlFor="airport-ready-date" className="text-sm font-medium">{tr("step1.airportReady")}</label>
               <DateTimeField
                 className="mt-2"
-                inputId="airport-ready-date"
+                dateInputId="airport-ready-date"
+                hourInputId="airport-ready-hour"
                 value={airportReady.at}
                 onChange={(at) => setAirportReady({ at, touched: true })}
               />
@@ -1787,29 +1820,23 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
                 </p>
               )}
               {showArrivalAdvisory && arrivalAdvisory && (
-                <div role="alert" className="mt-3 rounded-lg border border-sc-orange/50 bg-sc-orange-soft p-3 text-sm text-sc-orange-text">
-                  <div className="flex items-start gap-2">
-                    <TriangleAlert aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
-                    <div>
-                      <p className="font-medium">{tr("step1.arrivalCrowdingTitle")}</p>
-                      <p className="mt-1 text-xs">{tr("step1.arrivalCrowdingBody")}</p>
-                      <p className="mt-1 text-[11px] opacity-80">
-                        {tr(arrivalAdvisory.source === "live" ? "step1.crowdingSourceLive" : "step1.crowdingSourceSnapshot")}
-                      </p>
-                      <div className="mt-2 flex flex-wrap gap-2">
-                        <button type="button" className="rounded bg-sc-orange px-2.5 py-1 text-xs text-white" onClick={() => focusAirportTime("airport-ready-date")}>{tr("step1.changeTime")}</button>
-                        <button type="button" className="rounded border border-current px-2.5 py-1 text-xs" onClick={() => dismissAirportAdvisory(arrivalAdvisory.key)}>{tr("step1.keepTime")}</button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
+                <AirportAdvisoryAlert
+                  title={tr("step1.arrivalCrowdingTitle")}
+                  body={tr("step1.arrivalCrowdingBody")}
+                  sourceLabel={tr(arrivalAdvisory.source === "live" ? "step1.crowdingSourceLive" : "step1.crowdingSourceSnapshot")}
+                  changeLabel={tr("step1.changeTime")}
+                  keepLabel={tr("step1.keepTime")}
+                  onChange={() => focusAirportTime("airport-ready-hour")}
+                  onKeep={() => dismissAirportAdvisory(arrivalAdvisory.key)}
+                />
               )}
             </div>
             <div className="rounded-lg border p-4">
               <label htmlFor="airport-deadline-date" className="text-sm font-medium">{tr("step1.airportDeadline")}</label>
               <DateTimeField
                 className="mt-2"
-                inputId="airport-deadline-date"
+                dateInputId="airport-deadline-date"
+                hourInputId="airport-deadline-hour"
                 value={airportDeadline.at}
                 onChange={(at) => setAirportDeadline({ at, touched: true })}
               />
@@ -1819,22 +1846,15 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
                 </p>
               )}
               {showDepartureAdvisory && departureAdvisory && (
-                <div role="alert" className="mt-3 rounded-lg border border-sc-orange/50 bg-sc-orange-soft p-3 text-sm text-sc-orange-text">
-                  <div className="flex items-start gap-2">
-                    <TriangleAlert aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
-                    <div>
-                      <p className="font-medium">{tr("step1.departureCrowdingTitle")}</p>
-                      <p className="mt-1 text-xs">{tr("step1.departureCrowdingBody")}</p>
-                      <p className="mt-1 text-[11px] opacity-80">
-                        {tr(departureAdvisory.source === "live" ? "step1.crowdingSourceLive" : "step1.crowdingSourceSnapshot")}
-                      </p>
-                      <div className="mt-2 flex flex-wrap gap-2">
-                        <button type="button" className="rounded bg-sc-orange px-2.5 py-1 text-xs text-white" onClick={() => focusAirportTime("airport-deadline-date")}>{tr("step1.changeTime")}</button>
-                        <button type="button" className="rounded border border-current px-2.5 py-1 text-xs" onClick={() => dismissAirportAdvisory(departureAdvisory.key)}>{tr("step1.keepTime")}</button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
+                <AirportAdvisoryAlert
+                  title={tr("step1.departureCrowdingTitle")}
+                  body={tr("step1.departureCrowdingBody")}
+                  sourceLabel={tr(departureAdvisory.source === "live" ? "step1.crowdingSourceLive" : "step1.crowdingSourceSnapshot")}
+                  changeLabel={tr("step1.changeTime")}
+                  keepLabel={tr("step1.keepTime")}
+                  onChange={() => focusAirportTime("airport-deadline-hour")}
+                  onKeep={() => dismissAirportAdvisory(departureAdvisory.key)}
+                />
               )}
             </div>
           </div>
