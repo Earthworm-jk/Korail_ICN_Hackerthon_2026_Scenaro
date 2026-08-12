@@ -331,9 +331,33 @@ describe("채우기 제안", () => {
       .not.toContain("Want to look for more filming locations to fit in?");
   });
 
+  /**
+   * PR #186 리뷰 — 다른 진입점(입력·제출·예시)은 전부 `disabled || pending`을 본다.
+   * `pending`만 보면 재열람·대안 화면에서 **눌리는데 아무 반응이 없는 버튼**이 된다:
+   * `submitItineraryCommand`의 가드에서 조용히 return 되기 때문이다.
+   */
+  const dayButtons = (html: string) =>
+    [...html.matchAll(/<button[^>]*>Day \d<\/button>/g)].map(([tag]) => tag);
+  // 클래스명에 `disabled:opacity-40`이 있으므로 속성으로 좁힌다
+  const isDisabled = (tag: string) => / disabled=""/.test(tag);
+
   it("계산 중에는 누를 수 없다", () => {
-    const html = render({ recommendDayCount: 2, onRecommendDay, pending: true });
-    expect(html).toContain("Day 1");
-    expect(html.match(/disabled=""/g)?.length ?? 0).toBeGreaterThan(1);
+    const buttons = dayButtons(render({ recommendDayCount: 2, onRecommendDay, pending: true }));
+    expect(buttons).toHaveLength(2);
+    for (const button of buttons) expect(isDisabled(button)).toBe(true);
+  });
+
+  it("명령을 받을 수 없는 화면에서는 누를 수 없다", () => {
+    const buttons = dayButtons(render({ recommendDayCount: 3, onRecommendDay, disabled: true }));
+    expect(buttons).toHaveLength(3);
+    for (const button of buttons) expect(isDisabled(button)).toBe(true);
+  });
+
+  it("받을 수 있으면 눌린다", () => {
+    const buttons = dayButtons(render({
+      recommendDayCount: 3, onRecommendDay, disabled: false, pending: false,
+    }));
+    expect(buttons).toHaveLength(3);
+    for (const button of buttons) expect(isDisabled(button)).toBe(false);
   });
 });

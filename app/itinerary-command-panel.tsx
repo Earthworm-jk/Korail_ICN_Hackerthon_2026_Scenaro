@@ -322,7 +322,9 @@ export function ItineraryCommandPanel({
               <button
                 key={index}
                 type="button"
-                disabled={pending}
+                /* 다른 명령 진입점과 같은 조건 (PR #186 리뷰) — pending 만 보면 재열람·대안
+                   화면에서 눌리는데 제출 가드에서 조용히 return 되는 무반응 버튼이 된다 */
+                disabled={disabled || pending}
                 onClick={() => onRecommendDay(index + 1)}
                 className="rounded-full border px-3 py-1 text-xs text-sc-muted hover:border-sc-blue hover:text-sc-blue disabled:opacity-40"
               >
