@@ -10,7 +10,19 @@
  * 실제 모듈을 실제 순서로 부른다.
  */
 import { readFileSync } from "node:fs";
-import { beforeAll, describe, expect, it } from "vitest";
+import { beforeAll, describe, expect, it, vi } from "vitest";
+
+/**
+ * **키 없음을 테스트가 직접 만든다** (PR #193 리뷰).
+ *
+ * `env`는 모듈 로드 시 파싱된다. 그래서 실행 환경에 `OPENAI_API_KEY`가 있으면
+ * 아래 "키 없이도 완주한다"가 **키를 쓰고도 통과한다** — 이름과 다른 것을 검증하고,
+ * 개발자 머신과 CI에서 결과가 갈린다. 조건을 환경에 맡기지 않고 여기서 고정한다.
+ */
+vi.mock("../env", async (importOriginal) => {
+  const original = await importOriginal<typeof import("../env")>();
+  return { ...original, env: { ...original.env, OPENAI_API_KEY: undefined } };
+});
 import { getCandidatePlaces } from "../actions/places";
 import { planItinerary, type PlanRequest } from "../actions/itinerary";
 import { runItineraryCommand } from "../actions/itinerary-command";
@@ -328,6 +340,12 @@ describe("하네스가 화면과 같은 진입점을 본다", () => {
  * 내려가고 검증·재계산·제안은 그대로여야 한다.
  */
 describe("#171 과선택 — 키 없이도 완주한다", () => {
+  /** 이 줄이 깨지면 아래 검증은 이름과 다른 것을 보고 있다 */
+  it("전제 확인 — 이 파일에서 키는 없는 것으로 고정돼 있다", async () => {
+    const { env } = await import("../env");
+    expect(env.OPENAI_API_KEY).toBeUndefined();
+  });
+
   it("정리한 뒤 개수 목표 명령이 모델 없이 제안까지 간다", async () => {
     const screen = new Screen();
     await screen.chooseContent();
