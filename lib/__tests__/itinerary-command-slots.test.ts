@@ -302,6 +302,43 @@ describe("재질문 조각 잇기", () => {
       }
     });
 
+    /**
+     * PR #175 리뷰 5회차 — 배열을 재귀적으로 정렬하면 `preferredOrder`의 **쌍 방향**까지
+     * 뭉갠다. 사용자가 순서 선호를 반대로 바꿨는데도 같은 기준으로 판단하게 된다.
+     * 바깥 목록은 집합, 안쪽 쌍은 값의 일부다.
+     */
+    describe("순서 선호는 쌍의 방향이 뜻을 갖는다", () => {
+      it("쌍을 뒤집으면 다른 기준이다", () => {
+        expect(keyOf({ preferredOrder: [["a", "b"]] }))
+          .not.toBe(keyOf({ preferredOrder: [["b", "a"]] }));
+      });
+
+      /** 쌍 목록의 순서는 뜻이 없다 — 여기까지 갈라지면 화면이 헛되이 흔들린다 */
+      it("쌍 목록의 순서만 바뀌면 같은 기준이다", () => {
+        expect(keyOf({ preferredOrder: [["a", "b"], ["c", "d"]] }))
+          .toBe(keyOf({ preferredOrder: [["c", "d"], ["a", "b"]] }));
+      });
+
+      it("쌍 하나만 뒤집혀도 조각을 쓰지 않는다", () => {
+        const madeWith = itineraryBasisKey({
+          request: { ...BASE_REQUEST, preferredOrder: [["a", "b"], ["c", "d"]] },
+          selectedAltId: null,
+          reopened: false,
+        });
+        const pinned = { kind: "clarify", pendingSlots: slots, basisKey: madeWith };
+        expect(pendingSlotsOf(pinned, keyOf({ preferredOrder: [["b", "a"], ["c", "d"]] })))
+          .toBeNull();
+      });
+    });
+
+    /** 집합 의미인 목록은 순서가 달라도 같아야 한다 */
+    it("선택·제외 목록은 순서가 달라도 같은 기준이다", () => {
+      expect(keyOf({ excludedPlaceIds: ["b", "a"] }))
+        .toBe(keyOf({ excludedPlaceIds: ["a", "b"] }));
+      expect(keyOf({ selectedWorkIds: ["w2", "w1"] }))
+        .toBe(keyOf({ selectedWorkIds: ["w1", "w2"] }));
+    });
+
     it("중첩된 값이 바뀌어도 가른다", () => {
       expect(pendingSlotsOf(clarify, keyOf({ preferredVisitDates: { "p": "2026-08-13" } })))
         .toBeNull();

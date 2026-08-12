@@ -151,8 +151,12 @@ export function pendingSlotsOf(
  * 그러면 `PlanRequest`에 새 입력이 생겼을 때 조용히 빠진다 — 주석은 "자동으로 걸린다"고
  * 적혀 있었지만 실제로는 아니었다. 키를 훑으면 새 필드가 그냥 들어온다.
  *
- * 배열은 원소를 직렬화한 뒤 정렬한다. 지금 필드는 전부 집합 의미라(선택·제외·선호 쌍)
- * 순서가 달라도 같은 기준이어야 화면이 흔들리지 않는다.
+ * 배열은 **목록만** 정규화하고 원소 안의 순서는 보존한다 (PR #175 리뷰 5회차). 앞서는
+ * 재귀적으로 정렬해서 `preferredOrder`의 쌍 방향까지 뭉갰다 — `[["a","b"]]`와
+ * `[["b","a"]]`가 같은 기준이 돼, 사용자가 순서 선호를 **반대로 바꿨는데도** 옛 조각을
+ * 같은 일정 기준으로 판단했다.
+ *
+ * 바깥 목록은 집합 의미가 맞다(선택·제외·선호 쌍의 목록). 안쪽은 값의 일부이므로 그대로 둔다.
  *
  * ## 이 방어가 못 잡는 것
  *
@@ -161,9 +165,23 @@ export function pendingSlotsOf(
  * 끊는 명시적 폐기(`plan()`·`chooseAlternative`의 `setAiFeedback(null)`)가 맡는다.
  * **두 겹이고 각자 잡는 것이 다르며, 어느 한쪽도 혼자서는 충분하지 않다.**
  */
+/** 값 그대로 — 배열 순서를 보존한다. 쌍처럼 **방향이 뜻을 갖는** 자리에 쓴다 */
+function orderedValue(value: unknown): string {
+  if (value === undefined || value === null) return "";
+  if (Array.isArray(value)) return `[${value.map(orderedValue).join(",")}]`;
+  if (typeof value === "object") {
+    return `{${Object.entries(value as Record<string, unknown>)
+      .map(([key, inner]) => `${key}:${orderedValue(inner)}`)
+      .sort()
+      .join(",")}}`;
+  }
+  return String(value);
+}
+
 function stableValue(value: unknown): string {
   if (value === undefined || value === null) return "";
-  if (Array.isArray(value)) return `[${value.map(stableValue).sort().join(",")}]`;
+  // 목록만 정규화하고 원소는 그대로 — 안쪽까지 정렬하면 쌍의 방향이 사라진다
+  if (Array.isArray(value)) return `[${value.map(orderedValue).sort().join(",")}]`;
   if (typeof value === "object") {
     return `{${Object.entries(value as Record<string, unknown>)
       .map(([key, inner]) => `${key}:${stableValue(inner)}`)
