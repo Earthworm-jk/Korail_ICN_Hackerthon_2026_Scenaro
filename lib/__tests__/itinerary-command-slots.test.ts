@@ -4,9 +4,11 @@ import { parseCommand } from "@/lib/itinerary-command-fallback";
 import {
   SLOT_INVALIDATING_EVENTS,
   completeWithSlots,
+  dayOnlyAnswer,
   pendingSlotsFrom,
   type PendingCommandSlots,
 } from "@/lib/itinerary-command-slots";
+import { pendingSlotsOf } from "@/lib/itinerary-command-ui";
 import type { RawItineraryCommand } from "@/lib/itinerary-command";
 
 /**
@@ -109,14 +111,91 @@ describe("재질문 조각 잇기", () => {
   });
 
   /**
-   * 조각이 남은 채 기준 일정이 바뀌면 "둘째 날"이 **다른 일정의** 둘째 날에 적용된다.
-   * 화면은 조각을 재질문 피드백에 붙여 두므로, 피드백을 비우는 곳이 곧 무효화 지점이다.
+   * PR #175 리뷰 — 사유 코드로는 못 가른다. 실제 파서 출력이 같기 때문이다.
+   *
+   * ```
+   * "둘째 날"              -> UNSUPPORTED_INTENT   (이어 붙여야 한다)
+   * "둘째 날 일정 설명해줘"  -> UNSUPPORTED_INTENT   (이어 붙이면 안 된다)
+   * ```
    */
-  it("무효화 사건 목록이 계약으로 남아 있다", () => {
+  describe("날짜 답변만 이어 붙인다", () => {
+    const slots: PendingCommandSlots = { intent: "move_place", placeName: "영진해변" };
+
+    it("날짜 답변으로 읽는 표현들", () => {
+      for (const [text, day] of [
+        ["둘째 날", 2], ["2일차", 2], ["셋째 날에", 3], ["둘째 날로", 2], ["둘째 날요", 2],
+        ["day 3", 3], ["second day", 2],
+      ] as const) {
+        expect(dayOnlyAnswer(text), text).toBe(day);
+      }
+    });
+
+    /** 날짜가 섞였을 뿐 다른 요청이면 옛 장소를 붙이면 안 된다 */
+    it("날짜가 섞인 다른 요청은 답변이 아니다", () => {
+      for (const text of [
+        "둘째 날 일정 설명해줘",
+        "둘째 날에 월정사 넣어줘",
+        "둘째 날 동선에 맞는 다른 촬영지를 추천해줘",
+        "둘째 날은 여유롭게",
+        "explain day 2",
+      ]) {
+        expect(dayOnlyAnswer(text), text).toBeUndefined();
+      }
+    });
+
+    it("날짜가 없으면 답변이 아니다", () => {
+      expect(dayOnlyAnswer("아무 때나")).toBeUndefined();
+    });
+
+    /**
+     * 이 대비가 리뷰에서 지적된 결함을 직접 잡는다 — 앞은 이어 붙고, 뒤는 옛 장소가
+     * 끼어들지 않는다. 둘의 재질문 사유 코드는 같다.
+     */
+    it("같은 사유 코드라도 발화 모양으로 갈린다", () => {
+      const answer = parseCommand("둘째 날");
+      const other = parseCommand("둘째 날 일정 설명해줘");
+
+      expect(completeWithSlots(slots, answer, "둘째 날"))
+        .toEqual({ intent: "move_place", placeName: "영진해변", dayIndex: 2 });
+      expect(completeWithSlots(slots, other, "둘째 날 일정 설명해줘")).toEqual(other);
+    });
+  });
+
+  /**
+   * 조각이 남은 채 기준 일정이 바뀌면 "둘째 날"이 **다른 일정의** 둘째 날에 적용된다.
+   * 조각을 재질문 피드백에서만 꺼내므로, 피드백을 비우는 곳이 곧 무효화 지점이다.
+   */
+  describe("조각은 재질문 피드백에만 산다", () => {
+    const slots: PendingCommandSlots = { intent: "move_place", placeName: "영진해변" };
+
+    it("재질문 피드백에서만 나온다", () => {
+      expect(pendingSlotsOf({ kind: "clarify", pendingSlots: slots })).toEqual(slots);
+    });
+
+    /** 피드백을 비우는 모든 경로(선택 토글·재계산·재열람)가 여기로 수렴한다 */
+    it("피드백이 비면 조각도 없다", () => {
+      expect(pendingSlotsOf(null)).toBeNull();
+    });
+
+    it("다른 결과로 바뀌면 조각이 사라진다", () => {
+      for (const kind of ["proposal", "explain", "recommendations", "error", "cancelled"]) {
+        expect(pendingSlotsOf({ kind, pendingSlots: slots }), kind).toBeNull();
+      }
+    });
+
+    it("재질문이어도 남길 조각이 없으면 null이다", () => {
+      expect(pendingSlotsOf({ kind: "clarify", pendingSlots: null })).toBeNull();
+    });
+  });
+
+  /** 목록에 있는데 구현이 안 하면 계약이 아니라 주석이다 (PR #175 리뷰) */
+  it("무효화 사건 목록은 실제로 비워지는 것만 담는다", () => {
     expect(SLOT_INVALIDATING_EVENTS).toContain("selection_changed");
     expect(SLOT_INVALIDATING_EVENTS).toContain("itinerary_recalculated");
     expect(SLOT_INVALIDATING_EVENTS).toContain("proposal_applied");
     expect(SLOT_INVALIDATING_EVENTS).toContain("proposal_cancelled");
+    // 패널 닫기는 기존 결정(작업 상태 보존)에 따라 조각을 버리지 않는다
+    expect(SLOT_INVALIDATING_EVENTS).not.toContain("panel_closed");
     expect(new Set(SLOT_INVALIDATING_EVENTS).size).toBe(SLOT_INVALIDATING_EVENTS.length);
   });
 });

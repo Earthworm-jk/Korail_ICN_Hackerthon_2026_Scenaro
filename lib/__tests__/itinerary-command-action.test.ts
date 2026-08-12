@@ -189,6 +189,23 @@ describe("#171 재질문에서 얻은 조각을 다음 발화에 잇는다", () 
     expect(add.outcome.pendingSlots?.intent).toBe("add_place");
   });
 
+  /**
+   * PR #175 리뷰 — 날짜가 섞인 **다른** 요청도 해석에 실패한다. 그때 옛 장소를 붙이면
+   * 사용자가 말하지 않은 이동이 조용히 성공한다. 재질문 사유 코드는 둘이 같으므로
+   * 발화 모양으로 갈라야 한다.
+   */
+  it("날짜가 섞인 다른 요청에는 옛 조각을 붙이지 않는다", async () => {
+    const result = await runItineraryCommand({
+      sentence: "둘째 날 일정 설명해줘",
+      request,
+      pendingSlots: { intent: "add_place", placeName: "영진해변" },
+    });
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.outcome.kind).not.toBe("proposal");
+  });
+
   /** 새 문장이 스스로 읽히면 옛 조각이 끼어들면 안 된다 */
   it("조각이 있어도 새 요청이 읽히면 그쪽을 따른다", async () => {
     const result = await runItineraryCommand({

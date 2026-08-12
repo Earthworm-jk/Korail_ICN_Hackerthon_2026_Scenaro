@@ -1,3 +1,4 @@
+import type { PendingCommandSlots } from "./itinerary-command-slots";
 /**
  * 자연어 일정 조율 UI의 적용 경계 — React 상태와 분리한 순수 판단.
  *
@@ -104,4 +105,22 @@ export function panelDismissable(
   if (!feedback) return true;
   if (feedback.kind === "recommendations") return false;
   return !(feedback.kind === "proposal" && feedback.applied === false);
+}
+
+
+/**
+ * 지금 이어 붙일 수 있는 조각 (PR #175 리뷰).
+ *
+ * **조각은 재질문 피드백에만 산다.** 별도 상태로 두면 선택 변경·재계산 때 지우는 곳을
+ * 빠뜨려 낡은 조각이 살아남고, 사용자가 말하지 않은 장소·날짜에 적용된다.
+ *
+ * 이 함수가 그 계약이다 — 재질문이 아닌 어떤 상태에서도 `null`이므로, 피드백을 비우는
+ * 모든 경로(선택 토글·재계산·재열람·제안 적용·취소)가 곧 무효화 지점이 된다.
+ */
+export function pendingSlotsOf(
+  feedback: { kind: string; pendingSlots?: PendingCommandSlots | null } | null,
+): PendingCommandSlots | null {
+  if (feedback === null) return null;
+  if (feedback.kind !== "clarify") return null;
+  return feedback.pendingSlots ?? null;
 }

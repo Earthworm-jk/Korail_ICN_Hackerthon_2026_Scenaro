@@ -37,6 +37,7 @@ import {
   commandResponseIsCurrent,
   selectionAfterCommand,
   stateAfterRouteRecommendation,
+  pendingSlotsOf,
 } from "@/lib/itinerary-command-ui";
 import { sortCandidatePlaces } from "@/lib/place-ranking";
 import { getFlightInfo } from "@/lib/actions/flights";
@@ -788,7 +789,7 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
     // 응답은 현재 화면을 대상으로 한 것이 아니므로 feedback과 자동 적용을 모두 버린다.
     const submittedSequence = ++planSequence.current;
     // 직전 재질문에서 확보한 조각 — 비우기 전에 집어 든다 (#171)
-    const pendingSlots = aiFeedback?.kind === "clarify" ? aiFeedback.pendingSlots : null;
+    const pendingSlots = pendingSlotsOf(aiFeedback);
     setAiSentence(normalized);
     setAiFeedback(null);
     startAiTransition(async () => {
