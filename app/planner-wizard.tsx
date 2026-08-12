@@ -117,6 +117,7 @@ import { getThemeExperience, type ThemeExperienceResult } from "@/lib/actions/th
 import type { StationFacilitiesSnapshotT } from "@/lib/station-facilities";
 import type { StationCoordinatesSnapshotT } from "@/lib/station-coordinates";
 import type { RailGeometrySnapshotT } from "@/lib/rail-geometry";
+import type { TimetableWindow } from "@/lib/timetable-window";
 import type { DayPlan } from "@/lib/engine/types";
 import type { RegionWindowKind } from "@/lib/engine/region-windows";
 import { undoPointOf, type UndoPoint } from "@/lib/itinerary-undo";
@@ -209,12 +210,15 @@ const pad2 = (n: number) => String(n).padStart(2, "0");
 const HOURS = Array.from({ length: 24 }, (_, i) => pad2(i));
 const MINUTES = Array.from({ length: 60 }, (_, i) => pad2(i));
 
-function DateTimeField({ value, onChange, className, dateInputId, hourInputId }: {
+function DateTimeField({ value, onChange, className, dateInputId, hourInputId, min, max }: {
   value: string;
   onChange: (value: string) => void;
   className?: string;
   dateInputId?: string;
   hourInputId?: string;
+  /** 열차 스냅샷 수록 범위 — 밖을 고르면 선택 장소가 전부 미배치가 되므로 달력에서 막는다 */
+  min?: string;
+  max?: string;
 }) {
   const [date = "", time = ""] = value.split("T");
   const [hour = "00", minute = "00"] = time.split(":");
@@ -225,6 +229,8 @@ function DateTimeField({ value, onChange, className, dateInputId, hourInputId }:
         id={dateInputId}
         type="date"
         className="min-w-0 flex-1 rounded border px-2 py-1 text-sm"
+        min={min}
+        max={max}
         value={date}
         onChange={(e) => emit(e.target.value, hour, minute)}
       />
@@ -362,10 +368,11 @@ function dateOfPlace(days: DayPlan[] | null, placeId: string): string | undefine
   return days?.find((day) => day.items.some((item) => item.placeId === placeId))?.date;
 }
 
-export default function PlannerWizard({ stationFacilities, stationCoordinates, railGeometry }: {
+export default function PlannerWizard({ stationFacilities, stationCoordinates, railGeometry, timetableWindow }: {
   stationFacilities: StationFacilitiesSnapshotT;
   stationCoordinates: StationCoordinatesSnapshotT;
   railGeometry: RailGeometrySnapshotT;
+  timetableWindow: TimetableWindow;
 }) {
   const [locale, setLocale] = useState<Locale>("ko");
   /**
@@ -1936,12 +1943,19 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
                 <label className="mt-3 block text-xs text-sc-muted">{tr("step1.scheduledAt")}</label>
                 <DateTimeField
                   className="mt-1"
+                  min={timetableWindow.firstDate}
+                  max={timetableWindow.lastDate}
                   value={field.at}
                   onChange={direction === "arrival" ? setArrivalAtInput : setDepartureAtInput}
                 />
               </div>
             ))}
           </div>
+          <p className="mt-3 text-xs text-sc-muted">
+            {tr("step1.timetableWindow")
+              .replace("{from}", timetableWindow.firstDate)
+              .replace("{to}", timetableWindow.lastDate)}
+          </p>
           <div className="mt-4 grid gap-4 sm:grid-cols-2">
             <div className="rounded-lg border p-4">
               <label htmlFor="airport-ready-date" className="text-sm font-medium">{tr("step1.airportReady")}</label>
@@ -1949,6 +1963,8 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
                 className="mt-2"
                 dateInputId="airport-ready-date"
                 hourInputId="airport-ready-hour"
+                min={timetableWindow.firstDate}
+                max={timetableWindow.lastDate}
                 value={airportReady.at}
                 onChange={(at) => setAirportReady({ at, touched: true })}
               />
@@ -1975,6 +1991,8 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
                 className="mt-2"
                 dateInputId="airport-deadline-date"
                 hourInputId="airport-deadline-hour"
+                min={timetableWindow.firstDate}
+                max={timetableWindow.lastDate}
                 value={airportDeadline.at}
                 onChange={(at) => setAirportDeadline({ at, touched: true })}
               />
