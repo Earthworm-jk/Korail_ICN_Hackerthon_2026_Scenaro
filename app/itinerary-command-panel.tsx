@@ -5,7 +5,9 @@ import type {
   CommandActionInterpretation,
   CommandActionResult,
 } from "@/lib/actions/itinerary-command";
-import type { MessageKey } from "@/lib/i18n/messages";
+// 자리표시자 치환은 공용 함수 하나만 쓴다 (#145). 사본을 두면 조사 선택 같은
+// 공통 규칙이 한쪽에만 붙는다 — 실제로 이 파일의 사본이 조사 수정을 통째로 놓쳤다.
+import { withValues, type MessageKey } from "@/lib/i18n/messages";
 import type { ItineraryDiff } from "@/lib/itinerary-diff";
 import type { Clarification } from "@/lib/itinerary-command-resolver";
 import type { CommandProposal } from "@/lib/itinerary-command-executor";
@@ -57,12 +59,6 @@ type Props = {
   tr: (key: MessageKey) => string;
 };
 
-function withValues(template: string, values: Record<string, string | number>): string {
-  return Object.entries(values).reduce(
-    (text, [key, value]) => text.replaceAll(`{${key}}`, String(value)),
-    template,
-  );
-}
 
 function sourceLabel(
   interpretation: CommandActionInterpretation,
