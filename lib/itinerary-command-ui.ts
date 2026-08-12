@@ -118,9 +118,44 @@ export function panelDismissable(
  * 모든 경로(선택 토글·재계산·재열람·제안 적용·취소)가 곧 무효화 지점이 된다.
  */
 export function pendingSlotsOf(
-  feedback: { kind: string; pendingSlots?: PendingCommandSlots | null } | null,
+  feedback: {
+    kind: string;
+    pendingSlots?: PendingCommandSlots | null;
+    /** 이 조각이 만들어진 시점의 일정 기준 */
+    basisKey?: string;
+  } | null,
+  currentBasisKey: string,
 ): PendingCommandSlots | null {
   if (feedback === null) return null;
   if (feedback.kind !== "clarify") return null;
+  /**
+   * **기준이 바뀌었으면 조각을 쓰지 않는다** (PR #175 리뷰 2회차).
+   *
+   * 앞서는 "피드백을 비우는 곳이 곧 무효화 지점"이라고 했는데, 그건 비우는 걸 **잊지
+   * 않았을 때만** 참이다. 실제로 `chooseAlternative`가 비우지 않아 대안을 골랐다
+   * 되돌아오면 옛 조각이 되살아났다.
+   *
+   * 그래서 호출부의 성실함에 기대지 않는다. 조각에 만들어진 기준을 새겨 두고 지금 기준과
+   * 다르면 쓰지 않는다 — 누가 어디서 비우는 걸 빠뜨려도 낡은 조각이 적용되지 않는다.
+   */
+  if (feedback.basisKey !== currentBasisKey) return null;
   return feedback.pendingSlots ?? null;
+}
+
+/**
+ * 조각이 유효한 "일정 기준" 식별자.
+ *
+ * 이 값이 달라지면 같은 "둘째 날"이 다른 일정의 둘째 날을 가리킨다. 선택·대안·재열람이
+ * 모두 기준을 바꾸므로 셋을 함께 접는다.
+ */
+export function itineraryBasisKey(input: {
+  selectionKey: string;
+  selectedAltId: string | null;
+  reopened: boolean;
+}): string {
+  return [
+    input.selectionKey,
+    input.selectedAltId ?? "base",
+    input.reopened ? "reopened" : "live",
+  ].join("\u0000");
 }

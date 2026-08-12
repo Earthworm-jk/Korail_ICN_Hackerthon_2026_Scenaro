@@ -38,6 +38,7 @@ import {
   selectionAfterCommand,
   stateAfterRouteRecommendation,
   pendingSlotsOf,
+  itineraryBasisKey,
 } from "@/lib/itinerary-command-ui";
 import { sortCandidatePlaces } from "@/lib/place-ranking";
 import { getFlightInfo } from "@/lib/actions/flights";
@@ -780,6 +781,16 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
   }, [candidateData, selectedPlaceIds, preferredVisitDates, saveStub]);
 
 
+  /**
+   * 재질문 조각이 유효한 일정 기준 (PR #175 리뷰). 선택·대안·재열람이 바뀌면 같은
+   * "둘째 날"이 다른 일정을 가리키므로, 조각에 이 값을 새겨 두고 달라지면 쓰지 않는다.
+   */
+  const basisKey = itineraryBasisKey({
+    selectionKey: [...selectedPlaceIds].sort().join("|"),
+    selectedAltId: view.selectedAlt?.id ?? null,
+    reopened: view.reopened !== null,
+  });
+
   const submitItineraryCommand = useCallback((sentence: string) => {
     const request = currentConstraints();
     if (!request || !view.result || view.reopened || view.selectedAlt !== null) return;
@@ -789,7 +800,7 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
     // 응답은 현재 화면을 대상으로 한 것이 아니므로 feedback과 자동 적용을 모두 버린다.
     const submittedSequence = ++planSequence.current;
     // 직전 재질문에서 확보한 조각 — 비우기 전에 집어 든다 (#171)
-    const pendingSlots = pendingSlotsOf(aiFeedback);
+    const pendingSlots = pendingSlotsOf(aiFeedback, basisKey);
     setAiSentence(normalized);
     setAiFeedback(null);
     startAiTransition(async () => {
@@ -809,6 +820,7 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
             interpretation: result.interpretation,
             clarification: result.outcome.clarification,
             pendingSlots: result.outcome.pendingSlots,
+            basisKey,
           });
           return;
         }
@@ -844,7 +856,7 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
         setAiFeedback({ kind: "error" });
       }
     });
-  }, [currentConstraints, view.result, view.reopened, view.selectedAlt, applyCommandOutcome, aiFeedback]);
+  }, [currentConstraints, view.result, view.reopened, view.selectedAlt, applyCommandOutcome, aiFeedback, basisKey]);
 
   /** 지금 고른 장소 집합의 지문 — 구분자는 `|`, 장소 ID는 kebab-case라 충돌하지 않는다 */
   const selectionKey = useMemo(() => [...selectedPlaceIds].sort().join("|"), [selectedPlaceIds]);
@@ -1246,6 +1258,8 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
 
   const chooseAlternative = useCallback((alt: SelectableAlternative | null) => {
     setLastItineraryDiff(null);
+    // 대안을 바꾸면 일정 기준이 달라진다 — 재질문 조각도 함께 버린다 (PR #175 리뷰)
+    setAiFeedback(null);
     dispatchView({ type: "SELECT_ALT", alt });
     saveStub.markDirty();
   }, [saveStub]);

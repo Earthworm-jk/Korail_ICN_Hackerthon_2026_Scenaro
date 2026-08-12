@@ -8,7 +8,7 @@ import {
   pendingSlotsFrom,
   type PendingCommandSlots,
 } from "@/lib/itinerary-command-slots";
-import { pendingSlotsOf } from "@/lib/itinerary-command-ui";
+import { itineraryBasisKey, pendingSlotsOf } from "@/lib/itinerary-command-ui";
 import type { RawItineraryCommand } from "@/lib/itinerary-command";
 
 /**
@@ -167,24 +167,81 @@ describe("재질문 조각 잇기", () => {
    */
   describe("조각은 재질문 피드백에만 산다", () => {
     const slots: PendingCommandSlots = { intent: "move_place", placeName: "영진해변" };
+    const basis = itineraryBasisKey({ selectionKey: "a|b", selectedAltId: null, reopened: false });
+    const clarify = { kind: "clarify", pendingSlots: slots, basisKey: basis };
 
     it("재질문 피드백에서만 나온다", () => {
-      expect(pendingSlotsOf({ kind: "clarify", pendingSlots: slots })).toEqual(slots);
+      expect(pendingSlotsOf(clarify, basis)).toEqual(slots);
     });
 
     /** 피드백을 비우는 모든 경로(선택 토글·재계산·재열람)가 여기로 수렴한다 */
     it("피드백이 비면 조각도 없다", () => {
-      expect(pendingSlotsOf(null)).toBeNull();
+      expect(pendingSlotsOf(null, basis)).toBeNull();
     });
 
     it("다른 결과로 바뀌면 조각이 사라진다", () => {
       for (const kind of ["proposal", "explain", "recommendations", "error", "cancelled"]) {
-        expect(pendingSlotsOf({ kind, pendingSlots: slots }), kind).toBeNull();
+        expect(pendingSlotsOf({ ...clarify, kind }, basis), kind).toBeNull();
       }
     });
 
     it("재질문이어도 남길 조각이 없으면 null이다", () => {
-      expect(pendingSlotsOf({ kind: "clarify", pendingSlots: null })).toBeNull();
+      expect(pendingSlotsOf({ ...clarify, pendingSlots: null }, basis)).toBeNull();
+    });
+  });
+
+  /**
+   * PR #175 리뷰 2회차 — "피드백을 비우는 곳이 곧 무효화 지점"은 **비우는 걸 잊지 않았을
+   * 때만** 참이다. 실제로 `chooseAlternative`가 비우지 않아, 대안을 골랐다 기본안으로
+   * 돌아오면 옛 조각이 되살아났다.
+   *
+   * 그래서 호출부의 성실함에 기대지 않는다. 조각에 기준을 새겨 두고 지금 기준과 다르면
+   * 쓰지 않는다 — **누가 어디서 비우는 걸 빠뜨려도** 낡은 조각이 적용되지 않는다.
+   */
+  describe("기준이 바뀌면 조각을 쓰지 않는다", () => {
+    const slots: PendingCommandSlots = { intent: "move_place", placeName: "영진해변" };
+    const base = { selectionKey: "a|b", selectedAltId: null, reopened: false };
+    const madeAt = itineraryBasisKey(base);
+    const clarify = { kind: "clarify", pendingSlots: slots, basisKey: madeAt };
+
+    it("같은 기준이면 쓴다", () => {
+      expect(pendingSlotsOf(clarify, itineraryBasisKey(base))).toEqual(slots);
+    });
+
+    /** 리뷰가 짚은 재현 경로 — 대안을 골랐다 기본안으로 돌아와도 되살아나지 않는다 */
+    it("대안을 골랐다 기본안으로 돌아와도 되살아나지 않는다", () => {
+      const swapped = itineraryBasisKey({ ...base, selectedAltId: "alt-bus-1" });
+      expect(pendingSlotsOf(clarify, swapped)).toBeNull();
+
+      // 기본안 복귀 — 기준 문자열은 같아 보이지만 그 사이 피드백이 비워졌다.
+      // 설령 비우는 것을 또 빠뜨려도, 조각을 만든 기준과 지금 기준이 같을 때만 살아난다
+      const backToBase = itineraryBasisKey(base);
+      const staleAfterSwap = { ...clarify, basisKey: swapped };
+      expect(pendingSlotsOf(staleAfterSwap, backToBase)).toBeNull();
+    });
+
+    it("선택이 바뀌면 쓰지 않는다", () => {
+      expect(pendingSlotsOf(clarify, itineraryBasisKey({ ...base, selectionKey: "a|b|c" })))
+        .toBeNull();
+    });
+
+    it("재열람 화면이면 쓰지 않는다", () => {
+      expect(pendingSlotsOf(clarify, itineraryBasisKey({ ...base, reopened: true }))).toBeNull();
+    });
+
+    it("기준이 없는 옛 피드백은 쓰지 않는다", () => {
+      expect(pendingSlotsOf({ kind: "clarify", pendingSlots: slots }, madeAt)).toBeNull();
+    });
+
+    /** 값이 붙어 만들어지므로 한 칸만 달라도 다른 기준이다 */
+    it("세 축이 각각 기준을 가른다", () => {
+      const keys = new Set([
+        itineraryBasisKey(base),
+        itineraryBasisKey({ ...base, selectionKey: "a" }),
+        itineraryBasisKey({ ...base, selectedAltId: "alt-1" }),
+        itineraryBasisKey({ ...base, reopened: true }),
+      ]);
+      expect(keys.size).toBe(4);
     });
   });
 

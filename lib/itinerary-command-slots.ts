@@ -36,6 +36,14 @@ export type PendingCommandSlots = {
 /**
  * 슬롯을 버려야 하는 사건 — **계약이다.** 하나라도 빠지면 낡은 슬롯이 살아남아
  * 사용자가 말하지 않은 장소·날짜에 적용된다.
+ *
+ * 다만 이 목록만으로는 지켜지지 않는다 (PR #175 리뷰 2회차). `alternative_swapped`가
+ * 여기 있는데도 `chooseAlternative`가 피드백을 비우지 않아 조각이 되살아났다 — 목록은
+ * 사람이 지키는 것이고 사람은 빠뜨린다.
+ *
+ * 그래서 실제 보장은 `itineraryBasisKey`가 한다. 조각에 만들어진 기준을 새겨 두고 지금
+ * 기준과 다르면 쓰지 않으므로, **비우는 것을 빠뜨려도** 낡은 조각이 적용되지 않는다.
+ * 이 목록은 그 위에 더하는 명시적 정리이지 유일한 방어가 아니다.
  */
 export const SLOT_INVALIDATING_EVENTS = [
   "proposal_applied", // 제안을 적용했다

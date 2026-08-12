@@ -29,6 +29,8 @@ export type CommandFeedback =
        * 그 사건마다 비워지므로 여기 붙이면 무효화가 따라온다.
        */
       pendingSlots: PendingCommandSlots | null;
+      /** 이 조각이 만들어진 시점의 일정 기준 — 달라지면 조각을 쓰지 않는다 */
+      basisKey: string;
     }
   | {
       kind: "proposal";
