@@ -505,7 +505,38 @@ export function planItinerary(
       ctx,
       endpointStationId,
     );
-    if (reason) rejectedPlaces.push(reason);
+    if (!reason) continue;
+    /**
+     * `TRAIN_UNAVAILABLE`만 한 번 더 확인한다 (#84 §2 · #171).
+     *
+     * 위 실패는 "**최선 일정 위에** 이걸 더 얹을 수 있는가"의 답이다. 다른 두 코드는 그
+     * 물음에 구체적으로 답한다 — 하루 상한에 걸렸으면 날짜를 늘리면 되고, 출국 마감이면
+     * 항공·기간을 바꿔야 한다. 사용자가 할 일이 서로 다르므로 그대로 둔다(#84 P0-1).
+     *
+     * `TRAIN_UNAVAILABLE`만 다르다. 이건 `completionFailure`가 다른 사유를 특정하지 못했을
+     * 때의 폴백이라, "연결편이 없다"와 "앞에서 다 써서 시간이 안 남았다"가 한 코드에 섞인다.
+     * 실제로 강릉·부산처럼 KTX가 멀쩡히 다니는 곳이 "이용 가능한 KTX가 없습니다"를 받았다.
+     *
+     * 빈 일정에서 같은 후보를 시도하면 갈린다.
+     *   혼자서도 실패 → 그 장소 자체가 불가능하다. 사유를 그대로 둔다
+     *   혼자서는 성공 → **밀린 것**이다. 선택을 줄이면 들어온다
+     *
+     * 비용은 이 코드로 떨어진 미배치 후보 수만큼의 추가 시도뿐이다(탐색이 아니라 한 번씩).
+     */
+    if (reason.code !== "TRAIN_UNAVAILABLE") {
+      rejectedPlaces.push(reason);
+      continue;
+    }
+    const aloneFailure = completionFailure(
+      initial,
+      candidate,
+      constraints,
+      ctx,
+      endpointStationId,
+    );
+    rejectedPlaces.push(
+      aloneFailure ? reason : { code: "NOT_IN_BEST_SUBSET", placeId: candidate.place.id },
+    );
   }
 
   const allRides = [...best.state.rides, ...best.returnRides];

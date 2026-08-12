@@ -46,10 +46,18 @@ export type ActivityWindowDetail =
 // #84 P0-1: 실제 원인이 다른 실패를 한 코드로 뭉치지 않는다. 하루 장소 수 상한 때문에
 // 밀린 경우와 여행 마감 안에 못 넣는 경우는 사용자가 할 수 있는 일이 다르다 —
 // 전자는 선택을 줄이거나 날짜를 늘리면 되고, 후자는 항공·기간 조건을 바꿔야 한다.
+// #84 §2 · #171 — **"장소 단독 불가능"과 "최선 부분집합에서 밀림"을 한 코드로 뭉치지 않는다.**
+// 앞의 셋은 그 장소를 혼자 넣어도 안 되는 경우다: 연결편이 없거나, 하루 상한에 걸리거나,
+// 출국 마감을 못 지킨다. 사용자가 할 수 있는 일은 조건을 바꾸는 것뿐이다.
+//
+// `NOT_IN_BEST_SUBSET`은 다르다 — **혼자면 갈 수 있는데 지금 조합에서 밀린 것**이다.
+// 선택을 줄이면 들어온다. 이 둘을 뭉치면 화면이 "KTX가 없다"고 말하는데 실제로는 KTX가
+// 멀쩡히 다니는 상황이 생기고, 사용자는 고칠 수 있는 문제를 못 고친다.
 export type CandidateRejection =
   | { code: "TRAIN_UNAVAILABLE"; placeId: string }
   | { code: "DAILY_CAPACITY_EXCEEDED"; placeId: string }
-  | { code: "DEPARTURE_DEADLINE_EXCEEDED"; placeId: string };
+  | { code: "DEPARTURE_DEADLINE_EXCEEDED"; placeId: string }
+  | { code: "NOT_IN_BEST_SUBSET"; placeId: string };
 
 // 배치된 방문의 운영시간 경고 (#43 결정 1 — 경고 누락 0건이 수용 기준)
 export type CandidateWarning = {
