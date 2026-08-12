@@ -129,19 +129,29 @@ export function parseCommand(input: string): RawItineraryCommand {
   // 되물으면 지원하지도 않는 기능으로 사용자를 끌고 간다 — 못 알아들었다고 말하는 게 맞다.
   if (placeName === undefined && visitDayIndex === undefined) return unknown("UNSUPPORTED_INTENT");
   if (placeName === undefined) return unknown("PLACE_MISSING");
-  // 장소는 읽었으므로 되물을 때 되쓸 수 있게 함께 넘긴다 — 문장은 messages.ts가 만든다
-  if (visitDayIndex === undefined) return unknown("DAY_MISSING", placeName);
-
   // 이동과 추가가 함께 읽히면 이동으로 본다 — resolver가 일정에 없으면 되묻는다
   const intent = wantsMove ? "move_place" : "add_place";
+  // 장소는 읽었으므로 되물을 때 되쓸 수 있게 함께 넘긴다 — 문장은 messages.ts가 만든다.
+  // 무엇을 하려던 요청인지도 함께 준다 (#171): 문구는 같아도 완성할 명령이 다르다
+  if (visitDayIndex === undefined) return unknown("DAY_MISSING", placeName, intent);
+
   const parsed = RawItineraryCommandSchema.safeParse({ intent, placeName, dayIndex: visitDayIndex });
   return parsed.success ? parsed.data : unknown("PLACE_MISSING");
 }
 
 /** 폴백은 문구를 만들지 않는다 — 코드와 조각만 (PR #142 리뷰 2번) */
-function unknown(reason: UnknownReason, placeName?: string): RawItineraryCommand {
+function unknown(
+  reason: UnknownReason,
+  placeName?: string,
+  intent?: "move_place" | "add_place",
+): RawItineraryCommand {
   return {
     intent: "unknown",
-    clarification: { source: "deterministic", reason, ...(placeName ? { placeName } : {}) },
+    clarification: {
+      source: "deterministic",
+      reason,
+      ...(placeName ? { placeName } : {}),
+      ...(intent ? { intent } : {}),
+    },
   };
 }

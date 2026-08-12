@@ -37,6 +37,8 @@ import {
   commandResponseIsCurrent,
   selectionAfterCommand,
   stateAfterRouteRecommendation,
+  pendingSlotsOf,
+  itineraryBasisKey,
 } from "@/lib/itinerary-command-ui";
 import { sortCandidatePlaces } from "@/lib/place-ranking";
 import { getFlightInfo } from "@/lib/actions/flights";
@@ -784,14 +786,22 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
     if (!request || !view.result || view.reopened || view.selectedAlt !== null) return;
     const normalized = sentence.trim();
     if (!normalized) return;
+    /**
+     * 조각이 유효한 일정 기준 (PR #175 리뷰). **제출 시점의 요청에서 직접 만든다** —
+     * 항공 시각·공항 마감처럼 계산에 들어가는 값이 바뀌면 기준도 함께 바뀐다.
+     */
+    // 위 가드가 대안 선택·재열람 화면을 이미 막았으므로 여기서는 항상 기본안이다
+    const basisKey = itineraryBasisKey({ request, selectedAltId: null, reopened: false });
     // 제출 시점의 입력 상태를 식별한다. 이후 카드 토글·재계산이 이 값을 올리면 도착한
     // 응답은 현재 화면을 대상으로 한 것이 아니므로 feedback과 자동 적용을 모두 버린다.
     const submittedSequence = ++planSequence.current;
+    // 직전 재질문에서 확보한 조각 — 비우기 전에 집어 든다 (#171)
+    const pendingSlots = pendingSlotsOf(aiFeedback, basisKey);
     setAiSentence(normalized);
     setAiFeedback(null);
     startAiTransition(async () => {
       try {
-        const result = await runItineraryCommand({ sentence: normalized, request });
+        const result = await runItineraryCommand({ sentence: normalized, request, pendingSlots });
         if (!commandResponseIsCurrent(submittedSequence, planSequence.current)) {
           setAiFeedback({ kind: "cancelled" });
           return;
@@ -805,6 +815,8 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
             kind: "clarify",
             interpretation: result.interpretation,
             clarification: result.outcome.clarification,
+            pendingSlots: result.outcome.pendingSlots,
+            basisKey,
           });
           return;
         }
@@ -840,7 +852,7 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
         setAiFeedback({ kind: "error" });
       }
     });
-  }, [currentConstraints, view.result, view.reopened, view.selectedAlt, applyCommandOutcome]);
+  }, [currentConstraints, view.result, view.reopened, view.selectedAlt, applyCommandOutcome, aiFeedback]);
 
   /** 지금 고른 장소 집합의 지문 — 구분자는 `|`, 장소 ID는 kebab-case라 충돌하지 않는다 */
   const selectionKey = useMemo(() => [...selectedPlaceIds].sort().join("|"), [selectedPlaceIds]);
@@ -855,6 +867,13 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
     const previousResult = view.selectedAlt === null ? view.result : null;
     dispatchView({ type: "PLAN_START" });
     setLastItineraryDiff(null);
+    /**
+     * 재계산은 그 자체로 재질문 조각을 무효로 만든다 (PR #175 리뷰 4회차).
+     *
+     * 기준 지문만으로는 부족하다 — 시각을 A에서 B로 바꿨다 A로 되돌리면 지문이 다시
+     * 같아져서 옛 조각이 살아난다. **값이 아니라 사건**으로 끊어야 하는 자리다.
+     */
+    setAiFeedback(null);
     setThemeExperience(null);
     try {
       const res = await planItinerary(constraints);
@@ -1242,6 +1261,8 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
 
   const chooseAlternative = useCallback((alt: SelectableAlternative | null) => {
     setLastItineraryDiff(null);
+    // 대안을 바꾸면 일정 기준이 달라진다 — 재질문 조각도 함께 버린다 (PR #175 리뷰)
+    setAiFeedback(null);
     dispatchView({ type: "SELECT_ALT", alt });
     saveStub.markDirty();
   }, [saveStub]);

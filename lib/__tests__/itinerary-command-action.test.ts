@@ -122,3 +122,101 @@ describe("#141 자연어 일정 조율 서버 액션", () => {
     if (!result.ok) expect(result.fieldErrors).toHaveProperty("selectedWorkIds");
   });
 });
+
+/**
+ * 재질문 연속성 — 끝단 (#171).
+ *
+ * 순수 함수 회귀(`itinerary-command-slots.test.ts`)가 조각 잇는 규칙을 고정한다면, 여기서는
+ * **액션이 실제로 그 조각을 받아 명령을 완성하는지**를 고정한다. 둘 사이가 끊기면 규칙은
+ * 맞는데 화면은 그대로 "어떤 장소인지 알려주세요"라고 답한다.
+ */
+describe("#171 재질문에서 얻은 조각을 다음 발화에 잇는다", () => {
+  it("첫 턴은 날짜를 되묻고, 다음 턴에 쓸 조각을 함께 준다", async () => {
+    const result = await runItineraryCommand({ sentence: "영진해변을 넣어줘", request });
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.outcome.kind).toBe("clarify");
+    if (result.outcome.kind !== "clarify") return;
+    expect(result.outcome.pendingSlots).toEqual({
+      intent: "add_place",
+      placeName: "영진해변",
+    });
+  });
+
+  /** 조각을 안 넘기면 지금(고장난) 동작 그대로다 — 이 대비가 회귀의 값이다 */
+  it("조각 없이 둘째 날만 말하면 여전히 되묻는다", async () => {
+    const result = await runItineraryCommand({ sentence: "둘째 날", request });
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.outcome.kind).toBe("clarify");
+  });
+
+  it("조각을 넘기면 둘째 날만 말해도 제안까지 간다", async () => {
+    const first = await runItineraryCommand({ sentence: "영진해변을 넣어줘", request });
+    expect(first.ok).toBe(true);
+    if (!first.ok || first.outcome.kind !== "clarify") return;
+
+    const second = await runItineraryCommand({
+      sentence: "둘째 날",
+      request,
+      pendingSlots: first.outcome.pendingSlots,
+    });
+
+    expect(second.ok).toBe(true);
+    if (!second.ok) return;
+    expect(second.outcome.kind).toBe("proposal");
+    if (second.outcome.kind !== "proposal") return;
+    expect(second.outcome.nextRequest.preferredVisitDates).toEqual({
+      "place-yeongjin-beach": "2026-08-13",
+    });
+  });
+
+  /**
+   * 옮기기와 넣기는 되묻는 문구가 같지만 완성할 명령이 다르다 (#171). 조각에 그 구분이
+   * 없으면 "넣어줘"라고 한 요청이 옮기기로 완성돼, 일정에 없는 장소라며 다시 되묻는다.
+   */
+  it("옮기기와 넣기를 구분해 기억한다", async () => {
+    const move = await runItineraryCommand({ sentence: "영진해변을 옮겨줘", request });
+    expect(move.ok).toBe(true);
+    if (!move.ok || move.outcome.kind !== "clarify") return;
+    expect(move.outcome.pendingSlots?.intent).toBe("move_place");
+
+    const add = await runItineraryCommand({ sentence: "영진해변을 넣어줘", request });
+    expect(add.ok).toBe(true);
+    if (!add.ok || add.outcome.kind !== "clarify") return;
+    expect(add.outcome.pendingSlots?.intent).toBe("add_place");
+  });
+
+  /**
+   * PR #175 리뷰 — 날짜가 섞인 **다른** 요청도 해석에 실패한다. 그때 옛 장소를 붙이면
+   * 사용자가 말하지 않은 이동이 조용히 성공한다. 재질문 사유 코드는 둘이 같으므로
+   * 발화 모양으로 갈라야 한다.
+   */
+  it("날짜가 섞인 다른 요청에는 옛 조각을 붙이지 않는다", async () => {
+    const result = await runItineraryCommand({
+      sentence: "둘째 날 일정 설명해줘",
+      request,
+      pendingSlots: { intent: "add_place", placeName: "영진해변" },
+    });
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.outcome.kind).not.toBe("proposal");
+  });
+
+  /** 새 문장이 스스로 읽히면 옛 조각이 끼어들면 안 된다 */
+  it("조각이 있어도 새 요청이 읽히면 그쪽을 따른다", async () => {
+    const result = await runItineraryCommand({
+      sentence: "월정사를 셋째 날 일정에 넣어줘",
+      request,
+      pendingSlots: { intent: "add_place", placeName: "영진해변" },
+    });
+
+    expect(result.ok).toBe(true);
+    if (!result.ok || result.outcome.kind !== "proposal") return;
+    expect(Object.keys(result.outcome.nextRequest.preferredVisitDates ?? {}))
+      .toEqual(["place-woljeongsa-temple"]);
+  });
+});

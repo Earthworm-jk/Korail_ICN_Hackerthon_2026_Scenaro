@@ -1,3 +1,4 @@
+import type { PendingCommandSlots } from "./itinerary-command-slots";
 /**
  * 자연어 일정 조율 UI의 적용 경계 — React 상태와 분리한 순수 판단.
  *
@@ -104,4 +105,100 @@ export function panelDismissable(
   if (!feedback) return true;
   if (feedback.kind === "recommendations") return false;
   return !(feedback.kind === "proposal" && feedback.applied === false);
+}
+
+
+/**
+ * 지금 이어 붙일 수 있는 조각 (PR #175 리뷰).
+ *
+ * **조각은 재질문 피드백에만 산다.** 별도 상태로 두면 선택 변경·재계산 때 지우는 곳을
+ * 빠뜨려 낡은 조각이 살아남고, 사용자가 말하지 않은 장소·날짜에 적용된다.
+ *
+ * 이 함수가 그 계약이다 — 재질문이 아닌 어떤 상태에서도 `null`이므로, 피드백을 비우는
+ * 모든 경로(선택 토글·재계산·재열람·제안 적용·취소)가 곧 무효화 지점이 된다.
+ */
+export function pendingSlotsOf(
+  feedback: {
+    kind: string;
+    pendingSlots?: PendingCommandSlots | null;
+    /** 이 조각이 만들어진 시점의 일정 기준 */
+    basisKey?: string;
+  } | null,
+  currentBasisKey: string,
+): PendingCommandSlots | null {
+  if (feedback === null) return null;
+  if (feedback.kind !== "clarify") return null;
+  /**
+   * **기준이 바뀌었으면 조각을 쓰지 않는다** (PR #175 리뷰 2회차).
+   *
+   * 앞서는 "피드백을 비우는 곳이 곧 무효화 지점"이라고 했는데, 그건 비우는 걸 **잊지
+   * 않았을 때만** 참이다. 실제로 `chooseAlternative`가 비우지 않아 대안을 골랐다
+   * 되돌아오면 옛 조각이 되살아났다.
+   *
+   * 그래서 호출부의 성실함에 기대지 않는다. 조각에 만들어진 기준을 새겨 두고 지금 기준과
+   * 다르면 쓰지 않는다 — 누가 어디서 비우는 걸 빠뜨려도 낡은 조각이 적용되지 않는다.
+   */
+  if (feedback.basisKey !== currentBasisKey) return null;
+  return feedback.pendingSlots ?? null;
+}
+
+/**
+ * 조각이 유효한 "일정 기준" 식별자.
+ *
+ * 이 값이 달라지면 같은 "둘째 날"이 **다른 일정의** 둘째 날을 가리킨다.
+ *
+ * **요청을 구조적으로 훑는다** (PR #175 리뷰 4회차). 앞서는 필드를 손으로 나열했는데,
+ * 그러면 `PlanRequest`에 새 입력이 생겼을 때 조용히 빠진다 — 주석은 "자동으로 걸린다"고
+ * 적혀 있었지만 실제로는 아니었다. 키를 훑으면 새 필드가 그냥 들어온다.
+ *
+ * 배열은 **목록만** 정규화하고 원소 안의 순서는 보존한다 (PR #175 리뷰 5회차). 앞서는
+ * 재귀적으로 정렬해서 `preferredOrder`의 쌍 방향까지 뭉갰다 — `[["a","b"]]`와
+ * `[["b","a"]]`가 같은 기준이 돼, 사용자가 순서 선호를 **반대로 바꿨는데도** 옛 조각을
+ * 같은 일정 기준으로 판단했다.
+ *
+ * 바깥 목록은 집합 의미가 맞다(선택·제외·선호 쌍의 목록). 안쪽은 값의 일부이므로 그대로 둔다.
+ *
+ * ## 이 방어가 못 잡는 것
+ *
+ * **값이 같은 값으로 돌아오는 왕복**은 못 잡는다 — 대안을 골랐다 되돌리기, 시각을 바꿨다
+ * 되돌리기. 지문은 값이고 왕복은 값을 되돌리는 일이기 때문이다. 그 경로는 사건 자체로
+ * 끊는 명시적 폐기(`plan()`·`chooseAlternative`의 `setAiFeedback(null)`)가 맡는다.
+ * **두 겹이고 각자 잡는 것이 다르며, 어느 한쪽도 혼자서는 충분하지 않다.**
+ */
+/** 값 그대로 — 배열 순서를 보존한다. 쌍처럼 **방향이 뜻을 갖는** 자리에 쓴다 */
+function orderedValue(value: unknown): string {
+  if (value === undefined || value === null) return "";
+  if (Array.isArray(value)) return `[${value.map(orderedValue).join(",")}]`;
+  if (typeof value === "object") {
+    return `{${Object.entries(value as Record<string, unknown>)
+      .map(([key, inner]) => `${key}:${orderedValue(inner)}`)
+      .sort()
+      .join(",")}}`;
+  }
+  return String(value);
+}
+
+function stableValue(value: unknown): string {
+  if (value === undefined || value === null) return "";
+  // 목록만 정규화하고 원소는 그대로 — 안쪽까지 정렬하면 쌍의 방향이 사라진다
+  if (Array.isArray(value)) return `[${value.map(orderedValue).sort().join(",")}]`;
+  if (typeof value === "object") {
+    return `{${Object.entries(value as Record<string, unknown>)
+      .map(([key, inner]) => `${key}:${stableValue(inner)}`)
+      .sort()
+      .join(",")}}`;
+  }
+  return String(value);
+}
+
+export function itineraryBasisKey(input: {
+  request: Record<string, unknown>;
+  selectedAltId: string | null;
+  reopened: boolean;
+}): string {
+  return [
+    stableValue(input.request),
+    input.selectedAltId ?? "base",
+    input.reopened ? "reopened" : "live",
+  ].join("\u0000");
 }
