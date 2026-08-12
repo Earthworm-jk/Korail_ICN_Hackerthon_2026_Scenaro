@@ -42,6 +42,8 @@ import {
 } from "@/lib/itinerary-command-ui";
 import { sortCandidatePlaces } from "@/lib/place-ranking";
 import { getFlightInfo } from "@/lib/actions/flights";
+import { getAirportPassengerAdvisories } from "@/lib/actions/airport-passenger-advisory";
+import type { AirportPassengerAdvisoryPair } from "@/lib/actions/airport-passenger-advisory";
 import { t, withValues, type Locale, type MessageKey } from "@/lib/i18n/messages";
 import { buildMockAlternatives } from "@/lib/alternatives-mock";
 import {
@@ -130,6 +132,7 @@ type FlightField = {
   notFound: boolean;
   source?: "live" | "snapshot"; // 조회 출처 — 폴백 여부 표시 (API_SPEC 2.1)
   status?: string; // 운항 상태 문구 — live 조회 시
+  terminal?: string;
 };
 
 // #85 확정: 촬영지 선택과 일정 결과가 한 화면이라 스테퍼도 3단계다.
@@ -199,10 +202,11 @@ const pad2 = (n: number) => String(n).padStart(2, "0");
 const HOURS = Array.from({ length: 24 }, (_, i) => pad2(i));
 const MINUTES = Array.from({ length: 60 }, (_, i) => pad2(i));
 
-function DateTimeField({ value, onChange, className }: {
+function DateTimeField({ value, onChange, className, inputId }: {
   value: string;
   onChange: (value: string) => void;
   className?: string;
+  inputId?: string;
 }) {
   const [date = "", time = ""] = value.split("T");
   const [hour = "00", minute = "00"] = time.split(":");
@@ -210,6 +214,7 @@ function DateTimeField({ value, onChange, className }: {
   return (
     <div className={`flex items-center gap-1.5 ${className ?? ""}`}>
       <input
+        id={inputId}
         type="date"
         className="min-w-0 flex-1 rounded border px-2 py-1 text-sm"
         value={date}
@@ -383,6 +388,9 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
   // 파생 여유는 #3 확정 기본값 유지: 입국 +120분, 출국 안전 버퍼 120분(PRD §8.1) — 표현만 절대 시각
   const [airportReady, setAirportReady] = useState({ at: "2026-08-12T12:00", touched: false });
   const [airportDeadline, setAirportDeadline] = useState({ at: "2026-08-14T16:00", touched: false });
+  const [airportAdvisories, setAirportAdvisories] = useState<AirportPassengerAdvisoryPair | null>(null);
+  const [dismissedAirportAdvisories, setDismissedAirportAdvisories] = useState<Set<string>>(new Set());
+  const airportAdvisoryRequest = useRef(0);
 
   const deriveLocal = (at: string, minutes: number) =>
     toLocalInput(new Date(Date.parse(fromLocalInput(at)) + minutes * 60_000).toISOString());
@@ -527,15 +535,47 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
     if (!field.flightNo.trim()) return;
     const res = await getFlightInfo(field.flightNo, direction, field.at); // 날짜부 → searchday (#46)
     if (res.ok) {
-      setField({ ...field, notFound: false, source: res.source, status: res.flight.status });
+      setField({
+        ...field,
+        notFound: false,
+        source: res.source,
+        status: res.flight.status,
+        terminal: res.flight.terminal,
+      });
       // live 조회는 변경(예상) 시각이 있으면 그 값을 쓴다 — 예선 약속(지연 반영) 서사
       (direction === "arrival" ? setArrivalAtInput : setDepartureAtInput)(
         toLocalInput(res.flight.estimatedAt ?? res.flight.scheduledAt),
       );
     } else {
-      setField({ ...field, notFound: true, source: undefined, status: undefined });
+      setField({ ...field, notFound: true, source: undefined, status: undefined, terminal: undefined });
     }
   }, [arrival, departure, setArrivalAtInput, setDepartureAtInput]);
+
+  // #177 — D-1/D-day 승객예고는 사용자의 시각을 덮어쓰지 않고 위험 신호만 만든다.
+  // 서버 Action이 라이브→공유 픽스처 폴백을 책임지고, 늦게 온 옛 응답은 버린다.
+  useEffect(() => {
+    const sequence = ++airportAdvisoryRequest.current;
+    const minutesBetween = (later: string, earlier: string) => {
+      const value = Math.round((Date.parse(fromLocalInput(later)) - Date.parse(fromLocalInput(earlier))) / 60_000);
+      return Number.isFinite(value) ? value : null;
+    };
+    void getAirportPassengerAdvisories({
+      arrival: {
+        selectedAt: airportReady.at,
+        slackMinutes: minutesBetween(airportReady.at, arrival.at),
+        terminal: arrival.terminal,
+      },
+      departure: {
+        selectedAt: airportDeadline.at,
+        slackMinutes: minutesBetween(departure.at, airportDeadline.at),
+        terminal: departure.terminal,
+      },
+    }).then((next) => {
+      if (sequence === airportAdvisoryRequest.current) setAirportAdvisories(next);
+    }).catch(() => {
+      if (sequence === airportAdvisoryRequest.current) setAirportAdvisories(null);
+    });
+  }, [arrival.at, arrival.terminal, departure.at, departure.terminal, airportReady.at, airportDeadline.at]);
 
   // #78 P1 — LLM 보조는 결정적 검색 0건일 때 서버에서만 실행된다.
   // 타이핑 중 중간 문자열마다 외부 호출하지 않도록 300ms 디바운스하고, 취소된 요청의 응답은 버린다.
@@ -1537,6 +1577,18 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
     arrival.at && airportReady.at ? Math.round((ms(airportReady.at) - ms(arrival.at)) / 60_000) : null;
   const deadlineSlackMin =
     departure.at && airportDeadline.at ? Math.round((ms(departure.at) - ms(airportDeadline.at)) / 60_000) : null;
+  const arrivalAdvisory = airportAdvisories?.arrival;
+  const departureAdvisory = airportAdvisories?.departure;
+  const showArrivalAdvisory = arrivalAdvisory?.status === "elevated"
+    && !dismissedAirportAdvisories.has(arrivalAdvisory.key);
+  const showDepartureAdvisory = departureAdvisory?.status === "elevated"
+    && !dismissedAirportAdvisories.has(departureAdvisory.key);
+  const dismissAirportAdvisory = (key: string) => {
+    setDismissedAirportAdvisories((current) => new Set(current).add(key));
+  };
+  const focusAirportTime = (id: string) => {
+    document.getElementById(id)?.focus();
+  };
 
   return (
     // #14 v0.6 시안 — 페이지는 subtle 배경, 앱은 라운드 카드(sc-app)
@@ -1722,9 +1774,10 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
           </div>
           <div className="mt-4 grid gap-4 sm:grid-cols-2">
             <div className="rounded-lg border p-4">
-              <label className="text-sm font-medium">{tr("step1.airportReady")}</label>
+              <label htmlFor="airport-ready-date" className="text-sm font-medium">{tr("step1.airportReady")}</label>
               <DateTimeField
                 className="mt-2"
+                inputId="airport-ready-date"
                 value={airportReady.at}
                 onChange={(at) => setAirportReady({ at, touched: true })}
               />
@@ -1733,11 +1786,30 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
                   {tr("step1.slackAfterArrival")}: {readySlackMin}{tr("step1.minutes")}
                 </p>
               )}
+              {showArrivalAdvisory && arrivalAdvisory && (
+                <div role="alert" className="mt-3 rounded-lg border border-sc-orange/50 bg-sc-orange-soft p-3 text-sm text-sc-orange-text">
+                  <div className="flex items-start gap-2">
+                    <TriangleAlert aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
+                    <div>
+                      <p className="font-medium">{tr("step1.arrivalCrowdingTitle")}</p>
+                      <p className="mt-1 text-xs">{tr("step1.arrivalCrowdingBody")}</p>
+                      <p className="mt-1 text-[11px] opacity-80">
+                        {tr(arrivalAdvisory.source === "live" ? "step1.crowdingSourceLive" : "step1.crowdingSourceSnapshot")}
+                      </p>
+                      <div className="mt-2 flex flex-wrap gap-2">
+                        <button type="button" className="rounded bg-sc-orange px-2.5 py-1 text-xs text-white" onClick={() => focusAirportTime("airport-ready-date")}>{tr("step1.changeTime")}</button>
+                        <button type="button" className="rounded border border-current px-2.5 py-1 text-xs" onClick={() => dismissAirportAdvisory(arrivalAdvisory.key)}>{tr("step1.keepTime")}</button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
             <div className="rounded-lg border p-4">
-              <label className="text-sm font-medium">{tr("step1.airportDeadline")}</label>
+              <label htmlFor="airport-deadline-date" className="text-sm font-medium">{tr("step1.airportDeadline")}</label>
               <DateTimeField
                 className="mt-2"
+                inputId="airport-deadline-date"
                 value={airportDeadline.at}
                 onChange={(at) => setAirportDeadline({ at, touched: true })}
               />
@@ -1746,8 +1818,29 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
                   {tr("step1.slackBeforeDeparture")}: {deadlineSlackMin}{tr("step1.minutes")}
                 </p>
               )}
+              {showDepartureAdvisory && departureAdvisory && (
+                <div role="alert" className="mt-3 rounded-lg border border-sc-orange/50 bg-sc-orange-soft p-3 text-sm text-sc-orange-text">
+                  <div className="flex items-start gap-2">
+                    <TriangleAlert aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
+                    <div>
+                      <p className="font-medium">{tr("step1.departureCrowdingTitle")}</p>
+                      <p className="mt-1 text-xs">{tr("step1.departureCrowdingBody")}</p>
+                      <p className="mt-1 text-[11px] opacity-80">
+                        {tr(departureAdvisory.source === "live" ? "step1.crowdingSourceLive" : "step1.crowdingSourceSnapshot")}
+                      </p>
+                      <div className="mt-2 flex flex-wrap gap-2">
+                        <button type="button" className="rounded bg-sc-orange px-2.5 py-1 text-xs text-white" onClick={() => focusAirportTime("airport-deadline-date")}>{tr("step1.changeTime")}</button>
+                        <button type="button" className="rounded border border-current px-2.5 py-1 text-xs" onClick={() => dismissAirportAdvisory(departureAdvisory.key)}>{tr("step1.keepTime")}</button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
+          {(arrivalAdvisory?.status === "out_of_range" || departureAdvisory?.status === "out_of_range") && (
+            <p className="mt-3 text-xs text-sc-muted">{tr("step1.crowdingRecheck")}</p>
+          )}
           <div className="mt-4 flex items-center justify-end gap-3">
             {step1Error && <p className="text-sm text-sc-red">{tr(step1Error)}</p>}
             <button

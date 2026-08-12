@@ -1,0 +1,32 @@
+{
+  "sourceUrl": "https://www.data.go.kr/data/15095066/openapi.do",
+  "verifiedAt": "2026-08-12",
+  "kind": "demo_fixture",
+  "notice": "승객예고 API의 시간대별 예상 승객 수 구조를 재현한 결정적 데모·평가 픽스처이며 공식 혼잡 등급이 아닙니다.",
+  "points": [
+    { "date": "2026-08-12", "hour": 8, "terminal": "T1", "direction": "arrival", "passengerCount": 620 },
+    { "date": "2026-08-12", "hour": 9, "terminal": "T1", "direction": "arrival", "passengerCount": 840 },
+    { "date": "2026-08-12", "hour": 10, "terminal": "T1", "direction": "arrival", "passengerCount": 1320 },
+    { "date": "2026-08-12", "hour": 11, "terminal": "T1", "direction": "arrival", "passengerCount": 910 },
+    { "date": "2026-08-12", "hour": 12, "terminal": "T1", "direction": "arrival", "passengerCount": 1480 },
+    { "date": "2026-08-12", "hour": 13, "terminal": "T1", "direction": "arrival", "passengerCount": 760 },
+    { "date": "2026-08-12", "hour": 8, "terminal": "T2", "direction": "arrival", "passengerCount": 480 },
+    { "date": "2026-08-12", "hour": 9, "terminal": "T2", "direction": "arrival", "passengerCount": 650 },
+    { "date": "2026-08-12", "hour": 10, "terminal": "T2", "direction": "arrival", "passengerCount": 990 },
+    { "date": "2026-08-12", "hour": 11, "terminal": "T2", "direction": "arrival", "passengerCount": 700 },
+    { "date": "2026-08-12", "hour": 12, "terminal": "T2", "direction": "arrival", "passengerCount": 1160 },
+    { "date": "2026-08-12", "hour": 13, "terminal": "T2", "direction": "arrival", "passengerCount": 580 },
+    { "date": "2026-08-12", "hour": 13, "terminal": "T1", "direction": "departure", "passengerCount": 720 },
+    { "date": "2026-08-12", "hour": 14, "terminal": "T1", "direction": "departure", "passengerCount": 880 },
+    { "date": "2026-08-12", "hour": 15, "terminal": "T1", "direction": "departure", "passengerCount": 1410 },
+    { "date": "2026-08-12", "hour": 16, "terminal": "T1", "direction": "departure", "passengerCount": 1530 },
+    { "date": "2026-08-12", "hour": 17, "terminal": "T1", "direction": "departure", "passengerCount": 970 },
+    { "date": "2026-08-12", "hour": 18, "terminal": "T1", "direction": "departure", "passengerCount": 810 },
+    { "date": "2026-08-13", "hour": 13, "terminal": "T1", "direction": "departure", "passengerCount": 680 },
+    { "date": "2026-08-13", "hour": 14, "terminal": "T1", "direction": "departure", "passengerCount": 820 },
+    { "date": "2026-08-13", "hour": 15, "terminal": "T1", "direction": "departure", "passengerCount": 1380 },
+    { "date": "2026-08-13", "hour": 16, "terminal": "T1", "direction": "departure", "passengerCount": 1490 },
+    { "date": "2026-08-13", "hour": 17, "terminal": "T1", "direction": "departure", "passengerCount": 940 },
+    { "date": "2026-08-13", "hour": 18, "terminal": "T1", "direction": "departure", "passengerCount": 770 }
+  ]
+}
