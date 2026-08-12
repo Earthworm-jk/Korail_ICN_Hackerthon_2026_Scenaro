@@ -51,6 +51,14 @@ export const UnknownClarificationSchema = z.discriminatedUnion("source", [
     /** `DAY_MISSING`처럼 문장에 되쓸 조각이 있으면 함께 준다 */
     placeName: PlaceNameSchema.optional(),
     /**
+     * `PLACE_MISSING`에서 이미 읽은 일차 (#197 P0-B).
+     *
+     * 앞서는 이 조각을 버렸다. "둘째 날에 넣어줘"의 `2`를 버리고 되물으면, 사용자가
+     * "영진해변"이라고 답할 때 그 문장만으로는 동사가 없어 아무것도 읽히지 않는다 —
+     * 되물어 놓고 답을 못 받는 셈이었다.
+     */
+    dayIndex: DayIndexSchema.optional(),
+    /**
      * 옮기기인지 넣기인지 (#171). 되물을 때는 문구가 같아도 다음 턴에 완성할 명령이 다르다 —
      * 이 조각이 없으면 "넣어줘"라고 한 요청이 옮기기로 완성된다.
      */

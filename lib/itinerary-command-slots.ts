@@ -24,14 +24,26 @@
  * 슬롯이 남은 채 기준 일정이 바뀌면 "둘째 날"이 다른 일정의 둘째 날에 적용된다. 호출부는
  * `SLOT_INVALIDATING_EVENTS`의 사건마다 반드시 버려야 한다 — 이 목록이 계약이다.
  */
-import { parseDayIndex } from "./itinerary-command-fallback";
-import type { RawItineraryCommand } from "./itinerary-command";
+import {
+  dayIndicesIn,
+  hasBlockingMarker,
+  hasCommandVerb,
+  parseDayIndex,
+} from "./itinerary-command-fallback";
+import { RawItineraryCommandSchema, type RawItineraryCommand } from "./itinerary-command";
 
-/** 재질문으로 확보해 다음 발화에 이어 붙일 조각 */
-export type PendingCommandSlots = {
-  intent: "move_place" | "add_place";
-  placeName: string;
-};
+type SlotIntent = "move_place" | "add_place";
+
+/**
+ * 재질문으로 확보해 다음 발화에 이어 붙일 조각.
+ *
+ * **어느 칸을 물어봤는지가 곧 갈래다** (#197 P0-B). 앞서는 장소를 들고 날짜를 묻는
+ * 한 방향뿐이었다. 반대 방향(`둘째 날에 넣어줘` → "어떤 장소인가요?")을 더하면서
+ * 두 방향이 서로의 답변을 잘못 받지 않게 `requested`로 갈라 둔다.
+ */
+export type PendingCommandSlots =
+  | { requested: "day"; intent: SlotIntent; placeName: string }
+  | { requested: "place"; intent: SlotIntent; dayIndex: number };
 
 /**
  * 슬롯을 버려야 하는 사건 — **계약이다.** 하나라도 빠지면 낡은 슬롯이 살아남아
@@ -71,18 +83,30 @@ export type SlotInvalidatingEvent = (typeof SLOT_INVALIDATING_EVENTS)[number];
 /**
  * 이번 응답이 재질문이라면 다음 턴에 이어 붙일 조각을 남긴다.
  *
- * **우리가 물어본 것만 남긴다.** `PLACE_MISSING`(장소를 못 읽음)에는 남길 것이 없다 —
- * 날짜만 들고 있어 봐야 다음 문장이 장소를 주면 그때 온전히 읽힌다. 반대로 `DAY_MISSING`은
- * 장소를 이미 읽었으므로 그것을 남긴다.
+ * **우리가 물어본 것만 남긴다.** 물어보지 않은 칸을 들고 있으면 다음 발화의 엉뚱한
+ * 조각과 합쳐진다.
+ *
+ * `PLACE_MISSING`에는 남길 것이 없다던 앞선 판단(PR #175)을 **뒤집는다** (#197 P0-B).
+ * 근거는 "다음 문장이 장소를 주면 그때 온전히 읽힌다"였는데, 실제로는 `영진해변`처럼
+ * 이름만 온 답변에 동사가 없어 아무것도 읽히지 않는다 — 되물어 놓고 답을 못 받았다.
+ *
+ * 슬롯 생성은 폴백 경로 한정이다. LLM 경로의 슬롯 생성 동등성은 `ModelOutputSchema`의
+ * 누락 슬롯 계약과 함께 제출 후로 둔다 (#197 결정).
  */
 export function pendingSlotsFrom(raw: RawItineraryCommand): PendingCommandSlots | null {
   if (raw.intent !== "unknown") return null;
   if (raw.clarification.source !== "deterministic") return null;
-  if (raw.clarification.reason !== "DAY_MISSING") return null;
 
-  const { placeName, intent } = raw.clarification;
-  if (placeName === undefined || intent === undefined) return null;
-  return { intent, placeName };
+  const { placeName, dayIndex, intent } = raw.clarification;
+  if (intent === undefined) return null;
+
+  if (raw.clarification.reason === "DAY_MISSING") {
+    return placeName === undefined ? null : { requested: "day", intent, placeName };
+  }
+  if (raw.clarification.reason === "PLACE_MISSING") {
+    return dayIndex === undefined ? null : { requested: "place", intent, dayIndex };
+  }
+  return null;
 }
 
 /**
@@ -129,6 +153,51 @@ function stripAnswerSuffixes(text: string): string {
   return rest;
 }
 
+/**
+ * 이번 발화가 **장소 답변 하나뿐인가** (#197 P0-B).
+ *
+ * `dayOnlyAnswer`를 그대로 옮겨올 수 없다. 날짜는 닫힌 집합이라 "표현을 지우고 남은 게
+ * 없으면 답변"으로 가를 수 있지만, 장소 이름은 열린 집합이라 지울 목록을 만들 수 없다.
+ * 그래서 반대로 **답변일 수 없는 신호**를 찾는다.
+ *
+ * 이 게이트가 없으면 PR #175가 여섯 차례 리뷰로 막은 오염이 장소 방향에서 되살아난다.
+ * resolver의 이름 대조는 역방향 포함 일치(`needle.includes(name)`)라 문장 안에 카탈로그
+ * 이름이 있으면 잡아내고, 일정에 이미 있는 장소면 `add`가 `move`로 확정되기까지 한다.
+ *
+ * ```
+ * "아니야 그냥 광화문 빼줘"   -> 게이트 없으면 move_place 광화문  (빼달라는데 옮긴다)
+ * "광화문 일정 설명해줘"     -> 게이트 없으면 move_place 광화문  (설명 요청인데 옮긴다)
+ * ```
+ *
+ * 되물은 칸에 답만 온 게 아니면 합치지 않는다 — 사용자의 새 발화는 새 요청으로 흘려보내고
+ * 파서가 스스로 읽게 둔다.
+ */
+const NON_ANSWER_MARKERS = /(설명|알려|추천|어때|보여|왜|어디|언제)/;
+
+/** 이름처럼 보이는 덩어리의 상한 — 이보다 길면 문장이지 답변이 아니다 */
+const MAX_ANSWER_WORDS = 4;
+const MAX_ANSWER_CHARS = 40;
+
+export function placeOnlyAnswer(sentence: string): string | undefined {
+  // 부정·취소·대조가 섞였으면 답변이 아니다 — 파서 진입부와 같은 판정을 쓴다
+  if (hasBlockingMarker(sentence)) return undefined;
+  // 동사가 있으면 스스로 읽히는 새 명령이다
+  if (hasCommandVerb(sentence)) return undefined;
+  // 설명·추천 요청은 장소 이름이 들어 있어도 답변이 아니다
+  if (NON_ANSWER_MARKERS.test(sentence)) return undefined;
+  // 날짜가 섞였으면 우리가 물어본 칸의 답이 아니다
+  if (dayIndicesIn(sentence).length > 0) return undefined;
+
+  const stripped = stripAnswerSuffixes(
+    sentence.trim().replace(/[.!?~,·]+$/g, "").trim(),
+  ).trim();
+  if (stripped === "") return undefined;
+  if (stripped.length > MAX_ANSWER_CHARS) return undefined;
+  if (stripped.split(/\s+/).length > MAX_ANSWER_WORDS) return undefined;
+
+  return stripped;
+}
+
 export function dayOnlyAnswer(sentence: string): number | undefined {
   const dayIndex = parseDayIndex(sentence);
   if (dayIndex === undefined) return undefined;
@@ -166,8 +235,20 @@ export function completeWithSlots(
   if (slots === null) return raw;
   if (raw.intent !== "unknown") return raw;
 
-  const dayIndex = dayOnlyAnswer(sentence);
-  if (dayIndex === undefined) return raw;
+  if (slots.requested === "day") {
+    const dayIndex = dayOnlyAnswer(sentence);
+    if (dayIndex === undefined) return raw;
+    return { intent: slots.intent, placeName: slots.placeName, dayIndex };
+  }
 
-  return { intent: slots.intent, placeName: slots.placeName, dayIndex };
+  const placeName = placeOnlyAnswer(sentence);
+  if (placeName === undefined) return raw;
+
+  // 이름은 사용자 문장을 그대로 옮긴 것이라 길이·공백 계약을 한 번 지난다
+  const parsed = RawItineraryCommandSchema.safeParse({
+    intent: slots.intent,
+    placeName,
+    dayIndex: slots.dayIndex,
+  });
+  return parsed.success ? parsed.data : raw;
 }

@@ -29,6 +29,45 @@ const EN_ORDINALS = ["first", "second", "third", "fourth", "fifth", "sixth", "se
  */
 const MOVE_VERBS = /(옮겨|이동|보내)/;
 const ADD_VERBS = /(넣어|추가|포함)/;
+
+/**
+ * 부정·취소·대조 표지 (#197 P0-A)
+ *
+ * **긍정 동사 판정보다 먼저 본다.** 앞서 `넣지 마`가 안전했던 것은 `ADD_VERBS`가
+ * 활용형(`넣어`)이라 우연히 걸리지 않았기 때문이고, `추가`·`포함`은 어간이라 부정이
+ * 그대로 통과했다 — `영진해변을 둘째 날에 추가하지 마`가 긍정 proposal이 됐다.
+ * 장소와 일차가 모두 유효하므로 resolver도 막지 못한다. 안전이 정규식 활용형의
+ * 부산물이 되지 않게 여기서 끊는다.
+ *
+ * 대조(`말고`·`대신`)도 같이 끊는다. `둘째 날 말고 셋째 날에 넣어줘`는
+ * `parseDayIndex`가 문장 안 **첫 서수**를 잡아 사용자가 배제한 날짜를 골랐다.
+ */
+const BLOCKING_MARKERS = [
+  // 하지 마 · 넣지 말고 · 추가하지 마세요
+  /(?:하|넣|추가하|포함하|옮기|빼|배치하)지\s*(?:마|말)/,
+  // 추가하지 않아도 돼 · 넣지 않아야 한다
+  /않아(?:도|야)?\s*(?:되|돼|됩니다|괜찮|한다)/,
+  // 안 넣어도 돼 — `안`은 단독으로 보면 `안내`·`안동`을 오탐하므로 동사와 붙여서만 본다
+  /안\s*(?:넣|추가|포함|옮기|빼|배치)/,
+  /필요\s*없/,
+  /취소|그만|됐어|됐습니다/,
+  /아니(?:야|요|에요|었어)/,
+  // 대조 — 단독 낱말로만 본다 (`대신동` 같은 지명 오탐 방지)
+  /말고/,
+  /(?:^|\s)대신(?:에)?(?=\s|$)/,
+  /\bdon'?t\b|\bdo\s+not\b|\bnot\b|\bnever\b/i,
+  /\binstead\s+of\b|\bexcept\b|\bno\s+need\b|\bcancel\b/i,
+];
+
+/** 부정·취소·대조 표지가 있나 — 슬롯 합치기 게이트도 같은 판정을 쓴다 (#197 P0-B) */
+export function hasBlockingMarker(text: string): boolean {
+  return BLOCKING_MARKERS.some((pattern) => pattern.test(text));
+}
+
+/** 이동·추가 동사가 있나 — 장소 답변인지 새 명령인지 가르는 데 쓴다 */
+export function hasCommandVerb(text: string): boolean {
+  return MOVE_VERBS.test(text) || ADD_VERBS.test(text) || /\b(move|add|put)\b/i.test(text);
+}
 /**
  * "7곳만 남겨줘" (#171 6번).
  *
@@ -116,6 +155,36 @@ export function parseDayIndex(input: string): number | undefined {
 }
 
 /**
+ * 문장에 나온 여행 일차를 **모두** 모은다 (#197 P0-A).
+ *
+ * `parseDayIndex`는 첫 하나만 돌려주므로 `둘째 날이나 셋째 날`처럼 목표가 둘인 문장을
+ * 조용히 하나로 줄인다. 둘 이상이면 단일 목표로 해소되지 않았다는 뜻이라 되물어야 한다.
+ */
+export function dayIndicesIn(input: string): number[] {
+  const found = new Set<number>();
+
+  for (const match of input.matchAll(/(\d+)\s*(?:일\s*차|일째|번째\s*날)/g)) {
+    const value = Number(match[1]);
+    if (Number.isInteger(value) && value >= 1) found.add(value);
+  }
+  for (const match of input.matchAll(/day\s*(\d+)/gi)) {
+    const value = Number(match[1]);
+    if (Number.isInteger(value) && value >= 1) found.add(value);
+  }
+  for (const [index, word] of KO_ORDINALS.entries()) {
+    if (new RegExp(`${word}(?:째)?\\s*날`).test(input)) found.add(index + 1);
+  }
+  for (const [index, word] of KO_NATIVE_DAYS.entries()) {
+    if (new RegExp(`${word}째`).test(input)) found.add(index + 1);
+  }
+  for (const [index, word] of EN_ORDINALS.entries()) {
+    if (new RegExp(`\\b${word}\\s+day\\b`, "i").test(input)) found.add(index + 1);
+  }
+
+  return [...found].sort((a, b) => a - b);
+}
+
+/**
  * 장소명 후보를 잘라 낸다.
  *
  * 카탈로그 대조는 하지 않는다 — 그건 resolver 몫이고, 여기서 하면 판정이 두 군데로 흩어진다.
@@ -145,6 +214,16 @@ export function parsePlaceName(input: string): string | undefined {
 export function parseCommand(input: string): RawItineraryCommand {
   const text = input.trim();
   if (text === "") return unknown("EMPTY_INPUT");
+
+  /**
+   * 부정·취소·대조와 복수 일차는 **의도 판정보다 먼저** 끊는다 (#197 P0-A).
+   *
+   * 여기서 못 알아듣는 편이 사용자가 하지 말라고 한 일을 확인 창에 올리는 것보다 낫다.
+   * 새 사유 코드는 만들지 않는다 — 기존 재질문 계약으로 먼저 차단하고, 사유 세분화는
+   * ko/en 문구와 화면 분기를 함께 바꿀 수 있을 때 한다 (#197 결정).
+   */
+  if (hasBlockingMarker(text)) return unknown("UNSUPPORTED_INTENT");
+  if (dayIndicesIn(text).length > 1) return unknown("UNSUPPORTED_INTENT");
 
   if (EXPLAIN_PATTERNS.some((pattern) => pattern.test(text))) {
     return { intent: "explain_changes" };
@@ -181,30 +260,35 @@ export function parseCommand(input: string): RawItineraryCommand {
   // `여유롭게 바꿔줘`가 `바꿔` 하나로 이동으로 읽히는데, 여기서 "어떤 장소인가요?"로
   // 되물으면 지원하지도 않는 기능으로 사용자를 끌고 간다 — 못 알아들었다고 말하는 게 맞다.
   if (placeName === undefined && visitDayIndex === undefined) return unknown("UNSUPPORTED_INTENT");
-  if (placeName === undefined) return unknown("PLACE_MISSING");
   // 이동과 추가가 함께 읽히면 이동으로 본다 — resolver가 일정에 없으면 되묻는다
   const intent = wantsMove ? "move_place" : "add_place";
+  // 일차는 읽었으므로 되물을 때 되쓸 수 있게 함께 넘긴다 (#197 P0-B) — 앞서는 버렸다
+  if (placeName === undefined) return unknown("PLACE_MISSING", { intent, dayIndex: visitDayIndex });
   // 장소는 읽었으므로 되물을 때 되쓸 수 있게 함께 넘긴다 — 문장은 messages.ts가 만든다.
   // 무엇을 하려던 요청인지도 함께 준다 (#171): 문구는 같아도 완성할 명령이 다르다
-  if (visitDayIndex === undefined) return unknown("DAY_MISSING", placeName, intent);
+  if (visitDayIndex === undefined) return unknown("DAY_MISSING", { placeName, intent });
 
   const parsed = RawItineraryCommandSchema.safeParse({ intent, placeName, dayIndex: visitDayIndex });
-  return parsed.success ? parsed.data : unknown("PLACE_MISSING");
+  return parsed.success ? parsed.data : unknown("PLACE_MISSING", { intent });
 }
 
 /** 폴백은 문구를 만들지 않는다 — 코드와 조각만 (PR #142 리뷰 2번) */
 function unknown(
   reason: UnknownReason,
-  placeName?: string,
-  intent?: "move_place" | "add_place",
+  slots: {
+    placeName?: string;
+    intent?: "move_place" | "add_place";
+    dayIndex?: number;
+  } = {},
 ): RawItineraryCommand {
   return {
     intent: "unknown",
     clarification: {
       source: "deterministic",
       reason,
-      ...(placeName ? { placeName } : {}),
-      ...(intent ? { intent } : {}),
+      ...(slots.placeName ? { placeName: slots.placeName } : {}),
+      ...(slots.dayIndex !== undefined ? { dayIndex: slots.dayIndex } : {}),
+      ...(slots.intent ? { intent: slots.intent } : {}),
     },
   };
 }

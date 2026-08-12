@@ -84,6 +84,10 @@ const SYSTEM_PROMPT = [
   "recommend_along_route: the user asks for another filming location near a specific trip day's route.",
   "explain_changes: the user asks what changed after the last edit.",
   "unknown: anything else, including stay length, free time, making a day lighter, airport buffer, train choice, or same-day ordering.",
+  // #197 P0-A — 결정적 폴백만 막으면 프로덕션 기본 경로(키가 살아 있는 LLM)가 열린 채 남는다.
+  // strict schema와 명령 union은 건드리지 않고 규칙만 한 줄 더한다.
+  "Negated, prohibitive, or cancelling requests are always unknown: if the user says not to do something, to leave it out, to keep it as is, or cancels a previous answer, return unknown instead of the positive command.",
+  "If the sentence names more than one trip day or contrasts days (for example 'not day 2 but day 3'), return unknown rather than choosing one.",
   "For move_place and add_place return placeName exactly as the user wrote it and dayIndex as a 1-based trip day number.",
   "For recommend_along_route set placeName to null and return the requested 1-based trip day in dayIndex.",
   "Never invent or output place IDs, calendar dates, times, train numbers, or travel durations. Only the user's own wording and the day ordinal.",
