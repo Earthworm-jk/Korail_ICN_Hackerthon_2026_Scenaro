@@ -11,7 +11,7 @@ export const messages = {
     // 헤더에서 두 이름을 병기할 이유가 없다 — 국문 표기는 EN 토글이 아니라
     // 이름 자체를 갈라 놓는 일이었다.
     "app.title": "SCENARO",
-    "app.tagline": "Your scenes, your scenaro.",
+    "app.tagline": "Your scenes, your scenario.",
     "app.snapshotBadge": "데모 스냅샷",
     "nav.step1": "여행 조건",
     "nav.step2": "K-콘텐츠",
@@ -493,7 +493,7 @@ export const messages = {
   },
   en: {
     "app.title": "SCENARO",
-    "app.tagline": "Your scenes, your scenaro.",
+    "app.tagline": "Your scenes, your scenario.",
     "app.snapshotBadge": "Demo snapshot",
     "nav.step1": "Trip window",
     "nav.step2": "K-content",
