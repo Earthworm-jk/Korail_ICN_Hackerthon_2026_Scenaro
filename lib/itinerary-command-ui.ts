@@ -258,3 +258,23 @@ export function overselectionProposalOf(input: {
     selectedCount: input.capacity.selectedCount,
   };
 }
+
+/**
+ * 과선택 정리를 되돌릴 수 있는가 (PR #185 리뷰).
+ *
+ * 이 되돌리기는 **정리 적용 직후에만 유효한 한 단계**다. 그 뒤에 사용자가 후보를 토글하거나
+ * 다른 명령이 선택을 바꾸면, 옛 스냅샷을 복원하는 순간 **그 사이 작업이 통째로 덮인다.**
+ *
+ * 호출부마다 지우게 하지 않는다 — 그러면 새 경로가 생길 때마다 또 빠뜨린다(#175에서 같은
+ * 실수를 두 번 했다). 대신 **적용 직후의 선택을 함께 저장하고, 지금 선택이 그것과 같을
+ * 때만** 되돌리기를 연다. 선택을 바꾸는 경로가 무엇이든 자동으로 닫힌다.
+ */
+export function selectionUndoAvailable(
+  undo: { appliedPlaceIds: readonly string[] } | null,
+  currentSelection: Iterable<string>,
+): boolean {
+  if (undo === null) return false;
+  const current = new Set(currentSelection);
+  if (current.size !== undo.appliedPlaceIds.length) return false;
+  return undo.appliedPlaceIds.every((placeId) => current.has(placeId));
+}

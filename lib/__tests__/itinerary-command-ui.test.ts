@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   commandInputUnavailable,
   overselectionProposalOf,
+  selectionUndoAvailable,
   commandPanelUnavailable,
   commandResponseIsCurrent,
   selectionAfterCommand,
@@ -131,5 +132,45 @@ describe("정리 제안은 현재 결과일 때만 낸다", () => {
   it("같은 입력이면 같은 답이다 — 표시와 실행이 갈리지 않는다", () => {
     const input = { capacity, selectionStateShown: false };
     expect(overselectionProposalOf(input)).toBe(overselectionProposalOf(input));
+  });
+});
+
+/**
+ * 정리 되돌리기의 수명 (PR #185 리뷰).
+ *
+ * **정리 적용 직후에만 유효한 한 단계**다. 그 뒤에 선택이 바뀌었는데 옛 스냅샷을 복원하면
+ * 그 사이 작업이 통째로 덮인다. 호출부마다 지우게 하면 새 경로가 생길 때 또 빠뜨리므로
+ * (#175에서 같은 실수를 두 번 했다), 적용 결과를 함께 저장해 **선택이 그대로일 때만** 연다.
+ */
+describe("정리 되돌리기는 적용 직후에만", () => {
+  const undo = { appliedPlaceIds: ["a", "b", "c"] };
+
+  it("적용 직후에는 되돌릴 수 있다", () => {
+    expect(selectionUndoAvailable(undo, ["a", "b", "c"])).toBe(true);
+    // 순서는 상관없다 — 집합이다
+    expect(selectionUndoAvailable(undo, ["c", "a", "b"])).toBe(true);
+  });
+
+  it("되돌릴 것이 없으면 닫혀 있다", () => {
+    expect(selectionUndoAvailable(null, ["a"])).toBe(false);
+  });
+
+  /** 사용자가 후보를 껐다 — 복원하면 그 변경이 덮인다 */
+  it("장소를 빼면 닫힌다", () => {
+    expect(selectionUndoAvailable(undo, ["a", "b"])).toBe(false);
+  });
+
+  /** 다른 명령이나 추천이 선택을 늘렸다 — 경로가 무엇이든 같은 값으로 걸린다 */
+  it("장소를 더하면 닫힌다", () => {
+    expect(selectionUndoAvailable(undo, ["a", "b", "c", "d"])).toBe(false);
+  });
+
+  /** 하나 끄고 하나 켜면 개수는 같다 — 개수만 보면 이 경우를 놓친다 */
+  it("개수가 같아도 구성이 다르면 닫힌다", () => {
+    expect(selectionUndoAvailable(undo, ["a", "b", "z"])).toBe(false);
+  });
+
+  it("선택이 비면 닫힌다", () => {
+    expect(selectionUndoAvailable(undo, [])).toBe(false);
   });
 });

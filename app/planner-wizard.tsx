@@ -33,6 +33,7 @@ import { initialPlaceIdsFromItinerary } from "@/lib/initial-place-selection";
 import {
   commandInputUnavailable,
   overselectionProposalOf,
+  selectionUndoAvailable,
   commandPanelUnavailable,
   canEditVisitDate,
   panelDismissable,
@@ -441,8 +442,13 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
   const [aiPanelOpen, setAiPanelOpen] = useState(false);
   /** 발견성 보완 라벨. 한 번 열면 다시 보여 주지 않는다 */
   const aiTriggerRef = useRef<HTMLButtonElement>(null);
-  /** 정리 제안을 적용하기 직전 선택 — 되돌리기용 (#171) */
-  const [selectionUndo, setSelectionUndo] = useState<Set<string> | null>(null);
+  /**
+   * 정리 제안 되돌리기 (#171). 직전 선택과 **적용 결과**를 함께 들고 있는다 —
+   * 지금 선택이 적용 결과와 다르면 그 사이에 다른 변경이 있었다는 뜻이라 되돌리지 않는다.
+   */
+  const [selectionUndo, setSelectionUndo] = useState<
+    { previousPlaceIds: string[]; appliedPlaceIds: string[] } | null
+  >(null);
   const [undoPoint, setUndoPoint] = useState<
     UndoPoint<ItineraryView["selectedAlt"], typeof saveStub.saveStatus> | null
   >(null);
@@ -1098,16 +1104,20 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
     const proposal = overselectionProposalOf({ capacity: selectionCapacity, selectionStateShown });
     if (proposal === null) return;
     // 되돌릴 수 있게 직전 선택을 남긴다 — 무엇을 잃었는지 모른 채 진행하면 안 된다 (#84)
-    setSelectionUndo(new Set(selectedPlaceIds));
+    setSelectionUndo({
+      previousPlaceIds: [...selectedPlaceIds],
+      appliedPlaceIds: [...proposal.keepPlaceIds],
+    });
     setAiFeedback(null);
     setSelectedPlaceIds(new Set(proposal.keepPlaceIds));
   }, [selectionCapacity, selectionStateShown, selectedPlaceIds]);
 
   const undoOverselectionProposal = useCallback(() => {
-    if (selectionUndo === null) return;
-    setSelectedPlaceIds(new Set(selectionUndo));
+    // 표시와 실행이 같은 조건을 본다 — 표시만 숨기면 오래된 closure 로 다시 복원된다
+    if (!selectionUndoAvailable(selectionUndo, selectedPlaceIds)) return;
+    setSelectedPlaceIds(new Set(selectionUndo!.previousPlaceIds));
     setSelectionUndo(null);
-  }, [selectionUndo]);
+  }, [selectionUndo, selectedPlaceIds]);
 
   /**
    * 날짜 편집을 지금 허용해도 되는가 (PR #150 리뷰 1번).
@@ -2184,9 +2194,10 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
             overselection={overselectionProposal}
             onApplyOverselection={applyOverselectionProposal}
             /* 완료형 문구는 재계산이 실제로 끝난 뒤에만 — 아직 계산 중이거나 실패했을 수 있다 */
-            onUndoOverselection={selectionUndo !== null && selectionStateShown
-              ? undoOverselectionProposal
-              : undefined}
+            onUndoOverselection={
+              selectionStateShown && selectionUndoAvailable(selectionUndo, selectedPlaceIds)
+                ? undoOverselectionProposal
+                : undefined}
             feedback={aiFeedback}
             lastDiff={lastItineraryDiff}
             onChange={setAiSentence}
