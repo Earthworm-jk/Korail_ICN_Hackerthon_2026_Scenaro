@@ -1,5 +1,5 @@
 import type { CSSProperties } from "react";
-import type { CandidateWarning, DayPlan } from "@/lib/engine/types";
+import type { CandidateWarning, DayPlan, ItineraryMetrics } from "@/lib/engine/types";
 import type { Locale, MessageKey } from "@/lib/i18n/messages";
 import type { SaveStatus } from "./save-stub";
 import styles from "./final-itinerary-page.module.css";
@@ -60,6 +60,35 @@ function dayLegs(
   ].sort((a, b) => a.departAt.localeCompare(b.departAt));
 }
 
+function durationMinutes(departAt: string, arriveAt: string): number | null {
+  const minutes = Math.round((Date.parse(arriveAt) - Date.parse(departAt)) / 60_000);
+  return Number.isFinite(minutes) && minutes > 0 ? minutes : null;
+}
+
+function durationLabel(minutes: number, tr: Translator): string {
+  const hours = Math.floor(minutes / 60);
+  const rest = minutes % 60;
+  if (hours === 0) return `${rest}${tr("region.minutes")}`;
+  return `${hours}${tr("region.hours")}${rest > 0 ? ` ${rest}${tr("region.minutes")}` : ""}`;
+}
+
+function longestLeg(
+  days: DayPlan[],
+  locale: Locale,
+  stationName: (id: string) => string,
+): { leg: FinalLeg; minutes: number; includesGateway: boolean } | null {
+  const includesGateway = days.some((day) => day.gatewayLegs !== undefined);
+  const legs = days.flatMap((day) => dayLegs(day, locale, stationName));
+  let longest: { leg: FinalLeg; minutes: number } | null = null;
+  for (const leg of legs) {
+    const minutes = durationMinutes(leg.departAt, leg.arriveAt);
+    if (minutes !== null && (longest === null || minutes > longest.minutes)) {
+      longest = { leg, minutes };
+    }
+  }
+  return longest ? { ...longest, includesGateway } : null;
+}
+
 /**
  * 개수 문구 (#131).
  *
@@ -81,6 +110,7 @@ function countLabel(
 
 export function FinalItineraryPage({
   days,
+  metrics,
   locale,
   placeName,
   stationName,
@@ -93,6 +123,7 @@ export function FinalItineraryPage({
   tr,
 }: {
   days: DayPlan[];
+  metrics?: ItineraryMetrics | null;
   locale: Locale;
   placeName: (id: string) => string;
   stationName: (id: string) => string;
@@ -109,6 +140,7 @@ export function FinalItineraryPage({
     (total, day) => total + day.rides.length + (day.gatewayLegs?.length ?? 0),
     0,
   );
+  const longest = longestLeg(days, locale, stationName);
   const dayCountStyle = {
     "--final-day-count": Math.max(1, days.length),
   } as CSSProperties;
@@ -136,6 +168,46 @@ export function FinalItineraryPage({
           ))}
         </dl>
       </div>
+
+      {(metrics || longest) && (
+        <section className="mt-4 rounded-xl border bg-sc-subtle p-4" aria-labelledby="final-travel-summary">
+          <h3 id="final-travel-summary" className="text-xs font-semibold uppercase tracking-wide text-sc-muted">
+            {tr("final.travelSummary")}
+          </h3>
+          <dl className="mt-3 grid gap-2 sm:grid-cols-3">
+            {metrics && (
+              <>
+                <div className="rounded-lg bg-sc-surface px-3 py-2.5">
+                  <dt className="text-xs text-sc-muted">{tr("final.totalTravelTime")}</dt>
+                  <dd className="mt-1 text-base font-semibold text-sc-blue">
+                    {durationLabel(metrics.totalTravelMinutes, tr)}
+                  </dd>
+                </div>
+                <div className="rounded-lg bg-sc-surface px-3 py-2.5">
+                  <dt className="text-xs text-sc-muted">{tr("final.transfers")}</dt>
+                  <dd className="mt-1 text-base font-semibold text-sc-blue">
+                    {tr("final.transferCount").replace("{n}", String(metrics.transferCount))}
+                  </dd>
+                </div>
+              </>
+            )}
+            {longest && (
+              <div className="rounded-lg bg-sc-surface px-3 py-2.5">
+                <dt className="text-xs text-sc-muted">
+                  {tr(longest.includesGateway ? "final.longestTransportLeg" : "final.longestTrainLeg")}
+                </dt>
+                <dd className="mt-1 text-base font-semibold text-sc-blue">
+                  {durationLabel(longest.minutes, tr)}
+                </dd>
+                <dd className="mt-0.5 text-xs text-sc-muted">
+                  {longest.leg.from} → {longest.leg.to}
+                </dd>
+              </div>
+            )}
+          </dl>
+          <p className="mt-3 text-xs leading-relaxed text-sc-muted">{tr("final.travelScopeNote")}</p>
+        </section>
+      )}
 
       <div className={`${styles.dayGrid} mt-4`} style={dayCountStyle}>
         {days.map((day, index) => {

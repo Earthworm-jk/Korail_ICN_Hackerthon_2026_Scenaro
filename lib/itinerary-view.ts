@@ -16,7 +16,7 @@
  * - 선택이 0곳이 되면 직전 일정을 남기지 않는다 (SELECTION_CLEARED). 고를 게 없는데
  *   이전 선택의 결과가 남아 있으면 그걸 저장할 수 있게 된다.
  */
-import type { DayPlan, GatewayAlternative, ItineraryResult } from "./engine/types";
+import type { DayPlan, GatewayAlternative, ItineraryMetrics, ItineraryResult } from "./engine/types";
 import type { MockAlternative } from "./alternatives-mock";
 import type { SavedItineraryStub } from "./saved-itineraries-stub";
 import { summarizeSelectionCapacity } from "./selection-capacity";
@@ -91,6 +91,20 @@ export function displayedDays(view: ItineraryView): DayPlan[] | null {
   if (view.reopened) return view.reopened.days;
   if (view.selectedAlt) return view.selectedAlt.days;
   return recommendedDays(view);
+}
+
+/**
+ * 화면 일정에 대응하는 엔진 측정값.
+ *
+ * 저장 레코드는 아직 metrics를 보존하지 않으므로 재열람에서 값을 재구성하지 않는다. 특히
+ * 환승 횟수는 DayPlan만으로 원래 route 경계를 정확히 복원할 수 없어 추정하면 사실과 달라진다.
+ * mock 대안은 검증 지표를 만들지 않으므로 추천 원본의 값을 그 대안의 값처럼 표시하지 않는다.
+ */
+export function displayedMetrics(view: ItineraryView): ItineraryMetrics | null {
+  if (view.reopened || view.result?.status !== "planned") return null;
+  if (view.selectedAlt?.kind === "gateway_bus") return view.selectedAlt.metrics;
+  if (view.selectedAlt?.kind === "mock") return null;
+  return view.result.metrics;
 }
 
 /**

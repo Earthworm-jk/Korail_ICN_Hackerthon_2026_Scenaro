@@ -255,6 +255,13 @@ export const messages = {
     "final.days": "여행 일수",
     "final.places": "방문 장소",
     "final.legs": "이동 구간",
+    "final.travelSummary": "이동 부담",
+    "final.totalTravelTime": "총 이동시간",
+    "final.transfers": "환승 횟수",
+    "final.transferCount": "{n}회",
+    "final.longestTransportLeg": "가장 긴 단일 교통 구간",
+    "final.longestTrainLeg": "가장 긴 열차 구간",
+    "final.travelScopeNote": "총 이동시간에는 열차와 역–장소 왕복 접근 추정이 포함됩니다. 가장 긴 단일 교통 구간은 열차·공항 이동편만 비교하며, 과거 저장 일정에 공항 이동편이 없으면 열차만 기준으로 표시합니다.",
     "final.dayNumber": "DAY {n}",
     // #131 — 개수 문구는 one/other 쌍으로 둔다. 한국어는 두 값이 같지만, 키를 한쪽만
     // 만들면 ko/en 키 대칭(i18n.test)이 깨지고 화면 헬퍼가 locale마다 다른 길을 타게 된다.
@@ -726,6 +733,13 @@ export const messages = {
     "final.days": "Days",
     "final.places": "Places",
     "final.legs": "Travel legs",
+    "final.travelSummary": "Travel load",
+    "final.totalTravelTime": "Total travel time",
+    "final.transfers": "Transfers",
+    "final.transferCount": "{n}",
+    "final.longestTransportLeg": "Longest single transport leg",
+    "final.longestTrainLeg": "Longest train leg",
+    "final.travelScopeNote": "Total travel time includes trains and estimated round trips between stations and places. The longest single transport leg compares only trains and airport transport; older saved itineraries without airport legs use trains only.",
     "final.dayNumber": "DAY {n}",
     // #131 — `1 places`가 되지 않게 단수형을 따로 둔다
     "final.dayPlaceCount.one": "{n} place",
