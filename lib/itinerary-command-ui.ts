@@ -322,3 +322,19 @@ export function editedKeepPlaceIds(
   const removed = new Set(edit.removedPlaceIds);
   return keepPlaceIds.filter((placeId) => !removed.has(placeId));
 }
+
+/**
+ * 제안이 사라지거나 바뀌면 편집을 **그 자리에서 버린다** (PR #190 리뷰 2번).
+ *
+ * 서명 비교만으로는 **중간 사건을 못 본다.** 제안 A에서 하나를 끈 뒤 제안이 사라졌다가
+ * 나중에 다시 A가 나오면 서명이 같아 **하지도 않은 편집이 되살아난다** — #185에서 세 번
+ * 겪은 것과 같은 한계다. 화면은 매 렌더에서 통과시켜 상태 자체를 없앤다.
+ */
+export function proposalEditAfterChange<T extends { signature: string }>(
+  edit: T | null,
+  keepPlaceIds: readonly string[] | null,
+): T | null {
+  if (edit === null) return null;
+  if (keepPlaceIds === null) return null;
+  return edit.signature === proposalSignature(keepPlaceIds) ? edit : null;
+}

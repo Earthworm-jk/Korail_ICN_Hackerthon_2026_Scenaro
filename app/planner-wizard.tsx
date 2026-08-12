@@ -32,6 +32,7 @@ import { excludedPlaceIdsFrom, initialCandidateIds } from "@/lib/candidates";
 import { initialPlaceIdsFromItinerary } from "@/lib/initial-place-selection";
 import {
   editedKeepPlaceIds,
+  proposalEditAfterChange,
   proposalSignature,
   commandInputUnavailable,
   overselectionProposalOf,
@@ -1143,9 +1144,19 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
     selectionStateShown,
   });
 
+  /**
+   * 제안이 사라지거나 바뀌면 편집을 버린다 (PR #190 리뷰 2번) — 숨기기만 하면 나중에
+   * 같은 조합이 다시 나왔을 때 하지도 않은 편집이 되살아난다.
+   */
+  const liveProposalEdit = proposalEditAfterChange(
+    proposalEdit,
+    overselectionProposal?.keepPlaceIds ?? null,
+  );
+  if (liveProposalEdit === null && proposalEdit !== null) setProposalEdit(null);
+
   /** 제안에서 실제로 남길 곳 — 사용자가 손봤으면 그 결과다 */
   const keptPlaceIds = overselectionProposal
-    ? editedKeepPlaceIds(overselectionProposal.keepPlaceIds, proposalEdit)
+    ? editedKeepPlaceIds(overselectionProposal.keepPlaceIds, liveProposalEdit)
     : [];
 
   const toggleProposalKeep = useCallback((placeId: string) => {
@@ -1166,7 +1177,10 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
     const proposal = overselectionProposalOf({ capacity: selectionCapacity, selectionStateShown });
     if (proposal === null) return;
     // 손본 결과를 적용한다 — 화면이 보여준 것과 같은 값이어야 한다
-    const keep = editedKeepPlaceIds(proposal.keepPlaceIds, proposalEdit);
+    const keep = editedKeepPlaceIds(
+      proposal.keepPlaceIds,
+      proposalEditAfterChange(proposalEdit, proposal.keepPlaceIds),
+    );
     if (keep.length === 0) return;
     // 되돌릴 수 있게 직전 선택을 남긴다 — 무엇을 잃었는지 모른 채 진행하면 안 된다 (#84)
     setSelectionUndo({

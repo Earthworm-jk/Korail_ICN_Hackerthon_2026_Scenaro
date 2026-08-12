@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   editedKeepPlaceIds,
+  proposalEditAfterChange,
   proposalSignature,
   commandInputUnavailable,
   overselectionProposalOf,
@@ -261,5 +262,43 @@ describe("제안 개별 수정", () => {
 
   it("제안에 없는 장소를 빼라고 해도 결과가 흔들리지 않는다", () => {
     expect(editedKeepPlaceIds(keep, { signature, removedPlaceIds: ["zzz"] })).toEqual(keep);
+  });
+});
+
+/**
+ * 편집도 한 번 벗어나면 돌아오지 않는다 (PR #190 리뷰 2번).
+ *
+ * 서명 비교만으로는 중간 사건을 못 본다 — 제안 A에서 하나를 끈 뒤 제안이 사라졌다가
+ * 나중에 다시 A가 나오면 서명이 같아 **하지도 않은 편집이 되살아난다.**
+ */
+describe("제안 편집 수명", () => {
+  const keepA = ["a", "b", "c"];
+  const edit = { signature: proposalSignature(keepA), removedPlaceIds: ["b"] };
+  /** 화면이 하는 일을 그대로 흉내낸다 — 제안이 바뀔 때마다 통과시킨다 */
+  const walk = (proposals: (string[] | null)[]) =>
+    proposals.reduce<typeof edit | null>(
+      (state, keep) => proposalEditAfterChange(state, keep),
+      edit,
+    );
+
+  it("같은 제안이면 편집이 남는다", () => {
+    expect(walk([keepA])).toEqual(edit);
+  });
+
+  /** 이 경로가 리뷰에서 지적된 재활성화다 */
+  it("제안이 사라졌다 같은 조합으로 돌아와도 되살아나지 않는다", () => {
+    expect(walk([keepA, null, keepA])).toBeNull();
+  });
+
+  it("다른 제안을 거쳐 돌아와도 되살아나지 않는다", () => {
+    expect(walk([keepA, ["a", "b", "z"], keepA])).toBeNull();
+  });
+
+  it("제안이 없으면 버린다", () => {
+    expect(proposalEditAfterChange(edit, null)).toBeNull();
+  });
+
+  it("버릴 편집이 없으면 그대로 없다", () => {
+    expect(proposalEditAfterChange(null, keepA)).toBeNull();
   });
 });

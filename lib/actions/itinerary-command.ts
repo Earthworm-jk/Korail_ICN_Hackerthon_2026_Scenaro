@@ -448,8 +448,21 @@ async function buildGoalProposal(
 ): Promise<GoalProposalOutcomePayload | null> {
   if (before.status !== "planned") return null;
 
+  /**
+   * 고정 장소가 **지금 일정에 없을 수 있다** (PR #190 리뷰 1번).
+   *
+   * 과선택이면 사용자가 고른 곳 중 일부는 미배치다. 그 상태로 "영진해변은 꼭"이라고 하면
+   * 영진해변은 `scheduledPlaceIds`에 없고, keep 밖은 전부 제외되므로 **명시적으로 빠진다** —
+   * 그런데 응답의 `pinnedPlaceIds`에는 남아 화면이 "유지했습니다"라고 거짓을 말한다.
+   *
+   * 그래서 후보를 만들 때부터 고정을 **일정 안팎을 가리지 않고** 포함하고, 재계산 뒤
+   * 실제로 남았는지 확인한다.
+   */
   const scheduledPlaceIds = [
-    ...new Set(before.days.flatMap((day) => day.items.map((item) => item.placeId))),
+    ...new Set([
+      ...before.days.flatMap((day) => day.items.map((item) => item.placeId)),
+      ...command.pinnedPlaceIds,
+    ]),
   ];
   const rankingScores = new Map(
     (loadPlaceRankings()?.rankings ?? []).map(({ placeId, score }) => [placeId, score]),
@@ -491,13 +504,18 @@ async function buildGoalProposal(
     };
     const action = await planItinerary(planRequest);
     if (!action.ok || action.result.status !== "planned") continue;
-    evaluated.push({
-      keepPlaceIds: [
-        ...new Set(action.result.days.flatMap((day) => day.items.map((item) => item.placeId))),
-      ],
-      request: planRequest,
-      result: action.result,
-    });
+    const placed = [
+      ...new Set(action.result.days.flatMap((day) => day.items.map((item) => item.placeId))),
+    ];
+    /**
+     * **약속을 못 지키는 안은 버린다** (PR #190 리뷰 1번).
+     *
+     * 고정을 후보에 넣어도 엔진이 실제로 배치한다는 보장은 없다(시간이 안 맞을 수 있다).
+     * 확인하지 않고 제안하면 "유지했습니다"가 거짓이 된다 — 사용자가 "꼭"이라고 한 것을
+     * 우리가 무르면 그건 조율이 아니다.
+     */
+    if (!command.pinnedPlaceIds.every((placeId) => placed.includes(placeId))) continue;
+    evaluated.push({ keepPlaceIds: placed, request: planRequest, result: action.result });
   }
   if (evaluated.length === 0) return null;
 
