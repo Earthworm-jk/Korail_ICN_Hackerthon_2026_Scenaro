@@ -5,6 +5,7 @@ import {
   generateItineraryWithGatewayAlternatives,
 } from "../engine";
 import { gatewayPlanningBaselineOf } from "../engine/gateway-baseline";
+import { overnightSilenceFloorOf } from "../engine/planner";
 import type { TripConstraints } from "../engine/types";
 import { loadRepositories, type Repositories } from "../repositories/json";
 
@@ -788,5 +789,134 @@ describe("generateItinerary", () => {
       constraints({ selectedActorIds: [], selectedWorkIds: [] }),
       repositories(),
     )).toThrow();
+  });
+});
+
+/**
+ * 심야 도착 후 익일 첫차 환승 제외 (#178)
+ *
+ * 판정 두 조건: ① 도착 순간이 그 역의 심야 침묵(직전-다음 출발 공백 > 시간표 최대 공백의
+ * 절반) 안이고, ② 대기 전체가 활동 가능 시간(09:00-21:00 KST, 다일 합산)과 겹치지 않는다.
+ * 서로 다른 편성에만 적용한다. 아래 회귀들은 지영님 리뷰에서 합의한 안전선이다.
+ */
+describe("심야 환승 제외 (#178)", () => {
+  const nightConstraints = (overrides: Partial<TripConstraints> = {}) => constraints({
+    departureAt: "2026-08-13T22:00:00+09:00", // 하루짜리 기본 fixture를 1박 2일로 늘린다
+    selectedActorIds: [],
+    selectedWorkIds: ["work-1"],
+    ...overrides,
+  });
+
+  it("심야 도착 후에는 첫차뿐 아니라 후속편으로도 환승 경로를 만들지 않는다", () => {
+    const repos = repositories();
+    repos.places = [place("place-night", "work-1", "station-jinbu",
+      { type: "always_open", source: "fixture", verifiedAt: "2026-08-08" })];
+    repos.workPlaceRelations = strictRelationsFor(repos.places);
+    repos.trainLegs = [
+      // 강릉의 직전 출발 — 이 출발과 익일 첫차 사이가 심야 침묵(430분)이 된다
+      leg("700", "station-gangneung", "station-seoul", "2026-08-12T22:00:00+09:00", "2026-08-12T23:30:00+09:00"),
+      leg("801", "station-seoul", "station-gangneung", "2026-08-12T22:40:00+09:00", "2026-08-13T01:10:00+09:00"),
+      leg("802", "station-gangneung", "station-jinbu", "2026-08-13T05:10:00+09:00", "2026-08-13T05:40:00+09:00"), // 첫차
+      leg("803", "station-gangneung", "station-jinbu", "2026-08-13T05:25:00+09:00", "2026-08-13T05:55:00+09:00"), // 후속편
+      leg("804", "station-jinbu", "station-seoul", "2026-08-13T13:00:00+09:00", "2026-08-13T15:00:00+09:00"),
+    ];
+
+    const result = generateItinerary(nightConstraints(), repos);
+
+    // 01:10 도착 → 05:10/05:25는 같은 침묵에서 출발하므로 둘 다 환승 후보가 아니다.
+    // "대기 중 다른 출발 유무"로 판정했다면 05:25가 05:10의 존재 때문에 통과했을 것이다.
+    expect(result.status).toBe("empty");
+    expect(result.rejectedPlaces).toEqual([
+      { code: "OVERNIGHT_TRANSFER_REQUIRED", placeId: "place-night" },
+    ]);
+  });
+
+  it("자정을 짧게 넘는 환승은 유지된다 — 달력 자정은 판정 기준이 아니다", () => {
+    const repos = repositories();
+    repos.places = [place("place-night", "work-1", "station-jinbu",
+      { type: "always_open", source: "fixture", verifiedAt: "2026-08-08" })];
+    repos.workPlaceRelations = strictRelationsFor(repos.places);
+    repos.trainLegs = [
+      // 강릉의 직전 출발이 23:40이라 23:50 도착을 포함한 침묵은 40분뿐 — 심야가 아니다
+      leg("700", "station-gangneung", "station-seoul", "2026-08-12T23:40:00+09:00", "2026-08-13T01:00:00+09:00"),
+      leg("901", "station-seoul", "station-gangneung", "2026-08-12T22:30:00+09:00", "2026-08-12T23:50:00+09:00"),
+      leg("902", "station-gangneung", "station-jinbu", "2026-08-13T00:20:00+09:00", "2026-08-13T00:50:00+09:00"),
+      leg("903", "station-jinbu", "station-seoul", "2026-08-13T13:00:00+09:00", "2026-08-13T15:00:00+09:00"),
+    ];
+
+    const result = generateItinerary(nightConstraints(), repos);
+
+    expect(result.status).toBe("planned");
+    if (result.status !== "planned") return;
+    expect(result.days.flatMap((day) => day.rides.map(({ trainNo }) => trainNo)))
+      .toEqual(["901", "902", "903"]); // 23:50 → 00:20 환승이 살아 있다
+  });
+
+  it("같은 편성의 자정 통과 정차는 유지되고, 같은 시각의 다른 편성은 제외된다", () => {
+    const throughRepos = () => {
+      const repos = repositories();
+      repos.places = repos.places.filter(({ id }) => id === "place-selected");
+      repos.workPlaceRelations = strictRelationsFor(repos.places);
+      repos.trainLegs = [
+        // 진부의 직전 출발 — 00:30 도착을 포함한 침묵(470분)이 심야 판정을 받게 한다
+        leg("700", "station-jinbu", "station-seoul", "2026-08-12T17:00:00+09:00", "2026-08-12T19:00:00+09:00"),
+        leg("805", "station-seoul", "station-jinbu", "2026-08-12T22:40:00+09:00", "2026-08-13T00:30:00+09:00"),
+        leg("805", "station-jinbu", "station-gangneung", "2026-08-13T00:50:00+09:00", "2026-08-13T01:20:00+09:00"),
+        leg("806", "station-gangneung", "station-seoul", "2026-08-13T13:00:00+09:00", "2026-08-13T15:00:00+09:00"),
+      ];
+      return repos;
+    };
+
+    const through = generateItinerary(nightConstraints(), throughRepos());
+    expect(through.status).toBe("planned");
+    if (through.status === "planned") {
+      expect(through.days.flatMap((day) => day.rides.map(({ trainNo }) => trainNo)))
+        .toEqual(["805", "805", "806"]);
+      expect(through.metrics.transferCount).toBe(0); // 805 통과 정차는 환승이 아니다
+    }
+
+    // 같은 시각·같은 역이라도 편성이 다르면 심야 환승이다 — trainNo 가드가 판정의 전부임을 고정
+    const transferRepos = throughRepos();
+    transferRepos.trainLegs[2] = { ...transferRepos.trainLegs[2], trainNo: "807" };
+    const transfer = generateItinerary(nightConstraints(), transferRepos);
+    expect(transfer.status).toBe("empty");
+    expect(transfer.rejectedPlaces).toEqual([
+      { code: "OVERNIGHT_TRANSFER_REQUIRED", placeId: "place-selected" },
+    ]);
+  });
+
+  it("실스냅샷 — 전날 도착해 다음 날 공항철도로 돌아가는 다일 이동은 유지된다", () => {
+    const real = loadRepositories();
+    const goblin = real.places.filter((candidate) => candidate.workIds.includes("work-goblin"))
+      .map(({ id }) => id).sort();
+    const result = generateItinerary(constraints({
+      arrivalAt: "2026-08-12T10:00:00+09:00",
+      airportReadyAt: "2026-08-12T12:00:00+09:00",
+      departureAt: "2026-08-14T18:00:00+09:00",
+      airportArrivalDeadline: "2026-08-14T16:00:00+09:00",
+      selectedActorIds: [],
+      selectedWorkIds: ["work-goblin"],
+      excludedPlaceIds: goblin.slice(1),
+      maxPlacesPerDay: 3,
+      dailySlackMinutes: 120,
+    }), real);
+
+    expect(result.status).toBe("planned");
+    if (result.status !== "planned") return;
+    const rides = result.days.flatMap((day) => day.rides);
+    expect(rides.map(({ trainNo }) => trainNo))
+      .toEqual(["AREX-E112", "00845", "00814", "AREX-W112"]);
+    // 서울 도착(08-13 오후)과 공항철도 출발(08-14 정오) 사이는 다음 날 활동 시간과 겹치는
+    // 정상 다일 대기다 — 도착일만 검사하면 이 귀환이 심야 환승으로 오판되어 일정 전체가 사라진다
+    expect(rides[2].arriveAt.slice(0, 10)).toBe("2026-08-13");
+    expect(rides[3].departAt.slice(0, 10)).toBe("2026-08-14");
+  });
+
+  it("실스냅샷 심야 침묵 하한은 최대 공백 319분의 절반으로 파생된다", () => {
+    const real = loadRepositories();
+    const departs = real.trainLegs.map(({ departAt }) => Date.parse(departAt)).sort((a, b) => a - b);
+    // 실측 근거 고정: 심야 무운행 공백 23:47 → 익일 05:06 = 319분, 그 외 최대 침묵 25분.
+    // 스냅샷이 바뀌어 이 값이 달라지면 하한 재검토가 필요하다는 신호다.
+    expect(overnightSilenceFloorOf(departs)).toBe((319 / 2) * 60_000);
   });
 });

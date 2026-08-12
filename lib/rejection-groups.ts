@@ -30,6 +30,7 @@ const DISPLAY_ORDER: DisplayRejectionCode[] = [
   "NOT_IN_BEST_SUBSET", // 선택을 줄이면 들어온다
   "DAILY_CAPACITY_EXCEEDED", // 날짜를 늘리거나 선택을 줄이면 된다
   "DEPARTURE_DEADLINE_EXCEEDED", // 항공·기간 조건을 바꿔야 한다
+  "OVERNIGHT_TRANSFER_REQUIRED", // 밤샘 대기 연결만 남는다 — 기간·시간 조건을 바꾸면 풀릴 수 있다 (#178)
   "TRAIN_UNAVAILABLE", // 시간표는 있는데 이 일정 안에 맞는 열차가 없다
   "TRAIN_OUT_OF_COVERAGE", // 시간표 범위 밖이다 — 조건을 바꿔도 안 된다
 ];

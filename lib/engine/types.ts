@@ -55,6 +55,9 @@ export type ActivityWindowDetail =
 // 멀쩡히 다니는 상황이 생기고, 사용자는 고칠 수 있는 문제를 못 고친다.
 export type CandidateRejection =
   | { code: "TRAIN_UNAVAILABLE"; placeId: string }
+  // #178 — 심야 환승 규칙이 없었다면 연결 가능했던 장소. 열차는 있는데 밤샘 대기 연결뿐이라
+  // 안 쓰는 것이므로 "열차가 없다"와 원인이 다르다 — 한 코드에 뭉치지 않는다(#84 원칙).
+  | { code: "OVERNIGHT_TRANSFER_REQUIRED"; placeId: string }
   | { code: "DAILY_CAPACITY_EXCEEDED"; placeId: string }
   | { code: "DEPARTURE_DEADLINE_EXCEEDED"; placeId: string }
   | { code: "NOT_IN_BEST_SUBSET"; placeId: string };
