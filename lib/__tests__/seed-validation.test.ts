@@ -510,6 +510,29 @@ describe("작품–장소 관계 검증 (#51 — 스키마 선행 고정)", () =
       && message.includes("sourceUrls에도 포함"))).toBe(true);
   });
 
+  it("OpenAI 보조 대표성 승인은 제안·사람 승인 provenance를 모두 요구한다 (#208)", () => {
+    const raw = baseSeed();
+    const relation = raw.workPlaceRelations[0];
+    const representativeness = {
+      level: "iconic",
+      method: "openai_assisted",
+      evidenceSourceUrls: [relation.sourceUrls[0]],
+      proposalModel: "gpt-test",
+      proposalGeneratedAt: "2026-08-13T00:00:00Z",
+      proposalInputDigest: "a".repeat(64),
+      approvedBy: "human:test-reviewer",
+      approvedAt: "2026-08-13",
+    };
+    Object.assign(relation, {
+      representativeness,
+    });
+    expect(issuesOf(raw)).toEqual([]);
+
+    representativeness.proposalInputDigest = "not-a-digest";
+    expect(issuesOf(raw).some((message) =>
+      message.includes("proposalInputDigest") && message.includes("SHA-256"))).toBe(true);
+  });
+
   it("Place의 별칭·주소·좌표 optional 필드는 값이 있으면 검증하고 없으면 통과한다 (#51 additive)", () => {
     const raw = baseSeed();
     corrupt(raw.places[0], {

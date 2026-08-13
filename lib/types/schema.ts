@@ -258,13 +258,25 @@ export const WorkPlaceRelation = z
       decision: z.enum(["confirmed", "absent"]),
       evidenceSourceUrls: z.array(HttpUrl).min(1),
     }).optional(),
-    // #208 — 작품을 대표하는 촬영지는 텍스트 유사도나 이동시간으로 추측하지 않는다.
-    // 검수된 관계에만 근거 URL과 함께 기록하고, 일정 비교는 이 명시적 데이터만 사용한다.
-    representativeness: z.object({
-      level: z.literal("iconic"),
-      method: z.literal("manual"),
-      evidenceSourceUrls: z.array(HttpUrl).min(1),
-    }).optional(),
+    // #208 — AI는 검증된 근거에서 등급을 제안할 뿐 자동 활성화하지 않는다. 런타임은
+    // 사람이 승인해 이 관계 시드에 고정한 iconic 값만 사용한다.
+    representativeness: z.discriminatedUnion("method", [
+      z.object({
+        level: z.literal("iconic"),
+        method: z.literal("manual"),
+        evidenceSourceUrls: z.array(HttpUrl).min(1),
+      }),
+      z.object({
+        level: z.literal("iconic"),
+        method: z.literal("openai_assisted"),
+        evidenceSourceUrls: z.array(HttpUrl).min(1),
+        proposalModel: NonEmptyId,
+        proposalGeneratedAt: IsoDateTime,
+        proposalInputDigest: z.string().regex(/^[a-f0-9]{64}$/, "SHA-256 hex여야 합니다"),
+        approvedBy: NonEmptyId,
+        approvedAt: IsoDate,
+      }),
+    ]).optional(),
     sourceUrls: z.array(HttpUrl).min(1), // 검증 근거 필수 — http/https 형식 검사 (#51, PR #52 리뷰)
     verifiedAt: IsoDate,
     reviewed: z.boolean(),

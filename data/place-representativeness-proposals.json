@@ -1,0 +1,518 @@
+{
+  "meta": {
+    "model": "gpt-5.6-luna",
+    "generatedAt": "2026-08-13T05:14:30Z",
+    "inputRuleVersion": "v1",
+    "inputDigest": "eb5d1a68090d1ffaf64d0c22954fdb246d91e2c0da838bb06b81b66b245387ec"
+  },
+  "proposals": [
+    {
+      "workId": "work-encounter",
+      "placeId": "place-namsan-library",
+      "level": "standard",
+      "confidence": "high",
+      "evidenceSourceUrls": [
+        "https://www.data.go.kr/data/15111405/fileData.do"
+      ],
+      "evidenceSummary": "Kim Jin-hyuk visits the library in episode 2.",
+      "rationale": "Verified location with a specific episode appearance, but the supplied text does not establish broader narrative importance or iconic status.",
+      "requiresHumanReview": true
+    },
+    {
+      "workId": "work-encounter",
+      "placeId": "place-sacheonjin-beach",
+      "level": "major",
+      "confidence": "high",
+      "evidenceSourceUrls": [
+        "https://www.data.go.kr/data/15111405/fileData.do",
+        "https://korean.visitkorea.or.kr/detail/ms_detail.do?cotid=0e6ecc88-6d72-4c42-9782-8468136487e3"
+      ],
+      "evidenceSummary": "The two leads visit this Gangneung seaside location together.",
+      "rationale": "A shared seaside setting for the two protagonists is narratively important, but the supplied text does not call it iconic or defining.",
+      "requiresHumanReview": true
+    },
+    {
+      "workId": "work-encounter",
+      "placeId": "place-simgok-port",
+      "level": "standard",
+      "confidence": "high",
+      "evidenceSourceUrls": [
+        "https://www.data.go.kr/data/15111405/fileData.do"
+      ],
+      "evidenceSummary": "Kim Jin-hyeok visits the port alone.",
+      "rationale": "The location is verified and tied to a character scene, but the supplied evidence does not show major or iconic representativeness.",
+      "requiresHumanReview": true
+    },
+    {
+      "workId": "work-encounter",
+      "placeId": "place-sonnollim-workshop",
+      "level": "major",
+      "confidence": "high",
+      "evidenceSourceUrls": [
+        "https://www.data.go.kr/data/15111405/fileData.do"
+      ],
+      "evidenceSummary": "The finale reunion scene takes place outside the workshop.",
+      "rationale": "A finale reunion involving the central characters is narratively important, though no explicit iconic or defining designation is supplied.",
+      "requiresHumanReview": true
+    },
+    {
+      "workId": "work-encounter",
+      "placeId": "place-sowol-ro",
+      "level": "standard",
+      "confidence": "high",
+      "evidenceSourceUrls": [
+        "https://www.data.go.kr/data/15111405/fileData.do"
+      ],
+      "evidenceSummary": "The two protagonists walk along the road in episode 16.",
+      "rationale": "This is a verified setting for one episode scene; the supplied text does not establish that it is a major or iconic location for Encounter.",
+      "requiresHumanReview": true
+    },
+    {
+      "workId": "work-encounter",
+      "placeId": "place-youngpoong-jongno",
+      "level": "major",
+      "confidence": "high",
+      "evidenceSourceUrls": [
+        "https://www.data.go.kr/data/15111405/fileData.do"
+      ],
+      "evidenceSummary": "The two leads have a date while browsing the bookstore in episode 14.",
+      "rationale": "A date scene centered on both protagonists has meaningful narrative relevance, but there is no explicit iconic or signature evidence.",
+      "requiresHumanReview": true
+    },
+    {
+      "workId": "work-goblin",
+      "placeId": "place-balwangsan-cable-car",
+      "level": "standard",
+      "confidence": "high",
+      "evidenceSourceUrls": [
+        "https://www.data.go.kr/data/15111405/fileData.do"
+      ],
+      "evidenceSummary": "The ski resort is where Ji Eun-tak goes to work.",
+      "rationale": "The supplied note verifies the setting but does not indicate that it is narratively major or representative beyond this role.",
+      "requiresHumanReview": true
+    },
+    {
+      "workId": "work-goblin",
+      "placeId": "place-deoksugung-stone-wall-road",
+      "level": "standard",
+      "confidence": "high",
+      "evidenceSourceUrls": [
+        "https://www.data.go.kr/data/15111405/fileData.do"
+      ],
+      "evidenceSummary": "Kim Shin walks and talks along the stonewall road.",
+      "rationale": "This is a verified outdoor scene location, but the text does not provide major, symbolic, or iconic evidence.",
+      "requiresHumanReview": true
+    },
+    {
+      "workId": "work-goblin",
+      "placeId": "place-gwanghwamun-gate",
+      "level": "major",
+      "confidence": "high",
+      "evidenceSourceUrls": [
+        "https://www.data.go.kr/data/15111405/fileData.do"
+      ],
+      "evidenceSummary": "Kim Shin and Ji Eun-tak return through the gate after traveling to Canada.",
+      "rationale": "The gate is tied to a significant transition involving both central characters, supporting major rather than merely ordinary representativeness.",
+      "requiresHumanReview": true
+    },
+    {
+      "workId": "work-goblin",
+      "placeId": "place-lala-muri",
+      "level": "major",
+      "confidence": "high",
+      "evidenceSourceUrls": [
+        "https://www.data.go.kr/data/15111405/fileData.do"
+      ],
+      "evidenceSummary": "The location appears as the home where young Ji Eun-tak lives.",
+      "rationale": "A central character’s home is narratively meaningful, but the supplied text does not explicitly establish iconic or defining status.",
+      "requiresHumanReview": true
+    },
+    {
+      "workId": "work-goblin",
+      "placeId": "place-samyang-ranch",
+      "level": "major",
+      "confidence": "high",
+      "evidenceSourceUrls": [
+        "https://www.data.go.kr/data/15111405/fileData.do"
+      ],
+      "evidenceSummary": "Kim Shin walks through the grassland representing the afterlife.",
+      "rationale": "The location represents a distinct fictional realm and supports an important visual setting, but iconic status is not explicitly stated.",
+      "requiresHumanReview": true
+    },
+    {
+      "workId": "work-goblin",
+      "placeId": "place-sinchon-mural-tunnel",
+      "level": "standard",
+      "confidence": "high",
+      "evidenceSourceUrls": [
+        "https://www.data.go.kr/data/15111405/fileData.do"
+      ],
+      "evidenceSummary": "Kim Shin and the Grim Reaper stride through the tunnel in episode 10.",
+      "rationale": "The scene is specifically verified, but the supplied text does not show that the tunnel is a major or defining location for the work.",
+      "requiresHumanReview": true
+    },
+    {
+      "workId": "work-goblin",
+      "placeId": "place-unhyeongung-western-house",
+      "level": "major",
+      "confidence": "high",
+      "evidenceSourceUrls": [
+        "https://www.data.go.kr/data/15111405/fileData.do"
+      ],
+      "evidenceSummary": "The building serves as Kim Shin’s home and is later shared by other central characters.",
+      "rationale": "A recurring home for multiple principal characters is narratively important, although the supplied evidence does not explicitly call it iconic.",
+      "requiresHumanReview": true
+    },
+    {
+      "workId": "work-goblin",
+      "placeId": "place-woljeongsa-fir-forest",
+      "level": "major",
+      "confidence": "high",
+      "evidenceSourceUrls": [
+        "https://www.data.go.kr/data/15111405/fileData.do"
+      ],
+      "evidenceSummary": "Kim Shin follows Ji Eun-tak along the forest trail after she leaves home.",
+      "rationale": "The pursuit of a central character through the forest gives the location narrative importance, but not explicit iconic status.",
+      "requiresHumanReview": true
+    },
+    {
+      "workId": "work-goblin",
+      "placeId": "place-woljeongsa-temple",
+      "level": "standard",
+      "confidence": "high",
+      "evidenceSourceUrls": [
+        "https://www.data.go.kr/data/15111405/fileData.do"
+      ],
+      "evidenceSummary": "The temple appears along Ji Eun-tak’s route home.",
+      "rationale": "The supplied evidence supports a verified setting but only a limited route appearance, so standard is appropriate.",
+      "requiresHumanReview": true
+    },
+    {
+      "workId": "work-goblin",
+      "placeId": "place-yeongjin-beach",
+      "level": "iconic",
+      "confidence": "high",
+      "evidenceSourceUrls": [
+        "https://www.data.go.kr/data/15111405/fileData.do",
+        "https://english.visitkorea.or.kr/svc/whereToGo/locIntrdn/rgnContentsView.do?vcontsId=112532",
+        "https://english.visitkorea.or.kr/svc/sp/HallyuNew/contentsView.do?dataSetId=70&vcontsId=216921"
+      ],
+      "evidenceSummary": "The beach is explicitly described as the filming location of an iconic seaside scene in Guardian.",
+      "rationale": "The supplied text directly provides iconic-scene evidence, meeting the threshold for iconic representativeness.",
+      "requiresHumanReview": true
+    },
+    {
+      "workId": "work-little-women",
+      "placeId": "place-oak-valley-resort",
+      "level": "major",
+      "confidence": "high",
+      "evidenceSourceUrls": [
+        "https://www.data.go.kr/data/15111405/fileData.do"
+      ],
+      "evidenceSummary": "The resort appears as Park Hyo-rin’s home.",
+      "rationale": "A principal character’s home is narratively relevant, but the supplied evidence does not establish iconic or defining status.",
+      "requiresHumanReview": true
+    },
+    {
+      "workId": "work-little-women",
+      "placeId": "place-seoullo-7017",
+      "level": "standard",
+      "confidence": "high",
+      "evidenceSourceUrls": [
+        "https://www.data.go.kr/data/15111405/fileData.do"
+      ],
+      "evidenceSummary": "Oh In-joo investigates clues at this elevated walkway.",
+      "rationale": "The place is verified for a specific investigative scene, with no supplied evidence of broader major or iconic importance.",
+      "requiresHumanReview": true
+    },
+    {
+      "workId": "work-love-in-the-moonlight",
+      "placeId": "place-gwanghalluwon-garden",
+      "level": "major",
+      "confidence": "high",
+      "evidenceSourceUrls": [
+        "https://www.data.go.kr/data/15111405/fileData.do"
+      ],
+      "evidenceSummary": "The Crown Prince studies and rescues Hong Ra-on at the garden.",
+      "rationale": "The location hosts action involving the central protagonists and a rescue, supporting major representativeness without explicit iconic evidence.",
+      "requiresHumanReview": true
+    },
+    {
+      "workId": "work-love-in-the-moonlight",
+      "placeId": "place-gwanghwamun-square",
+      "level": "standard",
+      "confidence": "high",
+      "evidenceSourceUrls": [
+        "https://www.data.go.kr/data/15111405/fileData.do"
+      ],
+      "evidenceSummary": "The Crown Prince dances there in the first teaser.",
+      "rationale": "The supplied text confirms a teaser appearance but does not establish narrative importance or iconic status for the work.",
+      "requiresHumanReview": true
+    },
+    {
+      "workId": "work-mr-sunshine",
+      "placeId": "place-munhwa-gonggam-sujeong",
+      "level": "major",
+      "confidence": "high",
+      "evidenceSourceUrls": [
+        "https://www.data.go.kr/data/15111405/fileData.do"
+      ],
+      "evidenceSummary": "The building appears as Hwayollu, where Logan Taylor is assassinated.",
+      "rationale": "An assassination setting is a consequential narrative location, but the supplied text does not describe it as iconic or defining.",
+      "requiresHumanReview": true
+    },
+    {
+      "workId": "work-mr-sunshine",
+      "placeId": "place-old-seodo-station-set",
+      "level": "major",
+      "confidence": "high",
+      "evidenceSourceUrls": [
+        "https://korean.visitkorea.or.kr/detail/rem_detail.do?cotid=01ea7149-6dcf-4c23-88e7-3030e5536e7a&temp=",
+        "https://www.data.go.kr/data/15111405/fileData.do"
+      ],
+      "evidenceSummary": "Go Ae-shin is confronted by U.S. soldiers at the station set.",
+      "rationale": "The confrontation is narratively consequential, supporting major status without explicit representative or iconic wording.",
+      "requiresHumanReview": true
+    },
+    {
+      "workId": "work-record-of-youth",
+      "placeId": "place-gwanghalluwon-garden",
+      "level": "standard",
+      "confidence": "high",
+      "evidenceSourceUrls": [
+        "https://www.data.go.kr/data/15111405/fileData.do"
+      ],
+      "evidenceSummary": "Sa Hye-jun films a historical drama at the garden.",
+      "rationale": "This is a verified production setting, but the supplied text does not show that it is especially representative of Record of Youth.",
+      "requiresHumanReview": true
+    },
+    {
+      "workId": "work-record-of-youth",
+      "placeId": "place-sinchon-mural-tunnel",
+      "level": "standard",
+      "confidence": "high",
+      "evidenceSourceUrls": [
+        "https://www.data.go.kr/data/15111405/fileData.do"
+      ],
+      "evidenceSummary": "Sa Hye-jun and An Jeong-ha appear near the tunnel entrance in episode 4.",
+      "rationale": "The location is verified for a specific scene, but no evidence supports major or iconic representativeness.",
+      "requiresHumanReview": true
+    },
+    {
+      "workId": "work-record-of-youth",
+      "placeId": "place-sowol-ro",
+      "level": "standard",
+      "confidence": "high",
+      "evidenceSourceUrls": [
+        "https://www.data.go.kr/data/15111405/fileData.do"
+      ],
+      "evidenceSummary": "Sa Hye-jun rides a bus along the road in episode 1.",
+      "rationale": "The supplied evidence supports an ordinary verified road appearance rather than a major or iconic location.",
+      "requiresHumanReview": true
+    },
+    {
+      "workId": "work-record-of-youth",
+      "placeId": "place-subway-dongnimmun",
+      "level": "major",
+      "confidence": "high",
+      "evidenceSourceUrls": [
+        "https://www.data.go.kr/data/15111405/fileData.do"
+      ],
+      "evidenceSummary": "Sa Hye-jun works part-time at the restaurant, which appears in episodes 1 and 6.",
+      "rationale": "The recurring workplace is tied to the protagonist and multiple episodes, supporting major status without explicit iconic evidence.",
+      "requiresHumanReview": true
+    },
+    {
+      "workId": "work-the-king",
+      "placeId": "place-bexco",
+      "level": "major",
+      "confidence": "high",
+      "evidenceSourceUrls": [
+        "https://www.data.go.kr/data/15111405/fileData.do"
+      ],
+      "evidenceSummary": "BEXCO appears as the fictional Busan CTX Station in the Kingdom of Corea.",
+      "rationale": "The location has a substantial world-building role as a major transport station, but the supplied text does not establish iconic status.",
+      "requiresHumanReview": true
+    },
+    {
+      "workId": "work-the-king",
+      "placeId": "place-busan-cinema-center",
+      "level": "major",
+      "confidence": "high",
+      "evidenceSourceUrls": [
+        "https://www.data.go.kr/data/15111405/fileData.do"
+      ],
+      "evidenceSummary": "Lee Gon and his guards fight Lee Lim’s men there to rescue Jeong Tae-eul.",
+      "rationale": "A central rescue and action sequence makes the location narratively important, though not explicitly iconic.",
+      "requiresHumanReview": true
+    },
+    {
+      "workId": "work-the-king",
+      "placeId": "place-forest-of-wisdom",
+      "level": "major",
+      "confidence": "high",
+      "evidenceSourceUrls": [
+        "https://www.data.go.kr/data/15111405/fileData.do"
+      ],
+      "evidenceSummary": "The protagonists investigate parallel worlds together at the library in episode 15.",
+      "rationale": "The scene directly concerns the work’s central parallel-world premise, supporting major representativeness without explicit iconic wording.",
+      "requiresHumanReview": true
+    },
+    {
+      "workId": "work-the-king",
+      "placeId": "place-gwanghwamun-square",
+      "level": "major",
+      "confidence": "high",
+      "evidenceSourceUrls": [
+        "https://www.data.go.kr/data/15111405/fileData.do"
+      ],
+      "evidenceSummary": "Lee Gon and Jeong Tae-eul meet and embrace in the square.",
+      "rationale": "A reunion between the two central characters is narratively significant, but the supplied text does not call the scene iconic or defining.",
+      "requiresHumanReview": true
+    },
+    {
+      "workId": "work-the-king",
+      "placeId": "place-gyeonggijeon-shrine",
+      "level": "standard",
+      "confidence": "high",
+      "evidenceSourceUrls": [
+        "https://www.data.go.kr/data/15111405/fileData.do"
+      ],
+      "evidenceSummary": "Lee Gon visits the museum in this historic site.",
+      "rationale": "The location is verified for one visit scene, with insufficient supplied evidence of major or iconic representativeness.",
+      "requiresHumanReview": true
+    },
+    {
+      "workId": "work-the-king",
+      "placeId": "place-sowol-ro",
+      "level": "major",
+      "confidence": "high",
+      "evidenceSourceUrls": [
+        "https://www.data.go.kr/data/15111405/fileData.do"
+      ],
+      "evidenceSummary": "Jeong Tae-eul follows clues about Lee Gon along the road in episode 4.",
+      "rationale": "The road is part of a central investigation into Lee Gon’s movements, supporting major status but not iconic status.",
+      "requiresHumanReview": true
+    },
+    {
+      "workId": "work-twenty-five-twenty-one",
+      "placeId": "place-bosingak-site",
+      "level": "major",
+      "confidence": "high",
+      "evidenceSourceUrls": [
+        "https://www.data.go.kr/data/15111405/fileData.do"
+      ],
+      "evidenceSummary": "Na Hee-do joins Baek Yi-jin at the 2001 New Year’s Eve event in episode 15.",
+      "rationale": "A late-series meeting between the central characters at a significant event is narratively important, but not explicitly iconic.",
+      "requiresHumanReview": true
+    },
+    {
+      "workId": "work-twenty-five-twenty-one",
+      "placeId": "place-omokdae-gil",
+      "level": "major",
+      "confidence": "high",
+      "evidenceSourceUrls": [
+        "https://www.data.go.kr/data/15111405/fileData.do"
+      ],
+      "evidenceSummary": "Baek Yi-jin encounters Na Hee-do and rides down the street in episode 1.",
+      "rationale": "The scene establishes an early encounter between the central characters, supporting major status without explicit defining-scene evidence.",
+      "requiresHumanReview": true
+    },
+    {
+      "workId": "work-twenty-five-twenty-one",
+      "placeId": "place-sejong-daero",
+      "level": "major",
+      "confidence": "high",
+      "evidenceSourceUrls": [
+        "https://www.data.go.kr/data/15111405/fileData.do"
+      ],
+      "evidenceSummary": "The protagonists reunite there after a separation in episode 6.",
+      "rationale": "A reunion between the two leads is narratively significant, but the supplied text does not establish iconic status.",
+      "requiresHumanReview": true
+    },
+    {
+      "workId": "work-twenty-five-twenty-one",
+      "placeId": "place-waryong-park",
+      "level": "standard",
+      "confidence": "high",
+      "evidenceSourceUrls": [
+        "https://www.data.go.kr/data/15111405/fileData.do"
+      ],
+      "evidenceSummary": "Na Hee-do trains in the park in episode 3.",
+      "rationale": "The place is verified for a training scene but is not shown in the supplied text to be a major or iconic location.",
+      "requiresHumanReview": true
+    },
+    {
+      "workId": "work-yumi-cells",
+      "placeId": "place-eomma-son-makguksu",
+      "level": "standard",
+      "confidence": "high",
+      "evidenceSourceUrls": [
+        "https://www.data.go.kr/data/15111405/fileData.do"
+      ],
+      "evidenceSummary": "Yumi and Woong eat there during their first weekend trip.",
+      "rationale": "This is a verified restaurant appearance, but the supplied evidence does not support broader narrative importance.",
+      "requiresHumanReview": true
+    },
+    {
+      "workId": "work-yumi-cells",
+      "placeId": "place-skybay-hotel-gyeongpo",
+      "level": "major",
+      "confidence": "high",
+      "evidenceSourceUrls": [
+        "https://www.data.go.kr/data/15111405/fileData.do"
+      ],
+      "evidenceSummary": "The hotel serves as the couple’s first weekend-trip accommodation.",
+      "rationale": "The location is tied to an important early relationship milestone, supporting major status without explicit iconic evidence.",
+      "requiresHumanReview": true
+    },
+    {
+      "workId": "work-yumi-cells-2",
+      "placeId": "place-forest-of-wisdom",
+      "level": "major",
+      "confidence": "high",
+      "evidenceSourceUrls": [
+        "https://www.data.go.kr/data/15111405/fileData.do"
+      ],
+      "evidenceSummary": "Yumi and Yoo Ba-bi have a date at the book cafe in episode 4.",
+      "rationale": "The date setting is narratively relevant to the central relationship, but the supplied text does not establish iconic or defining status.",
+      "requiresHumanReview": true
+    },
+    {
+      "workId": "work-yumi-cells-2",
+      "placeId": "place-history-bookshop",
+      "level": "major",
+      "confidence": "high",
+      "evidenceSourceUrls": [
+        "https://www.data.go.kr/data/15111405/fileData.do"
+      ],
+      "evidenceSummary": "Yumi works there as a part-time employee in episode 7.",
+      "rationale": "The bookstore functions as a workplace for the protagonist and a distinct episode setting, supporting major rather than iconic status.",
+      "requiresHumanReview": true
+    },
+    {
+      "workId": "work-yumi-cells-2",
+      "placeId": "place-ieum-center",
+      "level": "standard",
+      "confidence": "high",
+      "evidenceSourceUrls": [
+        "https://www.data.go.kr/data/15111405/fileData.do"
+      ],
+      "evidenceSummary": "Yumi reads at the cafe there in episode 6.",
+      "rationale": "The supplied evidence supports a verified single-scene location but not major or iconic representativeness.",
+      "requiresHumanReview": true
+    },
+    {
+      "workId": "work-yumi-cells-2",
+      "placeId": "place-national-museum-bus-stop",
+      "level": "standard",
+      "confidence": "high",
+      "evidenceSourceUrls": [
+        "https://www.data.go.kr/data/15111405/fileData.do"
+      ],
+      "evidenceSummary": "Yumi waits at the bus stop for Yoo Ba-bi in episode 2.",
+      "rationale": "This is a verified brief meeting or waiting location with no supplied evidence of broader narrative importance.",
+      "requiresHumanReview": true
+    }
+  ]
+}
