@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, type ReactNode } from "react";
-import { X } from "lucide-react";
+import { ChevronUp } from "lucide-react";
 import { withValues, type MessageKey } from "@/lib/i18n/messages";
 import { useModalDismiss } from "./use-modal-dismiss";
 
@@ -38,7 +38,7 @@ export function PlaceBrowser({
   work: string | null;
   onStationChange: (id: string | null) => void;
   onWorkChange: (id: string | null) => void;
-  children: ReactNode;
+  children?: ReactNode;
   tr: (key: MessageKey) => string;
 }) {
   if (!open) return null;
@@ -95,10 +95,11 @@ function OpenBrowser({
           <button
             type="button"
             onClick={onClose}
-            aria-label={tr("common.close")}
-            className="grid size-10 shrink-0 place-items-center rounded-full border hover:border-sc-blue"
+            className="inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-lg border px-3 text-sm font-semibold hover:border-sc-blue hover:text-sc-blue"
+            data-place-browser-toggle
           >
-            <X aria-hidden="true" className="size-4" />
+            <ChevronUp aria-hidden="true" className="size-4" />
+            {tr("step3.closeBrowser")}
           </button>
         </div>
 

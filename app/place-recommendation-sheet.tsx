@@ -20,6 +20,7 @@ export function PlaceRecommendationSheet({
   updated,
   sortBy,
   onSortChange,
+  browserOpen = false,
   routeRecommendations,
   onBrowseAll,
   tr,
@@ -47,6 +48,8 @@ export function PlaceRecommendationSheet({
   updated: boolean;
   sortBy: "relevance" | "official";
   onSortChange: (sort: "relevance" | "official") => void;
+  /** 전체 촬영지 모달의 현재 on/off 상태. 버튼 문구와 접근성 상태를 함께 바꾼다. */
+  browserOpen?: boolean;
   /**
    * 이전 호출부 호환용. 추천 미리보기는 #207에서 제거했으므로 렌더링하지 않는다.
    * 호출부가 정리되면 이 prop도 함께 제거할 수 있다.
@@ -155,9 +158,11 @@ export function PlaceRecommendationSheet({
           className={`${styles.openBrowser} min-h-11`}
           aria-haspopup="dialog"
           aria-controls="place-browser-dialog"
+          aria-expanded={browserOpen}
           onClick={onBrowseAll}
+          data-place-browser-toggle
         >
-          {tr("step3.openBrowser")}
+          {tr(browserOpen ? "step3.closeBrowser" : "step3.openBrowser")}
         </button>
         {/*
           독 오른쪽 끝의 주 액션 자리 (#146).
