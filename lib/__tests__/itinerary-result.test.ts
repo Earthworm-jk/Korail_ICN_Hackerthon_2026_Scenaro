@@ -48,6 +48,7 @@ const planned: ItineraryResult = {
   selectionGroups: { requested: ["work"], covered: ["work"], uncovered: [] },
   comparisonKeys: {
     selectionGroupCoverageCount: 1,
+    representativePlaceCount: 0,
     selectedUnionPlaceCount: 1,
     verifiedHoursMismatchCount: 1,
     preferredDateMismatchCount: 0,

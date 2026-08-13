@@ -7,6 +7,7 @@ import { messages, type MessageKey } from "../i18n/messages";
 
 const keys = {
   selectionGroupCoverageCount: 1,
+  representativePlaceCount: 0,
   selectedUnionPlaceCount: 1,
   verifiedHoursMismatchCount: 0,
   preferredDateMismatchCount: 0,

@@ -258,6 +258,13 @@ export const WorkPlaceRelation = z
       decision: z.enum(["confirmed", "absent"]),
       evidenceSourceUrls: z.array(HttpUrl).min(1),
     }).optional(),
+    // #208 — 작품을 대표하는 촬영지는 텍스트 유사도나 이동시간으로 추측하지 않는다.
+    // 검수된 관계에만 근거 URL과 함께 기록하고, 일정 비교는 이 명시적 데이터만 사용한다.
+    representativeness: z.object({
+      level: z.literal("iconic"),
+      method: z.literal("manual"),
+      evidenceSourceUrls: z.array(HttpUrl).min(1),
+    }).optional(),
     sourceUrls: z.array(HttpUrl).min(1), // 검증 근거 필수 — http/https 형식 검사 (#51, PR #52 리뷰)
     verifiedAt: IsoDate,
     reviewed: z.boolean(),
@@ -305,6 +312,24 @@ export const WorkPlaceRelation = z
           code: "custom",
           path: ["actorPresenceVerification", "evidenceSourceUrls"],
           message: "검증 근거 URL은 관계 sourceUrls에도 포함되어야 합니다",
+        });
+      }
+    }
+    const representativeness = relation.representativeness;
+    if (representativeness) {
+      if (!relation.reviewed) {
+        ctx.addIssue({
+          code: "custom",
+          path: ["representativeness"],
+          message: "대표 촬영지 판정은 reviewed:true 관계에만 기록할 수 있습니다",
+        });
+      }
+      const relationSources = new Set(relation.sourceUrls);
+      if (representativeness.evidenceSourceUrls.some((url) => !relationSources.has(url))) {
+        ctx.addIssue({
+          code: "custom",
+          path: ["representativeness", "evidenceSourceUrls"],
+          message: "대표성 근거 URL은 관계 sourceUrls에도 포함되어야 합니다",
         });
       }
     }

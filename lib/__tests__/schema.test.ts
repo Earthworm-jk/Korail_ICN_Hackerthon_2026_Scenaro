@@ -67,6 +67,8 @@ describe("시드 스키마 검증 (REQ-DATA-004)", () => {
       repos.places.flatMap((place) => place.workIds.map((workId) => `${workId}|${place.id}`)),
     );
     const yeongjin = repos.places.find(({ id }) => id === "place-yeongjin-beach");
+    const yeongjinGoblin = repos.workPlaceRelations.find(({ workId, placeId }) =>
+      workId === "work-goblin" && placeId === "place-yeongjin-beach");
 
     expect(relationKeys).toEqual(expectedKeys);
     expect(repos.workPlaceRelations).toHaveLength(42);
@@ -74,6 +76,13 @@ describe("시드 스키마 검증 (REQ-DATA-004)", () => {
     expect(yeongjin?.name).toEqual({ ko: "영진해변", en: "Yeongjin Beach" });
     expect(yeongjin?.searchAliases).toBeUndefined();
     expect(yeongjin?.reasonText.ko).toContain("도깨비 방파제");
+    expect(yeongjinGoblin?.representativeness).toEqual({
+      level: "iconic",
+      method: "manual",
+      evidenceSourceUrls: [
+        "https://english.visitkorea.or.kr/svc/sp/HallyuNew/contentsView.do?dataSetId=70&vcontsId=216921",
+      ],
+    });
   });
 
   it("재확인 대상 2곳은 주소만 두고 임의 좌표를 만들지 않는다", () => {

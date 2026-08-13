@@ -44,12 +44,13 @@ describe("#181 independent hard-constraint validator", () => {
     const firstItem = result.days[0].items[0];
     firstItem.departAt = firstItem.arriveAt;
     result.metrics.totalRailMinutes += 1;
+    result.comparisonKeys.representativePlaceCount += 1;
     result.comparisonKeys.verifiedHoursMismatchCount += 1;
 
     const codes = validateItinerary(result, constraints, repos).map(({ code }) => code);
     expect(codes).toContain("INVALID_INTERVAL");
     expect(codes).toContain("STAY_TIME_SHORTFALL");
-    expect(codes.filter((code) => code === "METRIC_MISMATCH")).toHaveLength(2);
+    expect(codes.filter((code) => code === "METRIC_MISMATCH")).toHaveLength(3);
   });
 
   it("검증 전체 일정 대안도 독립 일정으로 다시 검사한다 (#198)", () => {

@@ -1031,6 +1031,37 @@ describe("심야 환승 제외 (#178)", () => {
     expect(rides[3].departAt.slice(0, 10)).toBe("2026-08-14");
   });
 
+  it("#208 도깨비 기본 일정은 검수된 대표 촬영지 영진해변을 포함한다", () => {
+    const real = loadRepositories();
+    const goblinConstraints = constraints({
+      arrivalAt: "2026-08-12T10:00:00+09:00",
+      airportReadyAt: "2026-08-12T12:00:00+09:00",
+      departureAt: "2026-08-14T18:00:00+09:00",
+      airportArrivalDeadline: "2026-08-14T16:00:00+09:00",
+      selectedActorIds: [],
+      selectedWorkIds: ["work-goblin"],
+      maxPlacesPerDay: 3,
+      dailySlackMinutes: 60,
+    });
+
+    const result = generateItinerary(goblinConstraints, real);
+    expect(result.status).toBe("planned");
+    if (result.status !== "planned") return;
+    expect(result.days.flatMap((day) => day.items.map(({ placeId }) => placeId)))
+      .toContain("place-yeongjin-beach");
+    expect(result.comparisonKeys.representativePlaceCount).toBe(1);
+
+    const excluded = generateItinerary({
+      ...goblinConstraints,
+      excludedPlaceIds: ["place-yeongjin-beach"],
+    }, real);
+    expect(excluded.status).toBe("planned");
+    if (excluded.status !== "planned") return;
+    expect(excluded.days.flatMap((day) => day.items.map(({ placeId }) => placeId)))
+      .not.toContain("place-yeongjin-beach");
+    expect(excluded.comparisonKeys.representativePlaceCount).toBe(0);
+  });
+
   it("실스냅샷 심야 침묵 하한은 최대 공백 319분의 절반으로 파생된다", () => {
     const real = loadRepositories();
     const departs = real.trainLegs.map(({ departAt }) => Date.parse(departAt)).sort((a, b) => a - b);

@@ -38,6 +38,7 @@ const planned = (days: DayPlan[], rejected: ItineraryResult["rejectedPlaces"] = 
   selectionGroups: { requested: [], covered: [], uncovered: [] },
   comparisonKeys: {
     selectionGroupCoverageCount: 0,
+    representativePlaceCount: 0,
     selectedUnionPlaceCount: 0,
     verifiedHoursMismatchCount: 0,
     preferredDateMismatchCount: 0,
