@@ -1047,8 +1047,9 @@ describe("심야 환승 제외 (#178)", () => {
     const result = generateItinerary(goblinConstraints, real);
     expect(result.status).toBe("planned");
     if (result.status !== "planned") return;
-    expect(result.days.flatMap((day) => day.items.map(({ placeId }) => placeId)))
-      .toContain("place-yeongjin-beach");
+    const scheduledPlaceIds = result.days.flatMap((day) => day.items.map(({ placeId }) => placeId));
+    expect(scheduledPlaceIds).toHaveLength(8);
+    expect(scheduledPlaceIds).toContain("place-yeongjin-beach");
     expect(result.comparisonKeys.representativePlaceCount).toBe(1);
 
     const excluded = generateItinerary({
