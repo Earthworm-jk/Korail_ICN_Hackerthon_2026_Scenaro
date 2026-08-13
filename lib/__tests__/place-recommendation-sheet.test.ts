@@ -19,6 +19,8 @@ const copy: Partial<Record<MessageKey, string>> = {
   "step3.sortOfficial": "공식 출처순",
   "step3.openBrowser": "전체 촬영지 보기",
   "step3.closeBrowser": "전체 촬영지 닫기",
+  "step3.sheetCollapse": "추천 장소 접기",
+  "step3.sheetExpand": "추천 장소 펼치기",
   "step3.browserTitle": "전체 촬영지",
   "step3.browserCount": "후보 {n}곳",
   "step3.browserEmpty": "이 조건에 맞는 후보가 없습니다.",
@@ -56,7 +58,7 @@ describe("지도 위 추천 장소 바텀시트", () => {
 
     expect(markup).toContain("data-place-sheet");
     expect(markup).toContain('data-sheet-mode="browser-entry"');
-    expect(markup).not.toContain("data-sheet-expanded");
+    expect(markup).toContain('data-sheet-expanded="true"');
     expect(markup).toContain("지도 위 추천 장소");
     expect(markup).not.toContain("장소를 고르면 일정과 경로가 함께 바뀝니다.");
     expect(markup).toContain("3/8곳 선택");
@@ -64,7 +66,8 @@ describe("지도 위 추천 장소 바텀시트", () => {
     expect(markup).toContain('<option value="relevance" selected="">추천순</option>');
     expect(markup).not.toContain("data-place-sheet-controls");
     expect(markup).toContain("전체 촬영지 보기");
-    expect(markup).not.toContain("aria-expanded");
+    expect(markup).toContain('aria-label="추천 장소 접기"');
+    expect(markup).toContain('aria-expanded="true"');
     expect(markup).toContain("min-h-11");
     expect(markup).toContain('aria-haspopup="dialog"');
     expect(markup).toContain('aria-controls="place-browser-dialog"');
@@ -78,6 +81,30 @@ describe("지도 위 추천 장소 바텀시트", () => {
     expect(markup).toContain('id="stage-sheet-actions"');
   });
 
+  it("다시 계산 없이 하단 추천 독을 접고 펼칠 수 있다", () => {
+    const markup = renderToStaticMarkup(createElement(PlaceRecommendationSheet, {
+      selectedCount: 3,
+      totalCount: 8,
+      placedCount: 3,
+      unplacedCount: 0,
+      themeState: "none" as const,
+      updating: false,
+      updated: false,
+      sortBy: "relevance" as const,
+      onSortChange: () => undefined,
+      onBrowseAll: () => undefined,
+      initialExpanded: false,
+      tr,
+    }));
+
+    expect(markup).toContain('data-sheet-expanded="false"');
+    expect(markup).toContain("추천 장소 펼치기");
+    expect(markup).toContain('aria-expanded="false"');
+    expect(markup).toContain("min-h-11");
+    expect(markup).not.toContain("전체 촬영지 보기");
+    expect(markup).not.toContain('id="stage-sheet-actions"');
+  });
+
   it("열린 전체 촬영지 모달 안에 명시적인 닫기 버튼을 제공한다", () => {
     const markup = renderToStaticMarkup(createElement(
       PlaceBrowser,
@@ -85,12 +112,9 @@ describe("지도 위 추천 장소 바텀시트", () => {
         open: true,
         onClose: () => undefined,
         count: 1,
-        stations: [],
-        works: [],
+        stations: [{ id: "station-jinbu", label: "진부역" }],
         station: null,
-        work: null,
         onStationChange: () => undefined,
-        onWorkChange: () => undefined,
         tr,
       },
       createElement("li", null, "월정사"),
@@ -100,6 +124,32 @@ describe("지도 위 추천 장소 바텀시트", () => {
     expect(markup).toContain("전체 촬영지 닫기");
     expect(markup).toContain("lucide-x");
     expect(markup).toContain("data-place-browser-toggle");
+    expect(markup).toContain("data-place-browser-filters");
+    expect(markup).toContain("지역");
+    expect(markup).toContain("진부역");
+    expect(markup).not.toContain("콘텐츠");
+  });
+
+  it("선택 작품이 둘 이상일 때만 콘텐츠 필터를 제공한다", () => {
+    const markup = renderToStaticMarkup(createElement(PlaceBrowser, {
+      open: true,
+      onClose: () => undefined,
+      count: 9,
+      stations: [],
+      station: null,
+      onStationChange: () => undefined,
+      works: [
+        { id: "goblin", label: "도깨비" },
+        { id: "the-king", label: "더 킹" },
+      ],
+      work: null,
+      onWorkChange: () => undefined,
+      tr,
+    }));
+
+    expect(markup).toContain("콘텐츠");
+    expect(markup).toContain("도깨비");
+    expect(markup).toContain("더 킹");
   });
 
   it("재계산 중에도 선택 수를 유지하며 일정과 경로가 함께 갱신됨을 알린다", () => {

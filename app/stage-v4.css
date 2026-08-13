@@ -216,13 +216,72 @@
      below a long page scroll. Give the five visible result bands explicit rows instead:
      heading / description / itinerary / warnings / actions. The left rail and map span
      those rows while their own contents scroll. */
-  html body main section > div.grid:has(> div#place-picker[data-place-sheet]) {
-    /* 384 -> 362: 제목 줄 44px이 사라지고 nav·요약이 22px 커졌다. 남은 22px은
-       지도에 돌려준다 (#146) */
-    height: clamp(372px, calc(100dvh - 362px), 640px);
+  [data-planner-stage]:has(> div#place-picker[data-place-sheet]) {
+    /* #138의 1024x768 하한/데스크톱 상한. 364px은 앱 헤더·nav·요약·간격과
+       #212에서 70px이 된 후보 시트 헤더까지, 일정 캔버스 밖의 고정 세로 공간을
+       브라우저로 합산한 값이다. 시트 헤더가 바뀌면 이 값도 함께 갱신한다. */
+    --sc-stage-min-height: 372px;
+    --sc-stage-max-height: 640px;
+    --sc-stage-fixed-chrome: 364px;
+    height: clamp(
+      var(--sc-stage-min-height),
+      calc(100dvh - var(--sc-stage-fixed-chrome)),
+      var(--sc-stage-max-height)
+    );
     min-height: 0 !important;
     grid-template-rows: auto auto minmax(0, 1fr) auto auto;
     align-items: stretch !important;
+  }
+
+  /**
+   * AI 카드가 열리면 결과를 한 화면 높이에 억지로 가두지 않는다.
+   * 카드가 두 번째 행을 늘릴 때 고정 높이를 유지하면 일정 행이 0px까지 줄고, 바깥
+   * 앱 셸의 overflow에 잘린다. 문서가 자연스럽게 길어져 페이지 스크롤로 일정까지
+   * 내려갈 수 있게 하고 일정 행의 최소 높이도 보장한다.
+   */
+  [data-planner-stage]:has(> div#place-picker[data-place-sheet]):has([data-itinerary-command-panel]) {
+    /* 320px은 DAY 카드 3개를 가로 rail로 구분할 수 있는 최소 일정 높이,
+       65dvh는 AI 카드 아래 일정과 페이지 스크롤이 720px 화면에서도 함께 남는 상한이다. */
+    --sc-stage-day-min-height: 320px;
+    --sc-stage-day-viewport-height: 65dvh;
+    height: auto;
+    min-height: clamp(
+      var(--sc-stage-min-height),
+      calc(100dvh - var(--sc-stage-fixed-chrome)),
+      var(--sc-stage-max-height)
+    ) !important;
+    grid-template-rows: auto auto minmax(
+      var(--sc-stage-day-min-height),
+      min(var(--sc-stage-day-viewport-height), var(--sc-stage-max-height))
+    ) auto auto;
+  }
+
+  /* AI 패널이 열렸을 때만 세로 clip을 풀고, 가로는 유지해 둥근 셸 밖으로 새지 않는다. */
+  body:has([data-itinerary-command-panel]) [data-app-shell] {
+    overflow-x: clip;
+    overflow-y: visible;
+  }
+
+  /* 검증 일정 대안 하나만 있을 때는 하단 독을 화면 폭으로 늘리지 않는다. 문구와 화살표
+     너비만 차지하는 토글로 두고, 펼친 내용만 기존 440px 패널로 위에 띄운다. */
+  #stage-utility-dock:has(> [data-stage-utility="verified-alternatives"]):not(:has(> :not([data-stage-utility="verified-alternatives"]))) {
+    right: auto;
+    width: max-content;
+    max-width: calc(100vw - 66px);
+    grid-auto-columns: max-content;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    box-shadow: none;
+    backdrop-filter: none;
+  }
+
+  #stage-utility-dock > [data-stage-utility="verified-alternatives"] {
+    width: max-content;
+    min-height: 0;
+    border-color: var(--sc-line) !important;
+    background: white !important;
+    box-shadow: 0 8px 24px rgba(16,24,40,.14);
   }
 
   div#place-picker[data-place-sheet] {
@@ -413,6 +472,16 @@
     padding: 0 !important;
     box-shadow: 0 12px 36px rgba(16, 24, 40, .16) !important;
     transform: none !important;
+  }
+
+  /* 접으면 전체 폭 독을 남기지 않고, 다시 펼치는 작은 탭만 하단 중앙에 둔다. */
+  div#place-picker[data-place-sheet][data-sheet-expanded="false"] {
+    left: 50%;
+    right: auto;
+    width: max-content !important;
+    max-width: calc(100vw - 32px) !important;
+    overflow: hidden !important;
+    transform: translateX(-50%) !important;
   }
 
   /* Reset the legacy sticky left-rail header from stage-v2. Its negative margin

@@ -71,6 +71,7 @@ function render(options: {
     tr,
     overselection: options.overselection ?? null,
     onApplyOverselection: () => undefined,
+    onPickOverselection: () => undefined,
     onUndoOverselection: options.onUndoOverselection,
     recommendDayCount: options.recommendDayCount ?? 0,
     onRecommendDay: options.onRecommendDay,
@@ -80,6 +81,13 @@ function render(options: {
 }
 
 describe("AI 일정 조율 패널 리뷰 회귀", () => {
+  it("긴 카드 본문은 독립 스크롤 영역을 제공한다", () => {
+    const html = render();
+    expect(html).toContain("data-itinerary-command-scroll");
+    expect(html).toContain("overflow-y-auto");
+    expect(html).toContain("max-h-[min(60dvh,560px)]");
+  });
+
   it("추천 한 곳은 영어 단수형으로 표시한다", () => {
     const feedback: CommandFeedback = {
       kind: "recommendations",
@@ -269,7 +277,9 @@ describe("과선택 정리 제안", () => {
     expect(html).toContain("Keep these 3");
     // #84가 지킨 "사용자가 제외를 결정한다"는 길도 남긴다
     expect(html).toContain("I&#x27;ll choose myself");
-    expect(html).toContain('href="#place-picker"');
+    // #207에서 후보 목록은 모달로 이동했다. 사라진 인라인 목록의 앵커로 보내면 무반응처럼 보인다.
+    expect(html).not.toContain('href="#place-picker"');
+    expect(html).toContain('<button type="button"');
   });
 
   /** 입력은 막혀 있어도 이유가 보여야 한다 — 이유 없는 회색이 문제였다 */

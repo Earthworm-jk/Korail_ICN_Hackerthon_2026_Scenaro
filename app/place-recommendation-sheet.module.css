@@ -9,6 +9,29 @@
   box-shadow: 0 14px 36px rgba(16, 24, 40, 0.16);
 }
 
+.sheet[data-sheet-expanded="false"] {
+  width: max-content;
+  max-width: 100%;
+  align-items: center;
+}
+
+.collapsedToggle {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  gap: 6px;
+  border-radius: 12px;
+  padding: 8px 14px;
+  color: var(--sc-text);
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+.collapsedToggle:hover,
+.collapseToggle:hover {
+  color: var(--sc-blue);
+}
+
 .header {
   position: relative;
   display: flex;
@@ -53,16 +76,17 @@
 
   .sortControl { order: 2; }
   .openBrowser { order: 3; }
+  .collapseToggle { order: 4; }
 
   /* 상태 요약과 분류 칩은 다음 줄 전체 */
   .header > div:first-of-type > div:nth-child(2) {
-    order: 4;
+    order: 5;
     flex: 1 1 100%;
     margin-top: 2px;
   }
 
   .header > :global(#stage-sheet-actions) {
-    order: 5;
+    order: 6;
   }
 }
 
@@ -84,6 +108,7 @@
 }
 
 .openBrowser,
+.collapseToggle,
 .sortControl {
   min-height: 36px;
   border: 1px solid var(--sc-line);
@@ -100,6 +125,14 @@
   min-height: 44px;
 }
 
+.collapseToggle {
+  display: grid;
+  width: 44px;
+  min-height: 44px;
+  place-items: center;
+  padding: 0;
+}
+
 .openBrowser:hover {
   border-color: var(--sc-blue);
   color: var(--sc-blue);
@@ -110,6 +143,7 @@
 }
 
 .openBrowser,
+.collapseToggle,
 .sortControl {
   flex-shrink: 0;
 }

@@ -35,6 +35,7 @@ import {
   proposalEditAfterChange,
   proposalSignature,
   commandInputUnavailable,
+  overselectionNoticeVisible,
   overselectionProposalOf,
   selectionUndoAfterChange,
   commandPanelUnavailable,
@@ -111,6 +112,10 @@ import {
 import { ItineraryRouteMap, type MapPlace, type MapStation } from "./korea-map";
 import { PlaceRecommendationSheet, PlaceThumbnail } from "./place-recommendation-sheet";
 import { PlaceBrowser } from "./place-browser";
+import {
+  filterPlaceBrowserCandidates,
+  showsPlaceBrowserWorkFilter,
+} from "@/lib/place-browser-filter";
 import sheetStyles from "./place-recommendation-sheet.module.css";
 import {
   airportLegsOf,
@@ -505,6 +510,8 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
   const [browserOpen, setBrowserOpen] = useState(false);
   const [browserStation, setBrowserStation] = useState<string | null>(null);
   const [browserWork, setBrowserWork] = useState<string | null>(null);
+  /** 같은 장소 선택 조합에서 사용자가 닫은 과다 일정 경고는 다시 띄우지 않는다. */
+  const [dismissedOverselectionKey, setDismissedOverselectionKey] = useState<string | null>(null);
 
   // step 4 — 결과. 전이 규칙·파생은 lib/itinerary-view 순수 함수로 고정 (PR #35 리뷰 3)
   const [view, dispatchView] = useReducer(reduceItineraryView, initialItineraryView);
@@ -1316,6 +1323,11 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
     () => displayedSelectionCapacity(view, selectedPlaceIds),
     [selectedPlaceIds, view],
   );
+  const showOverselectionNotice = overselectionNoticeVisible({
+    requiresAdjustment: selectionCapacity?.requiresAdjustment === true,
+    selectionKey,
+    dismissedSelectionKey: dismissedOverselectionKey,
+  });
   /**
    * 배치 수를 말해도 되는가 (PR #156 리뷰 3).
    *
@@ -1877,20 +1889,23 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
     setSelectedPlaceIds(next);
   };
 
-  /** 전체 보기의 좁히기 — 지역은 최인접역, 콘텐츠는 작품 */
+  /** 한 작품에서는 지역만, 여러 작품을 섞었을 때는 작품까지 좁힐 수 있다. */
   const browserStations = useMemo(() => {
     const ids = [...new Set((candidateData?.candidates ?? []).map((c) => c.nearestStationId))];
     return ids.map((id) => ({ id, label: stationName(id) }))
       .sort((a, b) => a.label.localeCompare(b.label, locale));
   }, [candidateData, locale, stationName]);
-  const browserWorks = useMemo(
-    () => (candidateData?.works ?? []).map((w) => ({ id: w.id, label: w.title[locale] })),
-    [candidateData, locale],
-  );
-  const browsedCandidates = useMemo(() => sortedCandidates.filter((c) =>
-    (browserStation === null || c.nearestStationId === browserStation)
-    && (browserWork === null || c.workIds.includes(browserWork))),
-  [sortedCandidates, browserStation, browserWork]);
+  const browserWorks = useMemo(() => (candidateData?.works ?? []).map((work) => ({
+    id: work.id,
+    label: work.title[locale] ?? work.id,
+  })), [candidateData, locale]);
+  // 작품이 하나로 줄었을 때 이전 필터가 보이지 않는 상태로 후보를 계속 숨기지 않게 한다.
+  const effectiveBrowserWork = showsPlaceBrowserWorkFilter(browserWorks.length) ? browserWork : null;
+  const browsedCandidates = useMemo(() => filterPlaceBrowserCandidates(
+    sortedCandidates,
+    browserStation,
+    effectiveBrowserWork,
+  ), [sortedCandidates, browserStation, effectiveBrowserWork]);
 
   const workTitles = (ids: string[]) =>
     ids.map((id) => candidateData?.works.find((w) => w.id === id)?.title[locale] ?? id).join(" · ");
@@ -1931,7 +1946,7 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
     // 220px 요약 사이드바와 함께 들어가려면 폭이 필요해 max-w-6xl로 넓힌다 — 좁으면
     // 지도 열이 시안의 minmax(320px) 아래로 눌린다.
     <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6">
-      <div className="overflow-hidden rounded-2xl border bg-sc-surface shadow-[0_18px_50px_var(--sc-shadow)]">
+      <div data-app-shell className="overflow-hidden rounded-2xl border bg-sc-surface shadow-[0_18px_50px_var(--sc-shadow)]">
       {/* `flex-wrap`을 걷었다 (#146 모바일). 390px에서 버튼 묶음이 아래로 접혀
           제목 밑에 왼쪽 정렬로 한 줄을 더 쓰고 있었다. 한 줄에 두고 로고 쪽이
           줄어들게 한다 — 버튼은 늘 오른쪽 윗줄이다 */}
@@ -2346,7 +2361,7 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
           */}
 
           {/* #85 — 좌: 후보 선택 / 우: 계산 결과. 왕복 없이 같은 화면에서 판단한다 */}
-          <div className="mt-3 grid gap-[18px] lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
+          <div data-planner-stage className="mt-3 grid gap-[18px] lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
           <PlaceRecommendationSheet
             selectedCount={selectedPlaceIds.size}
             totalCount={sortedCandidates.length}
@@ -2368,7 +2383,6 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
             sortBy={sortBy}
             onSortChange={setSortBy}
             onBrowseAll={() => setBrowserOpen(true)}
-            initialExpanded={false}
             tr={tr}
             routeRecommendations={routeRecommendationFeedback
               && routeRecommendationFeedback.outcome.recommendations.length > 0
@@ -2434,10 +2448,10 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
             onClose={() => setBrowserOpen(false)}
             count={browsedCandidates.length}
             stations={browserStations}
-            works={browserWorks}
             station={browserStation}
-            work={browserWork}
             onStationChange={setBrowserStation}
+            works={browserWorks}
+            work={effectiveBrowserWork}
             onWorkChange={setBrowserWork}
             tr={tr}
           >
@@ -2609,6 +2623,7 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
             onToggleKeep={toggleProposalKeep}
             onApplyGoal={applyGoalOutcome}
             onApplyOverselection={applyOverselectionProposal}
+            onPickOverselection={() => setBrowserOpen(true)}
             /* 완료형 문구는 재계산이 실제로 끝난 뒤에만 — 아직 계산 중이거나 실패했을 수 있다 */
             onUndoOverselection={
               selectionStateShown && liveSelectionUndo !== null
@@ -2680,27 +2695,36 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
             />
           )}
 
-          {selectionCapacity?.requiresAdjustment && (
+          {showOverselectionNotice && selectionCapacity && (
             <div
-              className="mt-4 rounded-lg border border-sc-orange/40 bg-sc-orange-soft p-4"
-              role="status"
+              className="relative mt-4 rounded-lg border border-sc-orange/40 bg-sc-orange-soft p-4 pr-12"
             >
-              <h3 className="font-medium text-sc-orange-text">{tr("step4.overselectionTitle")}</h3>
-              <p className="mt-2 font-medium text-sc-orange-text">
-                {tr("step4.overselectionSummary")
-                  .replace("{selected}", String(selectionCapacity.selectedCount))
-                  .replace("{schedulable}", String(selectionCapacity.schedulableCount))
-                  .replace("{minimum}", String(selectionCapacity.minimumExclusionCount))}
-              </p>
-              <p className="mt-1 text-sm text-sc-orange-text">{tr("step4.overselectionDesc")}</p>
-              <p className="mt-1 text-xs text-sc-orange-text">{tr("step4.overselectionPreview")}</p>
-              {/* #85 — 후보 목록이 같은 화면 좌측에 있으므로 화면 전환 대신 그쪽으로 이동시킨다 */}
-              <a
-                href="#place-picker"
-                className="mt-3 inline-block rounded border border-sc-orange/50 bg-sc-surface px-3 py-2 text-sm font-medium text-sc-orange-text"
+              <button
+                type="button"
+                onClick={() => setDismissedOverselectionKey(selectionKey)}
+                aria-label={tr("common.close")}
+                className="absolute right-3 top-3 flex size-8 items-center justify-center rounded-full text-sc-orange-text hover:bg-sc-surface/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sc-orange"
+              >
+                <X aria-hidden="true" className="size-4" />
+              </button>
+              <div role="status">
+                <h3 className="font-medium text-sc-orange-text">{tr("step4.overselectionTitle")}</h3>
+                <p className="mt-2 font-medium text-sc-orange-text">
+                  {tr("step4.overselectionSummary")
+                    .replace("{selected}", String(selectionCapacity.selectedCount))
+                    .replace("{schedulable}", String(selectionCapacity.schedulableCount))
+                    .replace("{minimum}", String(selectionCapacity.minimumExclusionCount))}
+                </p>
+                <p className="mt-1 text-sm text-sc-orange-text">{tr("step4.overselectionDesc")}</p>
+                <p className="mt-1 text-xs text-sc-orange-text">{tr("step4.overselectionPreview")}</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setBrowserOpen(true)}
+                className="mt-3 rounded border border-sc-orange/50 bg-sc-surface px-3 py-2 text-sm font-medium text-sc-orange-text"
               >
                 {tr("step4.adjustPlaces")}
-              </a>
+              </button>
             </div>
           )}
 

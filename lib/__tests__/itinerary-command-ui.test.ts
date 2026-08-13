@@ -5,6 +5,7 @@ import {
   proposalSignature,
   commandInputUnavailable,
   overselectionProposalOf,
+  overselectionNoticeVisible,
   selectionUndoAfterChange,
   selectionUndoAvailable,
   commandPanelUnavailable,
@@ -140,6 +141,32 @@ describe("정리 제안은 현재 결과일 때만 낸다", () => {
   it("같은 입력이면 같은 답이다 — 표시와 실행이 갈리지 않는다", () => {
     const input = { capacity, selectionStateShown: false };
     expect(overselectionProposalOf(input)).toBe(overselectionProposalOf(input));
+  });
+});
+
+describe("과다 일정 경고 닫기", () => {
+  it("현재 선택에서 닫으면 숨긴다", () => {
+    expect(overselectionNoticeVisible({
+      requiresAdjustment: true,
+      selectionKey: "a|b",
+      dismissedSelectionKey: "a|b",
+    })).toBe(false);
+  });
+
+  it("장소 선택이 바뀌어도 여전히 과다하면 다시 보여준다", () => {
+    expect(overselectionNoticeVisible({
+      requiresAdjustment: true,
+      selectionKey: "a|b|c",
+      dismissedSelectionKey: "a|b",
+    })).toBe(true);
+  });
+
+  it("과다 일정이 아니면 닫기 기록과 관계없이 숨긴다", () => {
+    expect(overselectionNoticeVisible({
+      requiresAdjustment: false,
+      selectionKey: "a",
+      dismissedSelectionKey: null,
+    })).toBe(false);
   });
 });
 

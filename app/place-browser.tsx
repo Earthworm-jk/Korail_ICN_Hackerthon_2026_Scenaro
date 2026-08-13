@@ -3,6 +3,7 @@
 import { useRef, type ReactNode } from "react";
 import { X } from "lucide-react";
 import { withValues, type MessageKey } from "@/lib/i18n/messages";
+import { showsPlaceBrowserWorkFilter } from "@/lib/place-browser-filter";
 import { useModalDismiss } from "./use-modal-dismiss";
 
 /**
@@ -20,10 +21,10 @@ export function PlaceBrowser({
   onClose,
   count,
   stations,
-  works,
   station,
-  work,
   onStationChange,
+  works,
+  work,
   onWorkChange,
   children,
   tr,
@@ -33,17 +34,17 @@ export function PlaceBrowser({
   /** 필터를 통과한 후보 수 */
   count: number;
   stations: { id: string; label: string }[];
-  works: { id: string; label: string }[];
   station: string | null;
-  work: string | null;
   onStationChange: (id: string | null) => void;
-  onWorkChange: (id: string | null) => void;
+  works?: { id: string; label: string }[];
+  work?: string | null;
+  onWorkChange?: (id: string | null) => void;
   children?: ReactNode;
   tr: (key: MessageKey) => string;
 }) {
   if (!open) return null;
   return <OpenBrowser {...{
-    onClose, count, stations, works, station, work, onStationChange, onWorkChange, children, tr,
+    onClose, count, stations, station, onStationChange, works, work, onWorkChange, children, tr,
   }} />;
 }
 
@@ -55,10 +56,10 @@ function OpenBrowser({
   onClose,
   count,
   stations,
-  works,
   station,
-  work,
   onStationChange,
+  works,
+  work,
   onWorkChange,
   children,
   tr,
@@ -103,7 +104,7 @@ function OpenBrowser({
           </button>
         </div>
 
-        <div className="flex flex-wrap gap-2 border-b px-4 py-2.5">
+        <div className="flex flex-wrap gap-2 border-b px-4 py-2.5" data-place-browser-filters>
           <FilterSelect
             label={tr("step3.filterRegion")}
             value={station}
@@ -111,13 +112,15 @@ function OpenBrowser({
             allLabel={tr("step3.filterAll")}
             onChange={onStationChange}
           />
-          <FilterSelect
-            label={tr("step3.filterContent")}
-            value={work}
-            options={works}
-            allLabel={tr("step3.filterAll")}
-            onChange={onWorkChange}
-          />
+          {showsPlaceBrowserWorkFilter(works?.length ?? 0) && onWorkChange && (
+            <FilterSelect
+              label={tr("step3.filterContent")}
+              value={work ?? null}
+              options={works ?? []}
+              allLabel={tr("step3.filterAll")}
+              onChange={onWorkChange}
+            />
+          )}
         </div>
 
         <div className="min-h-0 flex-1 overflow-y-auto p-4">

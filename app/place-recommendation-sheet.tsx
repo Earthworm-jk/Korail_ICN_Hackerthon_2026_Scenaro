@@ -1,8 +1,8 @@
 "use client";
 
 import Image from "next/image";
-import { ArrowUpDown } from "lucide-react";
-import type { ReactNode } from "react";
+import { ArrowUpDown, ChevronDown, ChevronUp } from "lucide-react";
+import { useState, type ReactNode } from "react";
 import { withValues, type MessageKey } from "@/lib/i18n/messages";
 import type { PlacePhoto } from "@/lib/place-photos";
 import styles from "./place-recommendation-sheet.module.css";
@@ -22,6 +22,7 @@ export function PlaceRecommendationSheet({
   onSortChange,
   routeRecommendations,
   onBrowseAll,
+  initialExpanded = true,
   tr,
 }: {
   selectedCount: number;
@@ -55,10 +56,11 @@ export function PlaceRecommendationSheet({
   routeRecommendations?: ReactNode;
   /** 후보 수와 무관하게 항상 같은 자리에 둔다 (#146 ①) */
   onBrowseAll: () => void;
-  /** 이전 호출부 호환용. 시트 펼침 상태 자체가 #207에서 사라졌다. */
+  /** 펼친 채 시작할지. 5개 미리보기와 무관하게 하단 독 자체의 표시 상태만 정한다. */
   initialExpanded?: boolean;
   tr: Translator;
 }) {
+  const [expanded, setExpanded] = useState(initialExpanded);
   const selectedCountLabel = tr("step3.selectedCount")
     .replace("{selected}", String(selectedCount))
     .replace("{total}", String(totalCount));
@@ -74,10 +76,24 @@ export function PlaceRecommendationSheet({
       id="place-picker"
       data-place-sheet
       data-sheet-mode="browser-entry"
+      data-sheet-expanded={expanded ? "true" : "false"}
     >
-      <div className={styles.header} data-place-sheet-header>
-        <span className={styles.handle} aria-hidden />
-        <div className="min-w-0 flex-1">
+      {!expanded ? (
+        <button
+          type="button"
+          className={`${styles.collapsedToggle} min-h-11`}
+          aria-expanded="false"
+          aria-controls="place-sheet-panel"
+          onClick={() => setExpanded(true)}
+        >
+          <ChevronUp aria-hidden="true" className="size-4" />
+          {tr("step3.sheetExpand")}
+        </button>
+      ) : (
+        <>
+        <div id="place-sheet-panel" className={styles.header} data-place-sheet-header>
+          <span className={styles.handle} aria-hidden />
+          <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
             <h3 className="font-semibold">{tr("step3.sheetTitle")}</h3>
             {routeStatus && (
@@ -128,8 +144,8 @@ export function PlaceRecommendationSheet({
               ))}
             </span>
           </div>
-        </div>
-        <label className={styles.sortControl}>
+          </div>
+          <label className={styles.sortControl}>
           <ArrowUpDown aria-hidden="true" className="size-4 shrink-0" />
           <span className="sr-only">{tr("step3.sortLabel")}</span>
           <select
@@ -149,17 +165,29 @@ export function PlaceRecommendationSheet({
             <option value="relevance">{tr("step3.sortRelevance")}</option>
             <option value="official">{tr("step3.sortOfficial")}</option>
           </select>
-        </label>
-        <button
-          type="button"
-          className={`${styles.openBrowser} min-h-11`}
-          aria-haspopup="dialog"
-          aria-controls="place-browser-dialog"
-          onClick={onBrowseAll}
-          data-place-browser-toggle
-        >
-          {tr("step3.openBrowser")}
-        </button>
+          </label>
+          <button
+            type="button"
+            className={`${styles.openBrowser} min-h-11`}
+            aria-haspopup="dialog"
+            aria-controls="place-browser-dialog"
+            onClick={onBrowseAll}
+            data-place-browser-toggle
+          >
+            {tr("step3.openBrowser")}
+          </button>
+          <button
+            type="button"
+            className={`${styles.collapseToggle} min-h-11`}
+            aria-expanded="true"
+            aria-controls="place-sheet-panel"
+            aria-label={tr("step3.sheetCollapse")}
+            title={tr("step3.sheetCollapse")}
+            onClick={() => setExpanded(false)}
+            data-place-sheet-toggle
+          >
+            <ChevronDown aria-hidden="true" className="size-4" />
+          </button>
         {/*
           독 오른쪽 끝의 주 액션 자리 (#146).
 
@@ -168,23 +196,24 @@ export function PlaceRecommendationSheet({
           제자리에 남아야 하기 때문이다. 같은 버튼을 양쪽에 렌더하면 접근성 트리에
           같은 조작이 두 벌 생긴다.
         */}
-        <div id="stage-sheet-actions" className="flex shrink-0 items-center gap-2" />
-      </div>
+          <div id="stage-sheet-actions" className="flex shrink-0 items-center gap-2" />
+        </div>
 
-      {routeRecommendations && (
-        <section
-          className={styles.recommendations}
-          aria-labelledby="route-recommendation-title"
-          data-route-recommendations
-        >
-          <h4 id="route-recommendation-title" className="text-sm font-semibold text-sc-blue">
-            {tr("ai.recommendSheetTitle")}
-          </h4>
-          <p className="mt-1 text-xs text-sc-muted">{tr("ai.recommendSheetSubtitle")}</p>
-          <ul className="mt-2 space-y-2">{routeRecommendations}</ul>
-        </section>
+        {routeRecommendations && (
+          <section
+            className={styles.recommendations}
+            aria-labelledby="route-recommendation-title"
+            data-route-recommendations
+          >
+            <h4 id="route-recommendation-title" className="text-sm font-semibold text-sc-blue">
+              {tr("ai.recommendSheetTitle")}
+            </h4>
+            <p className="mt-1 text-xs text-sc-muted">{tr("ai.recommendSheetSubtitle")}</p>
+            <ul className="mt-2 space-y-2">{routeRecommendations}</ul>
+          </section>
+        )}
+        </>
       )}
-
     </div>
   );
 }

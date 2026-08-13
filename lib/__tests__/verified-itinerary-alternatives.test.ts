@@ -60,6 +60,24 @@ const recommendedMetrics = {
 };
 
 describe("VerifiedItineraryAlternatives", () => {
+  it("접힌 상태는 문구 너비의 한 줄 토글로 렌더링한다", () => {
+    const markup = renderToStaticMarkup(createElement(VerifiedItineraryAlternatives, {
+      alternatives: [alternative(["faster"], { totalTravelMinutes: -20, transferCount: 0 })],
+      recommendedMetrics,
+      placeName: (placeId) => placeId,
+      selectedId: null,
+      onSelect: () => undefined,
+      tr,
+    }));
+
+    expect(markup).toContain('data-stage-utility="verified-alternatives"');
+    expect(markup).toContain("w-fit");
+    expect(markup).toContain("w-max");
+    expect(markup).toContain("whitespace-nowrap");
+    expect(markup).toContain("검증된 일정 대안");
+    expect(markup).toContain("추천 일정");
+  });
+
   it("구조화 diff에 없는 더 빠름 주장은 만들지 않고 실제 증감값을 표시한다", () => {
     const markup = renderToStaticMarkup(createElement(VerifiedItineraryAlternatives, {
       alternatives: [alternative(["fewer_transfers"], { totalTravelMinutes: 60, transferCount: -2 })],

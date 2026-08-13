@@ -75,7 +75,10 @@ type Props = {
     dropCount: number;
     selectedCount: number;
   } | null;
-  onApplyOverselection?: () => void;
+  /** 항상 표시되는 두 결정 버튼은 모두 실제 동작을 필수로 받는다. */
+  onApplyOverselection: () => void;
+  /** 전체 촬영지 선택창을 열어 사용자가 직접 제외 대상을 고른다. */
+  onPickOverselection: () => void;
   onUndoOverselection?: () => void;
   /** 적용 전 개별 수정 (#84 개정) — 제안된 목록에서 하나씩 뺀다 */
   keptPlaceIds?: readonly string[];
@@ -231,6 +234,7 @@ export function ItineraryCommandPanel({
   disabledMessage = "ai.disabled",
   overselection = null,
   onApplyOverselection,
+  onPickOverselection,
   onUndoOverselection,
   keptPlaceIds,
   onToggleKeep,
@@ -267,7 +271,7 @@ export function ItineraryCommandPanel({
 
   return (
     <section
-      className="mt-3 ml-auto w-full max-w-[400px] rounded-xl border border-sc-blue/25 bg-gradient-to-br from-sc-blue-soft to-sc-surface p-3"
+      className="mt-3 ml-auto flex max-h-[min(60dvh,560px)] w-full max-w-[400px] flex-col overflow-hidden rounded-xl border border-sc-blue/25 bg-gradient-to-br from-sc-blue-soft to-sc-surface p-3"
       aria-labelledby="itinerary-ai-title"
       data-itinerary-command-panel
       id="itinerary-ai-panel"
@@ -298,6 +302,10 @@ export function ItineraryCommandPanel({
         </button>
       </div>
 
+      <div
+        className="min-h-0 flex-1 overflow-y-auto pr-1 [scrollbar-gutter:stable]"
+        data-itinerary-command-scroll
+      >
       {overselection && (
         <div className="mt-3 rounded-lg border border-sc-orange/40 bg-sc-orange-soft p-3" role="status">
           <p className="text-sm font-medium text-sc-orange-text">
@@ -345,13 +353,14 @@ export function ItineraryCommandPanel({
               {tr("ai.overselectionApply")
                 .replace("{keep}", String(keptPlaceIds?.length ?? overselection.keepPlaceIds.length))}
             </button>
-            {/* 직접 고르는 길도 남긴다 — #84가 지킨 "사용자가 제외를 결정한다" */}
-            <a
-              href="#place-picker"
+            {/* 직접 고르는 길도 남긴다 — 후보가 모달로 옮겨졌으므로 실제 선택창을 연다. */}
+            <button
+              type="button"
+              onClick={onPickOverselection}
               className="rounded border px-3 py-2 text-sm text-sc-muted hover:border-sc-blue hover:text-sc-blue"
             >
               {tr("ai.overselectionPickMyself")}
-            </a>
+            </button>
           </div>
         </div>
       )}
@@ -616,6 +625,7 @@ export function ItineraryCommandPanel({
           )}
         </div>
       )}
+      </div>
     </section>
   );
 }

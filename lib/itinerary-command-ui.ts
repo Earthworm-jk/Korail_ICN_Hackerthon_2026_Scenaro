@@ -325,6 +325,15 @@ export function overselectionProposalOf(input: {
   };
 }
 
+/** 과다 일정 경고를 현재 장소 선택 조합에서 보여줄지 결정한다. */
+export function overselectionNoticeVisible(input: {
+  requiresAdjustment: boolean;
+  selectionKey: string;
+  dismissedSelectionKey: string | null;
+}): boolean {
+  return input.requiresAdjustment && input.dismissedSelectionKey !== input.selectionKey;
+}
+
 /**
  * 과선택 정리를 되돌릴 수 있는가 (PR #185 리뷰).
  *
