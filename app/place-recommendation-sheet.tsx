@@ -156,6 +156,7 @@ export function PlaceRecommendationSheet({
           aria-haspopup="dialog"
           aria-controls="place-browser-dialog"
           onClick={onBrowseAll}
+          data-place-browser-toggle
         >
           {tr("step3.openBrowser")}
         </button>

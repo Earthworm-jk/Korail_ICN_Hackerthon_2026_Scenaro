@@ -9,9 +9,9 @@ import {
   Coffee,
   Drama,
   Footprints,
-  History,
   Hotel,
   LandPlot,
+  Landmark,
   Library,
   MapPin,
   Paintbrush,
@@ -32,7 +32,7 @@ const ICONS: Record<PlaceTypeIconKey, LucideIcon> = {
   "map-pin": MapPin,
   waves: Waves,
   trees: Trees,
-  history: History,
+  landmark: Landmark,
   footprints: Footprints,
   beef: Beef,
   "cable-car": CableCar,
@@ -54,5 +54,7 @@ const ICONS: Record<PlaceTypeIconKey, LucideIcon> = {
 
 export function PlaceTypeIcon({ placeType }: { placeType: PlaceTypeT | undefined }) {
   const Icon = ICONS[placeTypeIconKey(placeType)];
-  return <Icon aria-hidden="true" className="mb-3 size-6" strokeWidth={1.8} />;
+  // 세 사용처 모두 grid/place-items-center 래퍼다. 기존 mb-3는 모든 래퍼에서 아이콘을
+  // 위로 밀었으므로 일정 카드뿐 아니라 후보·전체 촬영지 빈 사진 자리에서도 제거한다.
+  return <Icon aria-hidden="true" className="size-5" strokeWidth={1.8} />;
 }

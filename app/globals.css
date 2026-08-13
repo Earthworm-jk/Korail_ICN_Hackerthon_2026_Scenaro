@@ -370,13 +370,46 @@
   justify-content: center;
 }
 
+/* 여행의 주인공은 이동 수단이 아니라 방문 장소다. 장소 카드에만 색 면과 강조 배지를 준다. */
+[data-itinerary-row="place"] {
+  border-color: color-mix(in srgb, var(--sc-blue) 24%, var(--sc-line));
+  background: color-mix(in srgb, var(--sc-blue-soft) 42%, var(--sc-surface));
+}
+
+[data-itinerary-row="place"] [data-row-main] > span:first-child {
+  background: var(--sc-blue);
+  color: var(--sc-surface);
+}
+
 [data-move-row] {
   color: var(--sc-muted);
 }
 
+/* 이동은 두 장소 사이의 보조 정보이므로 종류 라벨과 연결점도 중립색으로 낮춘다. */
+[data-move-row] [data-move-kind] {
+  color: var(--sc-muted);
+}
+
 [data-move-summary] {
-  width: min(100%, 184px);
-  align-self: center;
+  /* 관람 카드와 같은 레일 폭을 유지해 타임라인과 `stayColumn` 정렬을 보존한다.
+     이동의 낮은 위계는 가로폭 차이가 아니라 78px 높이·중립색·점선 테두리로 표현한다. */
+  display: grid;
+  width: 100%;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  column-gap: 8px;
+  row-gap: 2px;
+}
+
+[data-move-summary] [data-row-main] {
+  min-width: 0;
+  margin-top: 0;
+}
+
+[data-move-summary] [data-row-meta] {
+  grid-column: 1 / -1;
+  justify-self: end;
+  padding-top: 0;
 }
 
 [data-move-summary] [data-row-name] {
@@ -390,6 +423,59 @@
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
   line-height: 1.35;
+}
+
+/**
+ * 체류·환승은 일정 항목이 아니라 DAY 시간 통계다 (#207 후속 UX).
+ *
+ * 장소/이동 카드와 같은 높이·배경·아이콘을 쓰면 노란 경고 카드가 일정에 하나 더
+ * 들어온 것처럼 보인다. 구조와 엔진 분류는 유지하고, 화면에서는 한 줄 요약으로 낮춘다.
+ */
+ul[data-day-stays] {
+  display: flex;
+  width: 100%;
+  max-width: 360px;
+  flex-direction: column;
+  gap: 4px;
+}
+
+ul[data-day-stays] > li {
+  display: grid;
+  min-height: 0;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  column-gap: 8px;
+  border: 0;
+  border-bottom: 1px solid var(--sc-line);
+  border-radius: 0;
+  background: transparent !important;
+  padding: 4px 0;
+}
+
+ul[data-day-stays] > li:last-child {
+  border-bottom: 0;
+}
+
+ul[data-day-stays] [data-row-main] {
+  display: contents;
+}
+
+ul[data-day-stays] [data-row-main] > span:first-child {
+  display: none;
+}
+
+ul[data-day-stays] [data-row-name] {
+  -webkit-line-clamp: 1;
+  color: var(--sc-muted);
+  font-size: 0.75rem;
+}
+
+ul[data-day-stays] [data-row-meta] {
+  margin: 0;
+  padding: 0;
+  color: var(--sc-text);
+  font-weight: 600;
+  white-space: nowrap;
 }
 
 /**
@@ -410,15 +496,30 @@
     padding-top: 14px;
   }
 
-  /* 칸 폭은 체류 타임라인과 맞춘 채, 이동 카드만 칸 안에서 좁은 연결자로 보인다. */
+  /* 이동도 관람과 같은 칸 폭을 쓴다. 구분은 가로폭이 아니라 낮은 세로 높이로 한다. */
   ul[data-day-rows] > li[data-itinerary-row="train"],
   ul[data-day-rows] > li[data-itinerary-row="gateway"] {
+    height: 78px;
     min-height: 0;
   }
 
   ul[data-day-rows] > li[data-itinerary-row="train"] > [data-move-row],
   ul[data-day-rows] > li[data-itinerary-row="gateway"] > [data-move-row] {
     margin-block: auto;
+  }
+
+  /* 시간 요약은 위 일정 칸과 열을 맞추는 두 번째 타임라인이 아니다. */
+  ul[data-day-rows][data-day-stays] {
+    background-image: none;
+  }
+
+  ul[data-day-rows][data-day-stays] > li {
+    height: auto;
+    padding-top: 4px;
+  }
+
+  ul[data-day-rows][data-day-stays] > li::before {
+    display: none;
   }
 
   /**
@@ -452,7 +553,7 @@
     box-shadow: 0 0 0 3px var(--sc-surface);
   }
 
-  /* 관람은 주황 원, 이동은 파란 사각 연결점으로 구분한다 (#207).
+  /* 관람은 주황 원, 이동은 중립색 사각 연결점으로 구분한다 (#207).
      카드 안쪽 위계뿐 아니라 타임라인만 훑어도 방문과 이동이 갈려야 한다. */
   ul[data-day-rows] > li[data-itinerary-row="train"]::before,
   ul[data-day-rows] > li[data-itinerary-row="gateway"]::before {
@@ -460,8 +561,14 @@
     width: 5px;
     height: 5px;
     border-radius: 1px;
-    background: var(--sc-blue);
+    background: var(--sc-line-strong);
   }
+}
+
+/* 데스크톱의 좁은 일정 레일에서도 이동 표식이 방문 표식의 주황색을 상속하지 않는다. */
+ul[data-day-rows] > li[data-itinerary-row="train"]::before,
+ul[data-day-rows] > li[data-itinerary-row="gateway"]::before {
+  background: var(--sc-line-strong) !important;
 }
 
 /**
