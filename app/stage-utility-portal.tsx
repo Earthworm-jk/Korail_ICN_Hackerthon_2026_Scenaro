@@ -50,6 +50,7 @@ export function StageUtilityDockController() {
 
     const root = document.documentElement;
     let observedSheet: HTMLElement | null = null;
+    let observedHeader: HTMLElement | null = null;
     let geometryFrame = 0;
 
     /**
@@ -78,6 +79,26 @@ export function StageUtilityDockController() {
       const sheetFixed = sheet ? getComputedStyle(sheet).position === "fixed" : false;
       const bottomHeight = sheetFixed && sheet ? sheet.offsetHeight : host.offsetHeight;
       root.style.setProperty("--sc-dock-h", `${bottomHeight}px`);
+
+      /*
+       * 시트 머리글 높이 — 좁히기·정렬 줄이 그 아래에 붙을 자리다.
+       *
+       * 머리글은 내용에 따라 한 줄이 되기도 두 줄이 되기도 해서 CSS에 고정값으로
+       * 적을 수 없다. 여기서 실측해 넘긴다.
+       */
+      const sheetHeader = sheet?.querySelector<HTMLElement>("[data-place-sheet-header]") ?? null;
+      if (sheetHeader) {
+        if (sheetHeader !== observedHeader) {
+          if (observedHeader) geometryObserver.unobserve(observedHeader);
+          observedHeader = sheetHeader;
+          geometryObserver.observe(sheetHeader);
+        }
+        root.style.setProperty("--sc-sheet-header-h", `${sheetHeader.offsetHeight}px`);
+      } else {
+        if (observedHeader) geometryObserver.unobserve(observedHeader);
+        observedHeader = null;
+        root.style.removeProperty("--sc-sheet-header-h");
+      }
     };
 
     const scheduleGeometrySync = () => {
@@ -114,6 +135,7 @@ export function StageUtilityDockController() {
       geometryObserver.disconnect();
       if (geometryFrame) cancelAnimationFrame(geometryFrame);
       root.style.removeProperty("--sc-dock-h");
+      root.style.removeProperty("--sc-sheet-header-h");
     };
   }, []);
 

@@ -26,7 +26,6 @@ export type UndoPoint<Alt = unknown, Save = string> = {
   saveStatus: Save;
   /** 그 일정 기준으로 조회했던 테마 체험 표시 */
   themeExperience: unknown;
-  themeMapVisible: boolean;
 };
 
 /** 스냅샷이 담아야 하는 키 — 하나라도 빠지면 그 상태는 복원되지 않는다 */
@@ -39,7 +38,6 @@ export const UNDO_POINT_KEYS = [
   "settledSelectionKey",
   "saveStatus",
   "themeExperience",
-  "themeMapVisible",
 ] as const satisfies readonly (keyof UndoPoint)[];
 
 /**
@@ -57,7 +55,6 @@ export function undoPointOf<Alt, Save>(state: {
   settledSelectionKey: string | null;
   saveStatus: Save;
   themeExperience: unknown;
-  themeMapVisible: boolean;
 }): UndoPoint<Alt, Save> | null {
   if (!state.result) return null;
   return {
@@ -69,6 +66,5 @@ export function undoPointOf<Alt, Save>(state: {
     settledSelectionKey: state.settledSelectionKey,
     saveStatus: state.saveStatus,
     themeExperience: state.themeExperience,
-    themeMapVisible: state.themeMapVisible,
   };
 }

@@ -47,7 +47,7 @@
 }
 
 /* 제목 묶음은 한 줄을 통째로 쓴다 — 버튼은 다음 줄로 내려간다 */
-.header > div {
+.header > div:not([popover]) {
   flex: 1 1 100%;
   min-width: 0;
 }
@@ -63,12 +63,12 @@
  * 100% 폭을 줘서 다음 줄로 내린다.
  */
 @media (max-width: 1023px) {
-  .header > div:first-of-type {
+  .header > div:not([popover]):first-of-type {
     display: contents;
   }
 
   /* 제목 줄 — 남는 폭을 쓰고, 조작이 들어올 자리를 남긴다 */
-  .header > div:first-of-type > div:first-child {
+  .header > div:not([popover]):first-of-type > div:first-child {
     order: 1;
     flex: 1 1 auto;
     min-width: 0;
@@ -79,7 +79,7 @@
   .collapseToggle { order: 4; }
 
   /* 상태 요약과 분류 칩은 다음 줄 전체 */
-  .header > div:first-of-type > div:nth-child(2) {
+  .header > div:not([popover]):first-of-type > div:nth-child(2) {
     order: 5;
     flex: 1 1 100%;
     margin-top: 2px;

@@ -163,7 +163,6 @@ describe("#109 되돌리기 지점 — 빠뜨린 필드는 조용히 안 돌아�
     settledSelectionKey: "a|b",
     saveStatus: "saved" as const,
     themeExperience: { status: "unavailable" },
-    themeMapVisible: true,
   };
 
   it("복원해야 하는 필드를 하나도 빠뜨리지 않는다", () => {
@@ -176,7 +175,6 @@ describe("#109 되돌리기 지점 — 빠뜨린 필드는 조용히 안 돌아�
   it("저장 상태와 테마 표시를 함께 담는다", () => {
     const point = undoPointOf(base)!;
     expect(point.saveStatus).toBe("saved");
-    expect(point.themeMapVisible).toBe(true);
     expect(point.themeExperience).toEqual({ status: "unavailable" });
   });
 

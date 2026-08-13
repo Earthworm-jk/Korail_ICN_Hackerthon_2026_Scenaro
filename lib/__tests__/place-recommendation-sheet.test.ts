@@ -41,7 +41,7 @@ const copy: Partial<Record<MessageKey, string>> = {
 const tr = (key: MessageKey) => copy[key] ?? key;
 
 describe("지도 위 추천 장소 바텀시트", () => {
-  it("미리보기 없이 선택 수, 정렬, 전체 촬영지 진입을 제공한다", () => {
+  it("제목·전체 보기·접기 없이 정렬·상태·후보 목록을 한자리에 둔다", () => {
     const markup = renderToStaticMarkup(createElement(PlaceRecommendationSheet, {
       selectedCount: 3,
       totalCount: 8,
@@ -49,58 +49,26 @@ describe("지도 위 추천 장소 바텀시트", () => {
       unplacedCount: null,
       updating: false,
       updated: false,
-      sortBy: "relevance",
-      onSortChange: () => undefined,
-      onBrowseAll: () => undefined,
-      tr,
+        tr,
     }, createElement("li", { "data-recommendation-card": true }, "월정사")));
 
     expect(markup).toContain("data-place-sheet");
     expect(markup).toContain('data-sheet-mode="browser-entry"');
-    expect(markup).toContain('data-sheet-expanded="true"');
-    expect(markup).toContain("지도 위 추천 장소");
-    expect(markup).not.toContain("장소를 고르면 일정과 경로가 함께 바뀝니다.");
-    expect(markup).toContain("3/8곳 선택");
-    expect(markup).toContain('aria-label="장소 정렬 방식"');
-    expect(markup).toContain('<option value="relevance" selected="">추천순</option>');
-    expect(markup).not.toContain("data-place-sheet-controls");
-    expect(markup).toContain("전체 촬영지 보기");
-    expect(markup).toContain('aria-label="추천 장소 접기"');
-    expect(markup).toContain('aria-expanded="true"');
-    expect(markup).toContain("min-h-11");
-    expect(markup).toContain('aria-haspopup="dialog"');
-    expect(markup).toContain('aria-controls="place-browser-dialog"');
-    // 5개 미리보기는 구현에서 제거한다 (#207). 호출부가 넘겨도 표시하지 않는다.
-    expect(markup).not.toContain("월정사");
-    expect(markup).not.toContain("data-place-sheet-list");
-    expect(markup).not.toContain("data-place-sheet-more");
+    // 제목·선택 수·전체 보기·접기는 걷었다 (#146 후속 — 독 없애기)
+    expect(markup).not.toContain("지도 위 추천 장소");
+    expect(markup).not.toContain("전체 촬영지 보기");
+    expect(markup).not.toContain("추천 장소 접기");
+    expect(markup).not.toContain("추천 장소 펼치기");
+    expect(markup).not.toContain("data-sheet-expanded");
+    // 정렬은 좁히기와 같은 줄로 내려갔다 — 시트가 그리지 않는다
+    expect(markup).not.toContain('aria-label="장소 정렬 방식"');
+    // 후보 목록은 늘 보인다 — 호출부가 넘긴 카드가 그대로 실린다
+    expect(markup).toContain("월정사");
+    expect(markup).not.toContain("data-place-sheet-map");
     // 시트 안 촬영지 위치 지도는 지웠다 (#146) — 화면의 동선 지도와 중복이었다
     expect(markup).not.toContain("data-place-sheet-map");
     // 독으로 옮겨 갈 주 액션 자리는 시트가 제공한다
     expect(markup).toContain('id="stage-sheet-actions"');
-  });
-
-  it("다시 계산 없이 하단 추천 독을 접고 펼칠 수 있다", () => {
-    const markup = renderToStaticMarkup(createElement(PlaceRecommendationSheet, {
-      selectedCount: 3,
-      totalCount: 8,
-      placedCount: 3,
-      unplacedCount: 0,
-      updating: false,
-      updated: false,
-      sortBy: "relevance" as const,
-      onSortChange: () => undefined,
-      onBrowseAll: () => undefined,
-      initialExpanded: false,
-      tr,
-    }));
-
-    expect(markup).toContain('data-sheet-expanded="false"');
-    expect(markup).toContain("추천 장소 펼치기");
-    expect(markup).toContain('aria-expanded="false"');
-    expect(markup).toContain("min-h-11");
-    expect(markup).not.toContain("전체 촬영지 보기");
-    expect(markup).not.toContain('id="stage-sheet-actions"');
   });
 
   it("열린 전체 촬영지 모달 안에 명시적인 닫기 버튼을 제공한다", () => {
@@ -158,10 +126,7 @@ describe("지도 위 추천 장소 바텀시트", () => {
       unplacedCount: null,
       updating: true,
       updated: false,
-      sortBy: "official",
-      onSortChange: () => undefined,
-      onBrowseAll: () => undefined,
-      tr,
+        tr,
     }));
 
     expect(markup).toContain("일정·경로 다시 그리는 중");
@@ -176,10 +141,7 @@ describe("지도 위 추천 장소 바텀시트", () => {
       unplacedCount: null,
       updating: false,
       updated: false,
-      sortBy: "relevance",
-      onSortChange: () => undefined,
-      onBrowseAll: () => undefined,
-      routeRecommendations: createElement("li", { "data-route-card": true }, "영진해변"),
+        routeRecommendations: createElement("li", { "data-route-card": true }, "영진해변"),
       tr,
     }));
 
@@ -197,10 +159,7 @@ describe("지도 위 추천 장소 바텀시트", () => {
       unplacedCount: null,
       updating: false,
       updated: true,
-      sortBy: "official",
-      onSortChange: () => undefined,
-      onBrowseAll: () => undefined,
-      tr,
+        tr,
     }));
 
     expect(markup).toContain("2/8곳 선택");
@@ -277,8 +236,6 @@ describe("지도 위 추천 장소 바텀시트", () => {
 describe("#146 ① 상태 요약과 분류", () => {
   const base = {
     selectedCount: 8, totalCount: 20, updating: false, updated: false,
-    sortBy: "relevance" as const, onSortChange: () => undefined,
-    onBrowseAll: () => undefined,
     tr,
   };
   const render = (over: Record<string, unknown>) =>
@@ -326,7 +283,6 @@ describe("#146 ① 상태 요약과 분류", () => {
 describe("테마체험 대체 칩", () => {
   const base = {
     selectedCount: 8, totalCount: 20, updating: false, updated: false,
-    sortBy: "relevance" as const, onSortChange: () => undefined,
     onBrowseAll: () => undefined, tr,
     placedCount: 7, unplacedCount: 1,
   };

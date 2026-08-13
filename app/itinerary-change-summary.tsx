@@ -10,6 +10,8 @@ type Props = {
   diff: ItineraryDiff;
   placeName: (placeId: string) => string;
   reasonLabel: (reason: NonNullable<ItineraryDiff["places"]["dropped"][number]["reason"]>) => string;
+  /** 놓친 열차를 사람 말로 — `KTX 000 · 서울 → 강릉 18:00` */
+  rideLabel: (ride: ItineraryDiff["rides"]["missed"][number]) => string;
   tr: (key: MessageKey) => string;
 };
 
@@ -21,7 +23,7 @@ type Props = {
  * 보여주고, 장소 이름·날짜·제외 사유는 접힌 상세에서 확인하게 한다. 일정 카드 옆의 좁은
  * 태블릿 패널을 다시 긴 문장으로 채우지 않기 위해서다.
  */
-export function ItineraryChangeSummary({ diff, placeName, reasonLabel, tr }: Props) {
+export function ItineraryChangeSummary({ diff, placeName, reasonLabel, rideLabel, tr }: Props) {
   /**
    * 사용자가 치울 수 있다 (#146).
    *
@@ -54,28 +56,26 @@ export function ItineraryChangeSummary({ diff, placeName, reasonLabel, tr }: Pro
   if (dismissed) return null;
 
   if (!diff.changed) {
+    /*
+      변경이 없으면 **화면에는 아무것도 띄우지 않는다.**
+
+      "재검증 완료 · 변경 없음"은 새 소식이 아닌데도 일정 위에 창을 하나 더 얹어
+      가렸다. 알릴 것이 없을 때 자리를 차지하지 않는 쪽이 맞다.
+
+      다만 화면 낭독기에는 남긴다 — 눌렀는데 아무 반응이 없는 것처럼 들리면
+      재계산이 실패한 것인지 알 수 없다.
+    */
     return (
       <StageUtilityPortal>
-        <details
-          data-stage-utility="change"
+        <span
+          className="sr-only"
           data-itinerary-change="unchanged"
-          className="group rounded-lg border border-sc-blue/25 bg-sc-blue-soft"
+          role="status"
+          aria-live="polite"
+          aria-atomic="true"
         >
-          <span className="sr-only" role="status" aria-live="polite" aria-atomic="true">
-            {tr("step4.changeUnchangedTitle")} {tr("step4.changeUnchanged")}
-          </span>
-          <summary className="flex min-h-11 list-none items-center justify-between gap-3 px-3 py-2.5 text-sm marker:content-none">
-            <span className="min-w-0">
-              <strong className="block font-medium text-sc-blue">{tr("step4.changeDockTitle")}</strong>
-              <span className="block text-xs text-sc-text/70">{tr("step4.changeUnchangedShort")}</span>
-            </span>
-            <span aria-hidden className="shrink-0 text-sc-muted transition-transform group-open:rotate-180">⌄</span>
-            {closeButton}
-          </summary>
-          <div className="border-t border-sc-blue/15 px-3 pb-3 pt-2 text-sm text-sc-text/75">
-            {tr("step4.changeUnchanged")}
-          </div>
-        </details>
+          {tr("step4.changeUnchangedTitle")} {tr("step4.changeUnchanged")} {tr("step4.changeUnchangedShort")}
+        </span>
       </StageUtilityPortal>
     );
   }
@@ -100,9 +100,17 @@ export function ItineraryChangeSummary({ diff, placeName, reasonLabel, tr }: Pro
       : null,
   ].filter((value): value is string => value !== null);
 
+  /*
+    이 팝업만 유틸리티 독 **밖에서** 그린다.
+
+    독은 `backdrop-filter`를 쓰는데, 그 속성은 자손 `position: fixed`의 기준 상자를
+    독으로 바꿔 버린다. 그래서 화면 가운데로 보내려던 상자가 독 안쪽 아래에 붙었다.
+  */
+  // AI 창과 같은 팝업으로 띄운다 — 일정 옆에 얹혀 있으면 무엇이 바뀌었는지 읽기 전에
+  // 일정을 가린다. 팝업이라 접기 토글은 두지 않고 열어 둔다
   return (
-    <StageUtilityPortal>
       <details
+        open
         data-stage-utility="change"
         data-itinerary-change="changed"
         className="group rounded-lg border border-sc-blue/30 bg-sc-blue-soft"
@@ -117,7 +125,6 @@ export function ItineraryChangeSummary({ diff, placeName, reasonLabel, tr }: Pro
               {withValues(tr("step4.changeDockSummary"), { n: dockChangeCount })}
             </span>
           </span>
-          <span aria-hidden className="shrink-0 text-sc-muted transition-transform group-open:rotate-180">⌄</span>
           {closeButton}
         </summary>
 
@@ -144,6 +151,24 @@ export function ItineraryChangeSummary({ diff, placeName, reasonLabel, tr }: Pro
             </span>
           )}
           </div>
+
+          {/*
+            못 타게 된 열차 (#103 · PR #105).
+
+            `missed`는 범위를 선언한 재계산에서만 찬다 — 지금은 여행 시작 경계가 뒤로
+            밀렸을 때(항공 지연)다. 건수만 말하면 "어느 열차를 놓쳤나"를 알 수 없어
+            편명·구간·시각을 그대로 적는다.
+          */}
+          {diff.rides.missed.length > 0 && (
+            <section className="mt-3" aria-label={tr("step4.missedRides")}>
+              <h4 className="font-medium text-sc-orange-text">{tr("step4.missedRides")}</h4>
+              <ul className="mt-2 space-y-1 text-xs text-sc-orange-text">
+                {diff.rides.missed.map((ride) => (
+                  <li key={`${ride.trainNo}-${ride.departAt}`}>{rideLabel(ride)}</li>
+                ))}
+              </ul>
+            </section>
+          )}
 
           {detailCount > 0 && (
           <section className="mt-3" aria-label={tr("step4.changeDetails")}>
@@ -174,6 +199,5 @@ export function ItineraryChangeSummary({ diff, placeName, reasonLabel, tr }: Pro
           )}
         </div>
       </details>
-    </StageUtilityPortal>
   );
 }
