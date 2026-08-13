@@ -73,7 +73,7 @@ export type CandidateWarning = {
 export type ComparisonKeys = {
   selectionGroupCoverageCount: number; // 1) 배우·작품 요청 그룹 중 실제 방문에 반영된 수(최대 2)
   selectedUnionPlaceCount: number; // 2) 두 엄격 후보 집합 합집합의 고유 방문 장소 수
-  activityWarningCount: number; // 3) 낮을수록 우선 — 운영시간 경고 수 (#43 결정 3, #3 개정)
+  verifiedHoursMismatchCount: number; // 3) 낮을수록 우선 — 검증된 운영시간 밖 배치 수 (#198)
   // 4) 낮을수록 우선 — 선호 날짜를 못 지킨 수 (#139). 경고 뒤·이동시간 앞:
   //    운영시간 신뢰를 깎으면서까지 선호를 강제하지는 않되, 단순 이동시간보다는 사용자 의사를 앞에 둔다.
   preferredDateMismatchCount: number;

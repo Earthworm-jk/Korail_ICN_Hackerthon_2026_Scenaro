@@ -326,7 +326,7 @@ describe("#141 실행기 판정 — 적용하지 않고 제안한다", () => {
       comparisonKeys: {
         selectionGroupCoverageCount: 0,
         selectedUnionPlaceCount: 0,
-        activityWarningCount: 0,
+        verifiedHoursMismatchCount: 0,
         preferredDateMismatchCount: 0,
         preferredOrderMismatchCount: 0,
         totalTravelMinutes: 0,

@@ -49,7 +49,7 @@ const planned: ItineraryResult = {
   comparisonKeys: {
     selectionGroupCoverageCount: 1,
     selectedUnionPlaceCount: 1,
-    activityWarningCount: 1,
+    verifiedHoursMismatchCount: 1,
     preferredDateMismatchCount: 0,
     preferredOrderMismatchCount: 0,
     totalTravelMinutes: 168,

@@ -198,7 +198,7 @@ describe("판정 — 요청 밖 손실", () => {
     comparisonKeys: {
       selectionGroupCoverageCount: 0,
       selectedUnionPlaceCount: 0,
-      activityWarningCount: 0,
+      verifiedHoursMismatchCount: 0,
       preferredDateMismatchCount: 0,
       preferredOrderMismatchCount: 0,
       totalTravelMinutes: 0,

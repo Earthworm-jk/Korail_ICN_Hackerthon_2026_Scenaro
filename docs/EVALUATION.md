@@ -31,7 +31,7 @@ pnpm eval:golden:record
 - `days[].gatewayLegs[]`
 - `rejectedPlaces[].code/placeId`
 - `warnings[].code/placeId/detail`
-- `comparisonKeys.activityWarningCount`
+- `comparisonKeys.verifiedHoursMismatchCount`
 - `metrics.totalRailMinutes`
 
 ## 하드 제약과 위반 코드

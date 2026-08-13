@@ -6,7 +6,7 @@ import {
   constraintVariants, expandedRepositories, legsSubset,
 } from "../../test/planner-fixtures";
 
-// #56 A+B 수용 기준 4: 파생 캐시(정렬 방문 키·경로 문자열·경고 수·selected_work 수)가
+// #56 A+B 수용 기준 4: 파생 캐시(정렬 방문 키·경로 문자열·검증 충돌 수·selected_work 수)가
 // 모든 상태 전이에서 원본 재계산값과 일치한다. 검증 플래그를 켜면 pruneStates가
 // 전이 전건을 대조하고 불일치 시 예외를 던진다 — 이 파일은 그 경로로 전 변형을 통과시킨다.
 

@@ -97,11 +97,11 @@ describe("#139 선호 반영 — 후보가 실제로 만들어진다 (6-1)", () 
     const base = await plan();
     const preferred = await plan({ preferredVisitDates: { [GATE]: "2026-08-14" } });
 
-    // 장소 수(비교 키 2번)와 경고 수(3번)는 선호(4번)보다 위다 — 선호가 이 둘을 깎으면 안 된다
+    // 장소 수(비교 키 2번)와 검증 충돌 수(3번)는 선호(4번)보다 위다 — 선호가 이 둘을 깎으면 안 된다
     expect(preferred.comparisonKeys.selectedUnionPlaceCount)
       .toBe(base.comparisonKeys.selectedUnionPlaceCount);
-    expect(preferred.comparisonKeys.activityWarningCount)
-      .toBe(base.comparisonKeys.activityWarningCount);
+    expect(preferred.comparisonKeys.verifiedHoursMismatchCount)
+      .toBe(base.comparisonKeys.verifiedHoursMismatchCount);
   });
 
   it("선호가 없는 장소의 배치는 선호를 지키기 위해서만 움직인다", async () => {
@@ -126,17 +126,15 @@ describe("#139 못 지킨 선호 — 실패가 아니라 보고다", () => {
     expect(result.comparisonKeys.preferredDateMismatchCount).toBe(1);
   });
 
-  it("일정에 들어가지 못한 장소의 선호는 unplaced이고, 그 때문에 일정이 줄지 않는다", async () => {
+  it("미확인 장소의 선호가 반영돼도 그 때문에 일정이 줄지 않는다 (#198 상호작용)", async () => {
     const base = await plan();
     const result = await plan({ preferredVisitDates: { [BEXCO]: "2026-08-13" } });
 
-    expect(outcomeOf(result.preferredDateOutcomes, BEXCO)?.outcome).toBe("unplaced");
-    expect(result.comparisonKeys.preferredDateMismatchCount).toBe(1);
-    // 넣을 수 없는 선호가 beam을 밀어내 다른 장소를 떨어뜨리면 안 된다 (#139 6-2)
+    expect(outcomeOf(result.preferredDateOutcomes, BEXCO)?.outcome).toBe("honored");
+    expect(result.comparisonKeys.preferredDateMismatchCount).toBe(0);
+    // 미확인을 감점하지 않아 새 후보가 들어와도 비교 키 2번의 장소 수는 보존한다.
     expect(result.comparisonKeys.selectedUnionPlaceCount)
       .toBe(base.comparisonKeys.selectedUnionPlaceCount);
-    expect(result.days.map((day) => day.items.map((item) => item.placeId)))
-      .toEqual(base.days.map((day) => day.items.map((item) => item.placeId)));
   });
 });
 

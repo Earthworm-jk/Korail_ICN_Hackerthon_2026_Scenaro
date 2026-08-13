@@ -51,7 +51,7 @@ type DerivedState = {
   ridePath: string; // 탑승 trainNo join("/") — 안정 타이브레이커 뒷부분
   stableKey: string; // 완성된 안정 타이브레이커 — 비교자에서 재조립하지 않도록 전이 시 확정
   dateCountsKey: string; // 날짜별 배치 수 서명 — pruneStates 서명용
-  warningCount: number;
+  verifiedHoursMismatchCount: number;
   // #139 — 선호 날짜에 배치된 방문 수. 여기에 담는 것은 '지킨 수'이고 비교 키는 '못 지킨 수'다.
   // 한 실행 안에서 총 선호 수가 상수라 (mismatch 오름차순) ≡ (honored 내림차순)이고,
   // beam 단계에서는 총량 없이 이 값만으로 최종 비교와 같은 방향을 만들 수 있다.
@@ -268,7 +268,7 @@ function initialDerived(ctx: PlanContext): DerivedState {
     ridePath: "",
     stableKey: "",
     dateCountsKey: dateCountsKeyOf(ctx.tripDates.map(() => 0)),
-    warningCount: 0,
+    verifiedHoursMismatchCount: 0,
     preferredHonoredCount: 0,
     preferredOrderHonoredCount: 0,
     actorGroupCovered: false,
@@ -313,7 +313,8 @@ function appendDerived(
     ridePath,
     stableKey: stableKeyOf(visitPath, ridePath),
     dateCountsKey: dateCountsKeyOf(dateCounts),
-    warningCount: parent.warningCount + (warning !== null ? 1 : 0),
+    verifiedHoursMismatchCount: parent.verifiedHoursMismatchCount
+      + (warning === "OUTSIDE_VERIFIED_HOURS" ? 1 : 0),
     preferredHonoredCount: parent.preferredHonoredCount + (honorsPreference ? 1 : 0),
     preferredOrderHonoredCount: parent.preferredOrderHonoredCount
       + ctx.orderPredecessorsOf(placeId).filter((first) => visitedPlaceIds.has(first)).length,
@@ -337,7 +338,9 @@ function recomputeDerived(state: PlannerState, ctx: PlanContext): DerivedState {
     // 원본 재계산: 방문 기록의 visitStart에서 날짜별 수를 다시 센다 (배열 신뢰 안 함)
     dateCountsKey: dateCountsKeyOf(ctx.tripDates.map((date) =>
       state.visits.filter(({ visitStart }) => koreaDate(visitStart) === date).length)),
-    warningCount: state.visits.filter(({ warning }) => warning !== null).length,
+    verifiedHoursMismatchCount: state.visits.filter(
+      ({ warning }) => warning === "OUTSIDE_VERIFIED_HOURS",
+    ).length,
     // 원본 재계산: 방문 기록의 visitStart 날짜와 선호 입력을 직접 대조한다 (증분 값 신뢰 안 함)
     preferredHonoredCount: state.visits.filter(({ place, visitStart }) =>
       ctx.preferredDateOf(place.id) === koreaDate(visitStart)).length,
@@ -360,7 +363,7 @@ function assertDerivedIntegrity(states: PlannerState[], ctx: PlanContext): void 
       || actual.ridePath !== expected.ridePath
       || actual.stableKey !== expected.stableKey
       || actual.dateCountsKey !== expected.dateCountsKey
-      || actual.warningCount !== expected.warningCount
+      || actual.verifiedHoursMismatchCount !== expected.verifiedHoursMismatchCount
       || actual.preferredHonoredCount !== expected.preferredHonoredCount
       || actual.preferredOrderHonoredCount !== expected.preferredOrderHonoredCount
       || actual.actorGroupCovered !== expected.actorGroupCovered
@@ -947,7 +950,7 @@ function completeSchedule(
     keys: {
       selectionGroupCoverageCount,
       selectedUnionPlaceCount: state.visits.length,
-      activityWarningCount: activityWarningCountOf(state), // #43 결정 3 — 방문 수와 이동시간 사이
+      verifiedHoursMismatchCount: verifiedHoursMismatchCountOf(state), // #198 — 검증 충돌만 비교
       // #139: 일정에 못 들어간 선호도 불일치 1로 센다 — 총 선호 수에서 지킨 수를 뺀다
       preferredDateMismatchCount: ctx.preferredCount - state.derived.preferredHonoredCount,
       preferredOrderMismatchCount:
@@ -1357,10 +1360,10 @@ function coverageOf(state: PlannerState): number {
   return Number(state.derived.actorGroupCovered) + Number(state.derived.workGroupCovered);
 }
 
-/** beam 정렬 — 경고 수는 최종 비교 키(#43)와 같은 방향으로 beam에서도 우선한다 */
+/** beam 정렬 — 검증 운영시간 충돌 수를 최종 비교 키(#198)와 같은 방향으로 우선한다 */
 function compareBeam(a: PlannerState, b: PlannerState): number {
   return coverageOf(b) - coverageOf(a)
-    || activityWarningCountOf(a) - activityWarningCountOf(b)
+    || verifiedHoursMismatchCountOf(a) - verifiedHoursMismatchCountOf(b)
     || a.readyAt - b.readyAt
     || a.derived.stableKey.localeCompare(b.derived.stableKey, "en");
 }
@@ -1368,7 +1371,7 @@ function compareBeam(a: PlannerState, b: PlannerState): number {
 /** 같은 정렬에 선호 불일치를 최종 비교와 같은 자리(경고 뒤)에 끼운 것 (#139) */
 function compareBeamPreferred(a: PlannerState, b: PlannerState): number {
   return coverageOf(b) - coverageOf(a)
-    || activityWarningCountOf(a) - activityWarningCountOf(b)
+    || verifiedHoursMismatchCountOf(a) - verifiedHoursMismatchCountOf(b)
     || b.derived.preferredHonoredCount - a.derived.preferredHonoredCount
     || b.derived.preferredOrderHonoredCount - a.derived.preferredOrderHonoredCount
     || a.readyAt - b.readyAt
@@ -1382,7 +1385,7 @@ function compareBeamPreferred(a: PlannerState, b: PlannerState): number {
  * 배치 수·역·준비 시각이 모두 같을 수 있어 같은 서명으로 묶이기 때문이다.
  */
 function comparePruned(a: PlannerState, b: PlannerState): number {
-  return activityWarningCountOf(a) - activityWarningCountOf(b)
+  return verifiedHoursMismatchCountOf(a) - verifiedHoursMismatchCountOf(b)
     || b.derived.preferredHonoredCount - a.derived.preferredHonoredCount
     || b.derived.preferredOrderHonoredCount - a.derived.preferredOrderHonoredCount
     || a.readyAt - b.readyAt
@@ -1577,8 +1580,8 @@ function minutesBetween(start: number, end: number): number {
   return Math.max(0, Math.round((end - start) / MINUTE_MS));
 }
 
-function activityWarningCountOf(state: PlannerState): number {
-  return state.derived.warningCount;
+function verifiedHoursMismatchCountOf(state: PlannerState): number {
+  return state.derived.verifiedHoursMismatchCount;
 }
 
 function selectionGroupSummary(
