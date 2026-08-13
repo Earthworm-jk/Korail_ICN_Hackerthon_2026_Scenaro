@@ -318,6 +318,20 @@ function fmtMonthDay(at: string): string {
   return `${Number(month)}.${Number(day)}`;
 }
 
+/**
+ * "사용 가능 시간" 한 줄. 1단계에서 고른 네 시각이 만드는 값이지만 그 화면에 다시
+ * 적지 않는다 — 사이드바가 단계 내내 이 값을 들고 있고, 본문과 사이드바에 같은 값을
+ * 두면 중복이다. 순서가 어긋난 입력(공항 도착이 출발보다 이르다)이면 "8.16 12:00–
+ * 8.15 14:00" 같은 불가능한 범위를 만들지 않고 null을 준다.
+ */
+function usableWindowText(readyAt: string, deadlineAt: string): string | null {
+  if (!readyAt || !deadlineAt) return null;
+  const from = Date.parse(fromLocalInput(readyAt));
+  const to = Date.parse(fromLocalInput(deadlineAt));
+  if (!Number.isFinite(from) || !Number.isFinite(to) || from >= to) return null;
+  return `${fmtMonthDay(readyAt)} ${readyAt.split("T")[1]} – ${fmtMonthDay(deadlineAt)} ${deadlineAt.split("T")[1]}`;
+}
+
 function SummarySidebar({ arrivalAt, departureAt, readyAt, deadlineAt, actors, works, placeCount, locale, tr, collapsed, onToggle }: {
   arrivalAt: string;
   departureAt: string;
@@ -339,20 +353,29 @@ function SummarySidebar({ arrivalAt, departureAt, readyAt, deadlineAt, actors, w
     .replace("{d}", String(nights + 1));
   const hasContent = actors.length > 0 || works.length > 0;
   return (
-    <aside aria-label={tr("summary.title")} className="border-b bg-sc-subtle px-5 py-4 md:border-b-0 md:border-r md:px-4 md:py-5">
-      <div className="flex items-center justify-between gap-2">
-        <h3 className="text-sm font-medium">{tr("summary.title")}</h3>
-        <button
-          type="button"
-          aria-expanded={!collapsed}
-          className="rounded border px-1.5 py-0.5 text-xs text-sc-muted hover:border-sc-blue hover:text-sc-blue"
-          onClick={onToggle}
-        >
-          {collapsed ? "＋" : "－"}
-          <span className="sr-only">{tr(collapsed ? "summary.expand" : "summary.collapse")}</span>
-        </button>
-      </div>
-      <div hidden={collapsed} className="mt-3 grid grid-cols-2 gap-3 md:grid-cols-1 md:gap-4">
+    // 제목 줄("선택 요약")은 두지 않는다 — 각 항목이 제 이름을 달고 있어 한 겹 더
+    // 얹으면 좁은 열에서 자리만 먹는다. 이름은 aria-label로 남는다
+    <aside
+      aria-label={tr("summary.title")}
+      // 접기 버튼의 자리는 화면 방향에 따라 다르다. 모바일에서 요약은 가로 밴드라
+      // 아까운 건 높이 — 버튼을 띄워 빈 줄을 없앤다. 태블릿에서 요약은 세로 열이라
+      // 아까운 건 폭 — 버튼 자리를 옆에 비워 두면 글자가 서너 줄로 접힌다. 그래서
+      // 거기서는 흐름 안 한 줄로 되돌린다
+      className="relative border-b bg-sc-subtle py-4 pl-5 pr-14 md:flex md:flex-col md:border-b-0 md:border-r md:px-4 md:py-5"
+    >
+      <button
+        type="button"
+        aria-expanded={!collapsed}
+        className="absolute right-4 top-4 rounded border px-1.5 py-0.5 text-xs text-sc-muted hover:border-sc-blue hover:text-sc-blue md:static md:mb-3 md:self-end"
+        onClick={onToggle}
+      >
+        {collapsed ? "＋" : "－"}
+        <span className="sr-only">{tr(collapsed ? "summary.expand" : "summary.collapse")}</span>
+      </button>
+      {/* 접힘은 `hidden` 속성이 맡는다 — flex 유틸리티를 늘 붙이면 display:flex가
+          그 속성을 이겨 접기가 먹지 않는다. 펼쳤을 때만 열을 채우게 한다 */}
+      <div hidden={collapsed} className={collapsed ? undefined : "md:flex md:flex-1 md:flex-col"}>
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-1 md:gap-4">
         <div>
           <span className="block text-xs text-sc-muted">{tr("summary.period")}</span>
           <strong className="mt-0.5 block text-sm font-medium">
@@ -361,8 +384,11 @@ function SummarySidebar({ arrivalAt, departureAt, readyAt, deadlineAt, actors, w
         </div>
         <div>
           <span className="block text-xs text-sc-muted">{tr("summary.window")}</span>
-          <strong className="mt-0.5 block text-sm font-medium">
-            {fmtMonthDay(readyAt)} {readyAt.split("T")[1]}–{fmtMonthDay(deadlineAt)} {deadlineAt.split("T")[1]}
+          {/* 한 줄로 붙여 둔다 — 시각 범위가 중간에서 접히면 두 날짜가 다른 값처럼
+              읽힌다. 열 폭(20%)은 이 문자열이 들어갈 만큼 잡아 두었고, 자릿수가
+              흔들리지 않게 tabular-nums를 쓴다 */}
+          <strong className="mt-0.5 block whitespace-nowrap text-sm font-medium tabular-nums">
+            {usableWindowText(readyAt, deadlineAt) ?? <span className="text-sc-muted/70">—</span>}
           </strong>
         </div>
         <div>
@@ -388,8 +414,58 @@ function SummarySidebar({ arrivalAt, departureAt, readyAt, deadlineAt, actors, w
               : <span className="text-sc-muted/70">—</span>}
           </strong>
         </div>
+        </div>
+        {/* 요약의 마지막 줄 — 이 값들이 무엇을 위한 것인지 말한다.
+            열 바닥(mt-auto)에 붙이지 않는다. 사이드바 열은 본문 높이만큼 늘어나므로
+            혼잡도 안내처럼 본문이 길어지는 순간 이 줄이 화면 밖으로 밀려났다.
+            모바일에서는 요약이 가로 밴드라 이 줄이 입력 화면을 밀어낸다. 거기서는
+            첫 진입 팝업(WindowHintDialog)이 같은 말을 대신한다 */}
+        <p className="mt-4 hidden whitespace-pre-line border-t pt-3 text-xs leading-relaxed text-sc-muted md:block">{tr("step1.windowHint")}</p>
       </div>
     </aside>
+  );
+}
+
+/**
+ * 모바일 첫 진입 안내 — 이 서비스가 무엇을 채워 주는지 한 번 말하고 비켜선다.
+ *
+ * 모바일에서는 선택 요약이 화면 위 가로 밴드라, 거기에 설명 줄을 두면 입력 화면이
+ * 그만큼 밀린다. 그래서 좁은 화면에서만 이 대화상자가 같은 말을 대신하고, 닫으면
+ * 입력 화면에는 남지 않는다. 태블릿 이상에서는 사이드바 바닥이 계속 들고 있으므로
+ * 띄우지 않는다.
+ *
+ * 저장소에 닫은 기록을 남기지 않는다 — 새로 열 때마다 다시 보여야 시연에서 재현된다.
+ *
+ * 화면 폭 판정은 CSS(`md:hidden`)에 맡긴다. 폭을 자바스크립트로 재서 상태로 들면
+ * 서버 렌더에는 폭이 없어 첫 그림이 어긋나고, 그 보정이 effect 안 setState가 된다.
+ * 상태는 "닫았는가" 하나뿐이다.
+ */
+function WindowHintDialog({ tr }: { tr: (key: MessageKey) => string }) {
+  const [dismissed, setDismissed] = useState(false);
+  if (dismissed) return null;
+  return (
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="window-hint-title"
+      className="fixed inset-0 z-50 grid place-items-center bg-black/40 p-6 md:hidden"
+    >
+      <div className="w-full max-w-sm rounded-2xl bg-sc-surface p-6 text-center shadow-2xl">
+        <div className="mx-auto grid size-12 place-items-center rounded-full bg-sc-blue-soft">
+          <Hourglass aria-hidden="true" className="size-6 text-sc-blue" />
+        </div>
+        <h2 id="window-hint-title" className="mt-4 text-base font-semibold">{tr("nav.step1")}</h2>
+        <p className="mt-2 text-sm leading-relaxed text-sc-muted">{tr("step1.windowHint")}</p>
+        <button
+          type="button"
+          autoFocus
+          className="mt-5 w-full rounded-lg bg-sc-blue px-4 py-2.5 text-sm font-medium text-white"
+          onClick={() => setDismissed(true)}
+        >
+          {tr("common.close")}
+        </button>
+      </div>
+    </div>
   );
 }
 
@@ -453,14 +529,25 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
     };
   }, []);
 
-  // step 1 — 여행 조건
-  const [arrival, setArrival] = useState<FlightField>({ flightNo: "", at: "2026-08-16T10:00", notFound: false });
-  const [departure, setDeparture] = useState<FlightField>({ flightNo: "", at: "2026-08-18T18:00", notFound: false });
+  /*
+   * step 1 — 여행 시간 기본값 (시연 고정값, 2026-08-13 인천공항 상세조회 실호출로 확인한 실제 운항 편)
+   *
+   * 대한항공 오사카(간사이) 왕복: KE724 8/14 14:25 도착(T2) / KE721 8/16 18:45 출발(T2).
+   *
+   * 날짜를 8/14로 당긴 이유는 **승객예고 혼잡도가 화면에 뜨게** 하기 위해서다 — 그 신호는
+   * 오늘·내일(D0/D+1)만 확인한다. 발표가 8/14라 그날이 D0가 된다.
+   *
+   * 시각도 임의가 아니다. 경고는 공항 출발 시각이 그날 상위 25% 시간대이고 여유가 120분
+   * 이하일 때만 뜬다. 14:25 도착 → 파생 공항 출발 16:25가 그 시간대에 들어간다. 발표(13시)
+   * 이후 도착이라 "지금부터 시작하는 여행"으로도 읽힌다.
+   */
+  const [arrival, setArrival] = useState<FlightField>({ flightNo: "KE724", at: "2026-08-14T14:25", notFound: false });
+  const [departure, setDeparture] = useState<FlightField>({ flightNo: "KE721", at: "2026-08-16T18:45", notFound: false });
   // #14 차단 2: 주 입력은 절대 시각 — 항공편 시각에서 파생한 기본 제안값을 두되,
   // 사용자가 직접 수정하면(touched) 항공편 변경에도 덮어쓰지 않는다.
   // 파생 여유는 #3 확정 기본값 유지: 입국 +120분, 출국 안전 버퍼 120분(PRD §8.1) — 표현만 절대 시각
-  const [airportReady, setAirportReady] = useState({ at: "2026-08-16T12:00", touched: false });
-  const [airportDeadline, setAirportDeadline] = useState({ at: "2026-08-18T16:00", touched: false });
+  const [airportReady, setAirportReady] = useState({ at: "2026-08-14T16:25", touched: false });
+  const [airportDeadline, setAirportDeadline] = useState({ at: "2026-08-16T16:45", touched: false });
   /*
    * 조회 진행 상태와 순번을 한 값으로 다룬다 (PR #205 재리뷰). 따로 두면 성공 응답의 시각
    * 반영이 자기 순번을 올려 버려 `finally`가 자기 진행 표시를 끄지 못하고 버튼이 굳는다.
@@ -1991,7 +2078,9 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
               disabled={!reachable}
               aria-current={current ? "step" : undefined}
               onClick={() => setStep(target)}
-              className={`flex min-h-[62px] items-center justify-center gap-2 border-r px-1 last:border-r-0 ${
+              // 52px — 터치 하한(44px)은 지키면서 태블릿 가로에서 스테이지가
+              // 화면 안에 들어오도록 단계 막대의 높이를 줄였다
+              className={`flex min-h-[52px] items-center justify-center gap-2 border-r px-1 last:border-r-0 ${
                 current ? "bg-sc-blue-soft font-medium text-sc-blue" : "text-sc-muted"
               } ${reachable && !current ? "hover:bg-sc-blue-soft/50 hover:text-sc-blue" : ""} ${
                 reachable ? "" : "cursor-default opacity-60"
@@ -2004,8 +2093,14 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
         })}
       </nav>}
 
+      {/* 모바일 첫 진입에서만 뜨는 안내 — 사이드바가 못 들고 있는 설명을 대신한다 */}
+      {!showFinalItinerary && <WindowHintDialog tr={tr} />}
+
       {/* #14 v0.6 sc-layout — 좌측 선택 요약 + 본문 (md 미만은 상단 밴드) */}
-      <div className={showFinalItinerary ? "block" : `grid ${summaryCollapsed ? "md:grid-cols-[64px_minmax(0,1fr)]" : "md:grid-cols-[220px_minmax(0,1fr)]"}`}>
+      {/* 요약 열은 고정 220px이 아니라 비율이다 — 태블릿에서 본문이 그만큼 좁아져
+          입력이 밀리고, 넓은 화면에서는 남는 자리를 못 쓴다. 최소 폭은 지켜 글자가
+          한 자씩 끊기지 않게 한다 */}
+      <div className={showFinalItinerary ? "block" : `grid ${summaryCollapsed ? "md:grid-cols-[64px_minmax(0,1fr)]" : "md:grid-cols-[minmax(12rem,20%)_minmax(0,1fr)]"}`}>
       {!showFinalItinerary && <SummarySidebar
         arrivalAt={arrival.at}
         departureAt={departure.at}
@@ -2082,15 +2177,17 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
             <p className="mt-2 text-xs text-sc-muted">{tr("step1.guideBody")}</p>
             <p className="mt-2 border-t pt-2 text-xs text-sc-muted">{tr("step1.subtitle")}</p>
           </div>
-          <div className="mt-4 grid gap-4 sm:grid-cols-2">
+          {/* 태블릿까지는 세로로 쌓는다 — 사이드바 220px를 뺀 본문을 2열로 또 쪼개면
+              카드가 205px가 되어 날짜 입력이 `20:`까지만 보인다 (target: 태블릿·모바일) */}
+          <div className="mt-4 grid gap-4 lg:grid-cols-2">
             {([
               ["arrival", arrival, setArrival] as const,
               ["departure", departure, setDeparture] as const,
             ]).map(([direction, field, setField]) => (
               <div key={direction} className="rounded-lg border p-4">
+                {/* ICN 배지는 뺐다 — 제목이 이미 "인천공항"이라고 말한다 */}
                 <h3 className="font-medium">
                   {tr(direction === "arrival" ? "step1.arrival" : "step1.departure")}
-                  <span className="ml-2 rounded bg-sc-airport-soft px-1.5 py-0.5 text-xs text-sc-airport-text">ICN</span>
                 </h3>
                 <label className="mt-3 block text-xs text-sc-muted">{tr("step1.flightNo")}</label>
                 <div className="mt-1 flex gap-2">
@@ -2137,73 +2234,83 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
                     (direction === "arrival" ? setArrivalAtInput : setDepartureAtInput)(at);
                   }}
                 />
+                {/* 같은 방향의 공항 시각을 항공편과 한 카드에 — 입국편→공항 출발,
+                    출국편→공항 도착의 인과가 화면 배치로 드러난다 (멘토 지적 대응) */}
+                <div className="mt-4 border-t pt-3">
+                  {direction === "arrival" ? (
+                    <>
+                      <label htmlFor="airport-ready-date" className="block text-sm font-medium">{tr("step1.airportReady")}</label>
+                      <DateTimeField
+                        className="mt-2"
+                        dateInputId="airport-ready-date"
+                        hourInputId="airport-ready-hour"
+                        min={timetableWindow.firstDate}
+                        max={timetableWindow.lastDate}
+                        value={airportReady.at}
+                        onChange={(at) => setAirportReady({ at, touched: true })}
+                      />
+                      {readySlackMin !== null && readySlackMin >= 0 && (
+                        <p className="mt-1 text-xs text-sc-muted">
+                          {tr("step1.slackAfterArrival")}: {readySlackMin}{tr("step1.minutes")}
+                        </p>
+                      )}
+                      {showArrivalAdvisory && arrivalAdvisory && (
+                        <AirportAdvisoryAlert
+                          title={tr("step1.arrivalCrowdingTitle")}
+                          body={tr("step1.arrivalCrowdingBody")}
+                          sourceLabel={tr(arrivalAdvisory.source === "live" ? "step1.crowdingSourceLive" : "step1.crowdingSourceSnapshot")}
+                          changeLabel={tr("step1.changeTime")}
+                          keepLabel={tr("step1.keepTime")}
+                          onChange={() => focusAirportTime("airport-ready-hour")}
+                          onKeep={() => dismissAirportAdvisory(arrivalAdvisory.key)}
+                        />
+                      )}
+                    </>
+                  ) : (
+                    <>
+                      <label htmlFor="airport-deadline-date" className="block text-sm font-medium">{tr("step1.airportDeadline")}</label>
+                      <DateTimeField
+                        className="mt-2"
+                        dateInputId="airport-deadline-date"
+                        hourInputId="airport-deadline-hour"
+                        min={timetableWindow.firstDate}
+                        max={timetableWindow.lastDate}
+                        value={airportDeadline.at}
+                        onChange={(at) => setAirportDeadline({ at, touched: true })}
+                      />
+                      {deadlineSlackMin !== null && deadlineSlackMin >= 0 && (
+                        <p className="mt-1 text-xs text-sc-muted">
+                          {tr("step1.slackBeforeDeparture")}: {deadlineSlackMin}{tr("step1.minutes")}
+                        </p>
+                      )}
+                      {showDepartureAdvisory && departureAdvisory && (
+                        <AirportAdvisoryAlert
+                          title={tr("step1.departureCrowdingTitle")}
+                          body={tr("step1.departureCrowdingBody")}
+                          sourceLabel={tr(departureAdvisory.source === "live" ? "step1.crowdingSourceLive" : "step1.crowdingSourceSnapshot")}
+                          changeLabel={tr("step1.changeTime")}
+                          keepLabel={tr("step1.keepTime")}
+                          onChange={() => focusAirportTime("airport-deadline-hour")}
+                          onKeep={() => dismissAirportAdvisory(departureAdvisory.key)}
+                        />
+                      )}
+                    </>
+                  )}
+                </div>
               </div>
             ))}
           </div>
-          <p className="mt-3 text-xs text-sc-muted">
-            {tr("step1.timetableWindow")
-              .replace("{from}", timetableWindow.firstDate)
-              .replace("{to}", timetableWindow.lastDate)}
-          </p>
-          <div className="mt-4 grid gap-4 sm:grid-cols-2">
-            <div className="rounded-lg border p-4">
-              <label htmlFor="airport-ready-date" className="text-sm font-medium">{tr("step1.airportReady")}</label>
-              <DateTimeField
-                className="mt-2"
-                dateInputId="airport-ready-date"
-                hourInputId="airport-ready-hour"
-                min={timetableWindow.firstDate}
-                max={timetableWindow.lastDate}
-                value={airportReady.at}
-                onChange={(at) => setAirportReady({ at, touched: true })}
-              />
-              {readySlackMin !== null && readySlackMin >= 0 && (
-                <p className="mt-1 text-xs text-sc-muted">
-                  {tr("step1.slackAfterArrival")}: {readySlackMin}{tr("step1.minutes")}
-                </p>
-              )}
-              {showArrivalAdvisory && arrivalAdvisory && (
-                <AirportAdvisoryAlert
-                  title={tr("step1.arrivalCrowdingTitle")}
-                  body={tr("step1.arrivalCrowdingBody")}
-                  sourceLabel={tr(arrivalAdvisory.source === "live" ? "step1.crowdingSourceLive" : "step1.crowdingSourceSnapshot")}
-                  changeLabel={tr("step1.changeTime")}
-                  keepLabel={tr("step1.keepTime")}
-                  onChange={() => focusAirportTime("airport-ready-hour")}
-                  onKeep={() => dismissAirportAdvisory(arrivalAdvisory.key)}
-                />
-              )}
-            </div>
-            <div className="rounded-lg border p-4">
-              <label htmlFor="airport-deadline-date" className="text-sm font-medium">{tr("step1.airportDeadline")}</label>
-              <DateTimeField
-                className="mt-2"
-                dateInputId="airport-deadline-date"
-                hourInputId="airport-deadline-hour"
-                min={timetableWindow.firstDate}
-                max={timetableWindow.lastDate}
-                value={airportDeadline.at}
-                onChange={(at) => setAirportDeadline({ at, touched: true })}
-              />
-              {deadlineSlackMin !== null && deadlineSlackMin >= 0 && (
-                <p className="mt-1 text-xs text-sc-muted">
-                  {tr("step1.slackBeforeDeparture")}: {deadlineSlackMin}{tr("step1.minutes")}
-                </p>
-              )}
-              {showDepartureAdvisory && departureAdvisory && (
-                <AirportAdvisoryAlert
-                  title={tr("step1.departureCrowdingTitle")}
-                  body={tr("step1.departureCrowdingBody")}
-                  sourceLabel={tr(departureAdvisory.source === "live" ? "step1.crowdingSourceLive" : "step1.crowdingSourceSnapshot")}
-                  changeLabel={tr("step1.changeTime")}
-                  keepLabel={tr("step1.keepTime")}
-                  onChange={() => focusAirportTime("airport-deadline-hour")}
-                  onKeep={() => dismissAirportAdvisory(departureAdvisory.key)}
-                />
-              )}
-            </div>
-          </div>
-          {(arrivalAdvisory?.status === "out_of_range" || departureAdvisory?.status === "out_of_range") && (
+          {/* 수록 범위 날짜를 적지 않는다 — 열차와 공항버스의 수록 날짜가 서로 달라
+              한 범위로 뭉뚱그리면 어느 쪽이든 틀린 말이 된다. 달력의 min·max와
+              1단계 전이 검사가 범위를 실제로 막고, 이 줄은 이유만 말한다 */}
+          <p className="mt-3 text-xs text-sc-muted">{tr("step1.timetableWindow")}</p>
+          {/* 두 카드의 입력이 만드는 "사용 가능 시간"은 본문에 다시 적지 않는다 —
+              그건 요약 사이드바의 역할이고, 같은 값을 두 곳에 두면 중복이다 */}
+          {/* 승객예고를 언제 확인하는지 알리는 줄. 혼잡도 안내가 이미 떠 있으면 숨긴다 —
+              그 안내의 출처 줄("오늘/내일 시간대 비교")이 같은 말을 하고 있어서, 둘을
+              같이 두면 태블릿 가로에서 "다음" 버튼이 화면 밖으로 밀려난다 */}
+          {(arrivalAdvisory?.status === "out_of_range" || departureAdvisory?.status === "out_of_range")
+            && !showArrivalAdvisory && !showDepartureAdvisory && (
             <p className="mt-3 text-xs text-sc-muted">{tr("step1.crowdingRecheck")}</p>
           )}
           <div className="mt-4 flex items-center justify-end gap-3">
@@ -3216,7 +3323,7 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
           {/*
             액션 줄 (#146).
 
-            "항공편 시각 변경"은 뺐다 — 상단 `여행 조건` 탭이 같은 곳으로 가는 길이라
+            "항공편 시각 변경"은 뺐다 — 상단 `여행 시간` 탭이 같은 곳으로 가는 길이라
             중복이었다. 남은 둘은 데스크톱에서 바닥 독(시트 헤더) 오른쪽 끝으로 간다.
             순서는 왼쪽이 조작, 오른쪽 끝이 주 액션이다.
           */}

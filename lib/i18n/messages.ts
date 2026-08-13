@@ -13,7 +13,7 @@ export const messages = {
     "app.title": "SCENARO",
     "app.tagline": "Your scenes, your scenario.",
     "app.snapshotBadge": "데모 스냅샷",
-    "nav.step1": "여행 조건",
+    "nav.step1": "여행 시간",
     "nav.step2": "K-콘텐츠",
     "nav.step3": "추천일정",
     "common.next": "다음",
@@ -24,13 +24,15 @@ export const messages = {
     "common.nameUnavailable": "이름을 불러오지 못했습니다",
     // 제목은 nav와 같은 말로, 설명은 (i) 팝오버로 (#146). 아래 `입국 ICN`·`출국 ICN`
     // 상자와 `예정 시각 (직접 수정 가능)` 라벨이 이미 같은 것을 말하고 있었다.
-    "step1.title": "여행 조건",
+    "step1.title": "여행 시간",
     "step1.guideOpen": "이 화면 안내 보기",
     "step1.guideTitle": "이 화면에서 하는 일",
     "step1.guideBody": "공항에서 출발하고 돌아올 시간을 정합니다.",
     "step1.subtitle": "항공편을 조회해 예정 시각을 불러온 뒤 실제 이동 시작·복귀 시각을 확인합니다.",
-    "step1.arrival": "입국",
-    "step1.departure": "출국",
+    // 카드 이름에 공항을 적는다 — "입국·출국"은 한국 기준 용어라 외국인 사용자가
+    // 자기 나라 기준으로 반대로 읽을 수 있다. 배지(ICN)는 장식으로 읽히고 문장은 읽힌다
+    "step1.arrival": "인천공항 도착",
+    "step1.departure": "인천공항 출발",
     "step1.flightNo": "편명",
     "step1.lookup": "항공편 조회",
     "step1.notFound": "편명을 찾지 못했습니다 — 시각을 직접 입력해 주세요.",
@@ -39,13 +41,19 @@ export const messages = {
     "step1.sourceLive": "실시간 조회 · 항공데이터",
     "step1.sourceSnapshot": "스냅샷 기준",
     "step1.scheduledAt": "예정 시각 (직접 수정 가능)",
-    "step1.airportReady": "항공편 도착 후 공항에서 몇 시에 출발할까요? (직접 선택)",
-    "step1.airportDeadline": "출국일 공항에 몇 시까지 도착할까요? (직접 선택)",
+    // 사용자가 정하는 두 시각 — 어느 공항인지 문장 안에 적는다. 카드 배지만으로는
+    // 자기 출발 공항 기준으로 오해할 수 있다
+    // "(직접 선택)"은 뺐다 — 고를 수 있다는 건 입력 자체가 말한다. 좁은 화면에서
+    // 그 한 마디 때문에 제목이 두 줄로 접혔다
+    "step1.airportReady": "인천공항에서 몇 시에 출발할까요?",
+    "step1.airportDeadline": "인천공항에 몇 시까지 돌아올까요?",
     "step1.slackAfterArrival": "입국 후 여유",
     "step1.slackBeforeDeparture": "출국 전 여유",
     "step1.minutes": "분",
     "step1.arrivalCrowdingTitle": "입국장 예상 승객이 많은 시간대예요",
-    "step1.arrivalCrowdingBody": "실제 공항 출발이 늦어질 수 있어요. 선택한 시각을 바꿀지는 직접 결정할 수 있습니다.",
+    // 출국 안내와 같은 말로 보장을 적는다 — 버튼이 이미 선택지를 보여주므로 본문은
+    // "자동으로 바꾸지 않는다"는 약속(#177)만 남긴다
+    "step1.arrivalCrowdingBody": "실제 공항 출발이 늦어질 수 있어요. 일정은 자동으로 바꾸지 않습니다.",
     "step1.departureCrowdingTitle": "출국장 예상 승객이 많은 시간대예요",
     "step1.departureCrowdingBody": "공항에 더 일찍 도착하는 것을 고려해 주세요. 일정은 자동으로 바꾸지 않습니다.",
     "step1.crowdingSourceLive": "인천공항 승객예고 · 오늘/내일 시간대 비교",
@@ -57,7 +65,15 @@ export const messages = {
     "step1.errOrder": "출국 시각은 입국 시각보다 늦어야 합니다.",
     "step1.errReadyRange": "공항 출발 시각은 입국 항공편 도착 이후여야 합니다.",
     "step1.errDeadlineRange": "공항 도착 마감은 공항 출발 이후, 출국 항공편 이전이어야 합니다.",
-    "step1.timetableWindow": "이 데모는 {from}부터 {to}까지의 열차 시간표를 수록했습니다. 그 밖의 날짜는 고를 수 없습니다.",
+    // 수록 내용을 나열하지 않는다 — "열차 시간표"만 적으면 같이 수록한 공항버스가
+    // 빠져 절반만 말하는 문장이 되고, "열차·공항버스"라고 적으면 공항버스가 일부
+    // 날짜에만 있어 또 틀린다. 데모라 날짜가 고정이라는 사실만 말한다.
+    // "시각은 바꿀 수 있다"도 붙이지 않는다 — 예정 시각은 항공사 스케줄이라
+    // 사용자가 정하는 값이 아닌데 그것까지 바꿔도 되는 것처럼 읽힌다
+    "step1.timetableWindow": "데모 버전이라 날짜는 그대로 두세요.",
+    // 줄바꿈을 문구에 담는다 — 사이드바가 좁아 저절로 접히면 "K-콘텐츠 / 촬영지"처럼
+    // 뜻이 붙어 있어야 할 자리에서 끊긴다. 사이드바만 이 개행을 살린다(whitespace-pre-line)
+    "step1.windowHint": "공항에서 출발해서\n공항으로 돌아오기까지\n이 시간을 K-콘텐츠 촬영지\n여행으로 채워보아요.",
     "step1.errOutsideWindow": "수록 범위 밖 날짜가 있습니다 — 위에 적힌 기간 안에서 골라 주세요.",
     "step2.title": "K-콘텐츠",
     "step2.guideOpen": "이 화면 안내 보기",
@@ -119,7 +135,7 @@ export const messages = {
     "step3.addPlace": "{place} 일정에 추가",
     "step3.removePlace": "{place} 일정에서 제외",
     // 상단 제목 줄을 걷으면서 이름이 하나로 합쳐졌다 (#146). nav도 같은 말을 쓴다 —
-    // `여행 조건 / K-콘텐츠 / 추천일정`이 nav와 화면 안에서 동시에 성립한다.
+    // `여행 시간 / K-콘텐츠 / 추천일정`이 nav와 화면 안에서 동시에 성립한다.
     "step4.title": "추천일정",
     "ai.title": "AI에게 일정 조율 요청",
     "ai.subtitle": "말로 요청하면 검증된 일정 엔진이 가능 여부와 전체 동선을 다시 계산합니다.",
@@ -533,7 +549,7 @@ export const messages = {
     "app.title": "SCENARO",
     "app.tagline": "Your scenes, your scenario.",
     "app.snapshotBadge": "Demo snapshot",
-    "nav.step1": "Trip window",
+    "nav.step1": "Trip time",
     "nav.step2": "K-content",
     "nav.step3": "Itinerary",
     "common.next": "Next",
@@ -542,13 +558,13 @@ export const messages = {
     "common.loading": "Loading…",
     // #130 — never leak internal ids (place-… / station-…) when the lookup fails
     "common.nameUnavailable": "Name unavailable",
-    "step1.title": "Trip basics",
+    "step1.title": "Trip time",
     "step1.guideOpen": "About this screen",
     "step1.guideTitle": "What you do here",
     "step1.guideBody": "Set when you leave and return to the airport.",
     "step1.subtitle": "Look up your flights from the snapshot, then confirm your actual start and return times.",
-    "step1.arrival": "Arrival",
-    "step1.departure": "Departure",
+    "step1.arrival": "Arrival at Incheon",
+    "step1.departure": "Departure from Incheon",
     "step1.flightNo": "Flight no.",
     "step1.lookup": "Look up flight",
     "step1.notFound": "Flight not found — enter the time manually.",
@@ -557,16 +573,18 @@ export const messages = {
     "step1.sourceLive": "Live · airport data",
     "step1.sourceSnapshot": "From snapshot",
     "step1.scheduledAt": "Scheduled time (editable)",
-    "step1.airportReady": "When will you leave the airport after landing? (Your choice)",
-    "step1.airportDeadline": "By when will you arrive at the airport for departure? (Your choice)",
+    "step1.airportReady": "What time will you leave Incheon Airport?",
+    "step1.airportDeadline": "By when will you be back at Incheon Airport?",
     "step1.slackAfterArrival": "Slack after arrival",
     "step1.slackBeforeDeparture": "Slack before departure",
     "step1.minutes": "min",
-    "step1.arrivalCrowdingTitle": "Higher passenger volume is expected at arrivals",
-    "step1.arrivalCrowdingBody": "Leaving the airport may take longer. You stay in control of whether to change your selected time.",
-    "step1.departureCrowdingTitle": "Higher passenger volume is expected at departures",
+    // 태블릿 가로에서 이 상자만 한국어보다 51px 높아 스테이지가 잘렸다 — 제목·본문·
+    // 출처가 각각 한 줄씩 더 접혔기 때문이다. 뜻과 #177 보장은 그대로 두고 줄였다
+    "step1.arrivalCrowdingTitle": "Arrivals may be crowded at this hour",
+    "step1.arrivalCrowdingBody": "Leaving the airport may take longer. Your plan will not change automatically.",
+    "step1.departureCrowdingTitle": "Departures may be crowded at this hour",
     "step1.departureCrowdingBody": "Consider arriving at the airport earlier. Your itinerary will not change automatically.",
-    "step1.crowdingSourceLive": "Incheon Airport passenger forecast · today/tomorrow comparison",
+    "step1.crowdingSourceLive": "Incheon Airport forecast · today vs tomorrow",
     "step1.crowdingSourceSnapshot": "Demo passenger forecast snapshot · not an official congestion rating",
     "step1.changeTime": "Change time",
     "step1.keepTime": "Keep current plan",
@@ -575,7 +593,8 @@ export const messages = {
     "step1.errOrder": "Departure must be later than arrival.",
     "step1.errReadyRange": "Airport departure time must be after the arrival flight lands.",
     "step1.errDeadlineRange": "Airport arrival deadline must be after leaving the airport and before the departure flight.",
-    "step1.timetableWindow": "This demo covers train timetables from {from} to {to}. Other dates cannot be selected.",
+    "step1.timetableWindow": "This is a demo — please leave the dates as they are.",
+    "step1.windowHint": "From leaving the airport until returning to it — we fill this window with your K-content trip.",
     "step1.errOutsideWindow": "Some dates fall outside the covered range — choose dates within the period shown above.",
     "step2.title": "K-content",
     "step2.guideOpen": "About this screen",
