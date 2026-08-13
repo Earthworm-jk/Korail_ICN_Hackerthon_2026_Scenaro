@@ -85,7 +85,7 @@ export const messages = {
     "step3.hoursUnverified": "운영시간 미확인",
     // #61 확정 표기 계약 — 접근시간은 카카오맵 자동차 길찾기 기반 보수값이다.
     // "역에서 약 N분"은 대중교통으로 읽힐 수 있어 수단을 명시하고 미제공 고지를 함께 둔다.
-    "access.byCar": "역↔촬영지 차량 이동 약 {n}분",
+    "access.byCar": "역→촬영지 차량 이동 약 {n}분",
     "access.notice": "역에서 촬영지까지는 교통 상황에 따라 달라지며, 대중교통 소요시간은 제공하지 않습니다.",
     "step3.verifiedAt": "확인",
     "step3.relationSelected": "선택 작품",
@@ -592,7 +592,7 @@ export const messages = {
     "step3.sortOfficial": "Official sources",
     "step3.alwaysOpen": "Always open",
     "step3.hoursUnverified": "Hours unverified",
-    "access.byCar": "Station ↔ filming location: about {n} min by car",
+    "access.byCar": "Station → filming location: about {n} min by car",
     "access.notice": "Travel from the station varies with traffic, and public transit times are not provided.",
     "step3.verifiedAt": "verified",
     "step3.relationSelected": "Selected title",

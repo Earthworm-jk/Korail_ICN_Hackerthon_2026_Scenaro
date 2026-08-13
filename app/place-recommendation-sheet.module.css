@@ -93,6 +93,13 @@
   font-weight: 600;
 }
 
+/* 전체 촬영지 탐색의 유일한 진입점은 44px 터치 영역을 지킨다 (#207).
+   컴포넌트의 `min-h-11`은 stage-v4 ID 규칙을 피하고, 이 선언은 같은 모듈 안의
+   공통 36px 규칙이 Tailwind 유틸리티를 덮는 것을 막는다. */
+.openBrowser {
+  min-height: 44px;
+}
+
 .openBrowser:hover {
   border-color: var(--sc-blue);
   color: var(--sc-blue);

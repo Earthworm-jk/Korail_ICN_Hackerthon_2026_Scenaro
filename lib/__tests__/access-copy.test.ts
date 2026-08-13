@@ -17,9 +17,13 @@ describe("접근시간 표기 계약 (#61)", () => {
     expect(messages.ko["access.byCar"]).toContain("차량");
     expect(messages.ko["access.byCar"]).toContain("역");
     expect(messages.ko["access.byCar"]).toContain("촬영지");
+    expect(messages.ko["access.byCar"]).toContain("역→촬영지");
+    expect(messages.ko["access.byCar"]).not.toContain("↔");
     expect(messages.en["access.byCar"]).toContain("by car");
     expect(messages.en["access.byCar"]).toContain("Station");
     expect(messages.en["access.byCar"]).toContain("filming location");
+    expect(messages.en["access.byCar"]).toContain("Station → filming location");
+    expect(messages.en["access.byCar"]).not.toContain("↔");
     // 분 수는 자리표시자로 넣고 화면에서 채운다 — 완성 문장을 엔진이 만들지 않는다
     expect(messages.ko["access.byCar"]).toContain("{n}");
     expect(messages.en["access.byCar"]).toContain("{n}");

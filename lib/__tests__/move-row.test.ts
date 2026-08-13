@@ -1,7 +1,14 @@
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
+import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 import { MoveRow } from "../../app/move-row";
+
+const timelineCss = readFileSync(
+  fileURLToPath(new URL("../../app/globals.css", import.meta.url)),
+  "utf8",
+);
 
 describe("관람과 이동의 시각적 구분", () => {
   it("접힌 이동 행에서도 이동 종류·시각·구간·소요를 명시한다", () => {
@@ -42,5 +49,11 @@ describe("관람과 이동의 시각적 구분", () => {
     expect(markup).toContain("data-move-kind");
     expect(markup).toContain("이동");
     expect(markup).toContain("광화문 → 서울역");
+  });
+
+  it("타임라인에서 관람 점과 다른 이동 연결점 색·형태를 쓴다", () => {
+    expect(timelineCss).toMatch(/data-itinerary-row="train"[^}]*::before[\s\S]*?background:\s*var\(--sc-blue\)/);
+    expect(timelineCss).toMatch(/data-itinerary-row="gateway"[^}]*::before/);
+    expect(timelineCss).toMatch(/border-radius:\s*1px/);
   });
 });

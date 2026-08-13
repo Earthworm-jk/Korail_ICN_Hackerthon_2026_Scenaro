@@ -34,7 +34,7 @@ describe("전체 촬영지 단일 진입", () => {
   });
 
   it("전체 촬영지 진입 버튼은 충분한 높이와 hover 피드백을 갖는다", () => {
-    expect(css).toMatch(/\.openBrowser,\s*\.sortControl\s*\{[\s\S]*?min-height:\s*36px/);
+    expect(css).toMatch(/\.openBrowser\s*\{\s*min-height:\s*44px/);
     expect(css).toContain(".openBrowser:hover");
   });
 

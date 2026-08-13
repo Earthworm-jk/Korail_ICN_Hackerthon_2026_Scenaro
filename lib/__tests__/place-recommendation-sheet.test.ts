@@ -56,6 +56,7 @@ describe("지도 위 추천 장소 바텀시트", () => {
     expect(markup).toContain('<option value="relevance" selected="">추천순</option>');
     expect(markup).not.toContain("data-place-sheet-controls");
     expect(markup).toContain("전체 촬영지 보기");
+    expect(markup).toContain("min-h-11");
     expect(markup).toContain('aria-haspopup="dialog"');
     expect(markup).toContain('aria-controls="place-browser-dialog"');
     // 5개 미리보기는 구현에서 제거한다 (#207). 호출부가 넘겨도 표시하지 않는다.

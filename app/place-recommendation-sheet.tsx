@@ -152,7 +152,7 @@ export function PlaceRecommendationSheet({
         </label>
         <button
           type="button"
-          className={styles.openBrowser}
+          className={`${styles.openBrowser} min-h-11`}
           aria-haspopup="dialog"
           aria-controls="place-browser-dialog"
           onClick={onBrowseAll}
