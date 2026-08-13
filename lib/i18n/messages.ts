@@ -120,6 +120,10 @@ export const messages = {
     "step4.title": "추천일정",
     "ai.title": "AI에게 일정 조율 요청",
     "ai.subtitle": "말로 요청하면 검증된 일정 엔진이 가능 여부와 전체 동선을 다시 계산합니다.",
+    // #207 2번 — 날짜·순서 조작에는 LLM이 없다. AI 머리글을 쓰면 모든 변경이 AI 작업처럼 보인다
+    "engineEdit.title": "일정 변경 확인",
+    "engineEdit.subtitle": "검증된 일정 엔진이 다시 계산했습니다.",
+    "engineEdit.appliedNotice": "요청한 변경을 일정에 반영했습니다.",
     "ai.inputLabel": "AI 일정 조율 요청",
     "ai.placeholder": "예: 영진해변을 둘째 날 일정에 넣어줘",
     "ai.submit": "전송",
@@ -625,6 +629,10 @@ export const messages = {
     "step4.title": "Your itinerary",
     "ai.title": "Ask AI to tune your itinerary",
     "ai.subtitle": "Describe a change and the verified itinerary engine recalculates feasibility and the full route.",
+    // #207 2번 — 날짜·순서 조작에는 LLM이 없다. AI 머리글을 쓰면 모든 변경이 AI 작업처럼 보인다
+    "engineEdit.title": "Confirm itinerary change",
+    "engineEdit.subtitle": "The verified itinerary engine recalculated your route.",
+    "engineEdit.appliedNotice": "Your change was applied to the itinerary.",
     "ai.inputLabel": "AI itinerary tuning request",
     "ai.placeholder": "e.g. Add Yeongjin Beach to day 2",
     "ai.submit": "Send",

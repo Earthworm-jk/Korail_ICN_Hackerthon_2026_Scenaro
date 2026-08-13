@@ -9,6 +9,10 @@ import {
   selectionUndoAvailable,
   commandPanelUnavailable,
   commandResponseIsCurrent,
+  editResponseOpensPanel,
+  commandPanelHeading,
+  planContextKey,
+  stepReachable,
   selectionAfterCommand,
   stateAfterRouteRecommendation,
 } from "../itinerary-command-ui";
@@ -300,5 +304,68 @@ describe("제안 편집 수명", () => {
 
   it("버릴 편집이 없으면 그대로 없다", () => {
     expect(proposalEditAfterChange(null, keepA)).toBeNull();
+  });
+});
+
+describe("결정적 편집과 AI 패널 경계 (#207 2번)", () => {
+  /**
+   * `ready`는 조용히 적용된다 — 패널이 열리면 날짜 버튼·드래그까지 AI 작업처럼 보인다.
+   * 사용자의 읽기·결정이 필요한 응답만 패널을 연다. 이 매핑이 이슈의 합의 그 자체라
+   * 표로 잠근다.
+   */
+  it("ready는 패널을 열지 않고, 확인·불가능·오류만 연다", () => {
+    expect(editResponseOpensPanel("ready")).toBe(false);
+    expect(editResponseOpensPanel("needs_confirmation")).toBe(true);
+    expect(editResponseOpensPanel("impossible")).toBe(true);
+    expect(editResponseOpensPanel("error")).toBe(true);
+  });
+
+  it("늦은 응답(cancelled)은 아무것도 열지 않는다", () => {
+    expect(editResponseOpensPanel("cancelled")).toBe(false);
+  });
+
+  it("엔진 편집 피드백은 엔진 머리글, 자연어·빈 패널은 AI 머리글", () => {
+    expect(commandPanelHeading({ kind: "proposal", origin: "engine" })).toBe("engine");
+    expect(commandPanelHeading({ kind: "error", origin: "engine" })).toBe("engine");
+    // 자연어 경로 피드백에는 origin이 없다
+    expect(commandPanelHeading({ kind: "proposal" })).toBe("ai");
+    // 피드백이 없으면 자연어 입력 대기 화면이다
+    expect(commandPanelHeading(null)).toBe("ai");
+  });
+});
+
+describe("계획 컨텍스트 격리 (#207 3번)", () => {
+  const key = (actors: string[], works: string[]) => planContextKey(actors, works);
+
+  it("배우를 빼면 다른 컨텍스트다 — 김태리+김고은에서 김태리 제거", () => {
+    expect(key(["actor-kim-tae-ri", "actor-kim-go-eun"], []))
+      .not.toBe(key(["actor-kim-go-eun"], []));
+  });
+
+  it("칩을 고른 순서는 컨텍스트가 아니다", () => {
+    expect(key(["a", "b"], ["w1", "w2"])).toBe(key(["b", "a"], ["w2", "w1"]));
+  });
+
+  it("배우 목록과 작품 목록은 섞이지 않는다", () => {
+    expect(key(["x"], [])).not.toBe(key([], ["x"]));
+  });
+
+  /**
+   * 뒤로 가서 칩을 바꾸면 3단계의 후보·선택·일정은 이전 집합의 파생물이다. 그대로
+   * 재진입하면 자동 재계산도 없이(선택 집합이 그대로라 settledSelectionKey 가드)
+   * 직전 컨텍스트의 일정이 현재 결과처럼 남는다 — #207 3번이 관찰한 누수 경로.
+   */
+  it("칩이 바뀐 뒤에는 단계 표시로 3단계에 못 들어간다", () => {
+    expect(stepReachable({ target: 3, furthestStep: 3, planContextStale: true })).toBe(false);
+    expect(stepReachable({ target: 3, furthestStep: 3, planContextStale: false })).toBe(true);
+  });
+
+  it("1·2단계 이동은 컨텍스트와 무관하다", () => {
+    expect(stepReachable({ target: 2, furthestStep: 3, planContextStale: true })).toBe(true);
+    expect(stepReachable({ target: 1, furthestStep: 3, planContextStale: true })).toBe(true);
+  });
+
+  it("아직 못 간 단계는 여전히 못 간다", () => {
+    expect(stepReachable({ target: 3, furthestStep: 2, planContextStale: false })).toBe(false);
   });
 });

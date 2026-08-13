@@ -10,6 +10,72 @@ export function commandResponseIsCurrent(submitted: number, current: number): bo
   return submitted === current;
 }
 
+/**
+ * 결정적 편집(날짜 버튼·드래그·통 이동) 응답이 조율 패널을 여는가 (#207 2번).
+ *
+ * `ready`는 조용히 적용하고 완료 알림만 띄운다 — 요청한 그대로 됐는데 패널이 열리면
+ * 모든 변경이 AI 작업처럼 보인다. 사용자의 읽기·결정이 필요한 응답(확인·불가능·오류)만
+ * 연다. 늦은 응답(`cancelled`)은 지금 화면에 대한 결론이 아니므로 아무것도 열지 않는다.
+ */
+export function editResponseOpensPanel(
+  response: "error" | "cancelled" | "ready" | "needs_confirmation" | "impossible",
+): boolean {
+  return response === "error"
+    || response === "needs_confirmation"
+    || response === "impossible";
+}
+
+/**
+ * 패널 머리글이 말할 주체 (#207 2번).
+ *
+ * 결정적 편집이 만든 피드백에는 `origin: "engine"`이 새겨져 있다 — 그때 머리글은
+ * `일정 변경 확인`이지 `AI에게 요청`이 아니다. LLM이 실행되지 않은 변경을 AI 작업처럼
+ * 보이게 하지 않는다. 피드백이 없거나(자연어 입력 대기) 자연어 경로면 AI 머리글이다.
+ */
+export function commandPanelHeading(
+  feedback: { kind: string; origin?: "engine" } | null,
+): "ai" | "engine" {
+  return feedback?.origin === "engine" ? "engine" : "ai";
+}
+
+/**
+ * 후보를 불러온 배우·작품 집합의 지문 (#207 3번).
+ *
+ * 이 값이 다르면 **다른 계획 컨텍스트**다. 후보·선택·일정·실행 취소가 전부 이 집합에서
+ * 파생되므로, 집합이 바뀌었는데 파생 상태가 남아 있으면 이전 탐색 경로가 새 결과를
+ * 오염시킨다 — 김태리+김고은에서 김태리를 빼면 김고은 단독 최초 결과와 같아야 한다.
+ *
+ * 순서는 뭉갠다 — 칩을 고른 순서는 집합의 의미가 아니다. 구분자 `\u0000`은 ID에
+ * 나타나지 않아 합성 충돌이 없다.
+ */
+export function planContextKey(
+  actorIds: readonly string[],
+  workIds: readonly string[],
+): string {
+  return [
+    [...actorIds].sort().join("|"),
+    [...workIds].sort().join("|"),
+  ].join("\u0000");
+}
+
+/**
+ * 단계 표시로 그 단계에 지금 갈 수 있는가 (#207 3번).
+ *
+ * 뒤로 갔다가 배우·작품 칩을 바꾸면 3단계의 후보·선택·일정은 **이전 집합의 파생물**이다.
+ * 그대로 재진입을 허용하면 새 칩 옆에 직전 컨텍스트의 일정이 현재 결과처럼 앉는다 —
+ * 자동 재계산도 없다(선택 집합이 그대로라 settledSelectionKey 가드에 걸린다).
+ * `다음: 추천일정`으로 후보를 다시 불러와야만 들어갈 수 있게 막는다.
+ */
+export function stepReachable(input: {
+  target: number;
+  furthestStep: number;
+  /** 현재 배우·작품 집합이 후보를 불러온 집합과 다른가 */
+  planContextStale: boolean;
+}): boolean {
+  if (input.target > input.furthestStep) return false;
+  return !(input.target >= 3 && input.planContextStale);
+}
+
 type PanelGate = {
   hasCandidates: boolean;
   hasPlannedResult: boolean;

@@ -1,6 +1,6 @@
 "use client";
 
-import { Sparkles, X } from "lucide-react";
+import { CalendarCheck, Sparkles, X } from "lucide-react";
 import type { GoalProposalOutcomePayload,
   CommandActionInterpretation,
   CommandActionResult,
@@ -13,6 +13,7 @@ import type { Clarification } from "@/lib/itinerary-command-resolver";
 import type { PendingCommandSlots } from "@/lib/itinerary-command-slots";
 import type { CommandProposal } from "@/lib/itinerary-command-executor";
 import { impactLinesOf } from "@/lib/itinerary-command-messages";
+import { commandPanelHeading } from "@/lib/itinerary-command-ui";
 
 type SuccessfulResult = Extract<CommandActionResult, { ok: true }>;
 export type ProposalOutcome = Extract<SuccessfulResult["outcome"], { kind: "proposal" }>;
@@ -43,6 +44,8 @@ export type CommandFeedback =
       kind: "proposal";
       /** 버튼·드래그에는 해석 단계가 없다 — 없으면 출처 줄을 그리지 않는다 (#109) */
       interpretation?: CommandActionInterpretation;
+      /** 결정적 편집이 만든 피드백 (#207 2번) — 머리글이 AI가 아니라 엔진으로 말한다 */
+      origin?: "engine";
       outcome: ProposalOutcome;
       applied: boolean;
       submittedSequence: number;
@@ -54,9 +57,9 @@ export type CommandFeedback =
       outcome: RecommendationOutcome;
       submittedSequence: number;
     }
-  | { kind: "cancelled" }
+  | { kind: "cancelled"; origin?: "engine" }
   | { kind: "undone" }
-  | { kind: "error" };
+  | { kind: "error"; origin?: "engine" };
 
 type Props = {
   value: string;
@@ -255,6 +258,9 @@ export function ItineraryCommandPanel({
     || feedback.kind === "recommendations"
   ) ? feedback.interpretation ?? null : null;
   const source = interpretation ? sourceLabel(interpretation, tr) : null;
+  // #207 2번 — 결정적 편집의 확인·오류에는 AI 머리글을 쓰지 않는다. LLM이 실행되지
+  // 않은 변경이 AI 작업처럼 보이면 안 된다. 자연어를 새로 제출하면 다시 AI 머리글이다.
+  const heading = commandPanelHeading(feedback);
   const addExample = tr("ai.exampleAdd");
   const recommendExample = tr("ai.exampleRecommend");
   const explainExample = tr("ai.exampleExplain");
@@ -268,13 +274,18 @@ export function ItineraryCommandPanel({
     >
       <div className="flex items-start gap-2">
         <span className="grid size-8 shrink-0 place-items-center rounded-full bg-sc-blue text-white">
-          <Sparkles aria-hidden="true" className="size-4" />
+          {/* 반짝임은 AI의 표식이다 — 엔진 확인 창까지 달고 있으면 문구만 바꾼 의미가 없다 */}
+          {heading === "engine"
+            ? <CalendarCheck aria-hidden="true" className="size-4" />
+            : <Sparkles aria-hidden="true" className="size-4" />}
         </span>
         <div className="min-w-0 flex-1">
           <h4 id="itinerary-ai-title" className="text-sm font-semibold text-sc-blue">
-            {tr("ai.title")}
+            {tr(heading === "engine" ? "engineEdit.title" : "ai.title")}
           </h4>
-          <p className="mt-0.5 text-xs text-sc-muted">{tr("ai.subtitle")}</p>
+          <p className="mt-0.5 text-xs text-sc-muted">
+            {tr(heading === "engine" ? "engineEdit.subtitle" : "ai.subtitle")}
+          </p>
         </div>
         <button
           type="button"
