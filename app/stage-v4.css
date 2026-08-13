@@ -242,6 +242,28 @@
     overflow-y: visible;
   }
 
+  /* 검증 일정 대안 하나만 있을 때는 하단 독을 화면 폭으로 늘리지 않는다. 문구와 화살표
+     너비만 차지하는 토글로 두고, 펼친 내용만 기존 440px 패널로 위에 띄운다. */
+  #stage-utility-dock:has(> [data-stage-utility="verified-alternatives"]):not(:has(> :not([data-stage-utility="verified-alternatives"]))) {
+    right: auto;
+    width: max-content;
+    max-width: calc(100vw - 66px);
+    grid-auto-columns: max-content;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    box-shadow: none;
+    backdrop-filter: none;
+  }
+
+  #stage-utility-dock > [data-stage-utility="verified-alternatives"] {
+    width: max-content;
+    min-height: 0;
+    border-color: var(--sc-line) !important;
+    background: white !important;
+    box-shadow: 0 8px 24px rgba(16,24,40,.14);
+  }
+
   div#place-picker[data-place-sheet] {
     grid-row: 1 / 6 !important;
     height: 100%;

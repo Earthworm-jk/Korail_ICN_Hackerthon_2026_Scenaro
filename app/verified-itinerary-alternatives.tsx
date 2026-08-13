@@ -31,14 +31,14 @@ export function VerifiedItineraryAlternatives({
 
   return (
     <StageUtilityPortal>
-      <details data-stage-utility="verified-alternatives" className="group rounded-lg border border-sc-blue/25 bg-sc-surface">
-        <summary className="flex min-h-11 list-none items-center justify-between gap-3 px-3 py-2.5 text-sm marker:content-none">
-          <span className="min-w-0">
-            <strong className="flex items-center gap-1.5 font-medium text-sc-text">
+      <details data-stage-utility="verified-alternatives" className="group w-fit rounded-lg border border-sc-blue/25 bg-sc-surface">
+        <summary className="inline-flex min-h-11 w-max list-none items-center gap-2 px-3 py-2 text-sm marker:content-none">
+          <span className="inline-flex items-center gap-2 whitespace-nowrap">
+            <strong className="inline-flex items-center gap-1.5 font-medium text-sc-text">
               <GitCompareArrows aria-hidden="true" className="size-4 shrink-0" />
               <span>{tr("verifiedAlt.title")}</span>
             </strong>
-            <span className="text-xs text-sc-muted">
+            <span className="text-xs text-sc-muted" data-verified-alternative-selection>
               {selectedId === null ? tr("verifiedAlt.recommended") : tr("verifiedAlt.selected")}
             </span>
           </span>
