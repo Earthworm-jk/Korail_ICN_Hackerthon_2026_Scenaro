@@ -261,7 +261,8 @@ export const messages = {
     "final.transferCount": "{n}회",
     "final.longestTransportLeg": "가장 긴 단일 교통 구간",
     "final.longestTrainLeg": "가장 긴 열차 구간",
-    "final.travelScopeNote": "총 이동시간에는 열차와 역–장소 왕복 접근 추정이 포함됩니다. 가장 긴 단일 교통 구간은 열차·공항 이동편만 비교하며, 과거 저장 일정에 공항 이동편이 없으면 열차만 기준으로 표시합니다.",
+    "final.travelScopeNote": "총 이동시간에는 열차·공항 이동편과 역–장소 왕복 접근 추정이 포함됩니다. 가장 긴 단일 교통 구간은 열차·공항 이동편만 비교합니다.",
+    "final.longestScopeNote": "과거 저장 일정에 공항 이동편이 없어 열차 구간만 비교합니다. 저장 당시 총 이동시간과 환승 횟수는 기록되지 않아 표시하지 않습니다.",
     "final.dayNumber": "DAY {n}",
     // #131 — 개수 문구는 one/other 쌍으로 둔다. 한국어는 두 값이 같지만, 키를 한쪽만
     // 만들면 ko/en 키 대칭(i18n.test)이 깨지고 화면 헬퍼가 locale마다 다른 길을 타게 된다.
@@ -739,7 +740,8 @@ export const messages = {
     "final.transferCount": "{n}",
     "final.longestTransportLeg": "Longest single transport leg",
     "final.longestTrainLeg": "Longest train leg",
-    "final.travelScopeNote": "Total travel time includes trains and estimated round trips between stations and places. The longest single transport leg compares only trains and airport transport; older saved itineraries without airport legs use trains only.",
+    "final.travelScopeNote": "Total travel time includes trains, airport transport, and estimated round trips between stations and places. The longest single transport leg compares only trains and airport transport.",
+    "final.longestScopeNote": "This older saved itinerary has no airport transport legs, so only train legs are compared. Total travel time and transfer count were not recorded when it was saved and are not shown.",
     "final.dayNumber": "DAY {n}",
     // #131 — `1 places`가 되지 않게 단수형을 따로 둔다
     "final.dayPlaceCount.one": "{n} place",

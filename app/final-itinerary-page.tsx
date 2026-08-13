@@ -1,5 +1,6 @@
 import type { CSSProperties } from "react";
-import type { CandidateWarning, DayPlan, ItineraryMetrics } from "@/lib/engine/types";
+import type { CandidateWarning, DayPlan } from "@/lib/engine/types";
+import type { ItineraryDisplayMetrics } from "@/lib/itinerary-view";
 import type { Locale, MessageKey } from "@/lib/i18n/messages";
 import type { SaveStatus } from "./save-stub";
 import styles from "./final-itinerary-page.module.css";
@@ -123,7 +124,7 @@ export function FinalItineraryPage({
   tr,
 }: {
   days: DayPlan[];
-  metrics?: ItineraryMetrics | null;
+  metrics?: ItineraryDisplayMetrics | null;
   locale: Locale;
   placeName: (id: string) => string;
   stationName: (id: string) => string;
@@ -183,12 +184,14 @@ export function FinalItineraryPage({
                     {durationLabel(metrics.totalTravelMinutes, tr)}
                   </dd>
                 </div>
-                <div className="rounded-lg bg-sc-surface px-3 py-2.5">
-                  <dt className="text-xs text-sc-muted">{tr("final.transfers")}</dt>
-                  <dd className="mt-1 text-base font-semibold text-sc-blue">
-                    {tr("final.transferCount").replace("{n}", String(metrics.transferCount))}
-                  </dd>
-                </div>
+                {metrics.transferCount !== null && (
+                  <div className="rounded-lg bg-sc-surface px-3 py-2.5">
+                    <dt className="text-xs text-sc-muted">{tr("final.transfers")}</dt>
+                    <dd className="mt-1 text-base font-semibold text-sc-blue">
+                      {tr("final.transferCount").replace("{n}", String(metrics.transferCount))}
+                    </dd>
+                  </div>
+                )}
               </>
             )}
             {longest && (
@@ -205,7 +208,9 @@ export function FinalItineraryPage({
               </div>
             )}
           </dl>
-          <p className="mt-3 text-xs leading-relaxed text-sc-muted">{tr("final.travelScopeNote")}</p>
+          <p className="mt-3 text-xs leading-relaxed text-sc-muted">
+            {tr(metrics ? "final.travelScopeNote" : "final.longestScopeNote")}
+          </p>
         </section>
       )}
 

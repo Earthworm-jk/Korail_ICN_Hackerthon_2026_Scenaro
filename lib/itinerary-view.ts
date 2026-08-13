@@ -16,7 +16,7 @@
  * - 선택이 0곳이 되면 직전 일정을 남기지 않는다 (SELECTION_CLEARED). 고를 게 없는데
  *   이전 선택의 결과가 남아 있으면 그걸 저장할 수 있게 된다.
  */
-import type { DayPlan, GatewayAlternative, ItineraryMetrics, ItineraryResult } from "./engine/types";
+import type { DayPlan, GatewayAlternative, ItineraryResult } from "./engine/types";
 import type { MockAlternative } from "./alternatives-mock";
 import type { SavedItineraryStub } from "./saved-itineraries-stub";
 import { summarizeSelectionCapacity } from "./selection-capacity";
@@ -100,11 +100,26 @@ export function displayedDays(view: ItineraryView): DayPlan[] | null {
  * 환승 횟수는 DayPlan만으로 원래 route 경계를 정확히 복원할 수 없어 추정하면 사실과 달라진다.
  * mock 대안은 검증 지표를 만들지 않으므로 추천 원본의 값을 그 대안의 값처럼 표시하지 않는다.
  */
-export function displayedMetrics(view: ItineraryView): ItineraryMetrics | null {
+export type ItineraryDisplayMetrics = {
+  totalTravelMinutes: number;
+  /** 공항 이동편을 포함한 환승 계약이 없으면 표시하지 않는다. */
+  transferCount: number | null;
+};
+
+export function displayedMetrics(view: ItineraryView): ItineraryDisplayMetrics | null {
   if (view.reopened || view.result?.status !== "planned") return null;
-  if (view.selectedAlt?.kind === "gateway_bus") return view.selectedAlt.metrics;
   if (view.selectedAlt?.kind === "mock") return null;
-  return view.result.metrics;
+  if (view.selectedAlt?.kind === "gateway_bus") {
+    return {
+      totalTravelMinutes: view.selectedAlt.metrics.totalTravelMinutes,
+      // 엔진 transferCount는 열차↔열차만 세므로 버스↔열차가 있는 대안에는 쓸 수 없다.
+      transferCount: null,
+    };
+  }
+  return {
+    totalTravelMinutes: view.result.metrics.totalTravelMinutes,
+    transferCount: view.result.metrics.transferCount,
+  };
 }
 
 /**

@@ -18,7 +18,8 @@ const copy: Partial<Record<MessageKey, string>> = {
   "final.transferCount": "{n}회",
   "final.longestTransportLeg": "가장 긴 단일 교통 구간",
   "final.longestTrainLeg": "가장 긴 열차 구간",
-  "final.travelScopeNote": "총 이동시간에는 접근 추정이 포함됩니다.",
+  "final.travelScopeNote": "총 이동시간에는 공항 이동편과 접근 추정이 포함됩니다.",
+  "final.longestScopeNote": "과거 저장 일정은 열차만 비교하며 저장 당시 지표는 표시하지 않습니다.",
   "final.dayNumber": "DAY {n}",
   "final.dayPlaceCount.one": "장소 {n}",
   "final.dayPlaceCount.other": "장소 {n}",
@@ -122,7 +123,7 @@ describe("최종 일정 한눈에 보기", () => {
   it("엔진 측정값과 가장 긴 열차 구간을 이동 부담으로 표시한다", () => {
     const markup = renderToStaticMarkup(createElement(FinalItineraryPage, {
       days: [day("2026-08-12", "seoullo", "KTX-1")],
-      metrics: { totalTravelMinutes: 185, totalRailMinutes: 120, transferCount: 2, departureSlackMinutes: 90 },
+      metrics: { totalTravelMinutes: 185, transferCount: 2 },
       locale: "ko",
       placeName: () => "서울로7017",
       stationName: (id: string) => id === "seoul" ? "서울역" : "강릉역",
@@ -143,7 +144,7 @@ describe("최종 일정 한눈에 보기", () => {
     expect(markup).toContain("서울역 → 강릉역");
   });
 
-  it("공항 이동편이 있으면 열차와 함께 비교해 가장 긴 단일 교통 구간을 표시한다", () => {
+  it("공항 이동편 대안은 총 이동시간을 유지하되 불완전한 환승 횟수를 숨긴다", () => {
     const withGateway: DayPlan = {
       ...day("2026-08-12", "seoullo", "KTX-1"),
       gatewayLegs: [{
@@ -167,6 +168,7 @@ describe("최종 일정 한눈에 보기", () => {
     };
     const markup = renderToStaticMarkup(createElement(FinalItineraryPage, {
       days: [withGateway],
+      metrics: { totalTravelMinutes: 1021, transferCount: null },
       locale: "ko",
       placeName: () => "서울로7017",
       stationName: (id: string) => id,
@@ -182,8 +184,29 @@ describe("최종 일정 한눈에 보기", () => {
     expect(markup).toContain("가장 긴 단일 교통 구간");
     expect(markup).toContain("3시간 30분");
     expect(markup).toContain("인천공항 → 강릉");
-    expect(markup).not.toContain("총 이동시간</dt>");
+    expect(markup).toContain("17시간 1분");
     expect(markup).not.toContain("환승 횟수</dt>");
+    expect(markup).toContain("총 이동시간에는 공항 이동편과 접근 추정이 포함됩니다.");
+  });
+
+  it("과거 저장 일정은 없는 지표를 설명하지 않고 재열람 전용 안내를 표시한다", () => {
+    const markup = renderToStaticMarkup(createElement(FinalItineraryPage, {
+      days: [day("2026-08-12", "seoullo", "KTX-1")],
+      metrics: null,
+      locale: "ko",
+      placeName: () => "서울로7017",
+      stationName: (id: string) => id,
+      warnings: [],
+      warningLabel: (detail) => detail,
+      saveStatus: "none",
+      saveStatusLabel: "저장되지 않은 일정",
+      onBackToAdjust: () => undefined,
+      onSave: () => undefined,
+      tr,
+    }));
+
+    expect(markup).not.toContain("총 이동시간에는 공항 이동편");
+    expect(markup).toContain("과거 저장 일정은 열차만 비교하며 저장 당시 지표는 표시하지 않습니다.");
   });
 
   it("방문 전 확인 경고를 해당 장소가 있는 날짜 카드에 접어서 표시한다", () => {
