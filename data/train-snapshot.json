@@ -4949,6 +4949,13 @@
     "arriveAt": "2026-08-14T13:27:00+09:00"
   },
   {
+    "trainNo": "AREX-E112",
+    "fromStationId": "station-incheon-airport-t1",
+    "toStationId": "station-seoul",
+    "departAt": "2026-08-14T12:18:00+09:00",
+    "arriveAt": "2026-08-14T13:01:00+09:00"
+  },
+  {
     "trainNo": "00511",
     "fromStationId": "station-yongsan",
     "toStationId": "station-jeonju",
@@ -5003,6 +5010,13 @@
     "toStationId": "station-incheon-airport-t1",
     "departAt": "2026-08-14T12:50:00+09:00",
     "arriveAt": "2026-08-14T13:33:00+09:00"
+  },
+  {
+    "trainNo": "AREX-E113",
+    "fromStationId": "station-incheon-airport-t1",
+    "toStationId": "station-seoul",
+    "departAt": "2026-08-14T12:53:00+09:00",
+    "arriveAt": "2026-08-14T13:36:00+09:00"
   },
   {
     "trainNo": "00586",
@@ -5096,6 +5110,13 @@
     "arriveAt": "2026-08-14T16:07:00+09:00"
   },
   {
+    "trainNo": "AREX-E114",
+    "fromStationId": "station-incheon-airport-t1",
+    "toStationId": "station-seoul",
+    "departAt": "2026-08-14T13:28:00+09:00",
+    "arriveAt": "2026-08-14T14:11:00+09:00"
+  },
+  {
     "trainNo": "00582",
     "fromStationId": "station-jeonju",
     "toStationId": "station-yongsan",
@@ -5150,6 +5171,13 @@
     "toStationId": "station-gangneung",
     "departAt": "2026-08-14T13:59:00+09:00",
     "arriveAt": "2026-08-14T14:16:00+09:00"
+  },
+  {
+    "trainNo": "AREX-E115",
+    "fromStationId": "station-incheon-airport-t1",
+    "toStationId": "station-seoul",
+    "departAt": "2026-08-14T14:08:00+09:00",
+    "arriveAt": "2026-08-14T14:51:00+09:00"
   },
   {
     "trainNo": "AREX-W114",
@@ -5481,6 +5509,13 @@
     "arriveAt": "2026-08-14T17:05:00+09:00"
   },
   {
+    "trainNo": "AREX-E116",
+    "fromStationId": "station-incheon-airport-t1",
+    "toStationId": "station-seoul",
+    "departAt": "2026-08-14T16:48:00+09:00",
+    "arriveAt": "2026-08-14T17:31:00+09:00"
+  },
+  {
     "trainNo": "00863",
     "fromStationId": "station-manjong",
     "toStationId": "station-gangneung",
@@ -5593,6 +5628,13 @@
     "arriveAt": "2026-08-14T18:22:00+09:00"
   },
   {
+    "trainNo": "AREX-E117",
+    "fromStationId": "station-incheon-airport-t1",
+    "toStationId": "station-seoul",
+    "departAt": "2026-08-14T17:28:00+09:00",
+    "arriveAt": "2026-08-14T18:11:00+09:00"
+  },
+  {
     "trainNo": "00429",
     "fromStationId": "station-seoul",
     "toStationId": "station-yongsan",
@@ -5696,6 +5738,13 @@
     "toStationId": "station-busan",
     "departAt": "2026-08-14T18:13:00+09:00",
     "arriveAt": "2026-08-14T20:55:00+09:00"
+  },
+  {
+    "trainNo": "AREX-E118",
+    "fromStationId": "station-incheon-airport-t1",
+    "toStationId": "station-seoul",
+    "departAt": "2026-08-14T18:18:00+09:00",
+    "arriveAt": "2026-08-14T19:01:00+09:00"
   },
   {
     "trainNo": "00847",
@@ -9548,6 +9597,13 @@
     "arriveAt": "2026-08-16T13:32:00+09:00"
   },
   {
+    "trainNo": "AREX-W112",
+    "fromStationId": "station-seoul",
+    "toStationId": "station-incheon-airport-t1",
+    "departAt": "2026-08-16T12:50:00+09:00",
+    "arriveAt": "2026-08-16T13:33:00+09:00"
+  },
+  {
     "trainNo": "AREX-E113",
     "fromStationId": "station-incheon-airport-t1",
     "toStationId": "station-seoul",
@@ -9660,6 +9716,13 @@
     "arriveAt": "2026-08-16T13:34:00+09:00"
   },
   {
+    "trainNo": "AREX-W113",
+    "fromStationId": "station-seoul",
+    "toStationId": "station-incheon-airport-t1",
+    "departAt": "2026-08-16T13:30:00+09:00",
+    "arriveAt": "2026-08-16T14:13:00+09:00"
+  },
+  {
     "trainNo": "00582",
     "fromStationId": "station-jeonju",
     "toStationId": "station-yongsan",
@@ -9716,6 +9779,13 @@
     "arriveAt": "2026-08-16T15:50:00+09:00"
   },
   {
+    "trainNo": "AREX-W114",
+    "fromStationId": "station-seoul",
+    "toStationId": "station-incheon-airport-t1",
+    "departAt": "2026-08-16T14:10:00+09:00",
+    "arriveAt": "2026-08-16T14:53:00+09:00"
+  },
+  {
     "trainNo": "00038",
     "fromStationId": "station-busan",
     "toStationId": "station-seoul",
@@ -9742,6 +9812,13 @@
     "toStationId": "station-busan",
     "departAt": "2026-08-16T14:42:00+09:00",
     "arriveAt": "2026-08-16T17:23:00+09:00"
+  },
+  {
+    "trainNo": "AREX-W115",
+    "fromStationId": "station-seoul",
+    "toStationId": "station-incheon-airport-t1",
+    "departAt": "2026-08-16T14:50:00+09:00",
+    "arriveAt": "2026-08-16T15:33:00+09:00"
   },
   {
     "trainNo": "00042",
@@ -9826,6 +9903,13 @@
     "toStationId": "station-seoul",
     "departAt": "2026-08-16T15:29:00+09:00",
     "arriveAt": "2026-08-16T16:41:00+09:00"
+  },
+  {
+    "trainNo": "AREX-W116",
+    "fromStationId": "station-seoul",
+    "toStationId": "station-incheon-airport-t1",
+    "departAt": "2026-08-16T15:30:00+09:00",
+    "arriveAt": "2026-08-16T16:13:00+09:00"
   },
   {
     "trainNo": "00418",

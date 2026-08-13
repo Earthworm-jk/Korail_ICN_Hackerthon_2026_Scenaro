@@ -6,7 +6,7 @@
  * - 대안 시간표는 mock(#14 ⑨ 선행), 저장·내 일정은 in-memory 스텁(#25 선행) — 엔진·Supabase 연결 시 교체
  */
 import { useCallback, useEffect, useId, useMemo, useReducer, useRef, useState, useTransition } from "react";
-import { BusFront, Hourglass, Info, Sparkles, TrainFront, TriangleAlert, X } from "lucide-react";
+import { BusFront, Hourglass, Info, Search, Sparkles, TrainFront, TriangleAlert, Tv, UserRound, X } from "lucide-react";
 import { PlaceOrderMenu } from "./place-order-menu";
 import { StageUtilityPortal } from "./stage-utility-portal";
 import {
@@ -395,11 +395,12 @@ function SummarySidebar({ arrivalAt, departureAt, readyAt, deadlineAt, actors, w
           <span className="block text-xs text-sc-muted">{tr("summary.content")}</span>
           {hasContent ? (
             <div className="mt-1 flex flex-wrap gap-1.5">
+              {/* 요약 칩은 색만 채운다 — 좁은 열이라 아이콘·유형 라벨을 얹으면 이름이 잘린다 */}
               {actors.map((a) => (
-                <span key={a.id} className="rounded-full bg-sc-blue-soft px-2 py-0.5 text-xs text-sc-blue">{a.name[locale]}</span>
+                <span key={a.id} className="rounded-full bg-sc-blue px-2 py-0.5 text-xs text-white">{a.name[locale]}</span>
               ))}
               {works.map((w) => (
-                <span key={w.id} className="rounded-full bg-sc-airport-soft px-2 py-0.5 text-xs text-sc-airport-text">{w.title[locale]}</span>
+                <span key={w.id} className="rounded-full bg-sc-airport px-2 py-0.5 text-xs text-white">{w.title[locale]}</span>
               ))}
             </div>
           ) : (
@@ -582,6 +583,8 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<EntitySearchResult>({ actors: [], works: [] });
   const [searched, setSearched] = useState(false);
+  /** Escape로 제안 목록만 닫는다 — 입력한 글자는 남긴다 (다시 치면 열린다) */
+  const [suggestionsDismissed, setSuggestionsDismissed] = useState(false);
   const [selectedActors, setSelectedActors] = useState<ActorSummary[]>([]);
   const [selectedWorks, setSelectedWorks] = useState<WorkSummary[]>([]);
 
@@ -2001,6 +2004,43 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
     set(list.some((x) => x.id === item.id) ? list.filter((x) => x.id !== item.id) : [...list, item]);
   };
 
+  /** 제안 목록이 떠 있는가 — 입력이 있고, 찾은 항목이 있고, 사용자가 닫지 않았을 때 */
+  const suggestionsOpen = query.trim().length > 0
+    && !suggestionsDismissed
+    && (results.actors.length > 0 || results.works.length > 0);
+
+  /**
+   * 제안에서 고르면 목록을 닫고 입력을 비운다.
+   *
+   * 목록은 입력창 위로 떠서 아래 "선택한 배우·작품"을 가린다. 열어 둔 채로 두면 방금
+   * 무엇을 골랐는지 확인할 수가 없다. 닫으면 고른 항목이 아래 칩으로 바로 보인다.
+   */
+  const selectSuggestion = <T extends { id: string }>(list: T[], set: (v: T[]) => void, item: T) => {
+    toggleChip(list, set, item);
+    setQuery("");
+    setSearched(false);
+    setSuggestionsDismissed(false);
+    setResults({ actors: [], works: [] });
+  };
+
+  /**
+   * 제안을 누르지 않고 끝까지 타이핑한 사용자를 위한 확정 경로 — 검색 버튼과 Enter가 같다.
+   *
+   * 이름을 다 적고 Enter를 쳤을 때 아무 일도 없으면 "검색이 안 되는 화면"으로 읽힌다.
+   * 정확히 일치하는 이름을 먼저 찾고, 없으면 맨 위 제안을 고른다.
+   */
+  const commitTopSuggestion = () => {
+    const typed = query.trim().toLowerCase();
+    const actor = results.actors.find((a) => a.name[locale].toLowerCase() === typed);
+    if (actor) return selectSuggestion(selectedActors, setSelectedActors, actor);
+    const work = results.works.find((w) => w.title[locale].toLowerCase() === typed);
+    if (work) return selectSuggestion(selectedWorks, setSelectedWorks, work);
+    if (results.actors[0]) return selectSuggestion(selectedActors, setSelectedActors, results.actors[0]);
+    if (results.works[0]) return selectSuggestion(selectedWorks, setSelectedWorks, results.works[0]);
+  };
+  const hasSuggestion = results.actors.length > 0 || results.works.length > 0;
+  const selectedCount = selectedActors.length + selectedWorks.length;
+
   // PR #30 리뷰 ③ + #14 차단 2: 필수값·입출국 순서·공항 경계 순서를 1단계에서 막는다.
   // 수록 범위까지 같은 함수가 판정한다 — 달력을 좁혀도 직접 입력이 통과하기 때문이다 (PR #202 리뷰)
   const ms = (at: string) => Date.parse(fromLocalInput(at));
@@ -2033,7 +2073,13 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
     // 220px 요약 사이드바와 함께 들어가려면 폭이 필요해 max-w-6xl로 넓힌다 — 좁으면
     // 지도 열이 시안의 minmax(320px) 아래로 눌린다.
     <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6">
-      <div data-app-shell className="overflow-hidden rounded-2xl border bg-sc-surface shadow-[0_18px_50px_var(--sc-shadow)]">
+      {/* 태블릿 이상에서 스테이지는 늘 화면 높이만큼이다. 내용이 적다는 이유로
+          단계마다 상자 크기가 달라지면(1단계 751px, 2단계 507px) 단계를 옮길 때마다
+          화면이 접혔다 펴진다. 세로 여백 16px(stage-v2.css의 위아래 8px)을 뺀 값 */}
+      <div
+        data-app-shell
+        className="flex flex-col overflow-hidden rounded-2xl border bg-sc-surface shadow-[0_18px_50px_var(--sc-shadow)] lg:min-h-[calc(100vh-1rem)]"
+      >
       {/* `flex-wrap`을 걷었다 (#146 모바일). 390px에서 버튼 묶음이 아래로 접혀
           제목 밑에 왼쪽 정렬로 한 줄을 더 쓰고 있었다. 한 줄에 두고 로고 쪽이
           줄어들게 한다 — 버튼은 늘 오른쪽 윗줄이다 */}
@@ -2080,13 +2126,25 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
               onClick={() => setStep(target)}
               // 52px — 터치 하한(44px)은 지키면서 태블릿 가로에서 스테이지가
               // 화면 안에 들어오도록 단계 막대의 높이를 줄였다
-              className={`flex min-h-[52px] items-center justify-center gap-2 border-r px-1 last:border-r-0 ${
-                current ? "bg-sc-blue-soft font-medium text-sc-blue" : "text-sc-muted"
+              // 지금 단계는 밑줄 막대 + 채운 번호로 세운다. 연한 배경만으로는 세 칸이
+              // 비슷해 보여 어디 있는지가 한눈에 안 들어왔다. 밑줄은 비활성일 때도
+              // 투명으로 자리를 잡아 둬 단계를 옮겨도 글자가 흔들리지 않는다
+              className={`flex min-h-[52px] items-center justify-center gap-2 border-b-2 border-r px-1 last:border-r-0 ${
+                current
+                  ? "border-b-sc-blue bg-sc-blue-soft font-semibold text-sc-blue"
+                  : "border-b-transparent text-sc-muted"
               } ${reachable && !current ? "hover:bg-sc-blue-soft/50 hover:text-sc-blue" : ""} ${
                 reachable ? "" : "cursor-default opacity-60"
               }`}
             >
-              <span aria-hidden className="grid h-7 w-7 shrink-0 place-items-center rounded-full border border-current text-sm">{target}</span>
+              <span
+                aria-hidden
+                className={`grid h-7 w-7 shrink-0 place-items-center rounded-full text-sm ${
+                  current ? "bg-sc-blue font-semibold text-white" : "border border-current"
+                }`}
+              >
+                {target}
+              </span>
               <span className="truncate">{tr(key)}</span>
             </button>
           );
@@ -2100,7 +2158,7 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
       {/* 요약 열은 고정 220px이 아니라 비율이다 — 태블릿에서 본문이 그만큼 좁아져
           입력이 밀리고, 넓은 화면에서는 남는 자리를 못 쓴다. 최소 폭은 지켜 글자가
           한 자씩 끊기지 않게 한다 */}
-      <div className={showFinalItinerary ? "block" : `grid ${summaryCollapsed ? "md:grid-cols-[64px_minmax(0,1fr)]" : "md:grid-cols-[minmax(12rem,20%)_minmax(0,1fr)]"}`}>
+      <div className={`min-h-0 flex-1 ${showFinalItinerary ? "block" : `grid ${summaryCollapsed ? "md:grid-cols-[64px_minmax(0,1fr)]" : "md:grid-cols-[minmax(12rem,20%)_minmax(0,1fr)]"}`}`}>
       {!showFinalItinerary && <SummarySidebar
         arrivalAt={arrival.at}
         departureAt={departure.at}
@@ -2367,17 +2425,100 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
             <p className="mt-2 text-xs text-sc-muted">{tr("step2.guideBody")}</p>
             <p className="mt-2 border-t pt-2 text-xs text-sc-muted">{tr("step2.subtitle")}</p>
           </div>
-          <input
-            className="mt-4 w-full rounded border px-3 py-2"
-            placeholder={tr("step2.placeholder")}
-            value={query}
-            onChange={(e) => {
-              const nextQuery = e.target.value;
-              setQuery(nextQuery);
-              setSearched(false);
-              if (!nextQuery.trim()) setResults({ actors: [], works: [] });
-            }}
-          />
+          {/*
+            검색창과 제안 목록 (#146 UI 정리).
+
+            전에는 결과 항목이 입력창과 **같은 클래스**(`w-full rounded border px-3 py-2`)
+            여서 "두 번째 입력칸"으로 보였다. 지금은 입력창에 붙여 띄우는 드롭다운이다 —
+            간격을 없애고 아래 모서리를 잇고 그림자를 줘 떠 있는 목록으로 읽히게 한다.
+            항목 테두리는 걷고 행 구분선만 남긴다.
+
+            아이콘으로 유형을 가른다. 배우는 사람, 작품은 TV — `Clapperboard`·`Video`·
+            `Drama`는 3단계 장소 유형(영화관·촬영세트장·문화시설)이 이미 쓰고 있어 피했다.
+            색은 아래 선택 칩과 같은 색을 써서 고른 항목이 어디로 갔는지 이어 보이게 한다.
+          */}
+          <div className="relative mt-4">
+            <Search
+              aria-hidden="true"
+              className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-sc-muted"
+            />
+            <input
+              role="combobox"
+              aria-expanded={suggestionsOpen}
+              aria-controls="entity-suggestions"
+              aria-autocomplete="list"
+              className={`w-full border py-2 pl-9 pr-20 ${suggestionsOpen ? "rounded-t" : "rounded"}`}
+              placeholder={tr("step2.placeholder")}
+              value={query}
+              onChange={(e) => {
+                const nextQuery = e.target.value;
+                setQuery(nextQuery);
+                setSearched(false);
+                setSuggestionsDismissed(false);
+                if (!nextQuery.trim()) setResults({ actors: [], works: [] });
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Escape" && suggestionsOpen) {
+                  e.stopPropagation();
+                  setSuggestionsDismissed(true);
+                  return;
+                }
+                // 제안을 누르지 않고 이름을 다 적은 뒤 Enter — 검색 버튼과 같은 동작
+                if (e.key === "Enter" && hasSuggestion) {
+                  e.preventDefault();
+                  commitTopSuggestion();
+                }
+              }}
+            />
+            <button
+              type="button"
+              className="absolute right-1.5 top-1/2 -translate-y-1/2 rounded bg-sc-blue px-2.5 py-1 text-xs font-medium text-white disabled:opacity-40"
+              disabled={!hasSuggestion}
+              onClick={commitTopSuggestion}
+            >
+              {tr("step2.searchButton")}
+            </button>
+            {suggestionsOpen && (
+              <ul
+                id="entity-suggestions"
+                role="listbox"
+                className="absolute inset-x-0 top-full z-30 max-h-72 overflow-y-auto rounded-b border border-t-0 bg-sc-surface shadow-lg"
+              >
+                {results.actors.map((a) => (
+                  <li key={a.id} role="option" aria-selected={selectedActors.some((x) => x.id === a.id)}>
+                    <button
+                      className="flex w-full items-center gap-2.5 border-b px-3 py-2.5 text-left text-sm last:border-b-0 hover:bg-sc-subtle"
+                      onClick={() => selectSuggestion(selectedActors, setSelectedActors, a)}
+                    >
+                      {/* 유형 라벨은 이름 바로 옆이다 — 행 끝으로 밀면 이름과 멀어져
+                          어느 항목의 유형인지 눈이 한 번 더 움직인다 */}
+                      <UserRound aria-hidden="true" className="size-4 shrink-0 text-sc-blue" strokeWidth={1.8} />
+                      <span className="min-w-0 truncate">{a.name[locale]}</span>
+                      <span className="shrink-0 text-xs text-sc-muted">{tr("step2.actor")}</span>
+                      {results.interpretedByAi && (
+                        <Sparkles aria-hidden="true" className="size-3.5 shrink-0 text-sc-airport-text" />
+                      )}
+                    </button>
+                  </li>
+                ))}
+                {results.works.map((w) => (
+                  <li key={w.id} role="option" aria-selected={selectedWorks.some((x) => x.id === w.id)}>
+                    <button
+                      className="flex w-full items-center gap-2.5 border-b px-3 py-2.5 text-left text-sm last:border-b-0 hover:bg-sc-subtle"
+                      onClick={() => selectSuggestion(selectedWorks, setSelectedWorks, w)}
+                    >
+                      <Tv aria-hidden="true" className="size-4 shrink-0 text-sc-airport-text" strokeWidth={1.8} />
+                      <span className="min-w-0 truncate">{w.title[locale]}</span>
+                      <span className="shrink-0 text-xs text-sc-muted">{tr("step2.work")}</span>
+                      {results.interpretedByAi && (
+                        <Sparkles aria-hidden="true" className="size-3.5 shrink-0 text-sc-airport-text" />
+                      )}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
           {searched && results.interpretedByAi && (
             <p
               aria-live="polite"
@@ -2392,50 +2533,54 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
               {tr("step2.noResult")}
             </p>
           )}
-          <ul className="mt-3 space-y-1">
-            {results.actors.map((a) => (
-              <li key={a.id}>
-                <button
-                  className="w-full rounded border px-3 py-2 text-left text-sm hover:bg-sc-subtle"
-                  onClick={() => toggleChip(selectedActors, setSelectedActors, a)}
-                >
-                  {a.name[locale]} <span className="ml-1 text-xs text-sc-muted/70">{tr("step2.actor")}</span>
-                </button>
-              </li>
-            ))}
-            {results.works.map((w) => (
-              <li key={w.id}>
-                <button
-                  className="w-full rounded border px-3 py-2 text-left text-sm hover:bg-sc-subtle"
-                  onClick={() => toggleChip(selectedWorks, setSelectedWorks, w)}
-                >
-                  {w.title[locale]} <span className="ml-1 text-xs text-sc-muted/70">{tr("step2.work")}</span>
-                </button>
-              </li>
-            ))}
-          </ul>
-          <div className="mt-4 rounded-lg border bg-sc-subtle p-3">
-            <h3 className="text-sm font-medium">{tr("step2.selected")}</h3>
-            {selectedActors.length === 0 && selectedWorks.length === 0 ? (
-              <p className="mt-1 text-sm text-sc-muted/70">{tr("step2.empty")}</p>
+          {/*
+            이 화면의 결과물이다. 회색 배경에 회색 테두리라 바로 위 흰 입력창에 밀려
+            뒤로 물러나 보였다 — 흰 표면으로 올리고 그림자로 띄운다.
+            칩은 제안 목록과 같은 아이콘·같은 색을 쓴다. 고른 항목이 같은 모양으로
+            여기 쌓여야 "내가 고른 게 어디로 갔는지"가 눈으로 이어진다.
+          */}
+          <div className="mt-4 rounded-lg border border-[color-mix(in_srgb,var(--sc-blue)_24%,var(--sc-line))] bg-[color-mix(in_srgb,var(--sc-blue-soft)_42%,var(--sc-surface))] p-4 shadow-sm">
+            <div className="flex items-center gap-2">
+              <h3 className="text-sm font-medium">{tr("step2.selected")}</h3>
+              {selectedCount > 0 && (
+                <span className="rounded-full bg-sc-blue-soft px-2 py-0.5 text-xs font-medium text-sc-blue">
+                  {selectedCount}
+                </span>
+              )}
+            </div>
+            {selectedCount === 0 ? (
+              <div className="mt-3 flex items-center gap-2.5 text-sm text-sc-muted">
+                <Search aria-hidden="true" className="size-4 shrink-0" />
+                <p>{tr("step2.empty")}</p>
+              </div>
             ) : (
-              <div className="mt-2 flex flex-wrap gap-2">
+              <div className="mt-3 flex flex-wrap gap-2">
+                {/* 채운 색 — 카드 자체가 옅은 파랑이라 연한 칩은 배경에 붙어 보인다.
+                    유형 라벨은 흰 글자를 옅게 깔아 이름과 구분한다 */}
                 {selectedActors.map((a) => (
                   <button
                     key={a.id}
-                    className="rounded-full bg-sc-blue-soft px-3 py-1 text-sm text-sc-blue"
+                    className="flex items-center gap-1.5 rounded-full bg-sc-blue py-1.5 pl-2.5 pr-2 text-sm font-medium text-white hover:opacity-90"
                     onClick={() => toggleChip(selectedActors, setSelectedActors, a)}
                   >
-                    {a.name[locale]} · {tr("step2.actor")} ×
+                    <UserRound aria-hidden="true" className="size-4 shrink-0" strokeWidth={1.8} />
+                    <span>{a.name[locale]}</span>
+                    <span className="text-xs text-white/75">{tr("step2.actor")}</span>
+                    <X aria-hidden="true" className="size-3.5 shrink-0 opacity-80" />
+                    <span className="sr-only">{tr("step2.remove").replace("{name}", a.name[locale])}</span>
                   </button>
                 ))}
                 {selectedWorks.map((w) => (
                   <button
                     key={w.id}
-                    className="rounded-full bg-sc-airport-soft px-3 py-1 text-sm text-sc-airport-text"
+                    className="flex items-center gap-1.5 rounded-full bg-sc-airport py-1.5 pl-2.5 pr-2 text-sm font-medium text-white hover:opacity-90"
                     onClick={() => toggleChip(selectedWorks, setSelectedWorks, w)}
                   >
-                    {w.title[locale]} · {tr("step2.work")} ×
+                    <Tv aria-hidden="true" className="size-4 shrink-0" strokeWidth={1.8} />
+                    <span>{w.title[locale]}</span>
+                    <span className="text-xs text-white/75">{tr("step2.work")}</span>
+                    <X aria-hidden="true" className="size-3.5 shrink-0 opacity-80" />
+                    <span className="sr-only">{tr("step2.remove").replace("{name}", w.title[locale])}</span>
                   </button>
                 ))}
               </div>

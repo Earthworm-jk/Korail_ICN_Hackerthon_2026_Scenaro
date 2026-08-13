@@ -102,6 +102,40 @@
     "recheckRequired": true
   },
   {
+    "id": "airport-bus-icn-t1-gangneung-20260814-1200",
+    "routeId": "airport-bus-icn-t1-gangneung",
+    "direction": "outbound",
+    "mode": "airport_bus",
+    "fromStationId": "station-incheon-airport-t1",
+    "toStationId": "station-gangneung",
+    "fromName": {
+      "ko": "인천공항 T1",
+      "en": "Incheon Airport T1"
+    },
+    "toName": {
+      "ko": "강릉시외버스터미널",
+      "en": "Gangneung Bus Terminal"
+    },
+    "departAt": "2026-08-14T12:00:00+09:00",
+    "arriveAt": "2026-08-14T15:55:00+09:00",
+    "serviceName": {
+      "ko": "인천공항–강릉 공항버스",
+      "en": "Incheon Airport–Gangneung Airport Bus"
+    },
+    "operator": {
+      "ko": "경기고속",
+      "en": "Gyeonggi Express"
+    },
+    "sourceUrls": [
+      "https://txbuse.t-money.co.kr/runinf/runInf.do",
+      "https://www.data.go.kr/data/15095045/openapi.do",
+      "https://www.data.go.kr/data/15098541/openapi.do"
+    ],
+    "verifiedAt": "2026-08-09",
+    "scheduleKind": "observed_snapshot",
+    "recheckRequired": true
+  },
+  {
     "id": "airport-bus-gangneung-icn-t1-20260814-1200",
     "routeId": "airport-bus-icn-t1-gangneung",
     "direction": "inbound",
