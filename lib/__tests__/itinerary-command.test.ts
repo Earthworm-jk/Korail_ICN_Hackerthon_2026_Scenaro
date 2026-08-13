@@ -325,6 +325,7 @@ describe("#141 실행기 판정 — 적용하지 않고 제안한다", () => {
       selectionGroups: { requested: [], covered: [], uncovered: [] },
       comparisonKeys: {
         selectionGroupCoverageCount: 0,
+        representativePlaceCount: 0,
         selectedUnionPlaceCount: 0,
         verifiedHoursMismatchCount: 0,
         preferredDateMismatchCount: 0,
@@ -721,8 +722,10 @@ describe("#141 P0-1 수직 — 폴백만으로 대표 명령이 끝까지 간다
 
     // 5) 변경 설명은 실제 diff에서만 나온다 — API 호출 없음
     const summary = changeSummaryOf(before, after);
-    expect(summary.changed).toBe(true);
-    expect(summary.added.map(({ placeId }) => placeId)).toContain(YEONGJIN);
+    // #208 이후 기본 안에서 이미 둘째 날에 있으므로 같은 요청은 성공한 무변경이다.
+    expect(summary.changed).toBe(false);
+    expect(summary.added.map(({ placeId }) => placeId)).not.toContain(YEONGJIN);
+    expect(summary.moved.map(({ placeId }) => placeId)).not.toContain(YEONGJIN);
   });
 
   it("같은 문장을 두 번 처리하면 같은 결과가 나온다", async () => {

@@ -206,6 +206,20 @@ export function validateItinerary(
       "metrics.totalTravelMinutes",
     ));
   }
+  const selectedWorkIds = new Set(constraints.selectedWorkIds);
+  const representativePlaceIds = new Set(repos.workPlaceRelations
+    .filter((relation) => selectedWorkIds.has(relation.workId)
+      && relation.representativeness?.level === "iconic")
+    .map(({ placeId }) => placeId));
+  const representativePlaceCount = [...scheduled]
+    .filter((placeId) => representativePlaceIds.has(placeId)).length;
+  if (representativePlaceCount !== result.comparisonKeys.representativePlaceCount) {
+    violations.push(violation(
+      "METRIC_MISMATCH",
+      `representative place count=${representativePlaceCount}; comparison key=${result.comparisonKeys.representativePlaceCount}`,
+      "comparisonKeys.representativePlaceCount",
+    ));
+  }
   const verifiedHoursMismatchCount = result.warnings.filter(
     ({ detail }) => detail === "OUTSIDE_VERIFIED_HOURS",
   ).length;
@@ -316,11 +330,13 @@ export function validateItinerary(
       || JSON.stringify(alternativeCoveredGroups) !== JSON.stringify(recommendedCoveredGroups)
       || alternative.comparisonKeys.selectionGroupCoverageCount
         !== result.comparisonKeys.selectionGroupCoverageCount
+      || alternative.comparisonKeys.representativePlaceCount
+        !== result.comparisonKeys.representativePlaceCount
       || alternative.comparisonKeys.selectedUnionPlaceCount
         !== result.comparisonKeys.selectedUnionPlaceCount) {
       violations.push(violation(
         "METRIC_MISMATCH",
-        "alternative changed selection-group coverage or visited-place count",
+        "alternative changed selection-group coverage, representative-place count, or visited-place count",
         `${path}.comparisonKeys`,
       ));
     }

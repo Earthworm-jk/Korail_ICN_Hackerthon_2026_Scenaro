@@ -72,17 +72,18 @@ export type CandidateWarning = {
 // #3 최종 결정: 가중합·상수 점수 없이 선택 그룹 충족부터 키를 순서대로 비교한다.
 export type ComparisonKeys = {
   selectionGroupCoverageCount: number; // 1) 배우·작품 요청 그룹 중 실제 방문에 반영된 수(최대 2)
-  selectedUnionPlaceCount: number; // 2) 두 엄격 후보 집합 합집합의 고유 방문 장소 수
-  verifiedHoursMismatchCount: number; // 3) 낮을수록 우선 — 검증된 운영시간 밖 배치 수 (#198)
-  // 4) 낮을수록 우선 — 선호 날짜를 못 지킨 수 (#139). 경고 뒤·이동시간 앞:
+  representativePlaceCount: number; // 2) 선택 작품의 검수된 대표 촬영지 방문 수 (#208)
+  selectedUnionPlaceCount: number; // 3) 두 엄격 후보 집합 합집합의 고유 방문 장소 수
+  verifiedHoursMismatchCount: number; // 4) 낮을수록 우선 — 검증된 운영시간 밖 배치 수 (#198)
+  // 5) 낮을수록 우선 — 선호 날짜를 못 지킨 수 (#139). 경고 뒤·이동시간 앞:
   //    운영시간 신뢰를 깎으면서까지 선호를 강제하지는 않되, 단순 이동시간보다는 사용자 의사를 앞에 둔다.
   preferredDateMismatchCount: number;
-  // 5) 낮을수록 우선 — 못 지킨 순서 쌍 수 (#145). **방문일과 합치지 않는다**: 하나로 합치면
+  // 6) 낮을수록 우선 — 못 지킨 순서 쌍 수 (#145). **방문일과 합치지 않는다**: 하나로 합치면
   //    엔진이 방문일 하나를 어기고 순서 하나를 지키는 식으로 맞바꿀 수 있는데 둘은 같은 무게가 아니다.
   preferredOrderMismatchCount: number;
-  totalTravelMinutes: number; // 6) 열차 + 역–장소 왕복 추정(문전간), 낮을수록 우선
-  transferCount: number; // 7) 낮을수록 우선
-  slackSatisfied: boolean; // 8) 충족 우선 (미달만 불이익, 초과 가점 없음)
+  totalTravelMinutes: number; // 7) 열차 + 역–장소 왕복 추정(문전간), 낮을수록 우선
+  transferCount: number; // 8) 낮을수록 우선
+  slackSatisfied: boolean; // 9) 충족 우선 (미달만 불이익, 초과 가점 없음)
 };
 
 export type SelectionGroupUncoveredReason =

@@ -5,6 +5,7 @@ function cand(partial: Partial<Candidate> & { stableId: string }): Candidate {
   return {
     keys: {
       selectionGroupCoverageCount: 2,
+      representativePlaceCount: 0,
       selectedUnionPlaceCount: 3,
       verifiedHoursMismatchCount: 0,
       preferredDateMismatchCount: 0,
@@ -81,7 +82,19 @@ describe("사전식 비교 (#3 — 가중합 아님)", () => {
     expect(compareCandidates(both, workOnly)).toBeLessThan(0);
   });
 
-  it("그룹 충족 수가 같으면 엄격 합집합의 고유 방문 장소 수로 비교한다", () => {
+  it("그룹 충족 수가 같으면 검수된 대표 촬영지를 포함한 일정이 방문 수보다 우선한다", () => {
+    const iconic = cand({
+      stableId: "a",
+      keys: { representativePlaceCount: 1, selectedUnionPlaceCount: 2 } as never,
+    });
+    const moreButGeneric = cand({
+      stableId: "b",
+      keys: { representativePlaceCount: 0, selectedUnionPlaceCount: 9 } as never,
+    });
+    expect(compareCandidates(iconic, moreButGeneric)).toBeLessThan(0);
+  });
+
+  it("그룹·대표 촬영지 수가 같으면 엄격 합집합의 고유 방문 장소 수로 비교한다", () => {
     const moreUnion = cand({ stableId: "a", keys: { selectedUnionPlaceCount: 4 } as never });
     const lessUnion = cand({ stableId: "b", keys: { selectedUnionPlaceCount: 3 } as never });
     expect(compareCandidates(moreUnion, lessUnion)).toBeLessThan(0);

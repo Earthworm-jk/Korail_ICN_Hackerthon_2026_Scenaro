@@ -239,8 +239,8 @@ const GatewayLeg = z.object({
 `generateItineraryWithGatewayAlternatives()`로 결합 결과를 검증한다.
 
 철도 시간표 기반 `verifiedAlternatives`는 별도 플래너를 다시 돌리지 않는다. 핵심 탐색에서 이미
-귀환·공항 도착 마감까지 통과한 완성 후보만 재사용한다. 추천과 선택 그룹 충족 수 및 방문 수가
-같은 후보 중 실제 `totalTravelMinutes`가 줄거나 `transferCount`가 줄 때만 대안이 된다. 각 축의
+귀환·공항 도착 마감까지 통과한 완성 후보만 재사용한다. 추천과 선택 그룹 충족 수, 대표 촬영지 수,
+방문 수가 같은 후보 중 실제 `totalTravelMinutes`가 줄거나 `transferCount`가 줄 때만 대안이 된다. 각 축의
 최선 후보를 결정적으로 고르고 같은 전체 일정은 합쳐 최대 2개로 제한한다. 따라서 같은 대안이
 `faster`와 `fewer_transfers`를 동시에 가질 수 있고, 개선 후보가 없으면 필드 자체를 생략한다.
 대안의 `days`·경고·미배치 사유·측정값도 추천과 같은 조립 경로에서 만들며 부분 구간 패치는 없다.
@@ -368,19 +368,20 @@ type CandidateWarning = {
 
 키를 순서대로 비교하고, 앞 키에서 갈리면 뒤 키는 보지 않는다.
 작품을 배우보다 절대 우선하지 않는다. 두 선택 그룹의 사용자 의도를 먼저 지키고,
-그 뒤 고유 방문 장소 수와 운영 품질을 비교한다.
+그 뒤 선택 작품의 검수된 대표 촬영지, 고유 방문 장소 수, 운영 품질을 비교한다.
 
 ```ts
 type ComparisonKeys = {
   selectionGroupCoverageCount: number; // 1) 배우·작품 요청 그룹 중 실제 방문에 반영된 수
-  selectedUnionPlaceCount: number;     // 2) 엄격 합집합의 고유 방문 장소 수
-  verifiedHoursMismatchCount: number;  // 3) 검증된 운영시간 밖 배치만, 낮을수록 우선 (#198)
-  preferredDateMismatchCount: number;  // 4) 낮을수록 우선 — 못 지킨 방문일 선호 수 (#139)
-  preferredOrderMismatchCount: number; // 5) 낮을수록 우선 — 못 지킨 순서 쌍 수 (#145)
+  representativePlaceCount: number;    // 2) 선택 작품의 검수된 대표 촬영지 방문 수 (#208)
+  selectedUnionPlaceCount: number;     // 3) 엄격 합집합의 고유 방문 장소 수
+  verifiedHoursMismatchCount: number;  // 4) 검증된 운영시간 밖 배치만, 낮을수록 우선 (#198)
+  preferredDateMismatchCount: number;  // 5) 낮을수록 우선 — 못 지킨 방문일 선호 수 (#139)
+  preferredOrderMismatchCount: number; // 6) 낮을수록 우선 — 못 지킨 순서 쌍 수 (#145)
                                        //    방문일과 합치지 않는다 — 서로 맞바꿀 수 있게 되면 안 된다
-  totalTravelMinutes: number;          // 6) 열차 + 역–장소 왕복 추정(문전간), 낮을수록 우선
-  transferCount: number;               // 7) 낮을수록 우선
-  slackSatisfied: boolean;             // 8) 충족 우선 (미달만 불이익, 초과 가점 없음)
+  totalTravelMinutes: number;          // 7) 열차 + 역–장소 왕복 추정(문전간), 낮을수록 우선
+  transferCount: number;               // 8) 낮을수록 우선
+  slackSatisfied: boolean;             // 9) 충족 우선 (미달만 불이익, 초과 가점 없음)
 };
 ```
 
@@ -390,8 +391,10 @@ type ComparisonKeys = {
 
 동점 타이브레이커(결정성 보장): **출국 전 여유 큼 → 장소 ID·열차번호 사전순.**
 비교 키에 이미 포함된 환승·이동시간은 동점 시점에 같으므로 반복하지 않는다(정의서 v0.5).
-beam pruning도 동일한 1차 키(선택 그룹 충족 수)를 먼저 사용하고, 그 다음
-`readyAt`과 안정 ID로 정렬한다. MVP beam 상한은 1,000개이며 회귀 프리셋으로 결과를 고정한다.
+대표 촬영지 여부는 검수된 작품–장소 관계의 `representativeness`만 사용한다. 텍스트 임베딩이나
+모델 기억으로 런타임에 추측하지 않으며, 사용자가 해당 장소를 제외하면 대표성보다 제외가 우선한다.
+beam pruning도 선택 그룹 충족 수 다음에 대표 촬영지 방문 수를 사용하고, 그 다음 운영시간 충돌,
+`readyAt`, 안정 ID로 정렬한다. MVP beam 상한은 1,000개이며 회귀 프리셋으로 결과를 고정한다.
 
 방문일 선호가 있으면 (#139 6-2) 두 가지가 더해진다.
 
@@ -401,7 +404,7 @@ beam pruning도 동일한 1차 키(선택 그룹 충족 수)를 먼저 사용하
    1,000개를 합집합으로 얹는다. 선호가 없으면 한 톨도 달라지지 않고, 있어도 상한은 2,000개다.
 
 (2)가 필요한 이유: 선호 상태가 기존 자리를 밀어내면 밀려난 상태가 이어 가던 탐색이 끊겨
-**방문 장소 수가 준다.** 장소 수는 비교 키 2번으로 선호(4번)보다 위라 계약 위반이다.
+**방문 장소 수가 준다.** 장소 수는 비교 키 3번으로 선호(5번)보다 위라 계약 위반이다.
 실측에서 선호 하나를 넣자 9곳이 8곳으로 줄었고, 자리를 더하자 9곳이 그대로 유지됐다.
 
 ## 7. 출력 타입
