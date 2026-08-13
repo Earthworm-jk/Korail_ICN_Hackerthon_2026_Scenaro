@@ -1,7 +1,14 @@
 import { describe, expect, it } from "vitest";
 import {
   BASE_VIEWPORT,
+  BASE_ASPECT,
+  autoViewportFor,
+  nextViewportFor,
+  baseViewportFor,
+  withAspect,
   COASTLINE_DETAIL_SCALE,
+  ROUTE_FIT_SCALE,
+  aspectOf,
   FOCUS_SCALE,
   MAX_SCALE,
   MIN_SCALE,
@@ -359,5 +366,170 @@ describe("지도 표시 창", () => {
       right: BASE_VIEWPORT.x + BASE_VIEWPORT.width,
       bottom: BASE_VIEWPORT.y + BASE_VIEWPORT.height,
     });
+  });
+});
+
+
+/**
+ * 상자 비율에 맞춘 창 (#146 팀 결정)
+ *
+ * `preserveAspectRatio="meet"`는 창이 상자보다 세로로 길면 높이에 맞춰 줄이고 좌우를 비운다.
+ * 실측에서 상자 799x341에 창 194x256이 들어가 지도가 258px만 쓰고 양옆 270px씩 비었다.
+ * 창을 상자와 같은 비율로 만들면 그 띠가 생길 자리가 없다.
+ */
+describe("상자 비율 맞춤", () => {
+  const WIDE = 799 / 341; // 실측한 카드 비율
+  const 강원 = [{ x: 150, y: 250 }, { x: 205, y: 262 }];   // 서울 - 강릉, 가로로 짧다
+  const 전라 = [{ x: 150, y: 250 }, { x: 158, y: 330 }];   // 서울 - 남원, 세로로 길다
+
+  it("창의 비율이 상자와 같아진다 — 좌우 빈 띠가 생기지 않는다", () => {
+    const view = fitTo(강원, ROUTE_FIT_SCALE, WIDE);
+    expect(aspectOf(view)).toBeCloseTo(WIDE, 6);
+  });
+
+  it("비율을 주지 않으면 기본 창 비율 그대로다 — 기존 호출은 그대로 동작한다", () => {
+    expect(aspectOf(fitTo(강원))).toBeCloseTo(BASE_ASPECT, 6);
+    expect(aspectOf(BASE_VIEWPORT)).toBeCloseTo(BASE_ASPECT, 6);
+  });
+
+  /** 권역마다 값을 따로 두지 않는다 — 경계 상자가 다르면 배율이 저절로 다르다 */
+  it("강원 일정과 전라 일정의 배율이 다르게 잡힌다", () => {
+    const gangwon = scaleOf(fitTo(강원, ROUTE_FIT_SCALE, WIDE));
+    const jeolla = scaleOf(fitTo(전라, ROUTE_FIT_SCALE, WIDE));
+    expect(gangwon).not.toBeCloseTo(jeolla, 2);
+    // 세로로 긴 경로는 가로로 긴 창에서 더 많이 빼야 담긴다
+    expect(jeolla).toBeLessThan(gangwon);
+  });
+
+  it("두 경로 모두 창 안에 들어온다", () => {
+    for (const points of [강원, 전라]) {
+      const view = fitTo(points, ROUTE_FIT_SCALE, WIDE);
+      for (const point of points) expect(contains(view, point)).toBe(true);
+    }
+  });
+
+  it("동선 상한은 해안선이 버티는 배율까지다 — 그 위로는 배경이 물러난다", () => {
+    expect(ROUTE_FIT_SCALE).toBe(COASTLINE_DETAIL_SCALE);
+    expect(scaleOf(fitTo([{ x: 200, y: 300 }], ROUTE_FIT_SCALE, WIDE))).toBeLessThanOrEqual(ROUTE_FIT_SCALE);
+  });
+
+  /** 가로로 넓은 창은 기본 창보다 넓어질 수 있다 — 가둘 자리가 없으면 가운데 둔다 */
+  it("기본 창보다 넓은 창은 가로로 가운데 정렬된다", () => {
+    const view = clampViewport({ x: -999, y: 250, width: BASE_VIEWPORT.width * 2, height: BASE_VIEWPORT.height });
+    expect(view.x + view.width / 2).toBeCloseTo(BASE_VIEWPORT.x + BASE_VIEWPORT.width / 2, 6);
+  });
+
+  it("확대해도 상자 비율이 유지된다 — 조작 중에 띠가 다시 생기지 않는다", () => {
+    const view = fitTo(강원, ROUTE_FIT_SCALE, WIDE);
+    const zoomed = zoomByStep(view, ZOOM_STEP);
+    expect(aspectOf(zoomed)).toBeCloseTo(WIDE, 6);
+    expect(aspectOf(panBy(zoomed, 3, 3))).toBeCloseTo(WIDE, 6);
+  });
+});
+
+
+/**
+ * 상자 비율은 자동 맞춤 여부와 무관하게 유지된다 (PR #206 리뷰)
+ *
+ * 초판은 경로 자동 맞춤 경로에만 비율을 붙여서, 촬영지 지도·오버레이 등록·해제·키보드
+ * 초기화에서 기본 세로 비율 창이 다시 들어가 좌우 빈 띠가 되살아났다. 갈래마다 따로
+ * 처리하지 않고 한 함수로 모은다.
+ */
+describe("상자 비율 유지", () => {
+  const WIDE = 799 / 341;
+  const TALL = 390 / 700; // 모바일 세로
+  const 경로 = [{ x: 150, y: 250 }, { x: 205, y: 262 }];
+  const 오버레이 = [{ x: 180, y: 300 }];
+
+  it("담을 지점이 없어도 기본 창이 상자 비율을 쓴다 — 촬영지 지도의 첫 창", () => {
+    expect(aspectOf(autoViewportFor([], WIDE))).toBeCloseTo(WIDE, 6);
+    expect(aspectOf(baseViewportFor(WIDE))).toBeCloseTo(WIDE, 6);
+  });
+
+  it("오버레이를 켤 때도 상자 비율이다", () => {
+    expect(aspectOf(fitTo(오버레이, FOCUS_SCALE, WIDE))).toBeCloseTo(WIDE, 6);
+  });
+
+  it("오버레이를 끄면 경로 창으로 돌아가고 비율은 그대로다", () => {
+    const 해제후 = autoViewportFor(경로, WIDE);
+    expect(aspectOf(해제후)).toBeCloseTo(WIDE, 6);
+    for (const point of 경로) expect(contains(해제후, point)).toBe(true);
+  });
+
+  /** 회전·반응형으로 상자가 바뀌었다고 보던 자리를 잃으면 안 된다 */
+  it("사용자가 옮긴 창은 중심과 배율을 지키고 비율만 바꾼다", () => {
+    const moved = panBy(zoomByStep(fitTo(경로, ROUTE_FIT_SCALE, WIDE), ZOOM_STEP), 4, 3);
+    const rotated = withAspect(moved, TALL);
+    expect(aspectOf(rotated)).toBeCloseTo(TALL, 6);
+    expect(scaleOf(rotated)).toBeCloseTo(scaleOf(moved), 6);
+    expect(rotated.x + rotated.width / 2).toBeCloseTo(moved.x + moved.width / 2, 6);
+  });
+
+  /**
+   * 재리뷰 지적: 오버레이를 켜 둔 채 상자가 바뀌면 경로로 다시 맞춰져 대표 지점이
+   * 화면 밖으로 나갔다. 오버레이가 켜져 있으면 그쪽이 우선한다.
+   */
+  it("오버레이를 켠 채 상자가 바뀌어도 대표 지점이 화면에 남는다", () => {
+    const 경로밖오버레이 = [{ x: 265, y: 385 }]; // 부산 근처 — 서울-강릉 경로 밖
+    expect(contains(autoViewportFor(경로, WIDE), 경로밖오버레이[0])).toBe(false);
+
+    const 오버레이창 = fitTo(경로밖오버레이, FOCUS_SCALE, WIDE);
+    expect(contains(오버레이창, 경로밖오버레이[0])).toBe(true);
+
+    // 상자 비율이 바뀌어도 오버레이 기준으로 다시 맞춘다
+    const 회전후 = fitTo(경로밖오버레이, FOCUS_SCALE, TALL);
+    expect(aspectOf(회전후)).toBeCloseTo(TALL, 6);
+    expect(contains(회전후, 경로밖오버레이[0])).toBe(true);
+  });
+
+  it("초기화는 한 경로다 — 버튼과 키보드가 같은 창을 만든다", () => {
+    // 화면은 둘 다 autoViewportFor(현재 맞춤 대상, 현재 상자 비율)을 부른다
+    expect(autoViewportFor(경로, WIDE)).toEqual(autoViewportFor(경로, WIDE));
+    expect(autoViewportFor([], WIDE)).toEqual(baseViewportFor(WIDE));
+  });
+});
+
+
+/**
+ * 창 우선순위 (PR #206 재리뷰)
+ *
+ * 비율 effect와 경로 effect가 `boxAspect`를 함께 의존해 연달아 돈다. 각자 창을 정하면
+ * 나중에 도는 쪽이 앞의 결정을 덮는다 — 실제로 오버레이에 맞춘 직후 경로 창이 덮었다.
+ * 규칙을 한 함수로 모아 두 번 불려도 같은 답이 나오게 한다.
+ */
+describe("창 우선순위", () => {
+  const WIDE = 799 / 341;
+  const TALL = 390 / 700;
+  const 경로 = [{ x: 150, y: 250 }, { x: 205, y: 262 }];
+  const 오버레이 = [{ x: 265, y: 385 }]; // 경로 밖
+  const base = { current: BASE_VIEWPORT, aspect: WIDE, userMoved: false, overlayPoints: [], routePoints: 경로 };
+
+  it("오버레이가 켜져 있으면 경로보다 우선한다", () => {
+    const view = nextViewportFor({ ...base, overlayPoints: 오버레이 });
+    expect(contains(view, 오버레이[0])).toBe(true);
+    expect(aspectOf(view)).toBeCloseTo(WIDE, 6);
+  });
+
+  /** 두 effect가 연달아 돌아도 같은 답이라 덮어쓰기가 성립하지 않는다 */
+  it("두 번 불러도 같은 창이다", () => {
+    const once = nextViewportFor({ ...base, overlayPoints: 오버레이 });
+    const twice = nextViewportFor({ ...base, current: once, overlayPoints: 오버레이 });
+    expect(twice).toEqual(once);
+  });
+
+  it("사용자가 옮긴 창이 가장 우선한다 — 오버레이도 그것을 덮지 않는다", () => {
+    const moved = panBy(zoomByStep(fitTo(경로, ROUTE_FIT_SCALE, WIDE), ZOOM_STEP), 4, 3);
+    const view = nextViewportFor({ ...base, current: moved, userMoved: true, overlayPoints: 오버레이, aspect: TALL });
+    expect(scaleOf(view)).toBeCloseTo(scaleOf(moved), 6);
+    expect(aspectOf(view)).toBeCloseTo(TALL, 6);
+  });
+
+  it("오버레이가 없으면 경로에 맞춘다", () => {
+    const view = nextViewportFor(base);
+    for (const point of 경로) expect(contains(view, point)).toBe(true);
+  });
+
+  it("담을 것이 없으면 상자 비율 기본 창이다", () => {
+    expect(nextViewportFor({ ...base, routePoints: [] })).toEqual(baseViewportFor(WIDE));
   });
 });

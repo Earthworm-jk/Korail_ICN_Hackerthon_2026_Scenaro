@@ -40,7 +40,11 @@ import {
   ZOOM_STEP,
   boundsOf,
   scaleBarOf,
+  BASE_ASPECT,
+  autoViewportFor,
+  FOCUS_SCALE,
   fitTo,
+  nextViewportFor,
   isZoomed,
   panBy,
   pointFromClient,
@@ -586,6 +590,47 @@ export function KoreaMapPanel({
   const [view, setView] = useState<Viewport>(BASE_VIEWPORT);
   const svgRef = useRef<SVGSVGElement | null>(null);
   /**
+   * 지도를 그리는 상자의 가로세로 비 (#146 팀 결정).
+   *
+   * 창의 비율이 상자와 다르면 `preserveAspectRatio="meet"`가 짧은 쪽에 맞춰 줄이고 나머지가
+   * 빈 띠로 남는다 — 상자 799x341에 세로 창을 넣어 좌우가 270px씩 비어 있었다.
+   * 상자를 실측해 창을 같은 비율로 만든다. viewBox를 바꿔도 상자 크기는 레이아웃이 정하므로
+   * 되먹임이 생기지 않는다(실측 확인).
+   */
+  const [boxAspect, setBoxAspect] = useState(BASE_ASPECT);
+  const boxAspectRef = useRef(BASE_ASPECT);
+  /** 사용자가 직접 확대·팬한 뒤에는 자동 맞춤이 그 조작을 덮지 않는다 */
+  const userMovedRef = useRef(false);
+  /**
+   * 자동으로 담아야 할 지점 — 렌더마다 갱신한다.
+   *
+   * 관측자·키보드·오버레이 콜백이 전부 이 값을 읽어야 하는데, 의존성으로 넘기면 배열이
+   * 매 렌더 새로 생겨 콜백이 계속 다시 만들어진다. 최신 값만 필요하므로 ref로 둔다.
+   */
+  const autoFitRef = useRef<readonly { x: number; y: number }[]>([]);
+  /**
+   * 지금 켜져 있는 오버레이 지점 (PR #206 재리뷰).
+   *
+   * 상자 비율이 바뀔 때 경로로 다시 맞추면 **켜 둔 오버레이가 화면 밖으로 나간다.**
+   * 대표 지점이 경로 밖일 수 있고, 그때 `fittedRef`는 여전히 true라 상태와 화면이 어긋난다.
+   * 오버레이가 켜져 있으면 그쪽이 경로보다 우선한다.
+   */
+  const overlayFitRef = useRef<readonly { x: number; y: number }[]>([]);
+  /** 마지막으로 자동 맞춤을 적용한 경로 — 경로가 바뀌면 다시 맞춘다 */
+  const fittedRouteKey = useRef<string | null>(null);
+  const resetView = useCallback(() => {
+    userMovedRef.current = false;
+    fittedRouteKey.current = null;
+    // 오버레이가 켜져 있으면 그 초점을 지킨다 — 되돌리기가 필터를 끄는 것처럼 보이면 안 된다
+    setView((current) => nextViewportFor({
+      current,
+      aspect: boxAspectRef.current,
+      userMoved: false, // 되돌리기는 조작을 지운다
+      overlayPoints: overlayFitRef.current,
+      routePoints: autoFitRef.current,
+    }));
+  }, []);
+  /**
    * 끌고 있는 포인터의 마지막 위치.
    * 여러 개를 들고 있는 이유는 버튼을 바꿔 잡거나 포인터가 겹칠 때 마지막 위치를 잃지 않기
    * 위해서다 — 두 손가락 제스처(핀치)는 다루지 않는다. 모바일 대응은 MVP 범위 밖이다(PR #111).
@@ -596,6 +641,21 @@ export function KoreaMapPanel({
   useEffect(() => {
     viewRef.current = view;
   }, [view]);
+  useEffect(() => {
+    const element = svgRef.current;
+    if (!element || typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver(([entry]) => {
+      const { width, height } = entry.contentRect;
+      if (width <= 0 || height <= 0) return;
+      const next = width / height;
+      // 소수점 흔들림으로 창을 다시 만들지 않는다
+      setBoxAspect((current) => (Math.abs(current - next) > 0.01 ? next : current));
+    });
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, []);
+
+
   const unit = screenUnit(view);
   const scale = scaleOf(view);
   /**
@@ -644,12 +704,17 @@ export function KoreaMapPanel({
     const points = [...entries.values()].map((item) => item.point);
     if (points.length > 0) {
       fittedRef.current = true;
-      setView(fitTo(points));
+      overlayFitRef.current = points;
+      // 오버레이도 상자 비율을 쓴다 — 여기만 기본 비율이면 필터를 켤 때 여백이 되살아난다
+      setView(fitTo(points, FOCUS_SCALE, boxAspectRef.current));
     } else if (fittedRef.current) {
       fittedRef.current = false;
-      setView(BASE_VIEWPORT);
+      overlayFitRef.current = [];
+      // 해제도 같은 자동 맞춤 경로로 — 경로가 있으면 경로에, 없으면 상자 비율 기본 창으로
+      setView(autoViewportFor(autoFitRef.current, boxAspectRef.current));
     }
   }, []);
+
 
   const locale: Locale = tr("app.locale") === "en" ? "en" : "ko";
   const mapView = useMemo<MapViewContextValue>(
@@ -683,6 +748,7 @@ export function KoreaMapPanel({
       if (stuck) return;
 
       event.preventDefault();
+      userMovedRef.current = true;
       const rect = svg.getBoundingClientRect();
       setView((current) =>
         zoomAt(current, factor, pointFromClient(current, rect, event.clientX, event.clientY)),
@@ -693,8 +759,10 @@ export function KoreaMapPanel({
     return () => svg.removeEventListener("wheel", onWheel);
   }, []);
 
-  const zoomBy = useCallback((factor: number) => setView((v) => zoomByStep(v, factor)), []);
-  const resetView = useCallback(() => setView(BASE_VIEWPORT), []);
+  const zoomBy = useCallback((factor: number) => {
+    userMovedRef.current = true;
+    setView((v) => zoomByStep(v, factor));
+  }, []);
 
   const handlePointerDown = useCallback((event: ReactPointerEvent<SVGSVGElement>) => {
     if (event.pointerType === "mouse" && event.button !== 0) return;
@@ -715,6 +783,7 @@ export function KoreaMapPanel({
     // 드래그 팬 — 화면 이동량을 표시 단위로 환산해 그대로 옮긴다
     const dx = event.clientX - previous.x;
     const dy = event.clientY - previous.y;
+    userMovedRef.current = true;
     setView((v) => panBy(v, (dx / rect.width) * v.width, (dy / rect.height) * v.height));
   }, []);
 
@@ -734,15 +803,16 @@ export function KoreaMapPanel({
       ArrowUp: [0, 1],
       ArrowDown: [0, -1],
     };
-    if (event.key === "+" || event.key === "=") setView((v) => zoomByStep(v, ZOOM_STEP));
-    else if (event.key === "-" || event.key === "_") setView((v) => zoomByStep(v, 1 / ZOOM_STEP));
-    else if (event.key === "0") setView(BASE_VIEWPORT);
+    if (event.key === "+" || event.key === "=") { userMovedRef.current = true; setView((v) => zoomByStep(v, ZOOM_STEP)); }
+    else if (event.key === "-" || event.key === "_") { userMovedRef.current = true; setView((v) => zoomByStep(v, 1 / ZOOM_STEP)); }
+    else if (event.key === "0") resetView(); // 버튼과 같은 경로 — 두 초기화가 다른 창을 만들면 안 된다
     else if (moves[event.key]) {
       const [mx, my] = moves[event.key];
+      userMovedRef.current = true;
       setView((v) => panBy(v, mx * v.width * step, my * v.height * step));
     } else return;
     event.preventDefault();
-  }, []);
+  }, [resetView]);
 
   const placePoints = places.map((place) => ({
     place,
@@ -759,6 +829,81 @@ export function KoreaMapPanel({
     railLines,
     roadPairKeys,
   );
+  /**
+   * 자동 맞춤이 담아야 하는 지점들 — 그날 동선의 역과 표시 중인 촬영지 (#146 팀 결정).
+   *
+   * 추천일정에 들어오면 남한 전체가 아니라 **이 일정의 경로가 꽉 차게** 보여야 한다.
+   * 강원 일정과 전라 일정은 경계 상자가 다르므로 배율도 저절로 다르게 잡힌다 — 권역별로
+   * 값을 따로 둘 필요가 없다.
+   */
+  const fitPoints = isRoute
+    ? [
+        ...routeStations.map((station) => project(station.latitude, station.longitude)),
+        ...placePoints.map((item) => item.at),
+      ]
+    : [];
+  /** 경로가 바뀌면 다시 맞춘다 — 같은 경로에서 사용자가 옮긴 창은 그대로 둔다 */
+  const fitKey = isRoute
+    ? `${routeStations.map((station) => station.id).join(">")}|${places.map((place) => place.id).join(",")}`
+    : "";
+
+  /**
+   * 안정 콜백(되돌리기·오버레이)이 읽는 최신 값. 렌더 중에 ref를 건드리지 않는다.
+   * 이 effect가 아래 비율 반응 effect보다 먼저 선언돼 있어야 갱신 순서가 맞다.
+   */
+  useEffect(() => {
+    boxAspectRef.current = boxAspect;
+    autoFitRef.current = fitPoints;
+    // fitPoints는 매 렌더 새 배열이라 fitKey로 갈음한다
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [boxAspect, fitKey]);
+
+  /**
+   * 상자 비율이 바뀌면 창도 따라간다 (PR #206 리뷰).
+   *
+   * 자동 맞춤 여부와 **분리한다.** 사용자가 이미 옮긴 창이라면 중심·배율을 보존하고 비율만
+   * 새 상자에 맞춘다 — 회전이나 반응형으로 상자가 바뀌었다고 보던 자리를 잃으면 안 된다.
+   */
+  useEffect(() => {
+    setView((current) => nextViewportFor({
+      current,
+      aspect: boxAspect,
+      userMoved: userMovedRef.current,
+      overlayPoints: overlayFitRef.current,
+      routePoints: autoFitRef.current,
+    }));
+  }, [boxAspect]);
+
+  /**
+   * 경로에 창을 맞춘다.
+   *
+   * 사용자가 직접 확대·팬한 뒤에는 덮지 않는다 — 조작을 되돌리면 지도가 말을 안 듣는 것처럼
+   * 느껴진다. 다만 경로 자체가 바뀌면(다른 날, 다른 장소 선택) 그 조작의 전제가 사라진 것이라
+   * 다시 맞춘다.
+   */
+  useEffect(() => {
+    if (!isRoute || fitPoints.length === 0) return;
+    const routeChanged = fittedRouteKey.current !== fitKey;
+    if (!routeChanged && userMovedRef.current) return;
+    if (routeChanged) userMovedRef.current = false;
+    fittedRouteKey.current = fitKey;
+    /*
+     * 같은 우선순위 함수를 쓴다. 비율 effect와 이 effect는 `boxAspect`를 함께 의존해
+     * 연달아 도는데, 각자 창을 정하면 나중에 도는 쪽이 앞의 결정을 덮는다 (재리뷰 지적).
+     */
+    setView((current) => nextViewportFor({
+      current,
+      aspect: boxAspect,
+      userMoved: userMovedRef.current,
+      overlayPoints: overlayFitRef.current,
+      routePoints: fitPoints,
+    }));
+    // fitPoints는 매 렌더 새 배열이라 의존성에 넣지 않는다 — 내용이 바뀌면 fitKey가 바뀐다
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isRoute, fitKey, boxAspect]);
+
+  /** 되돌리기는 "경로에 맞춘 창"으로 — 남한 전체로 빼면 방금 보던 일정이 사라진다 */
+
   // key는 인덱스가 아니라 내용으로 잡는다 — 바뀐 구간만 다시 그려지게 (routePathKeys 주석 참고)
   const routeShapes = routeSegments.map((segment) => ({
     kind: segment.kind,

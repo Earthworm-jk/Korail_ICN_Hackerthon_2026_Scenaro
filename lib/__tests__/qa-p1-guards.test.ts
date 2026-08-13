@@ -112,3 +112,43 @@ describe("권역 창 — 시각과 분량이 같은 기준을 쓴다", () => {
     expect(wizard).not.toContain("{fmtTime(window.startAt)}");
   });
 });
+
+/**
+ * 지도 초기화 경로 단일화 (PR #206 리뷰)
+ *
+ * 갈래마다 다른 창을 만들면 "버튼과 키보드가 다른 결과"가 된다. 화면이 한 함수만 쓰는지
+ * 원본에서 확인한다 — 전이 자체는 map-viewport.test.ts가 본다.
+ */
+describe("지도 창 초기화", () => {
+  const map = readFileSync(
+    fileURLToPath(new URL("../../app/korea-map.tsx", import.meta.url)),
+    "utf8",
+  );
+
+  it("기본 창을 직접 넣는 자리가 남아 있지 않다", () => {
+    expect(map).not.toContain("setView(BASE_VIEWPORT)");
+  });
+
+  it("키보드 0이 되돌리기 버튼과 같은 경로를 쓴다", () => {
+    expect(map).toContain('event.key === "0") resetView()');
+  });
+
+  it("오버레이 등록·해제도 현재 상자 비율을 쓴다", () => {
+    expect(map).toContain("fitTo(points, FOCUS_SCALE, boxAspectRef.current)");
+    expect(map).toContain("autoViewportFor(autoFitRef.current, boxAspectRef.current)");
+  });
+
+  /**
+   * 두 effect가 boxAspect를 함께 의존해 연달아 돈다. 각자 창을 정하면 나중 것이 앞을 덮는다.
+   * 규칙은 한 함수에만 있어야 한다 (재리뷰).
+   */
+  it("모든 창 결정이 같은 우선순위 함수를 지난다", () => {
+    const calls = map.match(/nextViewportFor\(\{/g) ?? [];
+    expect(calls.length).toBe(3); // 비율 effect · 경로 effect · 되돌리기
+  });
+
+  it("우선순위를 화면에 다시 늘어놓지 않는다", () => {
+    expect(map).not.toContain("overlayFitRef.current.length > 0 ?");
+    expect(map).not.toContain("if (userMovedRef.current) return withAspect");
+  });
+});

@@ -32,7 +32,7 @@ export const BASE_VIEWPORT: Viewport = {
  * 흩어져 있으면 왜 이 숫자인지, 서로 어떤 관계인지 알 수 없다. 순서는 항상 아래를 지키며
  * `map-viewport.test.ts`의 `배율 사다리`가 이를 고정한다.
  *
- *   MIN_SCALE(1) < FOCUS_SCALE(3) <= COASTLINE_DETAIL_SCALE(5) < MAX_SCALE(200)
+ *   MIN_SCALE(1) < FOCUS_SCALE(3) <= ROUTE_FIT_SCALE = COASTLINE_DETAIL_SCALE(5) < MAX_SCALE(200)
  *
  *   1    기본 창. 남한 전체가 들어온다. 축소 하한이자 팬 한계
  *   3    자동 배치가 잡는 상한. 사람이 아니라 코드가 창을 정할 때는 여기까지만 당긴다
@@ -65,6 +65,16 @@ export const FOCUS_SCALE = 3;
  * 시내 지도처럼 읽힌다. 가진 근거보다 정밀해 보이는 표시를 만들지 않는다.
  */
 export const COASTLINE_DETAIL_SCALE = 5;
+
+/**
+ * 동선 자동 맞춤이 잡는 상한 (#146 팀 결정).
+ *
+ * `FOCUS_SCALE`(3)은 지점 하나를 보여주면서 주변 역까지 남기려는 값이라, 동선 전체를 담기엔
+ * 너무 넓다 — 강원 일정에서 경로가 창의 가로 39%·세로 15%만 차지했다(실측). 동선은 이미
+ * 여러 지점을 잇고 있어 "어디쯤인가"를 경로 자체가 말해 준다. 그래서 해안선이 버티는
+ * 한계까지 당긴다. 그 위로는 배경이 물러나므로 `COASTLINE_DETAIL_SCALE`을 넘기지 않는다.
+ */
+export const ROUTE_FIT_SCALE = COASTLINE_DETAIL_SCALE;
 /**
  * 확대 상한.
  *
@@ -111,9 +121,28 @@ function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));
 }
 
-/** 현재 배율 — 기본 창 대비 몇 배로 확대돼 있는지 */
+/**
+ * 창의 가로세로 비 — 창을 그리는 상자의 비율과 같아야 letterbox(좌우 빈 띠)가 생기지 않는다.
+ *
+ * 예전에는 모든 창이 기본 창의 비율을 그대로 썼다. 그래서 가로로 긴 카드에 세로로 긴 창을
+ * 넣으면 `preserveAspectRatio="meet"`가 높이에 맞춰 줄이고 좌우가 통째로 비었다
+ * (실측: 상자 799x341에 창 194x256 -> 지도가 258px만 쓰고 양옆 270px씩 빔).
+ */
+export function aspectOf(view: Viewport): number {
+  return view.width / view.height;
+}
+
+/** 기본 창의 비율 — 비율을 따로 주지 않는 호출은 이 값을 쓴다(기존 동작 유지) */
+export const BASE_ASPECT = BASE_VIEWPORT.width / BASE_VIEWPORT.height;
+
+/**
+ * 현재 배율 — 기본 창 대비 몇 배로 확대돼 있는지.
+ *
+ * **높이를 기준으로 잰다.** 창의 비율이 상자를 따라 달라질 수 있으므로 폭으로 재면 같은
+ * 확대인데도 상자 모양에 따라 값이 달라진다. 기본 비율 창에서는 폭 기준과 결과가 같다.
+ */
 export function scaleOf(view: Viewport): number {
-  return BASE_VIEWPORT.width / view.width;
+  return BASE_VIEWPORT.height / view.height;
 }
 
 /**
@@ -136,14 +165,27 @@ export function isZoomed(view: Viewport): boolean {
  */
 export function clampViewport(view: Viewport): Viewport {
   const scale = clamp(scaleOf(view), MIN_SCALE, MAX_SCALE);
-  const width = BASE_VIEWPORT.width / scale;
+  const aspect = aspectOf(view);
   const height = BASE_VIEWPORT.height / scale;
+  const width = height * aspect;
   return {
     width,
     height,
-    x: clamp(view.x, BASE_VIEWPORT.x, BASE_VIEWPORT.x + BASE_VIEWPORT.width - width),
-    y: clamp(view.y, BASE_VIEWPORT.y, BASE_VIEWPORT.y + BASE_VIEWPORT.height - height),
+    x: clampAxis(view.x, BASE_VIEWPORT.x, BASE_VIEWPORT.width, width),
+    y: clampAxis(view.y, BASE_VIEWPORT.y, BASE_VIEWPORT.height, height),
   };
+}
+
+/**
+ * 한 축을 기본 창 안으로 되돌린다.
+ *
+ * 창이 그 축에서 기본 창보다 넓으면 가둘 자리가 없다 — 가로로 긴 상자에 맞춘 창이 그렇다.
+ * 그때는 억지로 밀지 않고 **가운데 정렬**한다. 남는 쪽은 바다이고, 육지를 한쪽으로
+ * 몰아붙이는 것보다 가운데 두는 편이 어디를 보고 있는지 잃지 않는다.
+ */
+function clampAxis(value: number, base: number, baseSize: number, size: number): number {
+  if (size >= baseSize) return base + (baseSize - size) / 2;
+  return clamp(value, base, base + baseSize - size);
 }
 
 /**
@@ -153,8 +195,8 @@ export function clampViewport(view: Viewport): Viewport {
  */
 export function zoomAt(view: Viewport, factor: number, focus: { x: number; y: number }): Viewport {
   const scale = clamp(scaleOf(view) * factor, MIN_SCALE, MAX_SCALE);
-  const width = BASE_VIEWPORT.width / scale;
   const height = BASE_VIEWPORT.height / scale;
+  const width = height * aspectOf(view); // 확대해도 상자 비율은 그대로다
   // 기준점이 창 안에서 차지하던 상대 위치를 유지한다
   const ratioX = (focus.x - view.x) / view.width;
   const ratioY = (focus.y - view.y) / view.height;
@@ -178,10 +220,10 @@ export function panBy(view: Viewport, dx: number, dy: number): Viewport {
  * 한 지점을 화면 가운데로 가져오며 확대한다 — 테마체험 "대표 지점 보기"가 쓴다.
  * 배율을 못 채우는 창(한계에 걸린 경우)에서도 지점이 창 안에 들어오도록 마지막에 clamp한다.
  */
-export function focusOn(point: { x: number; y: number }, scale: number): Viewport {
+export function focusOn(point: { x: number; y: number }, scale: number, aspect = BASE_ASPECT): Viewport {
   const bounded = clamp(scale, MIN_SCALE, MAX_SCALE);
-  const width = BASE_VIEWPORT.width / bounded;
   const height = BASE_VIEWPORT.height / bounded;
+  const width = height * aspect;
   return clampViewport({ x: point.x - width / 2, y: point.y - height / 2, width, height });
 }
 
@@ -198,8 +240,12 @@ const FIT_MARGIN = 0.18;
  * 실제로는 그 경우만 돌지만, 여기서 여러 개를 받아 두면 추천이 늘어날 때 이 부분은 다시
  * 손대지 않는다 — 필터가 켠 것을 다 보여준다는 규칙은 개수와 무관하다.
  */
-export function fitTo(points: readonly { x: number; y: number }[], maxScale = FOCUS_SCALE): Viewport {
-  if (points.length === 0) return BASE_VIEWPORT;
+export function fitTo(
+  points: readonly { x: number; y: number }[],
+  maxScale = FOCUS_SCALE,
+  aspect = BASE_ASPECT,
+): Viewport {
+  if (points.length === 0) return aspect === BASE_ASPECT ? BASE_VIEWPORT : clampViewport({ ...BASE_VIEWPORT, width: BASE_VIEWPORT.height * aspect });
 
   const xs = points.map((p) => p.x);
   const ys = points.map((p) => p.y);
@@ -208,14 +254,15 @@ export function fitTo(points: readonly { x: number; y: number }[], maxScale = FO
   const minY = Math.min(...ys);
   const maxY = Math.max(...ys);
 
-  // 점들이 차지하는 폭에 여백을 더한 값이 창 안에 들어가야 한다
+  // 점들이 차지하는 폭에 여백을 더한 값이 창 안에 들어가야 한다.
+  // 폭은 상자 비율을 곱해 얻으므로 가로 한계도 높이 기준으로 환산해서 잰다.
   const room = 1 - 2 * FIT_MARGIN;
-  const byWidth = maxX - minX > 0 ? (BASE_VIEWPORT.width * room) / (maxX - minX) : Infinity;
+  const byWidth = maxX - minX > 0 ? (BASE_VIEWPORT.height * aspect * room) / (maxX - minX) : Infinity;
   const byHeight = maxY - minY > 0 ? (BASE_VIEWPORT.height * room) / (maxY - minY) : Infinity;
   const scale = clamp(Math.min(maxScale, byWidth, byHeight), MIN_SCALE, MAX_SCALE);
 
-  const width = BASE_VIEWPORT.width / scale;
   const height = BASE_VIEWPORT.height / scale;
+  const width = height * aspect;
   return clampViewport({
     x: (minX + maxX) / 2 - width / 2,
     y: (minY + maxY) / 2 - height / 2,
@@ -295,4 +342,71 @@ export function pointFromClient(
     x: view.x + ((clientX - rect.left) / rect.width) * view.width,
     y: view.y + ((clientY - rect.top) / rect.height) * view.height,
   };
+}
+
+// ---------------------------------------------------------------------------
+// 상자 비율 유지와 자동 맞춤 (PR #206 리뷰)
+//
+// 둘은 다른 규칙이다. **비율은 언제나 상자를 따른다** — 안 그러면 좌우에 빈 띠가 생긴다.
+// **자동 맞춤은 사용자가 창을 옮기지 않았을 때만** 한다 — 조작을 덮으면 지도가 말을 안 듣는다.
+// 이 둘을 한 곳에서 처리하지 않으면 오버레이·키보드 초기화·회전처럼 갈래가 늘어날 때마다
+// 한쪽만 빠뜨린다(실제로 이 PR 초판이 경로 맞춤에만 비율을 붙였다).
+// ---------------------------------------------------------------------------
+
+/** 상자 비율에 맞춘 기본 창 — 남한 전체가 보이는 축소 한계 */
+export function baseViewportFor(aspect: number): Viewport {
+  return clampViewport({ ...BASE_VIEWPORT, width: BASE_VIEWPORT.height * aspect });
+}
+
+/**
+ * 자동으로 잡아야 할 창 — 담을 지점이 있으면 거기에, 없으면 기본 창에 맞춘다.
+ * 화면 초기화·오버레이 해제·경로 변경이 모두 이 한 함수를 쓴다.
+ */
+export function autoViewportFor(
+  points: readonly { x: number; y: number }[],
+  aspect: number,
+  maxScale = ROUTE_FIT_SCALE,
+): Viewport {
+  return points.length > 0 ? fitTo(points, maxScale, aspect) : baseViewportFor(aspect);
+}
+
+/**
+ * 중심과 배율은 그대로 두고 창 비율만 상자에 맞춘다.
+ *
+ * 사용자가 이미 확대·팬한 뒤에 상자가 바뀌었을 때(회전·반응형) 쓴다. 배율은 높이로 재므로
+ * 높이를 보존하면 확대 정도가 유지되고, 폭만 새 비율로 다시 잡힌다.
+ */
+export function withAspect(view: Viewport, aspect: number): Viewport {
+  const centerX = view.x + view.width / 2;
+  const width = view.height * aspect;
+  return clampViewport({ x: centerX - width / 2, y: view.y, width, height: view.height });
+}
+
+/**
+ * 지금 화면이 보여야 할 창 — 우선순위 한 곳 (PR #206 재리뷰)
+ *
+ * 갈래가 여럿(상자 비율 변경·경로 변경·오버레이 등록/해제·초기화)인데 각자 창을 정하면
+ * **실행 순서에 따라 결과가 달라진다.** 실제로 비율 effect가 오버레이에 맞춘 직후 경로
+ * effect가 같은 의존성으로 다시 돌아 경로 창으로 덮었다.
+ *
+ * 규칙을 여기 하나로 모으면 어느 effect가 먼저 돌든 같은 답이 나오고, 두 번 불려도
+ * 같은 결과라 덮어쓰기가 성립하지 않는다.
+ *
+ * 순서에는 이유가 있다.
+ *   사용자 조작  직접 옮긴 창을 코드가 되돌리면 지도가 말을 안 듣는 것처럼 느껴진다
+ *   오버레이     필터가 켠 것을 다 보여준다는 규칙이 경로보다 좁고 명시적이다
+ *   경로         그 밖의 기본 — 담을 지점이 없으면 기본 창
+ */
+export function nextViewportFor(intent: {
+  current: Viewport;
+  aspect: number;
+  userMoved: boolean;
+  overlayPoints: readonly { x: number; y: number }[];
+  routePoints: readonly { x: number; y: number }[];
+}): Viewport {
+  if (intent.userMoved) return withAspect(intent.current, intent.aspect);
+  if (intent.overlayPoints.length > 0) {
+    return fitTo(intent.overlayPoints, FOCUS_SCALE, intent.aspect);
+  }
+  return autoViewportFor(intent.routePoints, intent.aspect);
 }
