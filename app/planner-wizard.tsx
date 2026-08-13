@@ -2598,6 +2598,7 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
             onToggleKeep={toggleProposalKeep}
             onApplyGoal={applyGoalOutcome}
             onApplyOverselection={applyOverselectionProposal}
+            onPickOverselection={() => setBrowserOpen(true)}
             /* 완료형 문구는 재계산이 실제로 끝난 뒤에만 — 아직 계산 중이거나 실패했을 수 있다 */
             onUndoOverselection={
               selectionStateShown && liveSelectionUndo !== null
@@ -2683,13 +2684,13 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
               </p>
               <p className="mt-1 text-sm text-sc-orange-text">{tr("step4.overselectionDesc")}</p>
               <p className="mt-1 text-xs text-sc-orange-text">{tr("step4.overselectionPreview")}</p>
-              {/* #85 — 후보 목록이 같은 화면 좌측에 있으므로 화면 전환 대신 그쪽으로 이동시킨다 */}
-              <a
-                href="#place-picker"
-                className="mt-3 inline-block rounded border border-sc-orange/50 bg-sc-surface px-3 py-2 text-sm font-medium text-sc-orange-text"
+              <button
+                type="button"
+                onClick={() => setBrowserOpen(true)}
+                className="mt-3 rounded border border-sc-orange/50 bg-sc-surface px-3 py-2 text-sm font-medium text-sc-orange-text"
               >
                 {tr("step4.adjustPlaces")}
-              </a>
+              </button>
             </div>
           )}
 

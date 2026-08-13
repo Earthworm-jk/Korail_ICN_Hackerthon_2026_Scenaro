@@ -76,6 +76,8 @@ type Props = {
     selectedCount: number;
   } | null;
   onApplyOverselection?: () => void;
+  /** 전체 촬영지 선택창을 열어 사용자가 직접 제외 대상을 고른다. */
+  onPickOverselection: () => void;
   onUndoOverselection?: () => void;
   /** 적용 전 개별 수정 (#84 개정) — 제안된 목록에서 하나씩 뺀다 */
   keptPlaceIds?: readonly string[];
@@ -231,6 +233,7 @@ export function ItineraryCommandPanel({
   disabledMessage = "ai.disabled",
   overselection = null,
   onApplyOverselection,
+  onPickOverselection,
   onUndoOverselection,
   keptPlaceIds,
   onToggleKeep,
@@ -345,13 +348,14 @@ export function ItineraryCommandPanel({
               {tr("ai.overselectionApply")
                 .replace("{keep}", String(keptPlaceIds?.length ?? overselection.keepPlaceIds.length))}
             </button>
-            {/* 직접 고르는 길도 남긴다 — #84가 지킨 "사용자가 제외를 결정한다" */}
-            <a
-              href="#place-picker"
+            {/* 직접 고르는 길도 남긴다 — 후보가 모달로 옮겨졌으므로 실제 선택창을 연다. */}
+            <button
+              type="button"
+              onClick={onPickOverselection}
               className="rounded border px-3 py-2 text-sm text-sc-muted hover:border-sc-blue hover:text-sc-blue"
             >
               {tr("ai.overselectionPickMyself")}
-            </a>
+            </button>
           </div>
         </div>
       )}
