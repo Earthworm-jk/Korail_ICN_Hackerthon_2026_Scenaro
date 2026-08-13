@@ -492,8 +492,9 @@ function ZoomControls({
   tr: (key: MessageKey) => string;
 }) {
   const scale = scaleOf(view);
+  // 모바일에서만 44px로 올린다. 1024px 이상은 PR #138에서 맞춘 도크·시트 치수를 보존한다 (#160)
   const button =
-    "flex size-7 items-center justify-center rounded-md border bg-sc-surface text-sm leading-none text-sc-muted hover:border-sc-blue hover:text-sc-blue disabled:opacity-40 disabled:hover:border-inherit disabled:hover:text-sc-muted";
+    "flex size-11 lg:size-7 items-center justify-center rounded-md border bg-sc-surface text-sm leading-none text-sc-muted hover:border-sc-blue hover:text-sc-blue disabled:opacity-40 disabled:hover:border-inherit disabled:hover:text-sc-muted";
 
   /*
    * 지도 위가 아니라 제목 줄에 둔다. 확대·팬을 하면 라벨이 창 어디로든 오기 때문에 지도 위
@@ -891,7 +892,12 @@ export function KoreaMapPanel({
           onPointerMove={handlePointerMove}
           onPointerUp={handlePointerEnd}
           onPointerCancel={handlePointerEnd}
-          className={`block w-full focus-visible:outline-2 focus-visible:outline-sc-blue ${zoomed ? "cursor-grab active:cursor-grabbing" : ""}`}
+          /*
+           * `touch-pan-y` — 지도 위 핀치가 브라우저 페이지 확대로 새어 나가는 것을 막는다.
+           * 세로 스크롤은 남긴다. `touch-none`으로 전부 막으면 지도가 화면을 채웠을 때
+           * 사용자가 페이지를 내리지 못해 갇힌다 (QA 실측). 확대는 아래 줌 버튼으로 한다.
+           */
+          className={`block w-full touch-pan-y focus-visible:outline-2 focus-visible:outline-sc-blue ${zoomed ? "cursor-grab active:cursor-grabbing" : ""}`}
         >
           <desc>{tr(isRoute ? "map.descRoute" : "map.descPlaces")}</desc>
           <path

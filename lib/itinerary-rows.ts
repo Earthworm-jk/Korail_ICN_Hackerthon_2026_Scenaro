@@ -8,7 +8,7 @@
  * 시각 정렬과 동률 처리를 눈으로 확인할 수 없기 때문이다 — 이동과 방문이 같은 분에
  * 걸리면 **이동이 먼저**여야 한다. 사람은 이동한 뒤에 도착한다.
  */
-import { classifyRegionWindow, type RegionWindowKind } from "./engine/region-windows";
+import { classifyRegionWindow, DAY_ACTIVITY_START, type RegionWindowKind } from "./engine/region-windows";
 import type { DayPlan, GatewayRide, ItineraryItem, RegionWindow, TrainRide } from "./engine/types";
 
 export type ItineraryRow =
@@ -91,15 +91,51 @@ export function stationIdsOf(day: DayPlan): string[] {
  * 자정을 넘는 창은 엔진이 `DAY_END` / `DAY_START`로 나누며 현재 분류 계약상 `stay`다.
  * 이 헬퍼는 이미 분류된 창의 표시값만 정하고 분할 조각을 다시 잇지는 않는다.
  */
+const KST_OFFSET_MS = 9 * 60 * 60_000;
+
+/** epoch ms -> `YYYY-MM-DDTHH:mm:00+09:00` — 표시 구간도 스냅샷과 같은 KST 표기를 쓴다 */
+function toKstIso(ms: number): string {
+  const shifted = new Date(ms + KST_OFFSET_MS);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${shifted.getUTCFullYear()}-${pad(shifted.getUTCMonth() + 1)}-${pad(shifted.getUTCDate())}`
+    + `T${pad(shifted.getUTCHours())}:${pad(shifted.getUTCMinutes())}:00+09:00`;
+}
+
+/**
+ * 표시할 구간 — **분량과 같은 기준으로 자른다.**
+ *
+ * `stay`의 `availableMinutes`는 하루 활동 시간대(09:00-21:00)로 클리핑한 값인데, 화면은
+ * 클리핑 전 원본 경계를 시각으로 보여주고 있었다. 자정 분할이 일어난 창에서
+ * `00:00 · 약 3시간 23분`처럼 읽혀 "00:00부터 3시간 23분"으로 오해된다 (QA 실측).
+ *
+ * 시작을 활동 시작 이후로 밀고 거기에 분량을 더해 끝을 만든다. 두 값이 같은 기준을 쓰면
+ * 화면의 시각과 분량이 어긋나지 않는다. 환승·통과 구간은 클리핑 대상이 아니라 원본 그대로다.
+ */
 export function regionWindowPresentationOf(
   window: RegionWindow,
   day: Pick<DayPlan, "items" | "rides">,
-): { kind: RegionWindowKind; minutes: number } {
+): { kind: RegionWindowKind; minutes: number; startAt: string; endAt: string } {
   const kind = classifyRegionWindow(window, day.items, day.rides);
-  if (kind === "stay") return { kind, minutes: window.availableMinutes };
+  if (kind === "stay") {
+    // 문자열을 자르면 Z 표기 입력에서 UTC 날짜를 집는다 — KST로 환산한 날짜를 쓴다
+    const kstDate = toKstIso(Date.parse(window.startAt)).slice(0, 10);
+    const activityStart = Date.parse(`${kstDate}T${DAY_ACTIVITY_START}:00+09:00`);
+    const startMs = Math.max(Date.parse(window.startAt), activityStart);
+    return {
+      kind,
+      minutes: window.availableMinutes,
+      startAt: toKstIso(startMs),
+      endAt: toKstIso(startMs + window.availableMinutes * 60_000),
+    };
+  }
 
   const duration = Date.parse(window.endAt) - Date.parse(window.startAt);
-  return { kind, minutes: Math.max(0, Math.round(duration / 60_000)) };
+  return {
+    kind,
+    minutes: Math.max(0, Math.round(duration / 60_000)),
+    startAt: window.startAt,
+    endAt: window.endAt,
+  };
 }
 
 /**

@@ -119,6 +119,19 @@ import type { StationFacilitiesSnapshotT } from "@/lib/station-facilities";
 import type { StationCoordinatesSnapshotT } from "@/lib/station-coordinates";
 import type { RailGeometrySnapshotT } from "@/lib/rail-geometry";
 import { step1ErrorOf, type TimetableWindow } from "@/lib/timetable-window";
+import {
+  acceptsLookupResponse,
+  flightFieldAfterFailure,
+  flightFieldAfterFlightNoEdit,
+  flightFieldAfterNotFound,
+  flightFieldAfterSuccess,
+  initialLookupCoordinator,
+  invalidateLookup,
+  settleLookup,
+  startLookup,
+  type LookupCoordinator,
+  type LookupPending,
+} from "@/lib/flight-lookup";
 import type { DayPlan } from "@/lib/engine/types";
 import type { RegionWindowKind } from "@/lib/engine/region-windows";
 import { undoPointOf, type UndoPoint } from "@/lib/itinerary-undo";
@@ -139,6 +152,8 @@ type FlightField = {
   flightNo: string;
   at: string; // "YYYY-MM-DDTHH:mm" (KST) — 위젯 교체 후에도 직렬화 형식 유지 (#14)
   notFound: boolean;
+  /** 조회 자체가 실패했다 — 편명이 없는 것(notFound)과 구분한다 */
+  lookupFailed?: boolean;
   source?: "live" | "snapshot"; // 조회 출처 — 폴백 여부 표시 (API_SPEC 2.1)
   status?: string; // 운항 상태 문구 — live 조회 시
   terminal?: string;
@@ -432,6 +447,20 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
   // 파생 여유는 #3 확정 기본값 유지: 입국 +120분, 출국 안전 버퍼 120분(PRD §8.1) — 표현만 절대 시각
   const [airportReady, setAirportReady] = useState({ at: "2026-08-16T12:00", touched: false });
   const [airportDeadline, setAirportDeadline] = useState({ at: "2026-08-18T16:00", touched: false });
+  /*
+   * 조회 진행 상태와 순번을 한 값으로 다룬다 (PR #205 재리뷰). 따로 두면 성공 응답의 시각
+   * 반영이 자기 순번을 올려 버려 `finally`가 자기 진행 표시를 끄지 못하고 버튼이 굳는다.
+   */
+  const lookupRef = useRef<LookupCoordinator>(initialLookupCoordinator);
+  const [lookupPending, setLookupPending] = useState<LookupPending>(null);
+  const applyLookupState = useCallback((next: LookupCoordinator) => {
+    lookupRef.current = next;
+    setLookupPending(next.pending);
+  }, []);
+  /** 사용자가 입력을 고쳤다 — 진행 중 응답을 버리고 진행 표시도 끈다 */
+  const invalidateFlightLookup = useCallback(() => {
+    applyLookupState(invalidateLookup(lookupRef.current));
+  }, [applyLookupState]);
   const [airportAdvisories, setAirportAdvisories] = useState<AirportPassengerAdvisoryPair | null>(null);
   const [dismissedAirportAdvisories, setDismissedAirportAdvisories] = useState<Set<string>>(new Set());
   const airportAdvisoryRequest = useRef(0);
@@ -588,23 +617,41 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
     const field = direction === "arrival" ? arrival : departure;
     const setField = direction === "arrival" ? setArrival : setDeparture;
     if (!field.flightNo.trim()) return;
-    const res = await getFlightInfo(field.flightNo, direction, field.at); // 날짜부 → searchday (#46)
-    if (res.ok) {
-      setField({
-        ...field,
-        notFound: false,
-        source: res.source,
-        status: res.flight.status,
-        terminal: res.flight.terminal,
-      });
-      // live 조회는 변경(예상) 시각이 있으면 그 값을 쓴다 — 예선 약속(지연 반영) 서사
-      (direction === "arrival" ? setArrivalAtInput : setDepartureAtInput)(
-        toLocalInput(res.flight.estimatedAt ?? res.flight.scheduledAt),
-      );
-    } else {
-      setField({ ...field, notFound: true, source: undefined, status: undefined, terminal: undefined });
+    /*
+     * 실호출은 최대 5초다. 그동안 화면이 멈춰 있으면 눌린 건지 렉인지 알 수 없고, 누를 때마다
+     * 서버 액션이 또 나간다. 그리고 서버 액션 자체가 실패하면 부동 프로미스라 아무 문구도
+     * 뜨지 않았다 — 행사장 네트워크에서 그대로 드러나는 경로다 (QA 실측).
+     * AI 패널이 처리 중 입력을 잠그는 것과 같은 규칙을 여기에도 적용한다.
+     */
+    const started = startLookup(lookupRef.current, direction);
+    const sequence = started.sequence;
+    applyLookupState(started.state);
+    try {
+      const res = await getFlightInfo(field.flightNo, direction, field.at); // 날짜부 → searchday (#46)
+      // 그 사이 편명·날짜가 바뀌었으면 이 응답은 다른 편의 결과다 — 화면을 되돌리지 않는다
+      if (!acceptsLookupResponse(lookupRef.current, sequence)) return;
+      if (res.ok) {
+        setField((previous) => flightFieldAfterSuccess(previous, {
+          source: res.source,
+          status: res.flight.status,
+          terminal: res.flight.terminal,
+        }));
+        // live 조회는 변경(예상) 시각이 있으면 그 값을 쓴다 — 예선 약속(지연 반영) 서사
+        (direction === "arrival" ? setArrivalAtInput : setDepartureAtInput)(
+          toLocalInput(res.flight.estimatedAt ?? res.flight.scheduledAt),
+        );
+      } else {
+        setField(flightFieldAfterNotFound);
+      }
+    } catch {
+      // 편명이 없는 것과 조회가 안 된 것은 다르다 — 사용자가 할 일이 다르므로 문구를 나눈다
+      if (!acceptsLookupResponse(lookupRef.current, sequence)) return;
+      setField(flightFieldAfterFailure);
+    } finally {
+      // 자기 진행 표시만 끈다 — 그 사이 새 조회가 시작됐다면 그건 그 요청의 것이다
+      applyLookupState(settleLookup(lookupRef.current, sequence));
     }
-  }, [arrival, departure, setArrivalAtInput, setDepartureAtInput]);
+  }, [applyLookupState, arrival, departure, setArrivalAtInput, setDepartureAtInput]);
 
   // #177 — D-1/D-day 승객예고는 사용자의 시각을 덮어쓰지 않고 위험 신호만 만든다.
   // 서버 Action이 라이브→공유 픽스처 폴백을 책임지고, 늦게 온 옛 응답은 버린다.
@@ -1920,13 +1967,22 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
                     className="w-28 rounded border px-2 py-1 text-sm"
                     value={field.flightNo}
                     placeholder="KE123"
-                    onChange={(e) => setField({ ...field, flightNo: e.target.value, notFound: false })}
+                    onChange={(e) => {
+                      invalidateFlightLookup();
+                      setField((previous) => flightFieldAfterFlightNoEdit(previous, e.target.value));
+                    }}
                   />
-                  <button className="rounded border px-2 py-1 text-sm" onClick={() => lookup(direction)}>
-                    {tr("step1.lookup")}
+                  <button
+                    type="button"
+                    className="rounded border px-2 py-1 text-sm disabled:opacity-50"
+                    disabled={lookupPending !== null || !field.flightNo.trim()}
+                    onClick={() => lookup(direction)}
+                  >
+                    {tr(lookupPending?.direction === direction ? "step1.lookupPending" : "step1.lookup")}
                   </button>
                 </div>
                 {field.notFound && <p className="mt-1 text-xs text-sc-red">{tr("step1.notFound")}</p>}
+                {field.lookupFailed && <p className="mt-1 text-xs text-sc-red">{tr("step1.lookupFailed")}</p>}
                 {field.source && (
                   <p className="mt-1 text-xs">
                     <span className={field.source === "live" ? "rounded bg-sc-airport-soft px-1.5 py-0.5 text-sc-airport-text" : "rounded bg-sc-orange-soft px-1.5 py-0.5 text-sc-orange-text"}>
@@ -1944,7 +2000,11 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
                   min={timetableWindow.firstDate}
                   max={timetableWindow.lastDate}
                   value={field.at}
-                  onChange={direction === "arrival" ? setArrivalAtInput : setDepartureAtInput}
+                  onChange={(at) => {
+                    // 사용자가 날짜를 고치면 진행 중 조회는 다른 날의 결과가 된다
+                    invalidateFlightLookup();
+                    (direction === "arrival" ? setArrivalAtInput : setDepartureAtInput)(at);
+                  }}
                 />
               </div>
             ))}
@@ -2884,7 +2944,7 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
                                 style={{ gridColumnStart: stayColumn(window.startAt) }}
                               >
                                 <span className="block tabular-nums text-xs text-sc-muted" data-row-time>
-                                  {fmtTime(window.startAt)}
+                                  {fmtTime(presentation.startAt)}-{fmtTime(presentation.endAt)}
                                 </span>
                                 <span className="mt-1 flex items-start gap-2" data-row-main>
                                   <span className={`grid size-7 shrink-0 place-items-center rounded-md ${card.iconClass}`}>
