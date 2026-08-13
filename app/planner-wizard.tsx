@@ -35,6 +35,7 @@ import {
   proposalEditAfterChange,
   proposalSignature,
   commandInputUnavailable,
+  overselectionNoticeVisible,
   overselectionProposalOf,
   selectionUndoAfterChange,
   commandPanelUnavailable,
@@ -504,6 +505,8 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
   /** 전체 보기 안의 좁히기 상태. 시트 밖에 필터를 늘어놓으면 시트가 다시 무거워진다 */
   const [browserOpen, setBrowserOpen] = useState(false);
   const [browserStation, setBrowserStation] = useState<string | null>(null);
+  /** 같은 장소 선택 조합에서 사용자가 닫은 과다 일정 경고는 다시 띄우지 않는다. */
+  const [dismissedOverselectionKey, setDismissedOverselectionKey] = useState<string | null>(null);
 
   // step 4 — 결과. 전이 규칙·파생은 lib/itinerary-view 순수 함수로 고정 (PR #35 리뷰 3)
   const [view, dispatchView] = useReducer(reduceItineraryView, initialItineraryView);
@@ -1313,6 +1316,11 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
     () => displayedSelectionCapacity(view, selectedPlaceIds),
     [selectedPlaceIds, view],
   );
+  const showOverselectionNotice = overselectionNoticeVisible({
+    requiresAdjustment: selectionCapacity?.requiresAdjustment === true,
+    selectionKey,
+    dismissedSelectionKey: dismissedOverselectionKey,
+  });
   /**
    * 배치 수를 말해도 되는가 (PR #156 리뷰 3).
    *
@@ -2670,11 +2678,19 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
             />
           )}
 
-          {selectionCapacity?.requiresAdjustment && (
+          {selectionCapacity?.requiresAdjustment && showOverselectionNotice && (
             <div
-              className="mt-4 rounded-lg border border-sc-orange/40 bg-sc-orange-soft p-4"
+              className="relative mt-4 rounded-lg border border-sc-orange/40 bg-sc-orange-soft p-4 pr-12"
               role="status"
             >
+              <button
+                type="button"
+                onClick={() => setDismissedOverselectionKey(selectionKey)}
+                aria-label={tr("common.close")}
+                className="absolute right-3 top-3 flex size-8 items-center justify-center rounded-full text-sc-orange-text hover:bg-sc-surface/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sc-orange"
+              >
+                <X aria-hidden="true" className="size-4" />
+              </button>
               <h3 className="font-medium text-sc-orange-text">{tr("step4.overselectionTitle")}</h3>
               <p className="mt-2 font-medium text-sc-orange-text">
                 {tr("step4.overselectionSummary")
