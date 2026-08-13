@@ -464,6 +464,23 @@ describe("상자 비율 유지", () => {
     expect(rotated.x + rotated.width / 2).toBeCloseTo(moved.x + moved.width / 2, 6);
   });
 
+  /**
+   * 재리뷰 지적: 오버레이를 켜 둔 채 상자가 바뀌면 경로로 다시 맞춰져 대표 지점이
+   * 화면 밖으로 나갔다. 오버레이가 켜져 있으면 그쪽이 우선한다.
+   */
+  it("오버레이를 켠 채 상자가 바뀌어도 대표 지점이 화면에 남는다", () => {
+    const 경로밖오버레이 = [{ x: 265, y: 385 }]; // 부산 근처 — 서울-강릉 경로 밖
+    expect(contains(autoViewportFor(경로, WIDE), 경로밖오버레이[0])).toBe(false);
+
+    const 오버레이창 = fitTo(경로밖오버레이, FOCUS_SCALE, WIDE);
+    expect(contains(오버레이창, 경로밖오버레이[0])).toBe(true);
+
+    // 상자 비율이 바뀌어도 오버레이 기준으로 다시 맞춘다
+    const 회전후 = fitTo(경로밖오버레이, FOCUS_SCALE, TALL);
+    expect(aspectOf(회전후)).toBeCloseTo(TALL, 6);
+    expect(contains(회전후, 경로밖오버레이[0])).toBe(true);
+  });
+
   it("초기화는 한 경로다 — 버튼과 키보드가 같은 창을 만든다", () => {
     // 화면은 둘 다 autoViewportFor(현재 맞춤 대상, 현재 상자 비율)을 부른다
     expect(autoViewportFor(경로, WIDE)).toEqual(autoViewportFor(경로, WIDE));

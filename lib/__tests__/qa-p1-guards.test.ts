@@ -142,4 +142,10 @@ describe("지도 창 초기화", () => {
     expect(map).toContain("withAspect(current, boxAspect)");
     expect(map).toContain("autoViewportFor(autoFitRef.current, boxAspect)");
   });
+
+  /** 켜 둔 오버레이가 경로보다 우선하지 않으면 대표 지점이 화면 밖으로 밀린다 */
+  it("오버레이가 켜져 있으면 경로보다 우선한다", () => {
+    expect(map).toContain("overlayFitRef.current.length > 0");
+    expect(map).toContain("fitTo(overlayFitRef.current, FOCUS_SCALE, boxAspect)");
+  });
 });

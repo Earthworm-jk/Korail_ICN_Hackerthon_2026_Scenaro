@@ -608,12 +608,25 @@ export function KoreaMapPanel({
    * 매 렌더 새로 생겨 콜백이 계속 다시 만들어진다. 최신 값만 필요하므로 ref로 둔다.
    */
   const autoFitRef = useRef<readonly { x: number; y: number }[]>([]);
+  /**
+   * 지금 켜져 있는 오버레이 지점 (PR #206 재리뷰).
+   *
+   * 상자 비율이 바뀔 때 경로로 다시 맞추면 **켜 둔 오버레이가 화면 밖으로 나간다.**
+   * 대표 지점이 경로 밖일 수 있고, 그때 `fittedRef`는 여전히 true라 상태와 화면이 어긋난다.
+   * 오버레이가 켜져 있으면 그쪽이 경로보다 우선한다.
+   */
+  const overlayFitRef = useRef<readonly { x: number; y: number }[]>([]);
   /** 마지막으로 자동 맞춤을 적용한 경로 — 경로가 바뀌면 다시 맞춘다 */
   const fittedRouteKey = useRef<string | null>(null);
   const resetView = useCallback(() => {
     userMovedRef.current = false;
     fittedRouteKey.current = null;
-    setView(autoViewportFor(autoFitRef.current, boxAspectRef.current));
+    // 오버레이가 켜져 있으면 그 초점을 지킨다 — 되돌리기가 필터를 끄는 것처럼 보이면 안 된다
+    setView(
+      overlayFitRef.current.length > 0
+        ? fitTo(overlayFitRef.current, FOCUS_SCALE, boxAspectRef.current)
+        : autoViewportFor(autoFitRef.current, boxAspectRef.current),
+    );
   }, []);
   /**
    * 끌고 있는 포인터의 마지막 위치.
@@ -689,10 +702,12 @@ export function KoreaMapPanel({
     const points = [...entries.values()].map((item) => item.point);
     if (points.length > 0) {
       fittedRef.current = true;
+      overlayFitRef.current = points;
       // 오버레이도 상자 비율을 쓴다 — 여기만 기본 비율이면 필터를 켤 때 여백이 되살아난다
       setView(fitTo(points, FOCUS_SCALE, boxAspectRef.current));
     } else if (fittedRef.current) {
       fittedRef.current = false;
+      overlayFitRef.current = [];
       // 해제도 같은 자동 맞춤 경로로 — 경로가 있으면 경로에, 없으면 상자 비율 기본 창으로
       setView(autoViewportFor(autoFitRef.current, boxAspectRef.current));
     }
@@ -848,11 +863,14 @@ export function KoreaMapPanel({
    * 새 상자에 맞춘다 — 회전이나 반응형으로 상자가 바뀌었다고 보던 자리를 잃으면 안 된다.
    */
   useEffect(() => {
-    setView((current) =>
-      userMovedRef.current
-        ? withAspect(current, boxAspect)
-        : autoViewportFor(autoFitRef.current, boxAspect),
-    );
+    setView((current) => {
+      if (userMovedRef.current) return withAspect(current, boxAspect);
+      // 켜 둔 오버레이가 경로보다 우선한다 — 아니면 대표 지점이 화면 밖으로 밀린다
+      if (overlayFitRef.current.length > 0) {
+        return fitTo(overlayFitRef.current, FOCUS_SCALE, boxAspect);
+      }
+      return autoViewportFor(autoFitRef.current, boxAspect);
+    });
   }, [boxAspect]);
 
   /**
