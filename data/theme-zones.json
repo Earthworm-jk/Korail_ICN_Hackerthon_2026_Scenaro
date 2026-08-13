@@ -15,7 +15,21 @@
     ],
     "verifiedAt": "2026-08-09",
     "latitude": 37.565055,
-    "longitude": 126.976575
+    "longitude": 126.976575,
+    "nearestStationId": "station-seoul",
+    "accessEstimate": {
+      "minutes": 5,
+      "source": "OSRM 대량 선별 서울역→정동·덕수궁 대한제국 근대문화 권역 대표지점 1.8분의 5분 올림값 (2026-08-14; 실시간 교통·교통수단 보장 아님)",
+      "verifiedAt": "2026-08-14"
+    },
+    "openingHours": {
+      "type": "unverified"
+    },
+    "stayMinutes": 60,
+    "stayMetadata": {
+      "category": "culture_venue",
+      "basis": "category_default"
+    }
   },
   {
     "id": "zone-seoul-bukchon-hanok",
@@ -33,6 +47,20 @@
     ],
     "verifiedAt": "2026-08-09",
     "latitude": 37.578999,
-    "longitude": 126.98669
+    "longitude": 126.98669,
+    "nearestStationId": "station-seoul",
+    "accessEstimate": {
+      "minutes": 5,
+      "source": "OSRM 대량 선별 서울역→북촌 한옥·전통문화 권역 대표지점 4.8분의 5분 올림값 (2026-08-14; 실시간 교통·교통수단 보장 아님)",
+      "verifiedAt": "2026-08-14"
+    },
+    "openingHours": {
+      "type": "unverified"
+    },
+    "stayMinutes": 60,
+    "stayMetadata": {
+      "category": "culture_venue",
+      "basis": "category_default"
+    }
   }
 ]

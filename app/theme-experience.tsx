@@ -3,6 +3,7 @@
  * 테마체험 권역 카드 (#80 · #14 v0.6 계약)
  */
 import { Sparkles } from "lucide-react";
+import Image from "next/image";
 import { useRef } from "react";
 import { project } from "@/lib/korea-map-projection";
 import { useMapOverlayEntry, useMapView } from "./korea-map";
@@ -55,15 +56,12 @@ export function ThemeExperienceChip({ result, stationName, locale, tr, mapVisibl
   onToggleMap: () => void;
 }) {
   const popoverRef = useRef<HTMLDivElement>(null);
-  // 조회 전·스냅샷 부재는 아는 게 없다 — 아무 말도 하지 않는다
-  if (result === null || result.status === "unavailable") return null;
+  // 조회 전·스냅샷 부재는 아는 게 없다 — 아무 말도 하지 않는다.
+  // 추천이 없을 때도 마찬가지다 — 고를 수도 없는 것의 부재를 칩으로 알리지 않는다.
+  if (result === null || result.status !== "ok") return null;
 
-  const label = tr(result.status === "ok" ? "step3.chipThemeAvailable" : "step3.chipThemeNone");
+  const label = tr("step3.chipThemeAvailable");
   const chipClass = "rounded-full border px-2 py-0.5 text-sc-muted";
-
-  if (result.status !== "ok") {
-    return <span className={chipClass} title={tr("theme.statusNone")}>{label}</span>;
-  }
 
   const popoverId = "theme-experience-detail";
   return (
@@ -85,6 +83,16 @@ export function ThemeExperienceChip({ result, stationName, locale, tr, mapVisibl
         aria-labelledby="theme-experience-detail-title"
         className="m-auto w-[min(320px,calc(100vw-32px))] rounded-xl border bg-sc-surface p-3 text-left shadow-2xl backdrop:bg-black/20"
       >
+        {result.photo && (
+          <Image
+            src={result.photo.src}
+            alt={result.photo.alt[locale]}
+            width={640}
+            height={409}
+            unoptimized
+            className="mb-2 h-24 w-full rounded-lg object-cover"
+          />
+        )}
         <p id="theme-experience-detail-title" className="flex items-center gap-1.5 text-sm font-semibold">
           <Sparkles aria-hidden="true" className="size-4 shrink-0" />
           {result.theme[locale]}

@@ -81,7 +81,6 @@ import {
   reduceItineraryView,
   rejectedPlaces as deriveRejectedPlaces,
   showEmpty,
-  themeChipState,
   type SelectableAlternative,
 } from "@/lib/itinerary-view";
 import { selectionResultIsCurrent } from "@/lib/selection-capacity";
@@ -92,7 +91,7 @@ import { fromKstLocalInput as fromLocalInput, toKstLocalInput as toLocalInput } 
 import { formatFlightStatus } from "@/lib/flight-status";
 import { formatEpisodeLabel } from "@/lib/episode-label";
 import { splitSourceLink } from "@/lib/source-link";
-import { placePhoto } from "@/lib/place-photos";
+import { photoCredit, placePhoto } from "@/lib/place-photos";
 import { PlaceTypeIcon } from "./place-type-icon";
 import { diffItineraries, type ItineraryDiff } from "@/lib/itinerary-diff";
 import { gatewayPlanningBaselineOf } from "@/lib/engine/gateway-baseline";
@@ -126,7 +125,7 @@ import {
   stationIdsOf,
 } from "@/lib/itinerary-rows";
 import { MoveRow } from "./move-row";
-import { ThemeExperienceChip, ThemeExperienceMapOverlay } from "./theme-experience";
+import { ThemeExperienceMapOverlay } from "./theme-experience";
 import { TrainLegModal, legDurationLabel, type TrainLegDetail } from "./train-leg-modal";
 import { getThemeExperience, type ThemeExperienceResult } from "@/lib/actions/theme-experience";
 import type { StationFacilitiesSnapshotT } from "@/lib/station-facilities";
@@ -221,17 +220,6 @@ const REGION_WINDOW_CARD = {
  * 여러 곳을 연달아 끄는 조작에서 매번 돌지 않도록 마지막 토글만 계산한다.
  */
 const AUTO_PLAN_DEBOUNCE_MS = 400;
-
-/** #80 카드의 "OO 권역 일정과 연결" 문구 — 추천 권역과 같은 권역의 첫 일정 역 */
-function themeStationLabel(
-  days: DayPlan[],
-  result: ThemeExperienceResult | null,
-  stationName: (id: string) => string,
-): string | null {
-  if (result?.status !== "ok") return null;
-  const window = days.flatMap((day) => day.regionWindows).find((w) => w.regionId === result.regionId);
-  return window ? stationName(window.stationId) : null;
-}
 
 // #14 합의(2026-08-08): datetime-local은 시각 표기가 앱 locale이 아니라 브라우저 UI 언어를
 // 따라 영어 모드에 '오전/오후'가 남는다 — 날짜 input + 24시간제 시/분 select로 교체 (A6).
@@ -332,13 +320,15 @@ function usableWindowText(readyAt: string, deadlineAt: string): string | null {
   return `${fmtMonthDay(readyAt)} ${readyAt.split("T")[1]} – ${fmtMonthDay(deadlineAt)} ${deadlineAt.split("T")[1]}`;
 }
 
-function SummarySidebar({ arrivalAt, departureAt, readyAt, deadlineAt, actors, works, placeCount, locale, tr, collapsed, onToggle }: {
+function SummarySidebar({ arrivalAt, departureAt, readyAt, deadlineAt, actors, works, themeZones, placeCount, locale, tr, collapsed, onToggle }: {
   arrivalAt: string;
   departureAt: string;
   readyAt: string;
   deadlineAt: string;
   actors: ActorSummary[];
   works: WorkSummary[];
+  /** 고른 테마체험 권역 — 촬영지가 아니라 권역이라 배우·작품과 다른 색으로 선다 */
+  themeZones: { id: string; name: { ko: string; en: string } }[];
   placeCount: number;
   locale: Locale;
   tr: (key: MessageKey) => string;
@@ -351,7 +341,7 @@ function SummarySidebar({ arrivalAt, departureAt, readyAt, deadlineAt, actors, w
   const nightsLabel = tr("summary.nights")
     .replace("{n}", String(nights))
     .replace("{d}", String(nights + 1));
-  const hasContent = actors.length > 0 || works.length > 0;
+  const hasContent = actors.length > 0 || works.length > 0 || themeZones.length > 0;
   return (
     // 제목 줄("선택 요약")은 두지 않는다 — 각 항목이 제 이름을 달고 있어 한 겹 더
     // 얹으면 좁은 열에서 자리만 먹는다. 이름은 aria-label로 남는다
@@ -363,19 +353,23 @@ function SummarySidebar({ arrivalAt, departureAt, readyAt, deadlineAt, actors, w
       // 거기서는 흐름 안 한 줄로 되돌린다
       className="relative border-b bg-sc-subtle py-4 pl-5 pr-14 md:flex md:flex-col md:border-b-0 md:border-r md:px-4 md:py-5"
     >
-      <button
-        type="button"
-        aria-expanded={!collapsed}
-        className="absolute right-4 top-4 rounded border px-1.5 py-0.5 text-xs text-sc-muted hover:border-sc-blue hover:text-sc-blue md:static md:mb-3 md:self-end"
-        onClick={onToggle}
-      >
-        {collapsed ? "＋" : "－"}
-        <span className="sr-only">{tr(collapsed ? "summary.expand" : "summary.collapse")}</span>
-      </button>
-      {/* 접힘은 `hidden` 속성이 맡는다 — flex 유틸리티를 늘 붙이면 display:flex가
-          그 속성을 이겨 접기가 먹지 않는다. 펼쳤을 때만 열을 채우게 한다 */}
-      <div hidden={collapsed} className={collapsed ? undefined : "md:flex md:flex-1 md:flex-col"}>
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-1 md:gap-4">
+      {/* 헤더 자리. 제목은 걷었고 접기 버튼만 남았지만 이 칸 자체는 지운다고 없어지지
+          않는다 — 3단계 CSS가 `aside > div:first-child`를 헤더로, `div:nth-child(2)`를
+          항목 그리드로 잡는다. 사이에 래퍼를 끼우면 3단계 요약 막대가 무너진다 */}
+      <div className="flex items-center justify-end">
+        <button
+          type="button"
+          aria-expanded={!collapsed}
+          className="absolute right-4 top-4 rounded border px-1.5 py-0.5 text-xs text-sc-muted hover:border-sc-blue hover:text-sc-blue md:static md:mb-1"
+          onClick={onToggle}
+        >
+          {collapsed ? "＋" : "－"}
+          <span className="sr-only">{tr(collapsed ? "summary.expand" : "summary.collapse")}</span>
+        </button>
+      </div>
+      {/* 접힘은 `hidden` 속성이 맡는다 — `grid` 유틸리티를 늘 붙이면 display:grid가
+          그 속성을 이겨 접기가 먹지 않는다. 펼쳤을 때만 붙인다 */}
+      <div hidden={collapsed} className={collapsed ? undefined : "grid grid-cols-2 gap-3 md:grid-cols-1 md:gap-4"}>
         <div>
           <span className="block text-xs text-sc-muted">{tr("summary.period")}</span>
           <strong className="mt-0.5 block text-sm font-medium">
@@ -402,6 +396,19 @@ function SummarySidebar({ arrivalAt, departureAt, readyAt, deadlineAt, actors, w
               {works.map((w) => (
                 <span key={w.id} className="rounded-full bg-sc-airport px-2 py-0.5 text-xs text-white">{w.title[locale]}</span>
               ))}
+              {/* 권역은 촬영지가 아니라 성격이 다르다 — 보라로 갈라 놓는다.
+                  권역 이름이 아니라 분류를 적는다. 이름("정동·덕수궁 대한제국 근대문화
+                  권역")은 알약에 담기엔 길어 잘리고, 여기서 알려야 할 것은 어떤 권역인지가
+                  아니라 테마체험을 골랐다는 사실이다. 이름은 목록·일정에 그대로 있다 */}
+              {themeZones.length > 0 && (
+                <span
+                  className="rounded-full bg-sc-theme px-2 py-0.5 text-xs text-white"
+                  title={themeZones.map((z) => z.name[locale]).join(", ")}
+                >
+                  {tr("summary.themeZone")}
+                  {themeZones.length > 1 && ` ${themeZones.length}`}
+                </span>
+              )}
             </div>
           ) : (
             <strong className="mt-0.5 block text-sm font-medium text-sc-muted/70">—</strong>
@@ -415,14 +422,18 @@ function SummarySidebar({ arrivalAt, departureAt, readyAt, deadlineAt, actors, w
               : <span className="text-sc-muted/70">—</span>}
           </strong>
         </div>
-        </div>
-        {/* 요약의 마지막 줄 — 이 값들이 무엇을 위한 것인지 말한다.
-            열 바닥(mt-auto)에 붙이지 않는다. 사이드바 열은 본문 높이만큼 늘어나므로
-            혼잡도 안내처럼 본문이 길어지는 순간 이 줄이 화면 밖으로 밀려났다.
-            모바일에서는 요약이 가로 밴드라 이 줄이 입력 화면을 밀어낸다. 거기서는
-            첫 진입 팝업(WindowHintDialog)이 같은 말을 대신한다 */}
-        <p className="mt-4 hidden whitespace-pre-line border-t pt-3 text-xs leading-relaxed text-sc-muted md:block">{tr("step1.windowHint")}</p>
       </div>
+      {/* 요약의 마지막 줄 — 이 값들이 무엇을 위한 것인지 말한다.
+          열 바닥(mt-auto)에 붙이지 않는다. 사이드바 열은 본문 높이만큼 늘어나므로
+          혼잡도 안내처럼 본문이 길어지는 순간 이 줄이 화면 밖으로 밀려났다.
+          모바일에서는 요약이 가로 밴드라 이 줄이 입력 화면을 밀어낸다. 거기서는
+          첫 진입 팝업(WindowHintDialog)이 같은 말을 대신한다.
+          3단계 가로 막대에서는 stage-v4.css가 이 줄을 숨긴다 */}
+      {!collapsed && (
+        <p className="mt-4 hidden whitespace-pre-line border-t pt-3 text-xs leading-relaxed text-sc-muted md:block">
+          {tr("step1.windowHint")}
+        </p>
+      )}
     </aside>
   );
 }
@@ -1892,6 +1903,14 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
   );
 
   /**
+   * 고른 것 중 테마체험 권역만 — 요약의 "선택 콘텐츠"에 배우·작품과 나란히 선다.
+   * 촬영지는 "선택 장소"에서 수로 세고, 권역은 성격이 달라 이름으로 보여준다.
+   */
+  const selectedThemeZones = (candidateData?.candidates ?? [])
+    .filter((candidate) => candidate.placeType === "theme_zone" && selectedPlaceIds.has(candidate.id))
+    .map((candidate) => ({ id: candidate.id, name: candidate.name }));
+
+  /**
    * 미배치 목록 — **사유별로 묶는다** (#84 §2 · #171).
    *
    * 장소마다 한 줄이면 같은 문장이 11번 반복돼 읽히지 않고, 카탈로그가 늘면 더 나빠진다.
@@ -2092,7 +2111,6 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
           <p className="mt-0.5 hidden truncate text-xs text-sc-muted sm:block">{tr("app.tagline")}</p>
         </div>
         <div className="flex shrink-0 items-center gap-2">
-          <span className="rounded-full bg-sc-orange-soft px-2.5 py-1 text-xs text-sc-orange-text">{tr("app.snapshotBadge")}</span>
           <button className="rounded-[10px] border px-3 py-1.5 text-sm font-medium hover:border-sc-blue" onClick={saveStub.requestTrips}>
             {tr("trips.button")}
           </button>
@@ -2165,6 +2183,7 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
         readyAt={airportReady.at}
         deadlineAt={airportDeadline.at}
         actors={selectedActors}
+        themeZones={selectedThemeZones}
         works={selectedWorks}
         placeCount={selectedPlaceIds.size}
         locale={locale}
@@ -2619,17 +2638,6 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
             totalCount={sortedCandidates.length}
             placedCount={selectionStateShown ? selectionCapacity!.schedulableCount : null}
             unplacedCount={selectionStateShown ? selectionCapacity!.minimumExclusionCount : null}
-            themeState={themeChipState(themeExperience)}
-            themeChip={(
-              <ThemeExperienceChip
-                result={themeExperience}
-                stationName={themeStationLabel(displayedDays ?? [], themeExperience, stationName)}
-                locale={locale}
-                tr={tr}
-                mapVisible={themeMapVisible}
-                onToggleMap={() => setThemeMapVisible((visible) => !visible)}
-              />
-            )}
             updating={updating}
             updated={lastItineraryDiff?.changed === true && !updating}
             sortBy={sortBy}
@@ -3782,21 +3790,29 @@ function PlaceCard({ candidate, locale, tr, selected, onToggle, stationName, wor
                   )}
                 </p>
               )}
-              {photo && (
-                <p className="mt-0.5 text-xs text-sc-muted/80">
-                  <a
-                    href={photo.sourceUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="underline underline-offset-2 hover:text-sc-blue"
-                    title={locale === "ko" ? "사진 원본 열기" : "Open original photo"}
-                  >
-                    {locale === "ko"
-                      ? `사진: ${photo.provider} · ${photo.license}`
-                      : "Photo: Korea Tourism Organization TourAPI · KOGL Type 1"}
-                  </a>
-                </p>
-              )}
+              {photo && (() => {
+                const credit = photoCredit(photo, locale);
+                // 장면 캡처는 배지가 없다 — 목록 줄에도 출처 문구를 넣지 않는다
+                if (credit.badge === null) return null;
+                const text = locale === "ko" ? `사진: ${credit.badge}` : `Photo: ${credit.badge}`;
+                return (
+                  <p className="mt-0.5 text-xs text-sc-muted/80" title={credit.label}>
+                    {credit.href ? (
+                      <a
+                        href={credit.href}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="underline underline-offset-2 hover:text-sc-blue"
+                        title={locale === "ko" ? "사진 원본 열기" : "Open original photo"}
+                      >
+                        {text}
+                      </a>
+                    ) : (
+                      text
+                    )}
+                  </p>
+                );
+              })()}
         </div>
       </div>
     </li>

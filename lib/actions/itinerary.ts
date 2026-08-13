@@ -15,6 +15,8 @@ import {
 import type { GatewayAlternative, ItineraryResult, TripConstraints } from "../engine/types";
 import type { GatewayPlanningBaseline } from "../engine/gateway-baseline";
 import { loadRepositories, type Repositories } from "../repositories/json";
+import { withThemeZonePlaces } from "../theme-zone-places";
+import { loadThemeZones } from "../theme-zones-snapshot";
 import { z } from "zod";
 
 export type PlanRequest = {
@@ -158,7 +160,9 @@ export async function planItinerary(request: PlanRequest): Promise<PlanActionRes
   if (!parsed.success) {
     return { ok: false, code: "INVALID_REQUEST", fieldErrors: fieldErrorsOf(parsed.error) };
   }
-  const repos = loadRepositories();
+  // 테마체험 권역은 촬영지가 아니라 저장소에 없다 — 엔진 앞에서만 장소로 얹는다.
+  // 참조 검사도 이 저장소로 해야 사용자가 고른 권역이 "없는 장소"로 반려되지 않는다
+  const repos = withThemeZonePlaces(loadRepositories(), loadThemeZones());
   const referenceErrors = referenceErrorsOf(parsed.data, repos);
   if (Object.keys(referenceErrors).length > 0) {
     return { ok: false, code: "INVALID_REQUEST", fieldErrors: referenceErrors };
@@ -176,7 +180,9 @@ export async function planGatewayAlternatives(
   if (!parsed.success) {
     return { ok: false, code: "INVALID_REQUEST", fieldErrors: fieldErrorsOf(parsed.error) };
   }
-  const repos = loadRepositories();
+  // 테마체험 권역은 촬영지가 아니라 저장소에 없다 — 엔진 앞에서만 장소로 얹는다.
+  // 참조 검사도 이 저장소로 해야 사용자가 고른 권역이 "없는 장소"로 반려되지 않는다
+  const repos = withThemeZonePlaces(loadRepositories(), loadThemeZones());
   const referenceErrors = referenceErrorsOf(parsed.data, repos);
   if (Object.keys(referenceErrors).length > 0) {
     return { ok: false, code: "INVALID_REQUEST", fieldErrors: referenceErrors };

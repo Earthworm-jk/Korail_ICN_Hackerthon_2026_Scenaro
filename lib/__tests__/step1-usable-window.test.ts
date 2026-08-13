@@ -43,7 +43,7 @@ describe("1단계 사용 가능 시간", () => {
     );
 
     it("사이드바 설명 줄은 태블릿 이상에서만 보인다", () => {
-      expect(wizard).toMatch(/className="[^"]*hidden[^"]*md:block"[^>]*>\{tr\("step1\.windowHint"\)\}/);
+      expect(wizard).toMatch(/className="[^"]*hidden[^"]*md:block"[^>]*>\s*\{tr\("step1\.windowHint"\)\}/);
     });
 
     it("팝업은 좁은 화면에서만 보인다 — 폭 판정은 CSS가 한다", () => {

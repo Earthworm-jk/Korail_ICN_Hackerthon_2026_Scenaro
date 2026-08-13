@@ -30,7 +30,7 @@ const copy: Partial<Record<MessageKey, string>> = {
   "ai.recommendSheetTitle": "현재 동선에 맞는 촬영지",
   "ai.recommendSheetSubtitle": "추가 전에는 일정이 바뀌지 않습니다.",
   "map.placesTitle": "추천 장소 지도",
-  "step3.selectionState": "선택 {selected} · 일정 반영 {placed} · 미배치 {unplaced}",
+  "step3.selectionState": "일정 반영 {placed} · 미배치 {unplaced}",
   "step3.unplacedHint": "시간·동선 제약",
   "step3.chipKCulture": "K-컬처 {n}",
   "step3.chipThemeNone": "테마체험 추천 없음",
@@ -47,7 +47,6 @@ describe("지도 위 추천 장소 바텀시트", () => {
       totalCount: 8,
       placedCount: null,
       unplacedCount: null,
-      themeState: "none" as const,
       updating: false,
       updated: false,
       sortBy: "relevance",
@@ -87,7 +86,6 @@ describe("지도 위 추천 장소 바텀시트", () => {
       totalCount: 8,
       placedCount: 3,
       unplacedCount: 0,
-      themeState: "none" as const,
       updating: false,
       updated: false,
       sortBy: "relevance" as const,
@@ -158,7 +156,6 @@ describe("지도 위 추천 장소 바텀시트", () => {
       totalCount: 8,
       placedCount: null,
       unplacedCount: null,
-      themeState: "none" as const,
       updating: true,
       updated: false,
       sortBy: "official",
@@ -177,7 +174,6 @@ describe("지도 위 추천 장소 바텀시트", () => {
       totalCount: 8,
       placedCount: null,
       unplacedCount: null,
-      themeState: "none" as const,
       updating: false,
       updated: false,
       sortBy: "relevance",
@@ -199,7 +195,6 @@ describe("지도 위 추천 장소 바텀시트", () => {
       totalCount: 8,
       placedCount: null,
       unplacedCount: null,
-      themeState: "none" as const,
       updating: false,
       updated: true,
       sortBy: "official",
@@ -230,6 +225,7 @@ describe("지도 위 추천 장소 바텀시트", () => {
       label: "장소 이미지 준비 중",
       locale: "ko",
       photo: {
+        kind: "kto",
         src: "/place-photos/place-woljeongsa-temple.jpg",
         alt: { ko: "월정사의 전각과 석등", en: "Temple halls at Woljeongsa" },
         provider: "한국관광공사 TourAPI",
@@ -249,6 +245,32 @@ describe("지도 위 추천 장소 바텀시트", () => {
     expect(markup).toContain("월정사 사진 원본 · 한국관광공사 TourAPI · 공공누리 제1유형");
     expect(markup).not.toContain('role="img"');
   });
+
+  it("방송 장면 캡처는 공공누리 배지 대신 방송사 크레딧을 달고 원본 링크를 걸지 않는다", () => {
+    const markup = renderToStaticMarkup(createElement(PlaceThumbnail, {
+      label: "장소 이미지 준비 중",
+      locale: "ko",
+      photo: {
+        kind: "scene_still",
+        src: "/place-photos/scene-place-sinchon-mural-tunnel.jpg",
+        alt: { ko: "터널을 걷는 두 사람", en: "Two characters walking through the tunnel" },
+        broadcaster: "tvN",
+        workTitle: { ko: "도깨비", en: "Guardian: The Lonely and Great God" },
+        episodeLabel: "10화",
+        rights: "방송사 저작물 — 시연용 인용",
+        verifiedAt: "2026-08-14",
+        verificationMethod: "캡처 화면 육안 확인 — 장소·작품 대조",
+      },
+    }));
+
+    expect(markup).toContain("data-place-photo");
+    // 사진 위에 배지를 얹지 않는다 — 크레딧은 스크린리더에만 남는다
+    expect(markup).not.toContain("thumbnailAttribution");
+    expect(markup).toContain("tvN");
+    expect(markup).not.toContain("KOGL");
+    expect(markup).not.toContain("공공누리");
+    expect(markup).not.toContain("<a");
+  });
 });
 
 describe("#146 ① 상태 요약과 분류", () => {
@@ -262,17 +284,18 @@ describe("#146 ① 상태 요약과 분류", () => {
     renderToStaticMarkup(createElement(PlaceRecommendationSheet, { ...base, ...over } as never));
 
   /**
-   * 여행 기간과 무관하게 같은 구조를 쓴다. `일정 반영 + 미배치 = 선택` 관계가 유지되므로
-   * "왜 8곳을 골랐는데 7곳만 있지"가 화면에서 바로 풀린다.
+   * 여행 기간과 무관하게 같은 구조를 쓴다. 선택 수는 이 줄에서 뺐다 — 옆의 `K-컬처 n`
+   * 칩과 위 요약 막대가 이미 말한다. `일정 반영 + 미배치`가 곧 선택 수다.
    */
-  it("선택·일정 반영·미배치를 한 줄로 말한다", () => {
+  it("일정 반영·미배치를 한 줄로 말한다", () => {
     const html = render({ placedCount: 7, unplacedCount: 1, themeRecommended: false });
-    expect(html).toContain("선택 8 · 일정 반영 7 · 미배치 1");
+    expect(html).toContain("일정 반영 7 · 미배치 1");
+    expect(html).not.toContain("선택 8 ·");
   });
 
   it("미배치가 0이어도 같은 구조를 유지한다", () => {
     const html = render({ placedCount: 8, unplacedCount: 0, themeRecommended: false });
-    expect(html).toContain("선택 8 · 일정 반영 8 · 미배치 0");
+    expect(html).toContain("일정 반영 8 · 미배치 0");
     // 경고 강조만 뺀다
     expect(html).not.toContain("시간·동선 제약");
   });
@@ -289,50 +312,30 @@ describe("#146 ① 상태 요약과 분류", () => {
     expect(html).not.toContain("일정 반영");
   });
 
-  it("K-컬처 칩은 선택 수를 센다", () => {
+  /**
+   * `K-컬처 n`은 선택 수를 말했는데 같은 줄의 상태 요약과 위 요약 막대가 이미 같은
+   * 숫자를 말한다. 한 화면에 세 번이라 걷었다.
+   */
+  it("선택 수를 칩으로 다시 세지 않는다", () => {
     expect(render({ placedCount: 7, unplacedCount: 1, themeRecommended: false }))
-      .toContain("K-컬처 8");
-  });
-
-  /** 테마체험은 아직 선택할 수 없다 — 선택 수를 세면 언제나 0이라 의미가 없다 */
-  it("테마체험은 숫자 대신 추천 유무를 말한다", () => {
-    expect(render({ placedCount: 7, unplacedCount: 1, themeRecommended: false }))
-      .toContain("테마체험 추천 없음");
-    expect(render({ placedCount: 7, unplacedCount: 1, themeState: "available" }))
-      .toContain("테마체험 추천 있음");
-  });
-
-  /** 성격이 다른 숫자를 같은 줄에 섞으면 둘 다 무슨 뜻인지 흐려진다 */
-  it("상태 요약과 분류 칩은 다른 자리에 선다", () => {
-    const html = render({ placedCount: 7, unplacedCount: 1, themeRecommended: false });
-    expect(html.indexOf("data-selection-state")).toBeLessThan(html.indexOf("data-category-chips"));
-    expect(html).toMatch(/data-selection-state[\s\S]*?<\/span>[\s\S]*?data-category-chips/);
+      .not.toContain("K-컬처");
   });
 });
 
-describe("PR #156 리뷰 4 — 테마체험은 아는 것만 말한다", () => {
+describe("테마체험 대체 칩", () => {
   const base = {
     selectedCount: 8, totalCount: 20, updating: false, updated: false,
     sortBy: "relevance" as const, onSortChange: () => undefined,
     onBrowseAll: () => undefined, tr,
     placedCount: 7, unplacedCount: 1,
   };
-  const render = (themeState: "available" | "none" | "unknown") =>
-    renderToStaticMarkup(createElement(PlaceRecommendationSheet, { ...base, themeState } as never));
 
   /**
-   * 재계산마다 조회 상태가 `null`로 초기화된다. 미조회를 "추천 없음"으로 합치면
-   * **매번 없다고 단언했다가 뒤집힌다.** 모르는 동안은 말하지 않는다.
+   * 추천이 없을 때 "추천 없음"이라고 말하던 대체 칩은 걷었다 — 고를 수도 없는 것의
+   * 부재를 알리는 칩이었다. 호출부가 칩을 주지 않으면 아무것도 그리지 않는다.
    */
-  it("조회 전·확인 불가에는 칩을 두지 않는다", () => {
-    const html = render("unknown");
+  it("호출부가 칩을 주지 않으면 테마체험을 말하지 않는다", () => {
+    const html = renderToStaticMarkup(createElement(PlaceRecommendationSheet, base as never));
     expect(html).not.toContain("테마체험");
-    // K-컬처 칩은 그대로 있다 — 선택 수는 지금도 아는 값이다
-    expect(html).toContain("K-컬처 8");
-  });
-
-  it("조회가 끝났을 때만 있음·없음을 말한다", () => {
-    expect(render("none")).toContain("테마체험 추천 없음");
-    expect(render("available")).toContain("테마체험 추천 있음");
   });
 });

@@ -30,6 +30,8 @@ export const PLACE_TYPE_ICON_KEY = {
   park: "tree-pine",
   cultural_center: "drama",
   filming_set: "video",
+  // 나침반 — "이 일대를 둘러보기". 장소 유형 21종 어느 것과도 겹치지 않는다
+  theme_zone: "compass",
 } as const satisfies Record<PlaceTypeT, string>;
 
 export type PlaceTypeIconKey =

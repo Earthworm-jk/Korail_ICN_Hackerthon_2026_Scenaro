@@ -4,7 +4,7 @@ import Image from "next/image";
 import { ArrowUpDown, ChevronDown, ChevronUp } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import { withValues, type MessageKey } from "@/lib/i18n/messages";
-import type { PlacePhoto } from "@/lib/place-photos";
+import { photoCredit, type PlacePhoto } from "@/lib/place-photos";
 import styles from "./place-recommendation-sheet.module.css";
 
 type Translator = (key: MessageKey) => string;
@@ -14,8 +14,6 @@ export function PlaceRecommendationSheet({
   totalCount,
   placedCount,
   unplacedCount,
-  themeState,
-  themeChip,
   updating,
   updated,
   sortBy,
@@ -31,19 +29,6 @@ export function PlaceRecommendationSheet({
   placedCount: number | null;
   /** 선택했지만 들어가지 못한 수. `placedCount + unplacedCount = selectedCount` */
   unplacedCount: number | null;
-  /**
-   * 테마체험은 아직 선택할 수 없다 — 숫자 대신 추천 유무를 말한다.
-   * `unknown`은 조회 전이거나 스냅샷이 없는 상태다. 그때는 **아무 말도 하지 않는다** —
-   * 모르는 것을 "추천 없음"이라고 하면 사용자가 없는 사실을 믿는다.
-   */
-  themeState: "available" | "none" | "unknown";
-  /**
-   * 테마체험 칩을 호출부가 직접 준다 (#146 — 하단 독 제거).
-   *
-   * 없으면 `themeState`로 글자만 만든다. 상세(권역·근거·지도 표시)까지 붙이려면
-   * 데이터가 필요한데, 그건 시트가 아니라 호출부가 갖고 있다.
-   */
-  themeChip?: ReactNode;
   updating: boolean;
   updated: boolean;
   sortBy: "relevance" | "official";
@@ -121,7 +106,6 @@ export function PlaceRecommendationSheet({
               {placedCount === null || unplacedCount === null
                 ? selectedCountLabel
                 : withValues(tr("step3.selectionState"), {
-                  selected: String(selectedCount),
                   placed: String(placedCount),
                   unplaced: String(unplacedCount),
                 })}
@@ -132,17 +116,14 @@ export function PlaceRecommendationSheet({
               </span>
             )}
 
-            {/* 분류 - K-컬처는 선택 수, 테마체험은 아직 선택할 수 없어 추천 유무만 말한다 */}
-            <span className="flex flex-wrap items-center gap-1.5" data-category-chips>
-              <span className="rounded-full border border-sc-blue/30 px-2 py-0.5 text-sc-blue">
-                {withValues(tr("step3.chipKCulture"), { n: String(selectedCount) })}
-              </span>
-              {themeChip ?? (themeState !== "unknown" && (
-                <span className="rounded-full border px-2 py-0.5 text-sc-muted">
-                  {tr(themeState === "available" ? "step3.chipThemeAvailable" : "step3.chipThemeNone")}
-                </span>
-              ))}
-            </span>
+            {/*
+              분류 칩은 걷었다.
+
+              `K-컬처 n`은 선택 수를 말했는데, 같은 줄의 상태 요약과 위 요약 막대의
+              "선택 장소"가 이미 같은 숫자를 말하고 있었다 — 한 화면에 세 번이었다.
+              `테마체험 추천 있음/없음`도 걷었다 — 권역은 이제 전체 촬영지 목록에서
+              직접 고르고, 고르면 요약의 "선택 콘텐츠"에 테마체험 알약으로 선다.
+            */}
           </div>
           </div>
           <label className={styles.sortControl}>
@@ -238,6 +219,8 @@ export function PlaceThumbnail({
     ? `${styles.thumbnail} ${styles.thumbnailCover}`
     : styles.thumbnail;
   if (photo) {
+    // 장면 캡처는 링크할 원본이 없다 — 크레딧만 남기고 앵커를 걷는다
+    const credit = photoCredit(photo, locale);
     return (
       <figure className={frameClass} data-place-thumbnail data-place-photo>
         <Image
@@ -248,20 +231,29 @@ export function PlaceThumbnail({
           unoptimized
           className={styles.thumbnailImage}
         />
-        <a
-          href={photo.sourceUrl}
-          target="_blank"
-          rel="noreferrer"
-          className={styles.thumbnailAttribution}
-          title={`${photo.provider} · ${photo.license}`}
-          aria-label={
-            locale === "ko"
-              ? `${photo.sourcePlaceName} 사진 원본 · ${photo.provider} · ${photo.license}`
-              : `Original ${photo.sourcePlaceName} photo · Korea Tourism Organization TourAPI · KOGL Type 1`
-          }
-        >
-          KTO · KOGL 1
-        </a>
+        {credit.badge === null ? (
+          // 장면 캡처는 사진 위에 아무것도 얹지 않는다 — 크레딧은 툴팁으로만 남는다
+          <span className="sr-only">{credit.label}</span>
+        ) : credit.href ? (
+          <a
+            href={credit.href}
+            target="_blank"
+            rel="noreferrer"
+            className={styles.thumbnailAttribution}
+            title={credit.label}
+            aria-label={credit.label}
+          >
+            {credit.badge}
+          </a>
+        ) : (
+          <span
+            className={styles.thumbnailAttribution}
+            title={credit.label}
+            aria-label={credit.label}
+          >
+            {credit.badge}
+          </span>
+        )}
       </figure>
     );
   }

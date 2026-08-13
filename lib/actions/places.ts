@@ -10,6 +10,7 @@ import { loadRepositories } from "../repositories/json";
 import { roundTripStationIds } from "../timetable-coverage";
 import { deriveAiRelevance } from "../place-ranking";
 import { loadPlaceRankings } from "../place-rankings-snapshot";
+import { schedulableThemeZones } from "../theme-zone-places";
 import {
   deriveStrictSelectionMemberships,
   selectionGroupsOf,
@@ -80,6 +81,25 @@ export async function getCandidatePlaces(selection: {
       relationDetails,
     });
   }
+  /*
+   * 테마체험 권역 (#80 후속).
+   *
+   * 권역은 촬영 관계가 없어 위 `memberships` 경로로는 절대 후보가 되지 않는다. 연결은
+   * 랭킹 스냅샷에 있고, 화면에 나갈 수 있는 것은 **검토를 마치고 배지 기준을 넘은 행**
+   * 뿐이다 — 지도 추천(`pickThemeExperience`)이 쓰는 것과 같은 규칙을 그대로 쓴다.
+   * 규칙을 여기서 새로 만들면 목록과 지도가 서로 다른 권역을 말하게 된다.
+   */
+  for (const zone of schedulableThemeZones(selection.selectedWorkIds)) {
+    if (candidates.some((candidate) => candidate.id === zone.id)) continue;
+    candidates.push({
+      ...zone,
+      // 고른 작품에 걸려 올라온 후보다 — 배우 경로로는 오지 않는다
+      relation: "selected_work",
+      selectionGroups: ["work"],
+      relationDetails: [],
+    });
+  }
+
   candidates.sort((a, b) => a.id.localeCompare(b.id, "en"));
 
   // #48 — 랭킹 스냅샷은 서버에서만 읽고 안전 파생값(순위·이유)만 후보에 붙인다

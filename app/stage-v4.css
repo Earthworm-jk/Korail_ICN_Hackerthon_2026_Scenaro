@@ -7,6 +7,9 @@
   /* ---- Step 3 trip summary continuity ---- */
   body > main div.grid:has(> aside[aria-label]):has(#place-picker) > aside[aria-label] {
     display: flex !important;
+    /* 세로 열에서 쓰는 `md:flex-col`이 여기까지 따라온다. 방향을 되돌리지 않으면
+       `align-items: center`가 내용을 가운데로 밀어 막대 왼쪽이 크게 빈다 */
+    flex-direction: row !important;
     align-items: center !important;
     gap: 16px !important;
     /* 3단계 제목 줄을 걷어 확보한 44px을 여기에 돌려준다 (#146) — 선택 요약은
@@ -18,18 +21,14 @@
     background: rgba(248, 250, 252, .94) !important;
   }
 
+  /* 헤더 칸은 "선택 요약" 제목을 걷은 뒤로 접기 버튼만 들고 있고, 이 화면은 그 버튼을
+     쓰지 않는다(막대는 늘 펼친 상태다). 74px을 비워 두지 말고 칸째로 접는다. */
   body > main div.grid:has(> aside[aria-label]):has(#place-picker) > aside[aria-label] > div:first-child {
-    flex: 0 0 auto;
-    min-width: 74px;
+    display: none !important;
   }
 
-  body > main div.grid:has(> aside[aria-label]):has(#place-picker) > aside[aria-label] > div:first-child h3 {
-    font-size: 11px !important;
-    font-weight: 700 !important;
-    color: var(--sc-muted);
-  }
-
-  body > main div.grid:has(> aside[aria-label]):has(#place-picker) > aside[aria-label] > div:first-child button {
+  /* 사이드바 맨 아래 안내는 세로 열에서만 쓴다 — 가로 막대에서는 자리를 뺏는다. */
+  body > main div.grid:has(> aside[aria-label]):has(#place-picker) > aside[aria-label] > p {
     display: none !important;
   }
 

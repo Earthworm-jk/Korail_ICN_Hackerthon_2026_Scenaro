@@ -176,6 +176,8 @@ export const PlaceType = z.enum([
   "park",
   "cultural_center",
   "filming_set",
+  // 촬영지가 아니라 테마체험 권역이다 — 목록·일정에서는 장소처럼 다루되 유형으로 구분한다
+  "theme_zone",
 ]);
 
 export const Place = z.object({
