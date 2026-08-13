@@ -270,7 +270,7 @@ export function ItineraryCommandPanel({
 
   return (
     <section
-      className="mt-3 ml-auto w-full max-w-[400px] rounded-xl border border-sc-blue/25 bg-gradient-to-br from-sc-blue-soft to-sc-surface p-3"
+      className="mt-3 ml-auto flex max-h-[min(60dvh,560px)] w-full max-w-[400px] flex-col overflow-hidden rounded-xl border border-sc-blue/25 bg-gradient-to-br from-sc-blue-soft to-sc-surface p-3"
       aria-labelledby="itinerary-ai-title"
       data-itinerary-command-panel
       id="itinerary-ai-panel"
@@ -301,6 +301,10 @@ export function ItineraryCommandPanel({
         </button>
       </div>
 
+      <div
+        className="min-h-0 flex-1 overflow-y-auto pr-1 [scrollbar-gutter:stable]"
+        data-itinerary-command-scroll
+      >
       {overselection && (
         <div className="mt-3 rounded-lg border border-sc-orange/40 bg-sc-orange-soft p-3" role="status">
           <p className="text-sm font-medium text-sc-orange-text">
@@ -620,6 +624,7 @@ export function ItineraryCommandPanel({
           )}
         </div>
       )}
+      </div>
     </section>
   );
 }

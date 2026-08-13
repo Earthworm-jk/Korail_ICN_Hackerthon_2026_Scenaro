@@ -225,6 +225,23 @@
     align-items: stretch !important;
   }
 
+  /**
+   * AI 카드가 열리면 결과를 한 화면 높이에 억지로 가두지 않는다.
+   * 카드가 두 번째 행을 늘릴 때 고정 높이를 유지하면 일정 행이 0px까지 줄고, 바깥
+   * 앱 셸의 overflow에 잘린다. 문서가 자연스럽게 길어져 페이지 스크롤로 일정까지
+   * 내려갈 수 있게 하고 일정 행의 최소 높이도 보장한다.
+   */
+  html body main section > div.grid:has(> div#place-picker[data-place-sheet]):has([data-itinerary-command-panel]) {
+    height: auto;
+    min-height: clamp(372px, calc(100dvh - 362px), 640px) !important;
+    grid-template-rows: auto auto minmax(320px, min(65dvh, 640px)) auto auto;
+  }
+
+  body:has([data-itinerary-command-panel]) > main > div.mx-auto > div.overflow-hidden {
+    overflow-x: clip;
+    overflow-y: visible;
+  }
+
   div#place-picker[data-place-sheet] {
     grid-row: 1 / 6 !important;
     height: 100%;

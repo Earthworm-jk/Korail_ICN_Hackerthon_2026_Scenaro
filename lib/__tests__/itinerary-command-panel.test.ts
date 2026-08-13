@@ -81,6 +81,13 @@ function render(options: {
 }
 
 describe("AI 일정 조율 패널 리뷰 회귀", () => {
+  it("긴 카드 본문은 독립 스크롤 영역을 제공한다", () => {
+    const html = render();
+    expect(html).toContain("data-itinerary-command-scroll");
+    expect(html).toContain("overflow-y-auto");
+    expect(html).toContain("max-h-[min(60dvh,560px)]");
+  });
+
   it("추천 한 곳은 영어 단수형으로 표시한다", () => {
     const feedback: CommandFeedback = {
       kind: "recommendations",
