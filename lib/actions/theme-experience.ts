@@ -10,6 +10,7 @@
  */
 import { loadThemeZoneRankings, loadThemeZones } from "../theme-zones-snapshot";
 import { pickThemeExperience } from "../theme-zones";
+import { zonePhoto, type ZonePhoto } from "../place-photos";
 
 export type ThemeExperienceResult =
   | {
@@ -20,6 +21,8 @@ export type ThemeExperienceResult =
       regionId: string;
       /** 지도 표시용 대표 지점 — 좌표 근거가 없는 권역은 생략된다(지도에 그리지 않는다) */
       point?: { latitude: number; longitude: number };
+      /** 권역 대표 사진 — 등록된 권역만 실린다(zoneId는 표시에 쓰지 않으므로 내리지 않는다) */
+      photo?: ZonePhoto;
     }
   // 관련도 기준을 통과한 검증 권역이 없음 — 스냅샷은 정상
   | { status: "none" }
@@ -44,6 +47,7 @@ export async function getThemeExperience(input: {
   if (!pick) return { status: "none" };
 
   const hasPoint = pick.zone.latitude !== undefined && pick.zone.longitude !== undefined;
+  const photo = zonePhoto(pick.zone.id);
   return {
     status: "ok",
     zoneName: pick.zone.name,
@@ -53,5 +57,6 @@ export async function getThemeExperience(input: {
     ...(hasPoint
       ? { point: { latitude: pick.zone.latitude!, longitude: pick.zone.longitude! } }
       : {}),
+    ...(photo ? { photo } : {}),
   };
 }

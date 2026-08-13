@@ -232,7 +232,7 @@ export function PlaceThumbnail({
           className={styles.thumbnailImage}
         />
         {credit.badge === null ? (
-          // 장면 캡처는 사진 위에 아무것도 얹지 않는다 — 크레딧은 툴팁으로만 남는다
+          // 장면 캡처는 사진 위에 아무것도 얹지 않는다 — 크레딧은 스크린리더에만 남는다
           <span className="sr-only">{credit.label}</span>
         ) : credit.href ? (
           <a

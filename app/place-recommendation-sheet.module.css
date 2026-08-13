@@ -347,7 +347,8 @@
   white-space: nowrap;
 }
 
-.thumbnailAttribution:hover {
+/* 장면 캡처는 열 원본이 없어 span으로 나간다 — 밑줄은 링크일 때만 */
+a.thumbnailAttribution:hover {
   text-decoration: underline;
 }
 

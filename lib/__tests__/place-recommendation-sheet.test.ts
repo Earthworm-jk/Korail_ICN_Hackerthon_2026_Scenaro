@@ -246,7 +246,7 @@ describe("지도 위 추천 장소 바텀시트", () => {
     expect(markup).not.toContain('role="img"');
   });
 
-  it("방송 장면 캡처는 공공누리 배지 대신 방송사 크레딧을 달고 원본 링크를 걸지 않는다", () => {
+  it("방송 장면 캡처는 배지 없이 깔리고 크레딧은 스크린리더에만 남는다", () => {
     const markup = renderToStaticMarkup(createElement(PlaceThumbnail, {
       label: "장소 이미지 준비 중",
       locale: "ko",
@@ -264,9 +264,10 @@ describe("지도 위 추천 장소 바텀시트", () => {
     }));
 
     expect(markup).toContain("data-place-photo");
-    // 사진 위에 배지를 얹지 않는다 — 크레딧은 스크린리더에만 남는다
+    // 사진 위에 배지를 얹지 않는다
     expect(markup).not.toContain("thumbnailAttribution");
     expect(markup).toContain("tvN");
+    // 방송 화면에 공공누리 표기가 붙으면 사실과 다르다
     expect(markup).not.toContain("KOGL");
     expect(markup).not.toContain("공공누리");
     expect(markup).not.toContain("<a");
