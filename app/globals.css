@@ -393,6 +393,59 @@
 }
 
 /**
+ * 체류·환승은 일정 항목이 아니라 DAY 시간 통계다 (#207 후속 UX).
+ *
+ * 장소/이동 카드와 같은 높이·배경·아이콘을 쓰면 노란 경고 카드가 일정에 하나 더
+ * 들어온 것처럼 보인다. 구조와 엔진 분류는 유지하고, 화면에서는 한 줄 요약으로 낮춘다.
+ */
+ul[data-day-stays] {
+  display: flex;
+  width: 100%;
+  max-width: 360px;
+  flex-direction: column;
+  gap: 4px;
+}
+
+ul[data-day-stays] > li {
+  display: grid;
+  min-height: 0;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  column-gap: 8px;
+  border: 0;
+  border-bottom: 1px solid var(--sc-line);
+  border-radius: 0;
+  background: transparent !important;
+  padding: 4px 0;
+}
+
+ul[data-day-stays] > li:last-child {
+  border-bottom: 0;
+}
+
+ul[data-day-stays] [data-row-main] {
+  display: contents;
+}
+
+ul[data-day-stays] [data-row-main] > span:first-child {
+  display: none;
+}
+
+ul[data-day-stays] [data-row-name] {
+  -webkit-line-clamp: 1;
+  color: var(--sc-muted);
+  font-size: 0.75rem;
+}
+
+ul[data-day-stays] [data-row-meta] {
+  margin: 0;
+  padding: 0;
+  color: var(--sc-text);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/**
  * 시각을 잇는 타임라인.
  *
  * 카드마다 도착 시각이 맨 위에 있으므로, 그 줄을 가로로 이으면 하루가 시간순으로
@@ -419,6 +472,20 @@
   ul[data-day-rows] > li[data-itinerary-row="train"] > [data-move-row],
   ul[data-day-rows] > li[data-itinerary-row="gateway"] > [data-move-row] {
     margin-block: auto;
+  }
+
+  /* 시간 요약은 위 일정 칸과 열을 맞추는 두 번째 타임라인이 아니다. */
+  ul[data-day-rows][data-day-stays] {
+    background-image: none;
+  }
+
+  ul[data-day-rows][data-day-stays] > li {
+    height: auto;
+    padding-top: 4px;
+  }
+
+  ul[data-day-rows][data-day-stays] > li::before {
+    display: none;
   }
 
   /**

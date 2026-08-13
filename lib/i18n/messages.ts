@@ -189,7 +189,7 @@ export const messages = {
     "ai.appliedDayPartial": "DAY 일정 변경을 반영했습니다. 일부는 다른 날로 조정됐습니다.",
     "ai.confirmMoved": "{place}이(가) {from}에서 {to}로 이동합니다.",
     "step4.dayHeading": "DAY {day}",
-    "step4.stayTitle": "체류·환승",
+    "step4.stayTitle": "시간 요약",
     "step4.dayMoveLabel": "이 날 일정을 다른 날로 옮기기",
     "step4.placeMoveLabel": "이 장소를 다른 날로 옮기기",
     // #145 — 드래그를 못 쓰는 경로(터치·키보드)를 위한 순서 조작
@@ -692,7 +692,7 @@ export const messages = {
     "ai.appliedDayPartial": "The day change was applied. Some places moved to other days.",
     "ai.confirmMoved": "{place} will move from {from} to {to}.",
     "step4.dayHeading": "DAY {day}",
-    "step4.stayTitle": "Stops and transfers",
+    "step4.stayTitle": "Time summary",
     "step4.dayMoveLabel": "Move this day to another day",
     "step4.placeMoveLabel": "Move this place to another day",
     "step4.placeOrderLabel": "Move this place before another on the same day",
