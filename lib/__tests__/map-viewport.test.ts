@@ -3,6 +3,7 @@ import {
   BASE_VIEWPORT,
   BASE_ASPECT,
   autoViewportFor,
+  nextViewportFor,
   baseViewportFor,
   withAspect,
   COASTLINE_DETAIL_SCALE,
@@ -485,5 +486,50 @@ describe("상자 비율 유지", () => {
     // 화면은 둘 다 autoViewportFor(현재 맞춤 대상, 현재 상자 비율)을 부른다
     expect(autoViewportFor(경로, WIDE)).toEqual(autoViewportFor(경로, WIDE));
     expect(autoViewportFor([], WIDE)).toEqual(baseViewportFor(WIDE));
+  });
+});
+
+
+/**
+ * 창 우선순위 (PR #206 재리뷰)
+ *
+ * 비율 effect와 경로 effect가 `boxAspect`를 함께 의존해 연달아 돈다. 각자 창을 정하면
+ * 나중에 도는 쪽이 앞의 결정을 덮는다 — 실제로 오버레이에 맞춘 직후 경로 창이 덮었다.
+ * 규칙을 한 함수로 모아 두 번 불려도 같은 답이 나오게 한다.
+ */
+describe("창 우선순위", () => {
+  const WIDE = 799 / 341;
+  const TALL = 390 / 700;
+  const 경로 = [{ x: 150, y: 250 }, { x: 205, y: 262 }];
+  const 오버레이 = [{ x: 265, y: 385 }]; // 경로 밖
+  const base = { current: BASE_VIEWPORT, aspect: WIDE, userMoved: false, overlayPoints: [], routePoints: 경로 };
+
+  it("오버레이가 켜져 있으면 경로보다 우선한다", () => {
+    const view = nextViewportFor({ ...base, overlayPoints: 오버레이 });
+    expect(contains(view, 오버레이[0])).toBe(true);
+    expect(aspectOf(view)).toBeCloseTo(WIDE, 6);
+  });
+
+  /** 두 effect가 연달아 돌아도 같은 답이라 덮어쓰기가 성립하지 않는다 */
+  it("두 번 불러도 같은 창이다", () => {
+    const once = nextViewportFor({ ...base, overlayPoints: 오버레이 });
+    const twice = nextViewportFor({ ...base, current: once, overlayPoints: 오버레이 });
+    expect(twice).toEqual(once);
+  });
+
+  it("사용자가 옮긴 창이 가장 우선한다 — 오버레이도 그것을 덮지 않는다", () => {
+    const moved = panBy(zoomByStep(fitTo(경로, ROUTE_FIT_SCALE, WIDE), ZOOM_STEP), 4, 3);
+    const view = nextViewportFor({ ...base, current: moved, userMoved: true, overlayPoints: 오버레이, aspect: TALL });
+    expect(scaleOf(view)).toBeCloseTo(scaleOf(moved), 6);
+    expect(aspectOf(view)).toBeCloseTo(TALL, 6);
+  });
+
+  it("오버레이가 없으면 경로에 맞춘다", () => {
+    const view = nextViewportFor(base);
+    for (const point of 경로) expect(contains(view, point)).toBe(true);
+  });
+
+  it("담을 것이 없으면 상자 비율 기본 창이다", () => {
+    expect(nextViewportFor({ ...base, routePoints: [] })).toEqual(baseViewportFor(WIDE));
   });
 });

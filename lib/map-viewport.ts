@@ -381,3 +381,32 @@ export function withAspect(view: Viewport, aspect: number): Viewport {
   const width = view.height * aspect;
   return clampViewport({ x: centerX - width / 2, y: view.y, width, height: view.height });
 }
+
+/**
+ * 지금 화면이 보여야 할 창 — 우선순위 한 곳 (PR #206 재리뷰)
+ *
+ * 갈래가 여럿(상자 비율 변경·경로 변경·오버레이 등록/해제·초기화)인데 각자 창을 정하면
+ * **실행 순서에 따라 결과가 달라진다.** 실제로 비율 effect가 오버레이에 맞춘 직후 경로
+ * effect가 같은 의존성으로 다시 돌아 경로 창으로 덮었다.
+ *
+ * 규칙을 여기 하나로 모으면 어느 effect가 먼저 돌든 같은 답이 나오고, 두 번 불려도
+ * 같은 결과라 덮어쓰기가 성립하지 않는다.
+ *
+ * 순서에는 이유가 있다.
+ *   사용자 조작  직접 옮긴 창을 코드가 되돌리면 지도가 말을 안 듣는 것처럼 느껴진다
+ *   오버레이     필터가 켠 것을 다 보여준다는 규칙이 경로보다 좁고 명시적이다
+ *   경로         그 밖의 기본 — 담을 지점이 없으면 기본 창
+ */
+export function nextViewportFor(intent: {
+  current: Viewport;
+  aspect: number;
+  userMoved: boolean;
+  overlayPoints: readonly { x: number; y: number }[];
+  routePoints: readonly { x: number; y: number }[];
+}): Viewport {
+  if (intent.userMoved) return withAspect(intent.current, intent.aspect);
+  if (intent.overlayPoints.length > 0) {
+    return fitTo(intent.overlayPoints, FOCUS_SCALE, intent.aspect);
+  }
+  return autoViewportFor(intent.routePoints, intent.aspect);
+}

@@ -44,7 +44,7 @@ import {
   autoViewportFor,
   FOCUS_SCALE,
   fitTo,
-  withAspect,
+  nextViewportFor,
   isZoomed,
   panBy,
   pointFromClient,
@@ -622,11 +622,13 @@ export function KoreaMapPanel({
     userMovedRef.current = false;
     fittedRouteKey.current = null;
     // 오버레이가 켜져 있으면 그 초점을 지킨다 — 되돌리기가 필터를 끄는 것처럼 보이면 안 된다
-    setView(
-      overlayFitRef.current.length > 0
-        ? fitTo(overlayFitRef.current, FOCUS_SCALE, boxAspectRef.current)
-        : autoViewportFor(autoFitRef.current, boxAspectRef.current),
-    );
+    setView((current) => nextViewportFor({
+      current,
+      aspect: boxAspectRef.current,
+      userMoved: false, // 되돌리기는 조작을 지운다
+      overlayPoints: overlayFitRef.current,
+      routePoints: autoFitRef.current,
+    }));
   }, []);
   /**
    * 끌고 있는 포인터의 마지막 위치.
@@ -863,14 +865,13 @@ export function KoreaMapPanel({
    * 새 상자에 맞춘다 — 회전이나 반응형으로 상자가 바뀌었다고 보던 자리를 잃으면 안 된다.
    */
   useEffect(() => {
-    setView((current) => {
-      if (userMovedRef.current) return withAspect(current, boxAspect);
-      // 켜 둔 오버레이가 경로보다 우선한다 — 아니면 대표 지점이 화면 밖으로 밀린다
-      if (overlayFitRef.current.length > 0) {
-        return fitTo(overlayFitRef.current, FOCUS_SCALE, boxAspect);
-      }
-      return autoViewportFor(autoFitRef.current, boxAspect);
-    });
+    setView((current) => nextViewportFor({
+      current,
+      aspect: boxAspect,
+      userMoved: userMovedRef.current,
+      overlayPoints: overlayFitRef.current,
+      routePoints: autoFitRef.current,
+    }));
   }, [boxAspect]);
 
   /**
@@ -886,7 +887,17 @@ export function KoreaMapPanel({
     if (!routeChanged && userMovedRef.current) return;
     if (routeChanged) userMovedRef.current = false;
     fittedRouteKey.current = fitKey;
-    setView(autoViewportFor(fitPoints, boxAspect));
+    /*
+     * 같은 우선순위 함수를 쓴다. 비율 effect와 이 effect는 `boxAspect`를 함께 의존해
+     * 연달아 도는데, 각자 창을 정하면 나중에 도는 쪽이 앞의 결정을 덮는다 (재리뷰 지적).
+     */
+    setView((current) => nextViewportFor({
+      current,
+      aspect: boxAspect,
+      userMoved: userMovedRef.current,
+      overlayPoints: overlayFitRef.current,
+      routePoints: fitPoints,
+    }));
     // fitPoints는 매 렌더 새 배열이라 의존성에 넣지 않는다 — 내용이 바뀌면 fitKey가 바뀐다
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isRoute, fitKey, boxAspect]);

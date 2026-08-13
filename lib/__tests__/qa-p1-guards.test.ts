@@ -138,14 +138,17 @@ describe("지도 창 초기화", () => {
     expect(map).toContain("autoViewportFor(autoFitRef.current, boxAspectRef.current)");
   });
 
-  it("상자 비율이 바뀌면 조작 여부에 따라 갈린다", () => {
-    expect(map).toContain("withAspect(current, boxAspect)");
-    expect(map).toContain("autoViewportFor(autoFitRef.current, boxAspect)");
+  /**
+   * 두 effect가 boxAspect를 함께 의존해 연달아 돈다. 각자 창을 정하면 나중 것이 앞을 덮는다.
+   * 규칙은 한 함수에만 있어야 한다 (재리뷰).
+   */
+  it("모든 창 결정이 같은 우선순위 함수를 지난다", () => {
+    const calls = map.match(/nextViewportFor\(\{/g) ?? [];
+    expect(calls.length).toBe(3); // 비율 effect · 경로 effect · 되돌리기
   });
 
-  /** 켜 둔 오버레이가 경로보다 우선하지 않으면 대표 지점이 화면 밖으로 밀린다 */
-  it("오버레이가 켜져 있으면 경로보다 우선한다", () => {
-    expect(map).toContain("overlayFitRef.current.length > 0");
-    expect(map).toContain("fitTo(overlayFitRef.current, FOCUS_SCALE, boxAspect)");
+  it("우선순위를 화면에 다시 늘어놓지 않는다", () => {
+    expect(map).not.toContain("overlayFitRef.current.length > 0 ?");
+    expect(map).not.toContain("if (userMovedRef.current) return withAspect");
   });
 });
