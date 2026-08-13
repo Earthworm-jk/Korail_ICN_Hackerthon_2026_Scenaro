@@ -68,6 +68,24 @@ export function hasBlockingMarker(text: string): boolean {
 export function hasCommandVerb(text: string): boolean {
   return MOVE_VERBS.test(text) || ADD_VERBS.test(text) || /\b(move|add|put)\b/i.test(text);
 }
+
+/**
+ * 제거·교체 동사 (PR #200 리뷰).
+ *
+ * **장소 답변 게이트 전용이다.** `광화문 빼줘`는 부정 표지도 없고 추가·이동 동사도 없어서
+ * 두 검사를 모두 통과했다. 그 문장 전체가 장소명으로 슬롯에 합쳐지면서
+ * `둘째 날에 넣어줘` 뒤의 `광화문 빼줘`가 `add_place(둘째 날)`이 됐다 —
+ * **지원하지 않는 요청을 지원하는 요청으로 바꿔 읽는 것**이라 답변에서 거부한다.
+ *
+ * 파서 진입부에는 넣지 않는다. 이 동사들만으로는 add·move 의도가 서지 않아
+ * `광화문 빼줘`를 새 명령으로 읽으면 이미 `UNSUPPORTED_INTENT`다.
+ */
+const REMOVAL_VERBS = /(빼|삭제|제외|제거|지워|없애|바꿔|변경|교체)/;
+
+export function hasRemovalVerb(text: string): boolean {
+  return REMOVAL_VERBS.test(text)
+    || /\b(remove|delete|drop|exclude|replace|change|swap)\b/i.test(text);
+}
 /**
  * "7곳만 남겨줘" (#171 6번).
  *

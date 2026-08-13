@@ -28,6 +28,7 @@ import {
   dayIndicesIn,
   hasBlockingMarker,
   hasCommandVerb,
+  hasRemovalVerb,
   parseDayIndex,
 } from "./itinerary-command-fallback";
 import { RawItineraryCommandSchema, type RawItineraryCommand } from "./itinerary-command";
@@ -183,6 +184,14 @@ export function placeOnlyAnswer(sentence: string): string | undefined {
   if (hasBlockingMarker(sentence)) return undefined;
   // 동사가 있으면 스스로 읽히는 새 명령이다
   if (hasCommandVerb(sentence)) return undefined;
+  /**
+   * 제거·교체 요청은 장소 이름이 들어 있어도 답변이 아니다 (PR #200 리뷰).
+   *
+   * `광화문 빼줘`는 부정 표지도 추가·이동 동사도 없어 위 두 검사를 통과했고, 문장 전체가
+   * 장소명이 되어 `add_place`로 합쳐졌다. 빼달라는 요청이 추가가 되는 건 못 알아듣는 것보다
+   * 나쁘다 — 지원 범위 밖이라고 말하고 파서가 새 발화로 읽게 둔다.
+   */
+  if (hasRemovalVerb(sentence)) return undefined;
   // 설명·추천 요청은 장소 이름이 들어 있어도 답변이 아니다
   if (NON_ANSWER_MARKERS.test(sentence)) return undefined;
   // 날짜가 섞였으면 우리가 물어본 칸의 답이 아니다

@@ -146,6 +146,32 @@ describe("#197 P0-B 날짜를 물어본 방향과 장소를 물어본 방향", (
     }
   });
 
+  /**
+   * PR #200 리뷰 차단 1건.
+   *
+   * `광화문 빼줘`에는 부정 표지도, 추가·이동 동사도 없다. 그래서 앞선 두 검사를 모두
+   * 통과하고 문장 전체가 장소명이 되어 `add_place(둘째 날)`로 합쳐졌다 — **빼달라는 요청이
+   * 추가로 실행될 뻔했다.** `아니야`가 붙은 변형만 시험해서 이 경로를 놓쳤다.
+   */
+  it("제거·교체 요청을 장소명으로 소비하지 않는다", () => {
+    const slots: PendingCommandSlots = { requested: "place", intent: "add_place", dayIndex: 2 };
+    for (const sentence of [
+      "광화문 빼줘",
+      "광화문 삭제해줘",
+      "광화문 제외해줘",
+      "광화문 지워줘",
+      "광화문 바꿔줘",
+      "remove Gwanghwamun",
+      "delete Gwanghwamun",
+    ]) {
+      expect(placeOnlyAnswer(sentence), sentence).toBeUndefined();
+
+      const merged = completeWithSlots(slots, parseCommand(sentence), sentence);
+      expect(merged.intent, sentence).toBe("unknown");
+      expect(resolveCommand(merged, context() as never).ok, sentence).toBe(false);
+    }
+  });
+
   it("새 명령이 스스로 읽히면 조각을 쓰지 않는다", () => {
     const slots: PendingCommandSlots = { requested: "place", intent: "add_place", dayIndex: 2 };
     const sentence = "월정사를 셋째 날에 넣어줘";
