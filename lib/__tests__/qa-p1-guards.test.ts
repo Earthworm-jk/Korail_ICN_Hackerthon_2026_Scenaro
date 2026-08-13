@@ -30,8 +30,22 @@ describe("항공편 조회 — 진행과 실패를 화면이 말한다", () => {
 
   /** 부동 프로미스로 두면 서버 액션 실패가 삼켜져 화면이 침묵한다 */
   it("조회 실패를 삼키지 않는다", () => {
-    expect(wizard).toContain("lookupFailed: true");
     expect(wizard).toContain('tr("step1.lookupFailed")');
+  });
+
+  /**
+   * 전이 자체는 flight-lookup.test.ts가 본다. 여기서는 화면이 그 함수를 쓰는지만 확인한다 —
+   * 규칙을 옮겨 적으면 화면과 따로 논다 (PR #205 리뷰).
+   */
+  it("상태 전이를 화면에 다시 적지 않고 순수 함수에 맡긴다", () => {
+    expect(wizard).toContain("flightFieldAfterSuccess");
+    expect(wizard).toContain("flightFieldAfterNotFound");
+    expect(wizard).toContain("flightFieldAfterFailure");
+    expect(wizard).toContain("flightFieldAfterFlightNoEdit");
+  });
+
+  it("늦게 온 응답을 순번으로 버린다", () => {
+    expect(wizard).toContain("flightLookupIsCurrent(sequence, flightLookupRequest.current)");
   });
 
   it("편명 없음과 조회 실패는 다른 문구다 — 사용자가 할 일이 다르다", () => {

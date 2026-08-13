@@ -119,6 +119,13 @@ import type { StationFacilitiesSnapshotT } from "@/lib/station-facilities";
 import type { StationCoordinatesSnapshotT } from "@/lib/station-coordinates";
 import type { RailGeometrySnapshotT } from "@/lib/rail-geometry";
 import { step1ErrorOf, type TimetableWindow } from "@/lib/timetable-window";
+import {
+  flightFieldAfterFailure,
+  flightFieldAfterFlightNoEdit,
+  flightFieldAfterNotFound,
+  flightFieldAfterSuccess,
+  flightLookupIsCurrent,
+} from "@/lib/flight-lookup";
 import type { DayPlan } from "@/lib/engine/types";
 import type { RegionWindowKind } from "@/lib/engine/region-windows";
 import { undoPointOf, type UndoPoint } from "@/lib/itinerary-undo";
@@ -435,6 +442,8 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
   const [airportReady, setAirportReady] = useState({ at: "2026-08-16T12:00", touched: false });
   const [airportDeadline, setAirportDeadline] = useState({ at: "2026-08-18T16:00", touched: false });
   const [lookingUp, setLookingUp] = useState<"arrival" | "departure" | null>(null);
+  /** 입력이 바뀌면 올린다 — 그 전에 나간 조회의 늦은 응답을 버리기 위한 순번 (PR #205 리뷰) */
+  const flightLookupRequest = useRef(0);
   const [airportAdvisories, setAirportAdvisories] = useState<AirportPassengerAdvisoryPair | null>(null);
   const [dismissedAirportAdvisories, setDismissedAirportAdvisories] = useState<Set<string>>(new Set());
   const airportAdvisoryRequest = useRef(0);
@@ -443,10 +452,12 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
     toLocalInput(new Date(Date.parse(fromLocalInput(at)) + minutes * 60_000).toISOString());
 
   const setArrivalAtInput = useCallback((at: string) => {
+    flightLookupRequest.current += 1; // 날짜가 바뀌면 진행 중 조회의 응답은 다른 날의 결과다
     setArrival((f) => ({ ...f, at }));
     if (at) setAirportReady((r) => (r.touched ? r : { ...r, at: deriveLocal(at, 120) }));
   }, []);
   const setDepartureAtInput = useCallback((at: string) => {
+    flightLookupRequest.current += 1;
     setDeparture((f) => ({ ...f, at }));
     if (at) setAirportDeadline((d) => (d.touched ? d : { ...d, at: deriveLocal(at, -120) }));
   }, []);
@@ -597,30 +608,31 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
      * 뜨지 않았다 — 행사장 네트워크에서 그대로 드러나는 경로다 (QA 실측).
      * AI 패널이 처리 중 입력을 잠그는 것과 같은 규칙을 여기에도 적용한다.
      */
+    const sequence = ++flightLookupRequest.current;
     setLookingUp(direction);
     try {
       const res = await getFlightInfo(field.flightNo, direction, field.at); // 날짜부 → searchday (#46)
+      // 그 사이 편명·날짜가 바뀌었으면 이 응답은 다른 편의 결과다 — 화면을 되돌리지 않는다
+      if (!flightLookupIsCurrent(sequence, flightLookupRequest.current)) return;
       if (res.ok) {
-        setField({
-          ...field,
-          notFound: false,
-          lookupFailed: false,
+        setField((previous) => flightFieldAfterSuccess(previous, {
           source: res.source,
           status: res.flight.status,
           terminal: res.flight.terminal,
-        });
+        }));
         // live 조회는 변경(예상) 시각이 있으면 그 값을 쓴다 — 예선 약속(지연 반영) 서사
         (direction === "arrival" ? setArrivalAtInput : setDepartureAtInput)(
           toLocalInput(res.flight.estimatedAt ?? res.flight.scheduledAt),
         );
       } else {
-        setField({ ...field, notFound: true, lookupFailed: false, source: undefined, status: undefined, terminal: undefined });
+        setField(flightFieldAfterNotFound);
       }
     } catch {
       // 편명이 없는 것과 조회가 안 된 것은 다르다 — 사용자가 할 일이 다르므로 문구를 나눈다
-      setField({ ...field, notFound: false, lookupFailed: true });
+      if (!flightLookupIsCurrent(sequence, flightLookupRequest.current)) return;
+      setField(flightFieldAfterFailure);
     } finally {
-      setLookingUp(null);
+      if (flightLookupIsCurrent(sequence, flightLookupRequest.current)) setLookingUp(null);
     }
   }, [arrival, departure, setArrivalAtInput, setDepartureAtInput]);
 
@@ -1938,7 +1950,10 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
                     className="w-28 rounded border px-2 py-1 text-sm"
                     value={field.flightNo}
                     placeholder="KE123"
-                    onChange={(e) => setField({ ...field, flightNo: e.target.value, notFound: false })}
+                    onChange={(e) => {
+                      flightLookupRequest.current += 1;
+                      setField((previous) => flightFieldAfterFlightNoEdit(previous, e.target.value));
+                    }}
                   />
                   <button
                     type="button"
