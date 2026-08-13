@@ -56,4 +56,11 @@ describe("관람과 이동의 시각적 구분", () => {
     expect(timelineCss).toMatch(/data-itinerary-row="gateway"[^}]*::before/);
     expect(timelineCss).toMatch(/border-radius:\s*1px/);
   });
+
+  it("이동 행은 관람 행과 가로폭을 맞추고 세로 높이만 줄인다", () => {
+    expect(timelineCss).toMatch(/\[data-move-summary\]\s*{[^}]*width:\s*100%/);
+    expect(timelineCss).not.toContain("width: min(100%, 184px)");
+    expect(timelineCss).toMatch(/\[data-move-summary\]\s*{[^}]*grid-template-columns:\s*auto minmax\(0, 1fr\)/);
+    expect(timelineCss).toMatch(/li\[data-itinerary-row="train"\],[\s\S]*?li\[data-itinerary-row="gateway"\]\s*{[^}]*height:\s*78px/);
+  });
 });

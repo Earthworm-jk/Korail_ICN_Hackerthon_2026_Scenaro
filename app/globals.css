@@ -375,8 +375,23 @@
 }
 
 [data-move-summary] {
-  width: min(100%, 184px);
-  align-self: center;
+  display: grid;
+  width: 100%;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  column-gap: 8px;
+  row-gap: 2px;
+}
+
+[data-move-summary] [data-row-main] {
+  min-width: 0;
+  margin-top: 0;
+}
+
+[data-move-summary] [data-row-meta] {
+  grid-column: 1 / -1;
+  justify-self: end;
+  padding-top: 0;
 }
 
 [data-move-summary] [data-row-name] {
@@ -463,9 +478,10 @@ ul[data-day-stays] [data-row-meta] {
     padding-top: 14px;
   }
 
-  /* 칸 폭은 체류 타임라인과 맞춘 채, 이동 카드만 칸 안에서 좁은 연결자로 보인다. */
+  /* 이동도 관람과 같은 칸 폭을 쓴다. 구분은 가로폭이 아니라 낮은 세로 높이로 한다. */
   ul[data-day-rows] > li[data-itinerary-row="train"],
   ul[data-day-rows] > li[data-itinerary-row="gateway"] {
+    height: 78px;
     min-height: 0;
   }
 
