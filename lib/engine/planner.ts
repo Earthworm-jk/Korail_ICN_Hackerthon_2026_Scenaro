@@ -30,11 +30,14 @@ const MIN_TRANSFER_MINUTES = 15;
 type CandidatePlace = {
   place: PlaceT;
   selectionGroups: SelectionGroup[];
+  /** 선택한 작품에서 검수된 대표 촬영지인가 (#208). */
+  representative: boolean;
 };
 
 type ScheduledVisit = {
   place: PlaceT;
   selectionGroups: SelectionGroup[];
+  representative: boolean;
   visitStart: number;
   visitEnd: number;
   stationReadyAt: number;
@@ -51,6 +54,7 @@ type DerivedState = {
   ridePath: string; // 탑승 trainNo join("/") — 안정 타이브레이커 뒷부분
   stableKey: string; // 완성된 안정 타이브레이커 — 비교자에서 재조립하지 않도록 전이 시 확정
   dateCountsKey: string; // 날짜별 배치 수 서명 — pruneStates 서명용
+  representativePlaceCount: number;
   verifiedHoursMismatchCount: number;
   // #139 — 선호 날짜에 배치된 방문 수. 여기에 담는 것은 '지킨 수'이고 비교 키는 '못 지킨 수'다.
   // 한 실행 안에서 총 선호 수가 상수라 (mismatch 오름차순) ≡ (honored 내림차순)이고,
@@ -268,6 +272,7 @@ function initialDerived(ctx: PlanContext): DerivedState {
     ridePath: "",
     stableKey: "",
     dateCountsKey: dateCountsKeyOf(ctx.tripDates.map(() => 0)),
+    representativePlaceCount: 0,
     verifiedHoursMismatchCount: 0,
     preferredHonoredCount: 0,
     preferredOrderHonoredCount: 0,
@@ -291,6 +296,7 @@ function appendDerived(
   parent: DerivedState,
   placeId: string,
   selectionGroups: readonly SelectionGroup[],
+  representative: boolean,
   warning: ActivityWindowDetail | null,
   route: TrainLegT[],
   dateCounts: readonly number[],
@@ -313,6 +319,7 @@ function appendDerived(
     ridePath,
     stableKey: stableKeyOf(visitPath, ridePath),
     dateCountsKey: dateCountsKeyOf(dateCounts),
+    representativePlaceCount: parent.representativePlaceCount + Number(representative),
     verifiedHoursMismatchCount: parent.verifiedHoursMismatchCount
       + (warning === "OUTSIDE_VERIFIED_HOURS" ? 1 : 0),
     preferredHonoredCount: parent.preferredHonoredCount + (honorsPreference ? 1 : 0),
@@ -338,6 +345,7 @@ function recomputeDerived(state: PlannerState, ctx: PlanContext): DerivedState {
     // 원본 재계산: 방문 기록의 visitStart에서 날짜별 수를 다시 센다 (배열 신뢰 안 함)
     dateCountsKey: dateCountsKeyOf(ctx.tripDates.map((date) =>
       state.visits.filter(({ visitStart }) => koreaDate(visitStart) === date).length)),
+    representativePlaceCount: state.visits.filter(({ representative }) => representative).length,
     verifiedHoursMismatchCount: state.visits.filter(
       ({ warning }) => warning === "OUTSIDE_VERIFIED_HOURS",
     ).length,
@@ -363,6 +371,7 @@ function assertDerivedIntegrity(states: PlannerState[], ctx: PlanContext): void 
       || actual.ridePath !== expected.ridePath
       || actual.stableKey !== expected.stableKey
       || actual.dateCountsKey !== expected.dateCountsKey
+      || actual.representativePlaceCount !== expected.representativePlaceCount
       || actual.verifiedHoursMismatchCount !== expected.verifiedHoursMismatchCount
       || actual.preferredHonoredCount !== expected.preferredHonoredCount
       || actual.preferredOrderHonoredCount !== expected.preferredOrderHonoredCount
@@ -482,13 +491,23 @@ export function planItinerary(
     actorIds,
     selectedWorkIds,
   );
+  const representativePlaceIds = new Set(
+    repos.workPlaceRelations
+      .filter((relation) => selectedWorkIds.has(relation.workId)
+        && relation.representativeness?.level === "iconic")
+      .map(({ placeId }) => placeId),
+  );
   const allCandidates: CandidatePlace[] = [];
   const candidates: CandidatePlace[] = [];
   for (const place of [...repos.places].sort((a, b) => a.id.localeCompare(b.id, "en"))) {
     const membership = memberships.get(place.id);
     if (!membership) continue;
     // #43 결정 1: 운영시간 미확인은 후보 제외 사유가 아니다 — 배치 시 경고로 전달한다
-    const candidate = { place, selectionGroups: selectionGroupsOf(membership) };
+    const candidate = {
+      place,
+      selectionGroups: selectionGroupsOf(membership),
+      representative: representativePlaceIds.has(place.id),
+    };
     allCandidates.push(candidate);
     if (!excludedPlaceIds.has(place.id)) candidates.push(candidate);
   }
@@ -758,6 +777,7 @@ function buildVerifiedAlternatives(input: VerifiedAlternativeContext): VerifiedI
     const signature = completeScheduleSignature(schedule);
     if (signature === bestSignature) continue;
     if (schedule.keys.selectionGroupCoverageCount !== best.keys.selectionGroupCoverageCount
+      || schedule.keys.representativePlaceCount !== best.keys.representativePlaceCount
       || schedule.keys.selectedUnionPlaceCount !== best.keys.selectedUnionPlaceCount) continue;
     if (schedule.keys.totalTravelMinutes >= best.keys.totalTravelMinutes
       && schedule.keys.transferCount >= best.keys.transferCount) continue;
@@ -1025,6 +1045,7 @@ function appendVisit(
       visits: [...state.visits, {
         place,
         selectionGroups: candidate.selectionGroups,
+        representative: candidate.representative,
         visitStart: window.visitStart,
         visitEnd: window.visitEnd,
         stationReadyAt: window.stationReadyAt,
@@ -1040,6 +1061,7 @@ function appendVisit(
         state.derived,
         place.id,
         candidate.selectionGroups,
+        candidate.representative,
         warning,
         route,
         dateCounts,
@@ -1158,6 +1180,7 @@ function completeSchedule(
     returnedAt,
     keys: {
       selectionGroupCoverageCount,
+      representativePlaceCount: state.derived.representativePlaceCount,
       selectedUnionPlaceCount: state.visits.length,
       verifiedHoursMismatchCount: verifiedHoursMismatchCountOf(state), // #198 — 검증 충돌만 비교
       // #139: 일정에 못 들어간 선호도 불일치 1로 센다 — 총 선호 수에서 지킨 수를 뺀다
@@ -1572,6 +1595,7 @@ function coverageOf(state: PlannerState): number {
 /** beam 정렬 — 검증 운영시간 충돌 수를 최종 비교 키(#198)와 같은 방향으로 우선한다 */
 function compareBeam(a: PlannerState, b: PlannerState): number {
   return coverageOf(b) - coverageOf(a)
+    || b.derived.representativePlaceCount - a.derived.representativePlaceCount
     || verifiedHoursMismatchCountOf(a) - verifiedHoursMismatchCountOf(b)
     || a.readyAt - b.readyAt
     || a.derived.stableKey.localeCompare(b.derived.stableKey, "en");
@@ -1580,6 +1604,7 @@ function compareBeam(a: PlannerState, b: PlannerState): number {
 /** 같은 정렬에 선호 불일치를 최종 비교와 같은 자리(경고 뒤)에 끼운 것 (#139) */
 function compareBeamPreferred(a: PlannerState, b: PlannerState): number {
   return coverageOf(b) - coverageOf(a)
+    || b.derived.representativePlaceCount - a.derived.representativePlaceCount
     || verifiedHoursMismatchCountOf(a) - verifiedHoursMismatchCountOf(b)
     || b.derived.preferredHonoredCount - a.derived.preferredHonoredCount
     || b.derived.preferredOrderHonoredCount - a.derived.preferredOrderHonoredCount
@@ -1594,7 +1619,8 @@ function compareBeamPreferred(a: PlannerState, b: PlannerState): number {
  * 배치 수·역·준비 시각이 모두 같을 수 있어 같은 서명으로 묶이기 때문이다.
  */
 function comparePruned(a: PlannerState, b: PlannerState): number {
-  return verifiedHoursMismatchCountOf(a) - verifiedHoursMismatchCountOf(b)
+  return b.derived.representativePlaceCount - a.derived.representativePlaceCount
+    || verifiedHoursMismatchCountOf(a) - verifiedHoursMismatchCountOf(b)
     || b.derived.preferredHonoredCount - a.derived.preferredHonoredCount
     || b.derived.preferredOrderHonoredCount - a.derived.preferredOrderHonoredCount
     || a.readyAt - b.readyAt

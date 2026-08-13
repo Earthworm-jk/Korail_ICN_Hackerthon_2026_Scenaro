@@ -18,6 +18,13 @@
         "https://english.visitkorea.or.kr/svc/sp/HallyuNew/contentsView.do?dataSetId=70&vcontsId=216921"
       ]
     },
+    "representativeness": {
+      "level": "iconic",
+      "method": "manual",
+      "evidenceSourceUrls": [
+        "https://english.visitkorea.or.kr/svc/sp/HallyuNew/contentsView.do?dataSetId=70&vcontsId=216921"
+      ]
+    },
     "sourceUrls": [
       "https://www.data.go.kr/data/15111405/fileData.do",
       "https://english.visitkorea.or.kr/svc/whereToGo/locIntrdn/rgnContentsView.do?vcontsId=112532",

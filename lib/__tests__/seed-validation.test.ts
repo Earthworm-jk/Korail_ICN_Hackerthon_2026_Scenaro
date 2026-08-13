@@ -495,6 +495,21 @@ describe("작품–장소 관계 검증 (#51 — 스키마 선행 고정)", () =
     expect(ftp.some((m) => m.includes("http/https"))).toBe(true);
   });
 
+  it("대표 촬영지 근거는 검수된 관계의 sourceUrls 안에 있어야 한다 (#208)", () => {
+    const raw = baseSeed();
+    Object.assign(raw.workPlaceRelations[0], {
+      representativeness: {
+        level: "iconic",
+        method: "manual",
+        evidenceSourceUrls: ["https://example.com/unlisted-evidence"],
+      },
+    });
+    const issues = issuesOf(raw);
+    expect(issues.some((message) =>
+      message.includes("representativeness.evidenceSourceUrls")
+      && message.includes("sourceUrls에도 포함"))).toBe(true);
+  });
+
   it("Place의 별칭·주소·좌표 optional 필드는 값이 있으면 검증하고 없으면 통과한다 (#51 additive)", () => {
     const raw = baseSeed();
     corrupt(raw.places[0], {

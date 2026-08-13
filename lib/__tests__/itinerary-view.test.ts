@@ -30,7 +30,7 @@ const plannedA: ItineraryResult = {
   status: "planned", days: [dayA], rejectedPlaces: [], warnings: [],
   selectionGroups: { requested: ["work"], covered: ["work"], uncovered: [] },
   comparisonKeys: {
-    selectionGroupCoverageCount: 1, selectedUnionPlaceCount: 1,
+    selectionGroupCoverageCount: 1, representativePlaceCount: 0, selectedUnionPlaceCount: 1,
     verifiedHoursMismatchCount: 0, preferredDateMismatchCount: 0, preferredOrderMismatchCount: 0, totalTravelMinutes: 150, transferCount: 0, slackSatisfied: true,
   },
   metrics: { totalTravelMinutes: 150, totalRailMinutes: 100, transferCount: 0, departureSlackMinutes: 180 },

@@ -20,6 +20,7 @@ const planned = (placeIds: string[]): ItineraryResult => ({
   selectionGroups: { requested: [], covered: [], uncovered: [] },
   comparisonKeys: {
     selectionGroupCoverageCount: 0,
+    representativePlaceCount: 0,
     selectedUnionPlaceCount: placeIds.length,
     verifiedHoursMismatchCount: 0,
     preferredDateMismatchCount: 0,
