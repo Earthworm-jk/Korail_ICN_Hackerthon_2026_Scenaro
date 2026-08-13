@@ -92,7 +92,7 @@ import { fromKstLocalInput as fromLocalInput, toKstLocalInput as toLocalInput } 
 import { formatFlightStatus } from "@/lib/flight-status";
 import { formatEpisodeLabel } from "@/lib/episode-label";
 import { splitSourceLink } from "@/lib/source-link";
-import { placePhoto } from "@/lib/place-photos";
+import { photoCredit, placePhoto } from "@/lib/place-photos";
 import { PlaceTypeIcon } from "./place-type-icon";
 import { diffItineraries, type ItineraryDiff } from "@/lib/itinerary-diff";
 import { gatewayPlanningBaselineOf } from "@/lib/engine/gateway-baseline";
@@ -3530,21 +3530,29 @@ function PlaceCard({ candidate, locale, tr, selected, onToggle, stationName, wor
                   )}
                 </p>
               )}
-              {photo && (
-                <p className="mt-0.5 text-xs text-sc-muted/80">
-                  <a
-                    href={photo.sourceUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="underline underline-offset-2 hover:text-sc-blue"
-                    title={locale === "ko" ? "사진 원본 열기" : "Open original photo"}
-                  >
-                    {locale === "ko"
-                      ? `사진: ${photo.provider} · ${photo.license}`
-                      : "Photo: Korea Tourism Organization TourAPI · KOGL Type 1"}
-                  </a>
-                </p>
-              )}
+              {photo && (() => {
+                const credit = photoCredit(photo, locale);
+                // 장면 캡처는 배지가 없다 — 목록 줄에도 출처 문구를 넣지 않는다
+                if (credit.badge === null) return null;
+                const text = locale === "ko" ? `사진: ${credit.badge}` : `Photo: ${credit.badge}`;
+                return (
+                  <p className="mt-0.5 text-xs text-sc-muted/80" title={credit.label}>
+                    {credit.href ? (
+                      <a
+                        href={credit.href}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="underline underline-offset-2 hover:text-sc-blue"
+                        title={locale === "ko" ? "사진 원본 열기" : "Open original photo"}
+                      >
+                        {text}
+                      </a>
+                    ) : (
+                      text
+                    )}
+                  </p>
+                );
+              })()}
         </div>
       </div>
     </li>

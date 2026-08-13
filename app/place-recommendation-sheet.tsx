@@ -4,7 +4,7 @@ import Image from "next/image";
 import { ArrowUpDown, ChevronDown, ChevronUp } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import { withValues, type MessageKey } from "@/lib/i18n/messages";
-import type { PlacePhoto } from "@/lib/place-photos";
+import { photoCredit, type PlacePhoto } from "@/lib/place-photos";
 import styles from "./place-recommendation-sheet.module.css";
 
 type Translator = (key: MessageKey) => string;
@@ -238,6 +238,8 @@ export function PlaceThumbnail({
     ? `${styles.thumbnail} ${styles.thumbnailCover}`
     : styles.thumbnail;
   if (photo) {
+    // 장면 캡처는 링크할 원본이 없다 — 크레딧만 남기고 앵커를 걷는다
+    const credit = photoCredit(photo, locale);
     return (
       <figure className={frameClass} data-place-thumbnail data-place-photo>
         <Image
@@ -248,20 +250,29 @@ export function PlaceThumbnail({
           unoptimized
           className={styles.thumbnailImage}
         />
-        <a
-          href={photo.sourceUrl}
-          target="_blank"
-          rel="noreferrer"
-          className={styles.thumbnailAttribution}
-          title={`${photo.provider} · ${photo.license}`}
-          aria-label={
-            locale === "ko"
-              ? `${photo.sourcePlaceName} 사진 원본 · ${photo.provider} · ${photo.license}`
-              : `Original ${photo.sourcePlaceName} photo · Korea Tourism Organization TourAPI · KOGL Type 1`
-          }
-        >
-          KTO · KOGL 1
-        </a>
+        {credit.badge === null ? (
+          // 장면 캡처는 사진 위에 아무것도 얹지 않는다 — 크레딧은 스크린리더에만 남는다
+          <span className="sr-only">{credit.label}</span>
+        ) : credit.href ? (
+          <a
+            href={credit.href}
+            target="_blank"
+            rel="noreferrer"
+            className={styles.thumbnailAttribution}
+            title={credit.label}
+            aria-label={credit.label}
+          >
+            {credit.badge}
+          </a>
+        ) : (
+          <span
+            className={styles.thumbnailAttribution}
+            title={credit.label}
+            aria-label={credit.label}
+          >
+            {credit.badge}
+          </span>
+        )}
       </figure>
     );
   }

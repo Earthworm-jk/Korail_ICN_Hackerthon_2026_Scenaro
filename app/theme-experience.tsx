@@ -3,6 +3,7 @@
  * 테마체험 권역 카드 (#80 · #14 v0.6 계약)
  */
 import { Sparkles } from "lucide-react";
+import Image from "next/image";
 import { useRef } from "react";
 import { project } from "@/lib/korea-map-projection";
 import { useMapOverlayEntry, useMapView } from "./korea-map";
@@ -85,6 +86,16 @@ export function ThemeExperienceChip({ result, stationName, locale, tr, mapVisibl
         aria-labelledby="theme-experience-detail-title"
         className="m-auto w-[min(320px,calc(100vw-32px))] rounded-xl border bg-sc-surface p-3 text-left shadow-2xl backdrop:bg-black/20"
       >
+        {result.photo && (
+          <Image
+            src={result.photo.src}
+            alt={result.photo.alt[locale]}
+            width={640}
+            height={409}
+            unoptimized
+            className="mb-2 h-24 w-full rounded-lg object-cover"
+          />
+        )}
         <p id="theme-experience-detail-title" className="flex items-center gap-1.5 text-sm font-semibold">
           <Sparkles aria-hidden="true" className="size-4 shrink-0" />
           {result.theme[locale]}

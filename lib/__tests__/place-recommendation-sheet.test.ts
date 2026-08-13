@@ -230,6 +230,7 @@ describe("지도 위 추천 장소 바텀시트", () => {
       label: "장소 이미지 준비 중",
       locale: "ko",
       photo: {
+        kind: "kto",
         src: "/place-photos/place-woljeongsa-temple.jpg",
         alt: { ko: "월정사의 전각과 석등", en: "Temple halls at Woljeongsa" },
         provider: "한국관광공사 TourAPI",
@@ -248,6 +249,33 @@ describe("지도 위 추천 장소 바텀시트", () => {
     expect(markup).toContain("tong.visitkorea.or.kr");
     expect(markup).toContain("월정사 사진 원본 · 한국관광공사 TourAPI · 공공누리 제1유형");
     expect(markup).not.toContain('role="img"');
+  });
+
+  it("방송 장면 캡처는 배지 없이 깔리고 크레딧은 스크린리더에만 남는다", () => {
+    const markup = renderToStaticMarkup(createElement(PlaceThumbnail, {
+      label: "장소 이미지 준비 중",
+      locale: "ko",
+      photo: {
+        kind: "scene_still",
+        src: "/place-photos/scene-place-sinchon-mural-tunnel.jpg",
+        alt: { ko: "터널을 걷는 두 사람", en: "Two characters walking through the tunnel" },
+        broadcaster: "tvN",
+        workTitle: { ko: "도깨비", en: "Guardian: The Lonely and Great God" },
+        episodeLabel: "10화",
+        rights: "방송사 저작물 — 시연용 인용",
+        verifiedAt: "2026-08-14",
+        verificationMethod: "캡처 화면 육안 확인 — 장소·작품 대조",
+      },
+    }));
+
+    expect(markup).toContain("data-place-photo");
+    // 사진 위에 배지를 얹지 않는다
+    expect(markup).not.toContain("thumbnailAttribution");
+    expect(markup).toContain("tvN");
+    // 방송 화면에 공공누리 표기가 붙으면 사실과 다르다
+    expect(markup).not.toContain("KOGL");
+    expect(markup).not.toContain("공공누리");
+    expect(markup).not.toContain("<a");
   });
 });
 

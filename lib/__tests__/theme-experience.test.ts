@@ -216,8 +216,10 @@ describe("운영 성공 경로 (#80 — 실제 일정에서 카드가 나온다)
     expect(result.reason.ko).toBeTruthy();
     expect(result.reason.en).toBeTruthy();
     // 원시 점수·검토 메타는 응답에 실리지 않는다 (PR #70 리뷰 규율)
-    expect(Object.keys(result).sort()).toEqual(["point", "reason", "regionId", "status", "theme", "zoneName"]);
+    expect(Object.keys(result).sort()).toEqual(["photo", "point", "reason", "regionId", "status", "theme", "zoneName"]);
     expect(result.point).toEqual({ latitude: expect.any(Number), longitude: expect.any(Number) });
+    // 권역 사진은 표시용 src·alt만 싣는다 — zoneId는 화면이 쓰지 않으므로 내리지 않는다
+    expect(Object.keys(result.photo ?? {}).sort()).toEqual(["alt", "src"]);
   });
 
   it("서사 근거가 없는 《도깨비》 단독 선택은 같은 일정에서도 추천 없음이다", async () => {
