@@ -120,11 +120,17 @@ import type { StationCoordinatesSnapshotT } from "@/lib/station-coordinates";
 import type { RailGeometrySnapshotT } from "@/lib/rail-geometry";
 import { step1ErrorOf, type TimetableWindow } from "@/lib/timetable-window";
 import {
+  acceptsLookupResponse,
   flightFieldAfterFailure,
   flightFieldAfterFlightNoEdit,
   flightFieldAfterNotFound,
   flightFieldAfterSuccess,
-  flightLookupIsCurrent,
+  initialLookupCoordinator,
+  invalidateLookup,
+  settleLookup,
+  startLookup,
+  type LookupCoordinator,
+  type LookupPending,
 } from "@/lib/flight-lookup";
 import type { DayPlan } from "@/lib/engine/types";
 import type { RegionWindowKind } from "@/lib/engine/region-windows";
@@ -441,9 +447,20 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
   // 파생 여유는 #3 확정 기본값 유지: 입국 +120분, 출국 안전 버퍼 120분(PRD §8.1) — 표현만 절대 시각
   const [airportReady, setAirportReady] = useState({ at: "2026-08-16T12:00", touched: false });
   const [airportDeadline, setAirportDeadline] = useState({ at: "2026-08-18T16:00", touched: false });
-  const [lookingUp, setLookingUp] = useState<"arrival" | "departure" | null>(null);
-  /** 입력이 바뀌면 올린다 — 그 전에 나간 조회의 늦은 응답을 버리기 위한 순번 (PR #205 리뷰) */
-  const flightLookupRequest = useRef(0);
+  /*
+   * 조회 진행 상태와 순번을 한 값으로 다룬다 (PR #205 재리뷰). 따로 두면 성공 응답의 시각
+   * 반영이 자기 순번을 올려 버려 `finally`가 자기 진행 표시를 끄지 못하고 버튼이 굳는다.
+   */
+  const lookupRef = useRef<LookupCoordinator>(initialLookupCoordinator);
+  const [lookupPending, setLookupPending] = useState<LookupPending>(null);
+  const applyLookupState = useCallback((next: LookupCoordinator) => {
+    lookupRef.current = next;
+    setLookupPending(next.pending);
+  }, []);
+  /** 사용자가 입력을 고쳤다 — 진행 중 응답을 버리고 진행 표시도 끈다 */
+  const invalidateFlightLookup = useCallback(() => {
+    applyLookupState(invalidateLookup(lookupRef.current));
+  }, [applyLookupState]);
   const [airportAdvisories, setAirportAdvisories] = useState<AirportPassengerAdvisoryPair | null>(null);
   const [dismissedAirportAdvisories, setDismissedAirportAdvisories] = useState<Set<string>>(new Set());
   const airportAdvisoryRequest = useRef(0);
@@ -452,12 +469,10 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
     toLocalInput(new Date(Date.parse(fromLocalInput(at)) + minutes * 60_000).toISOString());
 
   const setArrivalAtInput = useCallback((at: string) => {
-    flightLookupRequest.current += 1; // 날짜가 바뀌면 진행 중 조회의 응답은 다른 날의 결과다
     setArrival((f) => ({ ...f, at }));
     if (at) setAirportReady((r) => (r.touched ? r : { ...r, at: deriveLocal(at, 120) }));
   }, []);
   const setDepartureAtInput = useCallback((at: string) => {
-    flightLookupRequest.current += 1;
     setDeparture((f) => ({ ...f, at }));
     if (at) setAirportDeadline((d) => (d.touched ? d : { ...d, at: deriveLocal(at, -120) }));
   }, []);
@@ -608,12 +623,13 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
      * 뜨지 않았다 — 행사장 네트워크에서 그대로 드러나는 경로다 (QA 실측).
      * AI 패널이 처리 중 입력을 잠그는 것과 같은 규칙을 여기에도 적용한다.
      */
-    const sequence = ++flightLookupRequest.current;
-    setLookingUp(direction);
+    const started = startLookup(lookupRef.current, direction);
+    const sequence = started.sequence;
+    applyLookupState(started.state);
     try {
       const res = await getFlightInfo(field.flightNo, direction, field.at); // 날짜부 → searchday (#46)
       // 그 사이 편명·날짜가 바뀌었으면 이 응답은 다른 편의 결과다 — 화면을 되돌리지 않는다
-      if (!flightLookupIsCurrent(sequence, flightLookupRequest.current)) return;
+      if (!acceptsLookupResponse(lookupRef.current, sequence)) return;
       if (res.ok) {
         setField((previous) => flightFieldAfterSuccess(previous, {
           source: res.source,
@@ -629,12 +645,13 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
       }
     } catch {
       // 편명이 없는 것과 조회가 안 된 것은 다르다 — 사용자가 할 일이 다르므로 문구를 나눈다
-      if (!flightLookupIsCurrent(sequence, flightLookupRequest.current)) return;
+      if (!acceptsLookupResponse(lookupRef.current, sequence)) return;
       setField(flightFieldAfterFailure);
     } finally {
-      if (flightLookupIsCurrent(sequence, flightLookupRequest.current)) setLookingUp(null);
+      // 자기 진행 표시만 끈다 — 그 사이 새 조회가 시작됐다면 그건 그 요청의 것이다
+      applyLookupState(settleLookup(lookupRef.current, sequence));
     }
-  }, [arrival, departure, setArrivalAtInput, setDepartureAtInput]);
+  }, [applyLookupState, arrival, departure, setArrivalAtInput, setDepartureAtInput]);
 
   // #177 — D-1/D-day 승객예고는 사용자의 시각을 덮어쓰지 않고 위험 신호만 만든다.
   // 서버 Action이 라이브→공유 픽스처 폴백을 책임지고, 늦게 온 옛 응답은 버린다.
@@ -1951,17 +1968,17 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
                     value={field.flightNo}
                     placeholder="KE123"
                     onChange={(e) => {
-                      flightLookupRequest.current += 1;
+                      invalidateFlightLookup();
                       setField((previous) => flightFieldAfterFlightNoEdit(previous, e.target.value));
                     }}
                   />
                   <button
                     type="button"
                     className="rounded border px-2 py-1 text-sm disabled:opacity-50"
-                    disabled={lookingUp !== null || !field.flightNo.trim()}
+                    disabled={lookupPending !== null || !field.flightNo.trim()}
                     onClick={() => lookup(direction)}
                   >
-                    {tr(lookingUp === direction ? "step1.lookupPending" : "step1.lookup")}
+                    {tr(lookupPending?.direction === direction ? "step1.lookupPending" : "step1.lookup")}
                   </button>
                 </div>
                 {field.notFound && <p className="mt-1 text-xs text-sc-red">{tr("step1.notFound")}</p>}
@@ -1983,7 +2000,11 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
                   min={timetableWindow.firstDate}
                   max={timetableWindow.lastDate}
                   value={field.at}
-                  onChange={direction === "arrival" ? setArrivalAtInput : setDepartureAtInput}
+                  onChange={(at) => {
+                    // 사용자가 날짜를 고치면 진행 중 조회는 다른 날의 결과가 된다
+                    invalidateFlightLookup();
+                    (direction === "arrival" ? setArrivalAtInput : setDepartureAtInput)(at);
+                  }}
                 />
               </div>
             ))}

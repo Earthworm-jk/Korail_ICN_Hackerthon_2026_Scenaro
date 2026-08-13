@@ -5,6 +5,11 @@ import {
   flightFieldAfterNotFound,
   flightFieldAfterSuccess,
   flightLookupIsCurrent,
+  acceptsLookupResponse,
+  initialLookupCoordinator,
+  invalidateLookup,
+  settleLookup,
+  startLookup,
   type FlightFieldState,
 } from "../flight-lookup";
 
@@ -109,5 +114,55 @@ describe("늦게 온 응답 — 새 입력을 되돌리지 않는다", () => {
     const started = ++sequence;          // VZ850 조회 시작
     sequence += 1;                        // 사용자가 KE433으로 수정 -> 순번 상승
     expect(flightLookupIsCurrent(started, sequence)).toBe(false);
+  });
+});
+
+describe("조회 진행 상태 조율 (PR #205 재리뷰)", () => {
+  /**
+   * 재리뷰가 잡은 사고: 성공 응답의 시각 반영이 자기 요청의 순번을 올려 버려
+   * `finally`가 자기 진행 표시를 끄지 못했다. 버튼이 "조회 중…"에 굳고 다시 조회할 수도
+   * 없었다. 순번을 올리는 것은 **사용자 편집일 때뿐**이다.
+   */
+  it("성공 응답을 반영해도 진행 표시가 풀리고 다시 조회할 수 있다", () => {
+    const started = startLookup(initialLookupCoordinator, "arrival");
+    expect(started.state.pending).toEqual({ direction: "arrival", sequence: 1 });
+
+    // 응답 수락 -> 시각 반영(순번을 건드리지 않는다) -> 종료
+    expect(acceptsLookupResponse(started.state, started.sequence)).toBe(true);
+    const settled = settleLookup(started.state, started.sequence);
+    expect(settled.pending).toBeNull();
+
+    // 곧바로 다시 조회할 수 있다
+    const again = startLookup(settled, "arrival");
+    expect(again.state.pending).toEqual({ direction: "arrival", sequence: 2 });
+  });
+
+  it("조회 중 입력을 고치면 늦은 응답은 버려지고 진행 표시도 풀린다", () => {
+    const started = startLookup(initialLookupCoordinator, "arrival");
+    const edited = invalidateLookup(started.state);
+
+    expect(acceptsLookupResponse(edited, started.sequence)).toBe(false);
+    expect(edited.pending).toBeNull(); // 아무도 끄지 않아 굳는 일이 없다
+
+    const settled = settleLookup(edited, started.sequence);
+    expect(settled.pending).toBeNull();
+    expect(startLookup(settled, "arrival").state.pending).not.toBeNull();
+  });
+
+  it("옛 요청이 끝나도 도는 중인 새 요청의 진행 표시를 끄지 않는다", () => {
+    const first = startLookup(initialLookupCoordinator, "arrival");
+    const second = startLookup(first.state, "departure");
+
+    const afterOldSettles = settleLookup(second.state, first.sequence);
+    expect(afterOldSettles.pending).toEqual({ direction: "departure", sequence: second.sequence });
+
+    expect(settleLookup(afterOldSettles, second.sequence).pending).toBeNull();
+  });
+
+  it("다른 방향의 조회를 시작하면 진행 표시가 그쪽으로 옮겨간다", () => {
+    const first = startLookup(initialLookupCoordinator, "arrival");
+    const second = startLookup(first.state, "departure");
+    expect(second.state.pending?.direction).toBe("departure");
+    expect(acceptsLookupResponse(second.state, first.sequence)).toBe(false);
   });
 });

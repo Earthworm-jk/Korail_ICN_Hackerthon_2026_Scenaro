@@ -21,11 +21,11 @@ const map = readFileSync(
 
 describe("항공편 조회 — 진행과 실패를 화면이 말한다", () => {
   it("조회 중에는 버튼이 잠긴다 — 연타가 서버 액션을 여러 번 보내지 않는다", () => {
-    expect(wizard).toContain("disabled={lookingUp !== null || !field.flightNo.trim()}");
+    expect(wizard).toContain("disabled={lookupPending !== null || !field.flightNo.trim()}");
   });
 
   it("조회 중에는 버튼 문구가 바뀐다 — 눌렸는지 알 수 있어야 한다", () => {
-    expect(wizard).toContain('tr(lookingUp === direction ? "step1.lookupPending" : "step1.lookup")');
+    expect(wizard).toContain('tr(lookupPending?.direction === direction ? "step1.lookupPending" : "step1.lookup")');
   });
 
   /** 부동 프로미스로 두면 서버 액션 실패가 삼켜져 화면이 침묵한다 */
@@ -45,7 +45,22 @@ describe("항공편 조회 — 진행과 실패를 화면이 말한다", () => {
   });
 
   it("늦게 온 응답을 순번으로 버린다", () => {
-    expect(wizard).toContain("flightLookupIsCurrent(sequence, flightLookupRequest.current)");
+    expect(wizard).toContain("acceptsLookupResponse(lookupRef.current, sequence)");
+  });
+
+  /**
+   * 진행 표시를 끄는 것은 자기 요청뿐이다. 전이 자체는 flight-lookup.test.ts가 본다.
+   */
+  it("진행 표시 종료를 조율 함수에 맡긴다", () => {
+    expect(wizard).toContain("settleLookup(lookupRef.current, sequence)");
+    expect(wizard).toContain("startLookup(lookupRef.current, direction)");
+  });
+
+  /** 성공 응답의 시각 반영이 자기 순번을 올리면 버튼이 굳는다 (재리뷰) */
+  it("시각 반영 자체는 순번을 올리지 않는다 — 무효화는 사용자 편집 경로에만", () => {
+    expect(wizard).toContain("const setArrivalAtInput = useCallback((at: string) => {\n    setArrival(");
+    expect(wizard).toContain("const setDepartureAtInput = useCallback((at: string) => {\n    setDeparture(");
+    expect(wizard).toContain("invalidateFlightLookup();");
   });
 
   it("편명 없음과 조회 실패는 다른 문구다 — 사용자가 할 일이 다르다", () => {
