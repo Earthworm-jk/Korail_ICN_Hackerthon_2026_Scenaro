@@ -40,7 +40,9 @@ import {
   ZOOM_STEP,
   boundsOf,
   scaleBarOf,
+  BASE_ASPECT,
   fitTo,
+  ROUTE_FIT_SCALE,
   isZoomed,
   panBy,
   pointFromClient,
@@ -586,6 +588,17 @@ export function KoreaMapPanel({
   const [view, setView] = useState<Viewport>(BASE_VIEWPORT);
   const svgRef = useRef<SVGSVGElement | null>(null);
   /**
+   * 지도를 그리는 상자의 가로세로 비 (#146 팀 결정).
+   *
+   * 창의 비율이 상자와 다르면 `preserveAspectRatio="meet"`가 짧은 쪽에 맞춰 줄이고 나머지가
+   * 빈 띠로 남는다 — 상자 799x341에 세로 창을 넣어 좌우가 270px씩 비어 있었다.
+   * 상자를 실측해 창을 같은 비율로 만든다. viewBox를 바꿔도 상자 크기는 레이아웃이 정하므로
+   * 되먹임이 생기지 않는다(실측 확인).
+   */
+  const [boxAspect, setBoxAspect] = useState(BASE_ASPECT);
+  /** 사용자가 직접 확대·팬한 뒤에는 자동 맞춤이 그 조작을 덮지 않는다 */
+  const userMovedRef = useRef(false);
+  /**
    * 끌고 있는 포인터의 마지막 위치.
    * 여러 개를 들고 있는 이유는 버튼을 바꿔 잡거나 포인터가 겹칠 때 마지막 위치를 잃지 않기
    * 위해서다 — 두 손가락 제스처(핀치)는 다루지 않는다. 모바일 대응은 MVP 범위 밖이다(PR #111).
@@ -596,6 +609,20 @@ export function KoreaMapPanel({
   useEffect(() => {
     viewRef.current = view;
   }, [view]);
+  useEffect(() => {
+    const element = svgRef.current;
+    if (!element || typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver(([entry]) => {
+      const { width, height } = entry.contentRect;
+      if (width <= 0 || height <= 0) return;
+      const next = width / height;
+      // 소수점 흔들림으로 창을 다시 만들지 않는다
+      setBoxAspect((current) => (Math.abs(current - next) > 0.01 ? next : current));
+    });
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, []);
+
   const unit = screenUnit(view);
   const scale = scaleOf(view);
   /**
@@ -651,6 +678,7 @@ export function KoreaMapPanel({
     }
   }, []);
 
+
   const locale: Locale = tr("app.locale") === "en" ? "en" : "ko";
   const mapView = useMemo<MapViewContextValue>(
     () => ({ unit, locale, setOverlayEntry }),
@@ -683,6 +711,7 @@ export function KoreaMapPanel({
       if (stuck) return;
 
       event.preventDefault();
+      userMovedRef.current = true;
       const rect = svg.getBoundingClientRect();
       setView((current) =>
         zoomAt(current, factor, pointFromClient(current, rect, event.clientX, event.clientY)),
@@ -693,8 +722,10 @@ export function KoreaMapPanel({
     return () => svg.removeEventListener("wheel", onWheel);
   }, []);
 
-  const zoomBy = useCallback((factor: number) => setView((v) => zoomByStep(v, factor)), []);
-  const resetView = useCallback(() => setView(BASE_VIEWPORT), []);
+  const zoomBy = useCallback((factor: number) => {
+    userMovedRef.current = true;
+    setView((v) => zoomByStep(v, factor));
+  }, []);
 
   const handlePointerDown = useCallback((event: ReactPointerEvent<SVGSVGElement>) => {
     if (event.pointerType === "mouse" && event.button !== 0) return;
@@ -715,6 +746,7 @@ export function KoreaMapPanel({
     // 드래그 팬 — 화면 이동량을 표시 단위로 환산해 그대로 옮긴다
     const dx = event.clientX - previous.x;
     const dy = event.clientY - previous.y;
+    userMovedRef.current = true;
     setView((v) => panBy(v, (dx / rect.width) * v.width, (dy / rect.height) * v.height));
   }, []);
 
@@ -734,11 +766,12 @@ export function KoreaMapPanel({
       ArrowUp: [0, 1],
       ArrowDown: [0, -1],
     };
-    if (event.key === "+" || event.key === "=") setView((v) => zoomByStep(v, ZOOM_STEP));
-    else if (event.key === "-" || event.key === "_") setView((v) => zoomByStep(v, 1 / ZOOM_STEP));
+    if (event.key === "+" || event.key === "=") { userMovedRef.current = true; setView((v) => zoomByStep(v, ZOOM_STEP)); }
+    else if (event.key === "-" || event.key === "_") { userMovedRef.current = true; setView((v) => zoomByStep(v, 1 / ZOOM_STEP)); }
     else if (event.key === "0") setView(BASE_VIEWPORT);
     else if (moves[event.key]) {
       const [mx, my] = moves[event.key];
+      userMovedRef.current = true;
       setView((v) => panBy(v, mx * v.width * step, my * v.height * step));
     } else return;
     event.preventDefault();
@@ -759,6 +792,51 @@ export function KoreaMapPanel({
     railLines,
     roadPairKeys,
   );
+  /**
+   * 자동 맞춤이 담아야 하는 지점들 — 그날 동선의 역과 표시 중인 촬영지 (#146 팀 결정).
+   *
+   * 추천일정에 들어오면 남한 전체가 아니라 **이 일정의 경로가 꽉 차게** 보여야 한다.
+   * 강원 일정과 전라 일정은 경계 상자가 다르므로 배율도 저절로 다르게 잡힌다 — 권역별로
+   * 값을 따로 둘 필요가 없다.
+   */
+  const fitPoints = isRoute
+    ? [
+        ...routeStations.map((station) => project(station.latitude, station.longitude)),
+        ...placePoints.map((item) => item.at),
+      ]
+    : [];
+  /** 경로가 바뀌면 다시 맞춘다 — 같은 경로에서 사용자가 옮긴 창은 그대로 둔다 */
+  const fitKey = isRoute
+    ? `${routeStations.map((station) => station.id).join(">")}|${places.map((place) => place.id).join(",")}`
+    : "";
+
+  /**
+   * 경로에 창을 맞춘다.
+   *
+   * 사용자가 직접 확대·팬한 뒤에는 덮지 않는다 — 조작을 되돌리면 지도가 말을 안 듣는 것처럼
+   * 느껴진다. 다만 경로 자체가 바뀌면(다른 날, 다른 장소 선택) 그 조작의 전제가 사라진 것이라
+   * 다시 맞춘다.
+   */
+  const fittedRouteKey = useRef<string | null>(null);
+  useEffect(() => {
+    if (!isRoute || fitPoints.length === 0) return;
+    const routeChanged = fittedRouteKey.current !== fitKey;
+    if (!routeChanged && userMovedRef.current) return;
+    if (routeChanged) userMovedRef.current = false;
+    fittedRouteKey.current = fitKey;
+    setView(fitTo(fitPoints, ROUTE_FIT_SCALE, boxAspect));
+    // fitPoints는 매 렌더 새 배열이라 의존성에 넣지 않는다 — 내용이 바뀌면 fitKey가 바뀐다
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isRoute, fitKey, boxAspect]);
+
+  /** 되돌리기는 "경로에 맞춘 창"으로 — 남한 전체로 빼면 방금 보던 일정이 사라진다 */
+  const resetView = useCallback(() => {
+    userMovedRef.current = false;
+    fittedRouteKey.current = null;
+    setView(isRoute && fitPoints.length > 0 ? fitTo(fitPoints, ROUTE_FIT_SCALE, boxAspect) : BASE_VIEWPORT);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isRoute, fitKey, boxAspect]);
+
   // key는 인덱스가 아니라 내용으로 잡는다 — 바뀐 구간만 다시 그려지게 (routePathKeys 주석 참고)
   const routeShapes = routeSegments.map((segment) => ({
     kind: segment.kind,

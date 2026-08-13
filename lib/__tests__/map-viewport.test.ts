@@ -1,7 +1,10 @@
 import { describe, expect, it } from "vitest";
 import {
   BASE_VIEWPORT,
+  BASE_ASPECT,
   COASTLINE_DETAIL_SCALE,
+  ROUTE_FIT_SCALE,
+  aspectOf,
   FOCUS_SCALE,
   MAX_SCALE,
   MIN_SCALE,
@@ -359,5 +362,63 @@ describe("지도 표시 창", () => {
       right: BASE_VIEWPORT.x + BASE_VIEWPORT.width,
       bottom: BASE_VIEWPORT.y + BASE_VIEWPORT.height,
     });
+  });
+});
+
+
+/**
+ * 상자 비율에 맞춘 창 (#146 팀 결정)
+ *
+ * `preserveAspectRatio="meet"`는 창이 상자보다 세로로 길면 높이에 맞춰 줄이고 좌우를 비운다.
+ * 실측에서 상자 799x341에 창 194x256이 들어가 지도가 258px만 쓰고 양옆 270px씩 비었다.
+ * 창을 상자와 같은 비율로 만들면 그 띠가 생길 자리가 없다.
+ */
+describe("상자 비율 맞춤", () => {
+  const WIDE = 799 / 341; // 실측한 카드 비율
+  const 강원 = [{ x: 150, y: 250 }, { x: 205, y: 262 }];   // 서울 - 강릉, 가로로 짧다
+  const 전라 = [{ x: 150, y: 250 }, { x: 158, y: 330 }];   // 서울 - 남원, 세로로 길다
+
+  it("창의 비율이 상자와 같아진다 — 좌우 빈 띠가 생기지 않는다", () => {
+    const view = fitTo(강원, ROUTE_FIT_SCALE, WIDE);
+    expect(aspectOf(view)).toBeCloseTo(WIDE, 6);
+  });
+
+  it("비율을 주지 않으면 기본 창 비율 그대로다 — 기존 호출은 그대로 동작한다", () => {
+    expect(aspectOf(fitTo(강원))).toBeCloseTo(BASE_ASPECT, 6);
+    expect(aspectOf(BASE_VIEWPORT)).toBeCloseTo(BASE_ASPECT, 6);
+  });
+
+  /** 권역마다 값을 따로 두지 않는다 — 경계 상자가 다르면 배율이 저절로 다르다 */
+  it("강원 일정과 전라 일정의 배율이 다르게 잡힌다", () => {
+    const gangwon = scaleOf(fitTo(강원, ROUTE_FIT_SCALE, WIDE));
+    const jeolla = scaleOf(fitTo(전라, ROUTE_FIT_SCALE, WIDE));
+    expect(gangwon).not.toBeCloseTo(jeolla, 2);
+    // 세로로 긴 경로는 가로로 긴 창에서 더 많이 빼야 담긴다
+    expect(jeolla).toBeLessThan(gangwon);
+  });
+
+  it("두 경로 모두 창 안에 들어온다", () => {
+    for (const points of [강원, 전라]) {
+      const view = fitTo(points, ROUTE_FIT_SCALE, WIDE);
+      for (const point of points) expect(contains(view, point)).toBe(true);
+    }
+  });
+
+  it("동선 상한은 해안선이 버티는 배율까지다 — 그 위로는 배경이 물러난다", () => {
+    expect(ROUTE_FIT_SCALE).toBe(COASTLINE_DETAIL_SCALE);
+    expect(scaleOf(fitTo([{ x: 200, y: 300 }], ROUTE_FIT_SCALE, WIDE))).toBeLessThanOrEqual(ROUTE_FIT_SCALE);
+  });
+
+  /** 가로로 넓은 창은 기본 창보다 넓어질 수 있다 — 가둘 자리가 없으면 가운데 둔다 */
+  it("기본 창보다 넓은 창은 가로로 가운데 정렬된다", () => {
+    const view = clampViewport({ x: -999, y: 250, width: BASE_VIEWPORT.width * 2, height: BASE_VIEWPORT.height });
+    expect(view.x + view.width / 2).toBeCloseTo(BASE_VIEWPORT.x + BASE_VIEWPORT.width / 2, 6);
+  });
+
+  it("확대해도 상자 비율이 유지된다 — 조작 중에 띠가 다시 생기지 않는다", () => {
+    const view = fitTo(강원, ROUTE_FIT_SCALE, WIDE);
+    const zoomed = zoomByStep(view, ZOOM_STEP);
+    expect(aspectOf(zoomed)).toBeCloseTo(WIDE, 6);
+    expect(aspectOf(panBy(zoomed, 3, 3))).toBeCloseTo(WIDE, 6);
   });
 });
