@@ -9,9 +9,9 @@ import {
   Coffee,
   Drama,
   Footprints,
-  History,
   Hotel,
   LandPlot,
+  Landmark,
   Library,
   MapPin,
   Paintbrush,
@@ -32,7 +32,7 @@ const ICONS: Record<PlaceTypeIconKey, LucideIcon> = {
   "map-pin": MapPin,
   waves: Waves,
   trees: Trees,
-  history: History,
+  landmark: Landmark,
   footprints: Footprints,
   beef: Beef,
   "cable-car": CableCar,
@@ -54,5 +54,5 @@ const ICONS: Record<PlaceTypeIconKey, LucideIcon> = {
 
 export function PlaceTypeIcon({ placeType }: { placeType: PlaceTypeT | undefined }) {
   const Icon = ICONS[placeTypeIconKey(placeType)];
-  return <Icon aria-hidden="true" className="mb-3 size-6" strokeWidth={1.8} />;
+  return <Icon aria-hidden="true" className="size-5" strokeWidth={1.8} />;
 }

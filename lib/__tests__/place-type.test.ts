@@ -66,8 +66,8 @@ describe("유형 아이콘 매핑", () => {
     expect(PLACE_TYPE_FALLBACK_ICON_KEY).toBe("map-pin");
   });
 
-  it("heritage는 특정 문화권 건축물 대신 중립적인 history 아이콘을 쓴다", () => {
-    expect(PLACE_TYPE_ICON_KEY.heritage).toBe("history");
+  it("heritage는 기록 아이콘이 아니라 방문 가능한 문화 명소 아이콘을 쓴다", () => {
+    expect(PLACE_TYPE_ICON_KEY.heritage).toBe("landmark");
   });
 
   it("모든 유형이 이모지나 빈 문자열 대신 아이콘 키를 가진다", () => {

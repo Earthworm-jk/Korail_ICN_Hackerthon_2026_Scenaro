@@ -4,13 +4,13 @@ import type { PlaceTypeT } from "./types/schema";
 export const PLACE_TYPE_FALLBACK_ICON_KEY = "map-pin" as const;
 
 /**
- * 한 세트의 오픈소스 아이콘만 사용한다. `heritage`는 특정 문화권의 건축물을 닮은
- * 아이콘 대신 문화적으로 중립적인 `history`를 쓴다.
+ * 한 세트의 오픈소스 아이콘만 사용한다. `heritage`는 시간/기록을 뜻하는 추상 아이콘보다
+ * 실제 방문 대상임이 바로 읽히는 문화 명소 아이콘을 쓴다.
  */
 export const PLACE_TYPE_ICON_KEY = {
   beach: "waves",
   trail: "trees",
-  heritage: "history",
+  heritage: "landmark",
   walkway: "footprints",
   ranch: "beef",
   cable_car: "cable-car",

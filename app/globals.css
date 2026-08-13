@@ -370,7 +370,23 @@
   justify-content: center;
 }
 
+/* 여행의 주인공은 이동 수단이 아니라 방문 장소다. 장소 카드에만 색 면과 강조 배지를 준다. */
+[data-itinerary-row="place"] {
+  border-color: color-mix(in srgb, var(--sc-blue) 24%, var(--sc-line));
+  background: color-mix(in srgb, var(--sc-blue-soft) 42%, var(--sc-surface));
+}
+
+[data-itinerary-row="place"] [data-row-main] > span:first-child {
+  background: var(--sc-blue);
+  color: var(--sc-surface);
+}
+
 [data-move-row] {
+  color: var(--sc-muted);
+}
+
+/* 이동은 두 장소 사이의 보조 정보이므로 종류 라벨과 연결점도 중립색으로 낮춘다. */
+[data-move-row] [data-move-kind] {
   color: var(--sc-muted);
 }
 
@@ -535,7 +551,7 @@ ul[data-day-stays] [data-row-meta] {
     box-shadow: 0 0 0 3px var(--sc-surface);
   }
 
-  /* 관람은 주황 원, 이동은 파란 사각 연결점으로 구분한다 (#207).
+  /* 관람은 주황 원, 이동은 중립색 사각 연결점으로 구분한다 (#207).
      카드 안쪽 위계뿐 아니라 타임라인만 훑어도 방문과 이동이 갈려야 한다. */
   ul[data-day-rows] > li[data-itinerary-row="train"]::before,
   ul[data-day-rows] > li[data-itinerary-row="gateway"]::before {
@@ -543,8 +559,14 @@ ul[data-day-stays] [data-row-meta] {
     width: 5px;
     height: 5px;
     border-radius: 1px;
-    background: var(--sc-blue);
+    background: var(--sc-line-strong);
   }
+}
+
+/* 데스크톱의 좁은 일정 레일에서도 이동 표식이 방문 표식의 주황색을 상속하지 않는다. */
+ul[data-day-rows] > li[data-itinerary-row="train"]::before,
+ul[data-day-rows] > li[data-itinerary-row="gateway"]::before {
+  background: var(--sc-line-strong) !important;
 }
 
 /**

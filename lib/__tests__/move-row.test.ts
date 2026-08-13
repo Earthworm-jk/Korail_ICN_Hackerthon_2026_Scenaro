@@ -51,10 +51,15 @@ describe("관람과 이동의 시각적 구분", () => {
     expect(markup).toContain("광화문 → 서울역");
   });
 
-  it("타임라인에서 관람 점과 다른 이동 연결점 색·형태를 쓴다", () => {
-    expect(timelineCss).toMatch(/data-itinerary-row="train"[^}]*::before[\s\S]*?background:\s*var\(--sc-blue\)/);
+  it("타임라인에서 관람보다 중립적인 이동 연결점 색·형태를 쓴다", () => {
+    expect(timelineCss).toMatch(/data-itinerary-row="train"[^}]*::before[\s\S]*?background:\s*var\(--sc-line-strong\)/);
     expect(timelineCss).toMatch(/data-itinerary-row="gateway"[^}]*::before/);
     expect(timelineCss).toMatch(/border-radius:\s*1px/);
+  });
+
+  it("관광지 카드에 색 면을 주고 이동 라벨은 중립색으로 낮춘다", () => {
+    expect(timelineCss).toMatch(/\[data-itinerary-row="place"\]\s*{[^}]*background:\s*color-mix/);
+    expect(timelineCss).toMatch(/\[data-move-row\] \[data-move-kind\]\s*{[^}]*color:\s*var\(--sc-muted\)/);
   });
 
   it("이동 행은 관람 행과 가로폭을 맞추고 세로 높이만 줄인다", () => {

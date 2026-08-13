@@ -22,4 +22,13 @@ describe("오픈소스 장소 유형 아이콘", () => {
     expect(markup).toContain("<svg");
     expect(markup).toContain('aria-hidden="true"');
   });
+
+  it("일정 배지 안에서 아이콘을 밀어내는 바깥 여백을 두지 않는다", () => {
+    const markup = renderToStaticMarkup(createElement(PlaceTypeIcon, {
+      placeType: "heritage",
+    }));
+
+    expect(markup).toContain("size-5");
+    expect(markup).not.toContain("mb-3");
+  });
 });
