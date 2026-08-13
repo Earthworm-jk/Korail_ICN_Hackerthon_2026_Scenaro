@@ -44,7 +44,7 @@ describe("#181 independent hard-constraint validator", () => {
     const firstItem = result.days[0].items[0];
     firstItem.departAt = firstItem.arriveAt;
     result.metrics.totalRailMinutes += 1;
-    result.comparisonKeys.activityWarningCount += 1;
+    result.comparisonKeys.verifiedHoursMismatchCount += 1;
 
     const codes = validateItinerary(result, constraints, repos).map(({ code }) => code);
     expect(codes).toContain("INVALID_INTERVAL");

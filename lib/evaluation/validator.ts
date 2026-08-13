@@ -145,11 +145,14 @@ export function validateItinerary(
       "metrics.totalRailMinutes",
     ));
   }
-  if (result.warnings.length !== result.comparisonKeys.activityWarningCount) {
+  const verifiedHoursMismatchCount = result.warnings.filter(
+    ({ detail }) => detail === "OUTSIDE_VERIFIED_HOURS",
+  ).length;
+  if (verifiedHoursMismatchCount !== result.comparisonKeys.verifiedHoursMismatchCount) {
     violations.push(violation(
       "METRIC_MISMATCH",
-      `warning count=${result.warnings.length}; comparison key=${result.comparisonKeys.activityWarningCount}`,
-      "comparisonKeys.activityWarningCount",
+      `verified hours mismatch count=${verifiedHoursMismatchCount}; comparison key=${result.comparisonKeys.verifiedHoursMismatchCount}`,
+      "comparisonKeys.verifiedHoursMismatchCount",
     ));
   }
   return violations;

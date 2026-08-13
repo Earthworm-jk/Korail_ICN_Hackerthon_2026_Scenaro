@@ -259,20 +259,15 @@ describe("generateItinerary", () => {
     expect(result.gatewayAlternatives?.[0]?.routeId).toBe("route-synthetic");
   });
 
-  it("결정적 왕복 일정 — 미확인 장소는 제외 대신 경고와 함께 배치된다 (#43)", () => {
+  it("결정적 왕복 일정 — 미확인 장소는 감점 없이 경고와 함께 배치된다 (#43, #198)", () => {
     const result = generateItinerary(constraints(), repositories());
+    const repeated = generateItinerary(constraints(), repositories());
 
     expect(result.status).toBe("planned");
     if (result.status !== "planned") return;
-    // #3 개정: 작품 절대 우선이 아니라 그룹 충족·방문 수 동점 뒤 경고가 적은 조합이 이긴다.
-    expect(result.days.flatMap((day) => day.items.map((item) => item.placeId))).toEqual([
-      "place-selected",
-      "place-actor-a",
-      "place-actor-b",
-    ]);
-    expect(result.days.flatMap((day) => day.rides.map((ride) => ride.trainNo))).toEqual([
-      "101", "201", "301",
-    ]);
+    expect(repeated).toEqual(result);
+    const placed = result.days.flatMap((day) => day.items.map((item) => item.placeId));
+    expect(placed).toContain("place-unverified");
     expect(result.comparisonKeys).toMatchObject({
       selectionGroupCoverageCount: 2,
       selectedUnionPlaceCount: 3,
@@ -282,25 +277,12 @@ describe("generateItinerary", () => {
       covered: ["actor", "work"],
       uncovered: [],
     });
-    expect(result.comparisonKeys.activityWarningCount).toBe(0);
-    expect(result.warnings).toEqual([]);
-    /**
-     * #84 §2 · #171 — 이 장소는 **혼자면 갈 수 있다.** 더 좋은 조합에 밀렸을 뿐이라
-     * "이용 가능한 KTX가 없습니다"가 아니라 "밀렸다"로 보고해야 한다.
-     */
-    expect(result.rejectedPlaces).toContainEqual({
-      code: "NOT_IN_BEST_SUBSET", placeId: "place-unverified",
+    expect(result.comparisonKeys.verifiedHoursMismatchCount).toBe(0);
+    expect(result.warnings).toContainEqual({
+      code: "ACTIVITY_WINDOW_MISMATCH",
+      placeId: "place-unverified",
+      detail: "UNVERIFIED_HOURS",
     });
-
-    // 분류의 근거를 함께 고정한다 — 이 장소만 골라 계산하면 실제로 배치된다
-    const alone = generateItinerary(
-      { ...constraints(), excludedPlaceIds: ["place-selected", "place-actor-a", "place-actor-b"] },
-      repositories(),
-    );
-    expect(alone.status).toBe("planned");
-    if (alone.status !== "planned") return;
-    expect(alone.days.flatMap((day) => day.items.map((item) => item.placeId)))
-      .toContain("place-unverified");
   });
 
   /**
@@ -630,16 +612,16 @@ describe("generateItinerary", () => {
       { code: "ACTIVITY_WINDOW_MISMATCH", placeId: "place-selected", detail: "CONSERVATIVE_BUFFER_MISMATCH" },
     ]);
     expect(result.rejectedPlaces).toEqual([]);
-    expect(result.comparisonKeys.activityWarningCount).toBe(1);
+    expect(result.comparisonKeys.verifiedHoursMismatchCount).toBe(0);
   });
 
-  it("동일 관련성·방문 수에서는 경고 없는 일정이 항상 우선한다 (#43 수용 기준)", () => {
+  it("미확인 운영시간은 비교에서 제외하고 경고만 표시한다 (#198)", () => {
     const repos = repositories();
     replacePlaces(repos, [
-      place("place-clean", "work-1", "station-gangneung", { type: "always_open", source: "fixture", verifiedAt: "2026-08-08" }),
-      place("place-warned", "work-1", "station-gangneung", { type: "unverified" }),
+      place("place-a-unverified", "work-1", "station-gangneung", { type: "unverified" }),
+      place("place-z-clean", "work-1", "station-gangneung", { type: "always_open", source: "fixture", verifiedAt: "2026-08-08" }),
     ]);
-    // 당일 일정 + 하루 1곳 → 한 곳만 배치 가능. 관련성·방문 수가 같으므로 경고 수가 승부를 가른다
+    // 당일 일정 + 하루 1곳. 미확인을 감점하면 clean이 이기지만, 제외하면 안정 ID가 승부를 가른다.
     const result = generateItinerary(constraints({
       selectedActorIds: [],
       selectedWorkIds: ["work-1"],
@@ -649,9 +631,31 @@ describe("generateItinerary", () => {
     expect(result.status).toBe("planned");
     if (result.status !== "planned") return;
     expect(result.days.flatMap((day) => day.items.map((item) => item.placeId)))
-      .toEqual(["place-clean"]);
-    expect(result.comparisonKeys.activityWarningCount).toBe(0);
-    expect(result.warnings).toEqual([]);
+      .toEqual(["place-a-unverified"]);
+    expect(result.comparisonKeys.verifiedHoursMismatchCount).toBe(0);
+    expect(result.warnings).toEqual([
+      { code: "ACTIVITY_WINDOW_MISMATCH", placeId: "place-a-unverified", detail: "UNVERIFIED_HOURS" },
+    ]);
+  });
+
+  it("검증된 운영시간 밖 배치는 같은 방문 수의 미확인 배치보다 뒤로 보낸다 (#198)", () => {
+    const repos = repositories();
+    replacePlaces(repos, [
+      place("place-a-outside", "work-1", "station-gangneung", {
+        type: "hours", open: "01:00", close: "02:00", source: "fixture", verifiedAt: "2026-08-08",
+      }),
+      place("place-z-unverified", "work-1", "station-gangneung", { type: "unverified" }),
+    ]);
+    const result = generateItinerary(constraints({
+      selectedActorIds: [], selectedWorkIds: ["work-1"], maxPlacesPerDay: 1,
+    }), repos);
+
+    expect(result.status).toBe("planned");
+    if (result.status !== "planned") return;
+    expect(result.days.flatMap((day) => day.items.map((item) => item.placeId)))
+      .toEqual(["place-z-unverified"]);
+    expect(result.comparisonKeys.verifiedHoursMismatchCount).toBe(0);
+    expect(result.warnings[0]?.detail).toBe("UNVERIFIED_HOURS");
   });
 
   it("배치된 미확인·시간 밖 방문의 경고 누락은 0건이다 (#43 수용 기준)", () => {
@@ -666,7 +670,9 @@ describe("generateItinerary", () => {
         expect(warned.has(item.placeId), item.placeId).toBe(true);
       }
     }
-    expect(result.comparisonKeys.activityWarningCount).toBe(result.warnings.length);
+    expect(result.comparisonKeys.verifiedHoursMismatchCount).toBe(
+      result.warnings.filter(({ detail }) => detail === "OUTSIDE_VERIFIED_HOURS").length,
+    );
   });
 
   it("귀환 열차가 없으면 열차 없음 사유를 반환한다", () => {

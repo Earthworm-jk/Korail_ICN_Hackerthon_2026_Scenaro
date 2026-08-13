@@ -6,7 +6,7 @@ function cand(partial: Partial<Candidate> & { stableId: string }): Candidate {
     keys: {
       selectionGroupCoverageCount: 2,
       selectedUnionPlaceCount: 3,
-      activityWarningCount: 0,
+      verifiedHoursMismatchCount: 0,
       preferredDateMismatchCount: 0,
       preferredOrderMismatchCount: 0,
       totalTravelMinutes: 120,
@@ -56,14 +56,14 @@ describe("사전식 비교 (#3 — 가중합 아님)", () => {
       expect(compareCandidates(dateKept, dateBroken)).toBeLessThan(0);
     });
 
-    it("순서는 운영시간 경고보다 뒤다 — 경고를 늘리면서까지 순서를 지키지 않는다", () => {
+    it("순서는 검증된 운영시간 충돌보다 뒤다 — 충돌을 늘리면서까지 순서를 지키지 않는다", () => {
       const noWarning = cand({
         stableId: "a",
-        keys: { activityWarningCount: 0, preferredOrderMismatchCount: 9 } as never,
+        keys: { verifiedHoursMismatchCount: 0, preferredOrderMismatchCount: 9 } as never,
       });
       const warned = cand({
         stableId: "b",
-        keys: { activityWarningCount: 1, preferredOrderMismatchCount: 0 } as never,
+        keys: { verifiedHoursMismatchCount: 1, preferredOrderMismatchCount: 0 } as never,
       });
       expect(compareCandidates(noWarning, warned)).toBeLessThan(0);
     });
@@ -110,22 +110,22 @@ describe("사전식 비교 (#3 — 가중합 아님)", () => {
   });
 });
 
-describe("운영시간 경고 수 키 (#43 결정 3 — 방문 수 뒤·이동시간 앞)", () => {
-  it("방문 수가 같으면 경고가 적은 일정이 이동시간과 무관하게 우선한다", () => {
-    const clean = cand({ stableId: "a", keys: { activityWarningCount: 0, totalTravelMinutes: 999 } as never });
-    const warned = cand({ stableId: "b", keys: { activityWarningCount: 1, totalTravelMinutes: 1 } as never });
+describe("검증 운영시간 충돌 수 키 (#198 — 방문 수 뒤·이동시간 앞)", () => {
+  it("방문 수가 같으면 검증 충돌이 적은 일정이 이동시간과 무관하게 우선한다", () => {
+    const clean = cand({ stableId: "a", keys: { verifiedHoursMismatchCount: 0, totalTravelMinutes: 999 } as never });
+    const warned = cand({ stableId: "b", keys: { verifiedHoursMismatchCount: 1, totalTravelMinutes: 1 } as never });
     expect(compareCandidates(clean, warned)).toBeLessThan(0);
   });
 
-  it("방문 수가 다르면 경고 수보다 방문 수가 먼저다 — 사용자 선택 의도 우선", () => {
-    const moreVisits = cand({ stableId: "a", keys: { selectedUnionPlaceCount: 3, activityWarningCount: 2 } as never });
-    const fewerClean = cand({ stableId: "b", keys: { selectedUnionPlaceCount: 2, activityWarningCount: 0 } as never });
+  it("방문 수가 다르면 검증 충돌 수보다 방문 수가 먼저다 — 사용자 선택 의도 우선", () => {
+    const moreVisits = cand({ stableId: "a", keys: { selectedUnionPlaceCount: 3, verifiedHoursMismatchCount: 2 } as never });
+    const fewerClean = cand({ stableId: "b", keys: { selectedUnionPlaceCount: 2, verifiedHoursMismatchCount: 0 } as never });
     expect(compareCandidates(moreVisits, fewerClean)).toBeLessThan(0);
   });
 
-  it("경고 수가 같으면 기존 이동시간 순서로 비교한다", () => {
-    const faster = cand({ stableId: "a", keys: { activityWarningCount: 1, totalTravelMinutes: 100 } as never });
-    const slower = cand({ stableId: "b", keys: { activityWarningCount: 1, totalTravelMinutes: 200 } as never });
+  it("검증 충돌 수가 같으면 기존 이동시간 순서로 비교한다", () => {
+    const faster = cand({ stableId: "a", keys: { verifiedHoursMismatchCount: 1, totalTravelMinutes: 100 } as never });
+    const slower = cand({ stableId: "b", keys: { verifiedHoursMismatchCount: 1, totalTravelMinutes: 200 } as never });
     expect(compareCandidates(faster, slower)).toBeLessThan(0);
   });
 });

@@ -245,7 +245,7 @@ describe("방문 순서 소프트 선호", () => {
       expect(visitOrder(result).length).toBeGreaterThanOrEqual(order.length);
     });
 
-    it("일정에 못 들어간 장소가 낀 쌍은 unplaced다", async () => {
+    it("기존 미배치 장소가 선호로 들어오면 honored, 여전히 못 들어오면 unplaced다", async () => {
       const baseline = await plan();
       const placed = new Set(visitOrder(baseline));
       const { getCandidatePlaces } = await import("../actions/places");
@@ -257,7 +257,11 @@ describe("방문 순서 소프트 선호", () => {
 
       const [anyPlaced] = visitOrder(baseline);
       const result = await plan({ preferredOrder: [[anyPlaced, missing]] });
-      expect(outcomeOf(result.preferredOrderOutcomes, anyPlaced, missing)?.outcome).toBe("unplaced");
+      const outcome = outcomeOf(result.preferredOrderOutcomes, anyPlaced, missing)?.outcome;
+      const nowPlaced = new Set(visitOrder(result)).has(missing);
+      expect(outcome).toBe(nowPlaced ? "honored" : "unplaced");
+      expect(result.comparisonKeys.selectedUnionPlaceCount)
+        .toBeGreaterThanOrEqual(baseline.comparisonKeys.selectedUnionPlaceCount);
     });
 
     it("제외한 장소가 낀 쌍은 결과 목록에서 빠진다 — 제외가 선호보다 우선", async () => {

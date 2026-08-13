@@ -366,7 +366,7 @@ type CandidateWarning = {
 type ComparisonKeys = {
   selectionGroupCoverageCount: number; // 1) 배우·작품 요청 그룹 중 실제 방문에 반영된 수
   selectedUnionPlaceCount: number;     // 2) 엄격 합집합의 고유 방문 장소 수
-  activityWarningCount: number;        // 3) 낮을수록 우선 (#43)
+  verifiedHoursMismatchCount: number;  // 3) 검증된 운영시간 밖 배치만, 낮을수록 우선 (#198)
   preferredDateMismatchCount: number;  // 4) 낮을수록 우선 — 못 지킨 방문일 선호 수 (#139)
   preferredOrderMismatchCount: number; // 5) 낮을수록 우선 — 못 지킨 순서 쌍 수 (#145)
                                        //    방문일과 합치지 않는다 — 서로 맞바꿀 수 있게 되면 안 된다
@@ -387,7 +387,7 @@ beam pruning도 동일한 1차 키(선택 그룹 충족 수)를 먼저 사용하
 
 방문일 선호가 있으면 (#139 6-2) 두 가지가 더해진다.
 
-1. 같은 서명의 대표를 고를 때 경고 수 **다음**으로 선호 일치 수를 본다. 서명 자체에는
+1. 같은 서명의 대표를 고를 때 검증 운영시간 충돌 수 **다음**으로 선호 일치 수를 본다. 서명 자체에는
    날짜도 일치 여부도 넣지 않는다 — 넣으면 병합이 사라져 상태 수가 폭증한다.
 2. 상위 1,000개를 **뺏지 않고 더한다.** 기존 순서의 상위 1,000개에 선호 순서의 상위
    1,000개를 합집합으로 얹는다. 선호가 없으면 한 톨도 달라지지 않고, 있어도 상한은 2,000개다.

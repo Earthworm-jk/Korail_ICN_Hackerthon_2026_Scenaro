@@ -31,7 +31,7 @@ const plannedA: ItineraryResult = {
   selectionGroups: { requested: ["work"], covered: ["work"], uncovered: [] },
   comparisonKeys: {
     selectionGroupCoverageCount: 1, selectedUnionPlaceCount: 1,
-    activityWarningCount: 0, preferredDateMismatchCount: 0, preferredOrderMismatchCount: 0, totalTravelMinutes: 150, transferCount: 0, slackSatisfied: true,
+    verifiedHoursMismatchCount: 0, preferredDateMismatchCount: 0, preferredOrderMismatchCount: 0, totalTravelMinutes: 150, transferCount: 0, slackSatisfied: true,
   },
   metrics: { totalTravelMinutes: 150, totalRailMinutes: 100, transferCount: 0, departureSlackMinutes: 180 },
 };
