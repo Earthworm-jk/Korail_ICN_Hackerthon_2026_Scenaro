@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { ArrowUpDown } from "lucide-react";
-import { useState, type ReactNode } from "react";
+import type { ReactNode } from "react";
 import { withValues, type MessageKey } from "@/lib/i18n/messages";
 import type { PlacePhoto } from "@/lib/place-photos";
 import styles from "./place-recommendation-sheet.module.css";
@@ -20,10 +20,8 @@ export function PlaceRecommendationSheet({
   updated,
   sortBy,
   onSortChange,
-  children,
   routeRecommendations,
   onBrowseAll,
-  initialExpanded = true,
   tr,
 }: {
   selectedCount: number;
@@ -49,24 +47,18 @@ export function PlaceRecommendationSheet({
   updated: boolean;
   sortBy: "relevance" | "official";
   onSortChange: (sort: "relevance" | "official") => void;
+  /**
+   * 이전 호출부 호환용. 추천 미리보기는 #207에서 제거했으므로 렌더링하지 않는다.
+   * 호출부가 정리되면 이 prop도 함께 제거할 수 있다.
+   */
   children?: ReactNode;
   routeRecommendations?: ReactNode;
   /** 후보 수와 무관하게 항상 같은 자리에 둔다 (#146 ①) */
   onBrowseAll: () => void;
-  /**
-   * 펼친 채로 시작할지 (#146 9번).
-   *
-   * 기본은 펼침이다 — 후보 선택이 이 단계의 주 작업이라 처음부터 숨기지 않는다.
-   * `false`면 compact 바로 시작해 지도를 가리지 않는다. 지금 펼친 시트는 지도 338px 중
-   * 270px을 덮어 **실제로 보이는 지도가 68px**뿐인데, 접힌 바는 62px만 덮는다.
-   *
-   * **하드코딩하지 않고 호출부가 정한다.** 데모와 P1 실험이 같은 컴포넌트를 쓰면서
-   * 시작 상태만 달리할 수 있어야 한다.
-   */
+  /** 이전 호출부 호환용. 시트 펼침 상태 자체가 #207에서 사라졌다. */
   initialExpanded?: boolean;
   tr: Translator;
 }) {
-  const [expanded, setExpanded] = useState(initialExpanded);
   const selectedCountLabel = tr("step3.selectedCount")
     .replace("{selected}", String(selectedCount))
     .replace("{total}", String(totalCount));
@@ -81,7 +73,7 @@ export function PlaceRecommendationSheet({
       className={styles.sheet}
       id="place-picker"
       data-place-sheet
-      data-sheet-expanded={expanded ? "true" : "false"}
+      data-sheet-mode="browser-entry"
     >
       <div className={styles.header} data-place-sheet-header>
         <span className={styles.handle} aria-hidden />
@@ -126,9 +118,9 @@ export function PlaceRecommendationSheet({
 
             {/* 분류 - K-컬처는 선택 수, 테마체험은 아직 선택할 수 없어 추천 유무만 말한다 */}
             <span className="flex flex-wrap items-center gap-1.5" data-category-chips>
-            <span className="rounded-full border border-sc-blue/30 px-2 py-0.5 text-sc-blue">
-              {withValues(tr("step3.chipKCulture"), { n: String(selectedCount) })}
-            </span>
+              <span className="rounded-full border border-sc-blue/30 px-2 py-0.5 text-sc-blue">
+                {withValues(tr("step3.chipKCulture"), { n: String(selectedCount) })}
+              </span>
               {themeChip ?? (themeState !== "unknown" && (
                 <span className="rounded-full border px-2 py-0.5 text-sc-muted">
                   {tr(themeState === "available" ? "step3.chipThemeAvailable" : "step3.chipThemeNone")}
@@ -160,12 +152,12 @@ export function PlaceRecommendationSheet({
         </label>
         <button
           type="button"
-          className={styles.toggle}
-          aria-expanded={expanded}
-          aria-controls="place-sheet-body"
-          onClick={() => setExpanded((open) => !open)}
+          className={styles.openBrowser}
+          aria-haspopup="dialog"
+          aria-controls="place-browser-dialog"
+          onClick={onBrowseAll}
         >
-          {tr(expanded ? "step3.sheetCollapse" : "step3.sheetExpand")}
+          {tr("step3.openBrowser")}
         </button>
         {/*
           독 오른쪽 끝의 주 액션 자리 (#146).
@@ -178,35 +170,18 @@ export function PlaceRecommendationSheet({
         <div id="stage-sheet-actions" className="flex shrink-0 items-center gap-2" />
       </div>
 
-      {expanded && (
-        <div className={styles.body} id="place-sheet-body" data-place-sheet-body>
-          {routeRecommendations && (
-            <section
-              className="mb-3 rounded-xl border border-sc-blue/30 bg-sc-blue-soft/70 p-3"
-              aria-labelledby="route-recommendation-title"
-              data-route-recommendations
-            >
-              <h4 id="route-recommendation-title" className="text-sm font-semibold text-sc-blue">
-                {tr("ai.recommendSheetTitle")}
-              </h4>
-              <p className="mt-1 text-xs text-sc-muted">{tr("ai.recommendSheetSubtitle")}</p>
-              <ul className="mt-2 space-y-2">{routeRecommendations}</ul>
-            </section>
-          )}
-          <ul className={styles.list} data-place-sheet-list>
-            {children}
-            {/* 후보가 몇 개든 마지막 자리는 늘 전체 보기다 — 고르는 방법이
-                데이터 양에 따라 달라지면 사용자가 매번 화면을 다시 배운다 */}
-            <li className={styles.moreItem} data-place-sheet-more>
-              <button type="button" className={styles.more} onClick={onBrowseAll}>
-                {tr("step3.browseAll")}
-              </button>
-            </li>
-          </ul>
-
-          {/* 촬영지 위치 지도(fallback)는 지웠다 (#146) — 화면에는 이미 전체 이동
-              동선 지도가 있고, 시트 안에 또 한 벌 두면 같은 것을 두 번 그린다 */}
-        </div>
+      {routeRecommendations && (
+        <section
+          className={styles.recommendations}
+          aria-labelledby="route-recommendation-title"
+          data-route-recommendations
+        >
+          <h4 id="route-recommendation-title" className="text-sm font-semibold text-sc-blue">
+            {tr("ai.recommendSheetTitle")}
+          </h4>
+          <p className="mt-1 text-xs text-sc-muted">{tr("ai.recommendSheetSubtitle")}</p>
+          <ul className="mt-2 space-y-2">{routeRecommendations}</ul>
+        </section>
       )}
 
     </div>

@@ -30,7 +30,7 @@
 }
 
 /**
- * 좁은 화면에서 정렬·펼치기를 **제목 줄 오른쪽 끝**으로 (#146).
+ * 좁은 화면에서 정렬·전체 촬영지 진입을 **제목 줄 오른쪽 끝**으로 (#207).
  *
  * 셋째 줄을 따로 쓰고 있었다 — 조작 둘이 줄 하나를 통째로 먹어 시트가 그만큼 높아졌다.
  * 제목 옆은 어차피 비어 있다.
@@ -52,7 +52,7 @@
   }
 
   .sortControl { order: 2; }
-  .toggle { order: 3; }
+  .openBrowser { order: 3; }
 
   /* 상태 요약과 분류 칩은 다음 줄 전체 */
   .header > div:first-of-type > div:nth-child(2) {
@@ -83,8 +83,7 @@
   background: var(--sc-line-strong);
 }
 
-.toggle,
-.more,
+.openBrowser,
 .sortControl {
   min-height: 36px;
   border: 1px solid var(--sc-line);
@@ -94,8 +93,7 @@
   font-weight: 600;
 }
 
-.toggle:hover,
-.more:hover {
+.openBrowser:hover {
   border-color: var(--sc-blue);
   color: var(--sc-blue);
 }
@@ -104,7 +102,7 @@
   color: var(--sc-blue);
 }
 
-.toggle,
+.openBrowser,
 .sortControl {
   flex-shrink: 0;
 }
@@ -148,43 +146,15 @@
   outline-offset: 2px;
 }
 
-.body {
-  /* `flex: 1` + `min-height: 0`이 핵심이다 — 시트가 `max-height`로 잘릴 때
-     자식이 그 안에서 줄어들 수 있어야 스크롤 뷰포트가 생긴다. 이게 없으면
-     자식이 본래 높이를 고집하고 부모의 `overflow: hidden`이 아랫부분을 잘라
-     **스크롤바는 있는데 끝까지 닿지 않는다** */
-  flex: 1 1 auto;
-  min-height: 0;
-  padding: 10px 12px 12px;
-  max-height: min(46vh, 420px);
+.recommendations {
+  margin: 0 12px 12px;
+  max-height: min(32vh, 280px);
   overflow-y: auto;
   overscroll-behavior-block: contain;
-}
-
-/**
- * 카드 줄 (#146 1절).
- *
- * **세로로 쌓지 않고 가로로 눕힌다.** 시트는 지도 위에 떠 있어 세로가 유한한데,
- * 그리드는 후보가 늘수록 아래로 자라 지도를 덮는다. 한 줄로 눕히면 시트 높이가
- * 카드 한 장으로 고정돼 지도가 계속 보이고, 후보 수와 무관해진다.
- *
- * 폭은 200px 하한을 지킨다 — 더 줄면 한글 장소 이름이 잘린다. 태블릿에서도 같다.
- */
-.list {
-  display: grid;
-  grid-auto-flow: column;
-  grid-auto-columns: minmax(200px, 232px);
-  gap: 12px;
-  margin-top: 10px;
-  padding-bottom: 6px;
-  overflow-x: auto;
-  /* 시트 안에서 가로로 튕겼을 때 뒤 지도가 같이 밀리지 않게 한다 */
-  overscroll-behavior-inline: contain;
-  scroll-snap-type: x proximity;
-}
-
-.list > * {
-  scroll-snap-align: start;
+  border: 1px solid color-mix(in srgb, var(--sc-blue) 30%, transparent);
+  border-radius: 12px;
+  background: var(--sc-blue-soft);
+  padding: 12px;
 }
 
 /**
@@ -259,33 +229,6 @@
   -webkit-text-stroke: 1px rgba(0, 0, 0, 0.85);
   paint-order: stroke fill;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
-}
-
-.list :global([data-recommendation-card]) {
-  min-width: 0;
-}
-
-/** 사진 높이가 고정이라 이름은 어느 폭에서도 두 줄까지만 흐른다 */
-.list :global([data-place-card-title]) {
-  display: -webkit-box;
-  overflow: hidden;
-  line-height: 1.35;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-}
-
-.more {
-  width: 100%;
-  min-height: 44px;
-  background: var(--sc-surface);
-}
-
-/** 더보기는 카드가 아니다 — 줄 끝에 좁게 붙인다 */
-.moreItem {
-  display: flex;
-  width: 118px;
-  align-items: center;
-  list-style: none;
 }
 
 /* `.fallbackMap`은 지웠다 (#146) — 시트 안 촬영지 위치 지도가 사라져 대상이 없다 */
@@ -374,64 +317,14 @@
     max-height: min(46vh, 372px);
   }
 
-  /**
-   * 펼친 카드 줄을 **위로 띄운다** (#146 9번).
-   *
-   * 접힌 상태에서는 헤더만 흐름에 남아 지도 아래의 짧은 바가 되고, 펼치면 카드 줄이
-   * 헤더 위로 올라와 그때만 지도를 덮는다. 흐름에 남는 높이는 양쪽 상태에서 같으므로
-   * **그리드도 지도 크기도 바뀌지 않는다** — 펼칠 때마다 지도 bounds를 다시 잡지 않아도 된다.
-   *
-   * `overflow: hidden`을 시트에서 걷어야 밖으로 나갈 수 있다. 대신 카드 줄이 스스로
-   * 모서리와 그림자를 갖는다.
-   */
-  .sheet[data-sheet-expanded="true"] {
-    overflow: visible;
-  }
-
-  /**
-   * 카드를 눕힌다 (#146).
-   *
-   * 시트가 바닥 독 자리에 고정되면서 펼친 카드 줄은 지도 위로 떠오른다. 4:3 카드는
-   * 200px 폭에서 150px 높이가 되어 지도를 크게 덮었다. **폭은 줄이지 않는다** —
-   * 200px 하한은 한글 이름이 잘리지 않게 하려고 둔 것이고 그건 그대로다.
-   * 대신 비율만 눕혀 높이를 낮춘다. 여기서 줄인 높이가 그대로 보이는 지도다.
-   */
+  /* 전체 촬영지는 모달에서 보므로 시트에는 미리보기 카드가 없다. */
   .photoCard {
     aspect-ratio: 16 / 9;
-  }
-
-  .sheet[data-sheet-expanded="true"] .body {
-    position: absolute;
-    bottom: 100%;
-    left: -1px;
-    right: -1px;
-    z-index: 5;
-    max-height: min(46vh, 372px);
-    border: 1px solid var(--sc-line);
-    border-bottom: 0;
-    border-radius: 14px 14px 0 0;
-    background: var(--sc-surface);
-    box-shadow: 0 -10px 28px rgba(16, 24, 40, 0.14);
   }
 
   .header {
     min-height: 58px;
     padding: 12px 14px 9px;
-  }
-
-  .body {
-    padding: 8px 10px 10px;
-  }
-
-  .list {
-    gap: 9px;
-    margin-top: 0;
-  }
-
-  .more {
-    width: 100%;
-    height: 100%;
-    white-space: nowrap;
   }
 
   /* 시트 안 지도와 `이전` 버튼은 지웠다 (#146) — 숨길 대상이 없다 */
