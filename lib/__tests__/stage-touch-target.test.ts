@@ -14,6 +14,10 @@ const css = readFileSync(
   fileURLToPath(new URL("../../app/stage-v4.css", import.meta.url)),
   "utf8",
 );
+const sheet = readFileSync(
+  fileURLToPath(new URL("../../app/place-recommendation-sheet.tsx", import.meta.url)),
+  "utf8",
+);
 
 const RULE = /(#place-picker[^{]*button[^{]*)\{\s*min-height:\s*36px/;
 
@@ -35,5 +39,9 @@ describe("스테이지 버튼 높이 하한", () => {
   // 전역 44px 일괄 상향은 기존 스테이지 여백을 움직인다 — 하한 값 자체는 그대로 둔다
   it("하한 값을 올려서 해결하지 않는다", () => {
     expect(css).not.toMatch(/#place-picker[^{]*button[^{]*\{\s*min-height:\s*4[0-9]px/);
+  });
+
+  it("전체 촬영지의 유일한 진입점은 44px 터치 높이를 직접 선언한다", () => {
+    expect(sheet).toMatch(/styles\.openBrowser[^"`]*min-h-11/);
   });
 });

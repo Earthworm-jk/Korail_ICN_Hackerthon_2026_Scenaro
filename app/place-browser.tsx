@@ -8,10 +8,8 @@ import { useModalDismiss } from "./use-modal-dismiss";
 /**
  * 전체 후보 보기 (#146 ①)
  *
- * 시트의 가로 줄에는 상위 몇 개만 세운다. 후보가 20-30개인데 한 줄에 다 늘어놓으면
- * 가로로 한참 밀어야 하고, 그건 목록이 아니라 미로다.
- *
- * 대신 **`전체 보기`를 항상 같은 자리에 둔다.** 여행 기간이 2박 3일이든 9박 10일이든,
+ * 미리보기 목록을 거치지 않고 **`전체 촬영지 보기`를 항상 같은 자리에 둔다.**
+ * 여행 기간이 2박 3일이든 9박 10일이든,
  * 후보가 8개든 40개든 위치와 라벨이 바뀌지 않는다. 고르는 방법이 데이터 양에 따라
  * 달라지면 사용자는 매번 화면을 다시 배워야 한다.
  *
@@ -80,6 +78,7 @@ function OpenBrowser({
       data-place-browser
     >
       <div
+        id="place-browser-dialog"
         ref={dialogRef}
         role="dialog"
         aria-modal="true"

@@ -363,6 +363,27 @@
   flex-direction: column;
 }
 
+/* 이동은 방문 카드가 아니라 두 방문을 잇는 보조 정보다 (#207). */
+[data-itinerary-row="train"],
+[data-itinerary-row="gateway"] {
+  min-height: 48px;
+  justify-content: center;
+}
+
+[data-move-row] {
+  color: var(--sc-muted);
+}
+
+[data-move-summary] {
+  width: min(100%, 184px);
+  align-self: center;
+}
+
+[data-move-summary] [data-row-name] {
+  -webkit-line-clamp: 1;
+  font-size: 0.8125rem;
+}
+
 [data-row-name] {
   display: -webkit-box;
   overflow: hidden;
@@ -387,6 +408,17 @@
        DAY마다 갈리고, 옆으로 넘길 때 카드가 들썩인다 */
     height: 120px;
     padding-top: 14px;
+  }
+
+  /* 칸 폭은 체류 타임라인과 맞춘 채, 이동 카드만 칸 안에서 좁은 연결자로 보인다. */
+  ul[data-day-rows] > li[data-itinerary-row="train"],
+  ul[data-day-rows] > li[data-itinerary-row="gateway"] {
+    min-height: 0;
+  }
+
+  ul[data-day-rows] > li[data-itinerary-row="train"] > [data-move-row],
+  ul[data-day-rows] > li[data-itinerary-row="gateway"] > [data-move-row] {
+    margin-block: auto;
   }
 
   /**
@@ -418,6 +450,17 @@
     border-radius: 999px;
     background: var(--sc-orange);
     box-shadow: 0 0 0 3px var(--sc-surface);
+  }
+
+  /* 관람은 주황 원, 이동은 파란 사각 연결점으로 구분한다 (#207).
+     카드 안쪽 위계뿐 아니라 타임라인만 훑어도 방문과 이동이 갈려야 한다. */
+  ul[data-day-rows] > li[data-itinerary-row="train"]::before,
+  ul[data-day-rows] > li[data-itinerary-row="gateway"]::before {
+    top: 3px;
+    width: 5px;
+    height: 5px;
+    border-radius: 1px;
+    background: var(--sc-blue);
   }
 }
 

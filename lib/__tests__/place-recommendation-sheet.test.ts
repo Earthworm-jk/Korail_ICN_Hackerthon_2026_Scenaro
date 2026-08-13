@@ -10,15 +10,13 @@ import type { MessageKey } from "../i18n/messages";
 const copy: Partial<Record<MessageKey, string>> = {
   "step3.sheetTitle": "지도 위 추천 장소",
   "step3.sheetSubtitle": "장소를 고르면 일정과 경로가 함께 바뀝니다.",
-  "step3.sheetCollapse": "접기",
-  "step3.sheetExpand": "추천 장소 펼치기",
   "step3.selectedCount": "{selected}/{total}곳 선택",
   "step3.routeUpdating": "일정·경로 다시 그리는 중",
   "step3.routeUpdated": "새 일정·경로 반영 완료",
   "step3.sortLabel": "장소 정렬 방식",
   "step3.sortRelevance": "추천순",
   "step3.sortOfficial": "공식 출처순",
-  "step3.browseAll": "전체 보기",
+  "step3.openBrowser": "전체 촬영지 보기",
   "ai.recommendSheetTitle": "현재 동선에 맞는 촬영지",
   "ai.recommendSheetSubtitle": "추가 전에는 일정이 바뀌지 않습니다.",
   "map.placesTitle": "추천 장소 지도",
@@ -33,7 +31,7 @@ const copy: Partial<Record<MessageKey, string>> = {
 const tr = (key: MessageKey) => copy[key] ?? key;
 
 describe("지도 위 추천 장소 바텀시트", () => {
-  it("선택 수, 정렬, 카드, 전체 보기를 하나의 시트에 제공한다", () => {
+  it("미리보기 없이 선택 수, 정렬, 전체 촬영지 진입을 제공한다", () => {
     const markup = renderToStaticMarkup(createElement(PlaceRecommendationSheet, {
       selectedCount: 3,
       totalCount: 8,
@@ -49,24 +47,26 @@ describe("지도 위 추천 장소 바텀시트", () => {
     }, createElement("li", { "data-recommendation-card": true }, "월정사")));
 
     expect(markup).toContain("data-place-sheet");
-    expect(markup).toContain('data-sheet-expanded="true"');
+    expect(markup).toContain('data-sheet-mode="browser-entry"');
+    expect(markup).not.toContain("data-sheet-expanded");
     expect(markup).toContain("지도 위 추천 장소");
     expect(markup).not.toContain("장소를 고르면 일정과 경로가 함께 바뀝니다.");
     expect(markup).toContain("3/8곳 선택");
     expect(markup).toContain('aria-label="장소 정렬 방식"');
     expect(markup).toContain('<option value="relevance" selected="">추천순</option>');
     expect(markup).not.toContain("data-place-sheet-controls");
-    // 후보 수와 무관하게 늘 같은 자리 — 더보기 페이징을 대체했다 (#146 ①)
-    expect(markup).toContain("전체 보기");
+    expect(markup).toContain("전체 촬영지 보기");
+    expect(markup).toContain("min-h-11");
+    expect(markup).toContain('aria-haspopup="dialog"');
+    expect(markup).toContain('aria-controls="place-browser-dialog"');
+    // 5개 미리보기는 구현에서 제거한다 (#207). 호출부가 넘겨도 표시하지 않는다.
+    expect(markup).not.toContain("월정사");
+    expect(markup).not.toContain("data-place-sheet-list");
+    expect(markup).not.toContain("data-place-sheet-more");
     // 시트 안 촬영지 위치 지도는 지웠다 (#146) — 화면의 동선 지도와 중복이었다
     expect(markup).not.toContain("data-place-sheet-map");
     // 독으로 옮겨 갈 주 액션 자리는 시트가 제공한다
     expect(markup).toContain('id="stage-sheet-actions"');
-    const listStart = markup.indexOf("data-place-sheet-list");
-    const listEnd = markup.indexOf("</ul>", listStart);
-    const moreItem = markup.indexOf("data-place-sheet-more");
-    expect(moreItem).toBeGreaterThan(listStart);
-    expect(moreItem).toBeLessThan(listEnd);
   });
 
   it("재계산 중에도 선택 수를 유지하며 일정과 경로가 함께 갱신됨을 알린다", () => {

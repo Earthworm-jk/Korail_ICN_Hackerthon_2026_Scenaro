@@ -44,13 +44,13 @@ export function MoveRow({
   duration?: string;
   /** `공항철도 이용`처럼 그 구간의 사실. 선택지가 없을 때 무엇으로 가는지 알린다 */
   note?: string;
-  children: ReactNode;
+  children?: ReactNode;
   onOpenDetail?: () => void;
   detailLabel?: string;
 }) {
   const frame = "flex flex-wrap items-center gap-x-2 gap-y-1 rounded-lg border border-dashed bg-sc-subtle/40 px-2 py-1.5";
-  // 접힌 카드는 장소 카드와 같은 세로 3단이다 — 가로로 몰지 않는다 (#146)
-  const collapsedFrame = "flex h-full flex-col rounded-lg border border-dashed bg-sc-subtle/40 px-2 py-1.5";
+  // 이동은 장소 사이의 연결 정보다. 종류·시각 / 구간 / 소요의 짧은 구조만 남긴다 (#207).
+  const collapsedFrame = "flex flex-col rounded-lg border border-dashed bg-sc-subtle/40 px-2 py-1.5";
   const badge = (
     <span className="grid size-7 shrink-0 place-items-center rounded-md bg-sc-subtle text-sc-muted">
       {icon}
@@ -61,25 +61,43 @@ export function MoveRow({
     // 펼친 상태에서도 열차는 상세 모달로 들어갈 수 있어야 한다
     if (onOpenDetail) {
       return (
-        <button type="button" className={`${frame} w-full text-left hover:border-sc-blue`} onClick={onOpenDetail}>
+        <button
+          type="button"
+          className={`${frame} w-full text-left hover:border-sc-blue`}
+          data-move-row
+          onClick={onOpenDetail}
+        >
           {badge}
+          <span className="text-xs font-semibold text-sc-muted" data-move-kind>{label}</span>
           {children}
         </button>
       );
     }
-    return <div className={frame}>{badge}{children}</div>;
+    return (
+      <div className={frame} data-move-row>
+        {badge}
+        <span className="text-xs font-semibold text-sc-muted" data-move-kind>{label}</span>
+        {children}
+      </div>
+    );
   }
 
   return (
-    <details className="group">
+    <details className="group" data-move-row>
       {/* `list-none`이 없으면 브라우저 기본 삼각형이 아이콘 앞에 하나 더 붙는다 */}
-      <summary className={`${collapsedFrame} cursor-pointer list-none marker:content-none hover:border-sc-blue`}>
-        <span className="block tabular-nums text-xs text-sc-muted" data-row-time>{startAt ?? label}</span>
-        <span className="mt-1 flex items-start gap-2" data-row-main>
+      <summary
+        className={`${collapsedFrame} cursor-pointer list-none marker:content-none hover:border-sc-blue`}
+        data-move-summary
+      >
+        <span className="flex items-center gap-1.5 text-xs text-sc-muted" data-move-heading>
+          <span className="font-semibold text-sc-blue" data-move-kind>{label}</span>
+          {startAt && <span className="tabular-nums" data-row-time>{startAt}</span>}
+        </span>
+        <span className="mt-1 flex items-center gap-2" data-row-main>
           {badge}
           <span className="min-w-0 flex-1 text-sc-text/80" data-row-name>{route}</span>
         </span>
-        <span className="mt-auto flex items-center gap-1.5 pt-1 text-xs text-sc-muted" data-row-meta>
+        <span className="flex items-center gap-1.5 pt-1 text-xs text-sc-muted" data-row-meta>
           <span>{duration ?? label}</span>
           {note && (
             <span className="shrink-0 rounded bg-sc-blue-soft px-1.5 py-0.5 text-sc-blue">{note}</span>
