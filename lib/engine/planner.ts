@@ -10,7 +10,6 @@ import { buildRegionWindows, DAY_ACTIVITY_END, DAY_ACTIVITY_START } from "./regi
 import type {
   ActivityWindowDetail,
   CandidateRejection,
-  CandidateWarning,
   DayPlan,
   ItineraryItem,
   ItineraryResult,
@@ -20,6 +19,7 @@ import type {
   SelectionGroupSummary,
   TrainRide,
   TripConstraints,
+  VerifiedItineraryAlternative,
 } from "./types";
 
 const KOREA_OFFSET_MS = 9 * 60 * 60 * 1_000;
@@ -648,30 +648,24 @@ export function planItinerary(
     );
   }
 
-  const allRides = [...best.state.rides, ...best.returnRides];
-  const totalRailMinutes = best.state.railMinutes + routeMinutes(best.returnRides);
-  const totalTransferCount = best.state.transferCount + transferCount(best.returnRides);
-  // #33 — 역·권역 체류 창은 엔진이 확정 계산하고 UI는 포맷만 한다
-  const regionWindows = buildRegionWindows({
-    rides: allRides,
-    airportReadyAt: constraints.airportReadyAt,
-    airportArrivalDeadline: constraints.airportArrivalDeadline,
-    startStationId: endpointStationId,
-    stations: repos.stations,
+  const presentation = schedulePresentation(best, constraints, repos, ctx, endpointStationId);
+  const verifiedAlternatives = buildVerifiedAlternatives({
+    complete,
+    best,
+    constraints,
+    repos,
+    ctx,
+    endpointStationId,
+    actorIds,
+    selectedWorkIds,
+    allCandidates,
+    candidates,
   });
-  // #43 수용 기준: 운영시간 밖·미확인 배치의 경고 누락 0건 — 방문 기록에서 직접 파생한다
-  const warnings: CandidateWarning[] = best.state.visits
-    .filter(({ warning }) => warning !== null)
-    .map(({ place, warning }) => ({
-      code: "ACTIVITY_WINDOW_MISMATCH",
-      placeId: place.id,
-      detail: warning as ActivityWindowDetail,
-    }));
   return {
     status: "planned",
-    days: buildDays(ctx, best.state.visits, allRides, regionWindows),
+    days: presentation.days,
     rejectedPlaces: uniqueReasons(rejectedPlaces),
-    warnings,
+    warnings: presentation.warnings,
     selectionGroups: selectionGroupSummary(
       actorIds,
       selectedWorkIds,
@@ -691,13 +685,189 @@ export function planItinerary(
     ...(preferredOrder.length > 0
       ? { preferredOrderOutcomes: preferredOrderOutcomesOf(preferredOrder, best.state.visits) }
       : {}),
+    metrics: presentation.metrics,
+    ...(verifiedAlternatives.length > 0 ? { verifiedAlternatives } : {}),
+  };
+}
+
+type SchedulePresentation = Pick<VerifiedItineraryAlternative, "days" | "warnings" | "metrics">;
+
+/** 완성 후보를 화면 계약으로 직렬화한다. 추천안과 대안이 같은 계산 경로를 공유한다. */
+function schedulePresentation(
+  schedule: CompleteSchedule,
+  constraints: TripConstraints,
+  repos: Repositories,
+  ctx: PlanContext,
+  endpointStationId: string,
+): SchedulePresentation {
+  const rides = [...schedule.state.rides, ...schedule.returnRides];
+  const totalRailMinutes = schedule.state.railMinutes + routeMinutes(schedule.returnRides);
+  const regionWindows = buildRegionWindows({
+    rides,
+    airportReadyAt: constraints.airportReadyAt,
+    airportArrivalDeadline: constraints.airportArrivalDeadline,
+    startStationId: endpointStationId,
+    stations: repos.stations,
+  });
+  return {
+    days: buildDays(ctx, schedule.state.visits, rides, regionWindows),
+    warnings: schedule.state.visits
+      .filter(({ warning }) => warning !== null)
+      .map(({ place, warning }) => ({
+        code: "ACTIVITY_WINDOW_MISMATCH",
+        placeId: place.id,
+        detail: warning as ActivityWindowDetail,
+      })),
     metrics: {
-      totalTravelMinutes:
-        totalRailMinutes + best.state.localTravelMinutes,
+      totalTravelMinutes: schedule.keys.totalTravelMinutes,
       totalRailMinutes,
-      transferCount: totalTransferCount,
-      departureSlackMinutes: minutesBetween(best.returnedAt, departureAt),
+      transferCount: schedule.keys.transferCount,
+      departureSlackMinutes: minutesBetween(schedule.returnedAt, Date.parse(constraints.departureAt)),
     },
+  };
+}
+
+type VerifiedAlternativeContext = {
+  complete: CompleteSchedule[];
+  best: CompleteSchedule;
+  constraints: TripConstraints;
+  repos: Repositories;
+  ctx: PlanContext;
+  endpointStationId: string;
+  actorIds: ReadonlySet<string>;
+  selectedWorkIds: ReadonlySet<string>;
+  allCandidates: readonly CandidatePlace[];
+  candidates: readonly CandidatePlace[];
+};
+
+/**
+ * #198 — 이미 하드 제약을 통과한 완성 후보에서만 실제 개선 대안을 고른다.
+ * 추가 탐색은 하지 않으며, 같은 선택 그룹 충족 수와 방문 수를 유지한다.
+ */
+function buildVerifiedAlternatives(input: VerifiedAlternativeContext): VerifiedItineraryAlternative[] {
+  const { best } = input;
+  const bestSignature = completeScheduleSignature(best);
+  const unique = new Map<string, CompleteSchedule>();
+  for (const schedule of input.complete) {
+    const signature = completeScheduleSignature(schedule);
+    if (signature === bestSignature) continue;
+    if (schedule.keys.selectionGroupCoverageCount !== best.keys.selectionGroupCoverageCount
+      || schedule.keys.selectedUnionPlaceCount !== best.keys.selectedUnionPlaceCount) continue;
+    if (schedule.keys.totalTravelMinutes >= best.keys.totalTravelMinutes
+      && schedule.keys.transferCount >= best.keys.transferCount) continue;
+    if (!unique.has(signature)) unique.set(signature, schedule);
+  }
+  const eligible = [...unique.values()];
+  const faster = [...eligible]
+    .filter(({ keys }) => keys.totalTravelMinutes < best.keys.totalTravelMinutes)
+    .sort((a, b) => a.keys.totalTravelMinutes - b.keys.totalTravelMinutes
+      || a.keys.transferCount - b.keys.transferCount
+      || compareCandidates(a, b))[0];
+  const fewerTransfers = [...eligible]
+    .filter(({ keys }) => keys.transferCount < best.keys.transferCount)
+    .sort((a, b) => a.keys.transferCount - b.keys.transferCount
+      || a.keys.totalTravelMinutes - b.keys.totalTravelMinutes
+      || compareCandidates(a, b))[0];
+
+  const selected = [faster, fewerTransfers]
+    .filter((schedule): schedule is CompleteSchedule => schedule !== undefined)
+    .filter((schedule, index, schedules) =>
+      schedules.findIndex((candidate) =>
+        completeScheduleSignature(candidate) === completeScheduleSignature(schedule)) === index)
+    .slice(0, 2);
+
+  return selected.map((schedule, index) => {
+    const presentation = schedulePresentation(
+      schedule, input.constraints, input.repos, input.ctx, input.endpointStationId,
+    );
+    const rejectedPlaces = rejectedPlacesForSchedule(
+      schedule,
+      input.candidates,
+      input.constraints,
+      input.ctx,
+      input.endpointStationId,
+    );
+    const totalTravelMinutes = schedule.keys.totalTravelMinutes - best.keys.totalTravelMinutes;
+    const transferCountDelta = schedule.keys.transferCount - best.keys.transferCount;
+    return {
+      id: `verified-itinerary-${index + 1}`,
+      kind: "verified_itinerary",
+      improvements: [
+        ...(totalTravelMinutes < 0 ? ["faster" as const] : []),
+        ...(transferCountDelta < 0 ? ["fewer_transfers" as const] : []),
+      ],
+      ...presentation,
+      rejectedPlaces,
+      selectionGroups: selectionGroupSummary(
+        input.actorIds,
+        input.selectedWorkIds,
+        input.allCandidates,
+        input.candidates,
+        schedule.state.visits,
+        rejectedPlaces,
+      ),
+      comparisonKeys: schedule.keys,
+      deltas: { totalTravelMinutes, transferCount: transferCountDelta },
+    };
+  });
+}
+
+function completeScheduleSignature(schedule: CompleteSchedule): string {
+  return JSON.stringify({
+    visits: schedule.state.visits.map(({ place, visitStart, visitEnd }) =>
+      [place.id, visitStart, visitEnd]),
+    rides: [...schedule.state.rides, ...schedule.returnRides].map((ride) =>
+      [ride.trainNo, ride.fromStationId, ride.toStationId, ride.departAt, ride.arriveAt]),
+  });
+}
+
+/** 추천안과 같은 사유 판정으로 대안 고유의 미배치 목록을 만든다. */
+function rejectedPlacesForSchedule(
+  schedule: CompleteSchedule,
+  candidates: readonly CandidatePlace[],
+  constraints: TripConstraints,
+  ctx: PlanContext,
+  endpointStationId: string,
+): CandidateRejection[] {
+  const visitedIds = new Set(schedule.state.visits.map(({ place }) => place.id));
+  const rejected: CandidateRejection[] = [];
+  for (const candidate of candidates) {
+    if (visitedIds.has(candidate.place.id)) continue;
+    const reason = completionFailure(
+      schedule.state, candidate, constraints, ctx, endpointStationId,
+    );
+    if (!reason) continue;
+    if (reason.code !== "TRAIN_UNAVAILABLE") {
+      rejected.push(reason);
+      continue;
+    }
+    const aloneFailure = completionFailure(
+      emptyPlannerState(ctx, endpointStationId, constraints),
+      candidate,
+      constraints,
+      ctx,
+      endpointStationId,
+    );
+    rejected.push(aloneFailure ? reason : { code: "NOT_IN_BEST_SUBSET", placeId: candidate.place.id });
+  }
+  return uniqueReasons(rejected);
+}
+
+function emptyPlannerState(
+  ctx: PlanContext,
+  endpointStationId: string,
+  constraints: TripConstraints,
+): PlannerState {
+  return {
+    stationId: endpointStationId,
+    readyAt: Date.parse(constraints.airportReadyAt),
+    visits: [],
+    rides: [],
+    railMinutes: 0,
+    transferCount: 0,
+    localTravelMinutes: 0,
+    dateCounts: ctx.tripDates.map(() => 0),
+    derived: initialDerived(ctx),
   };
 }
 

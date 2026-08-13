@@ -51,4 +51,25 @@ describe("#181 independent hard-constraint validator", () => {
     expect(codes).toContain("STAY_TIME_SHORTFALL");
     expect(codes.filter((code) => code === "METRIC_MISMATCH")).toHaveLength(2);
   });
+
+  it("검증 전체 일정 대안도 독립 일정으로 다시 검사한다 (#198)", () => {
+    const result = structuredClone(plannedFixture());
+    result.verifiedAlternatives = [{
+      id: "corrupt-alternative",
+      kind: "verified_itinerary",
+      improvements: ["fewer_transfers"],
+      days: result.days,
+      rejectedPlaces: result.rejectedPlaces,
+      warnings: result.warnings,
+      selectionGroups: result.selectionGroups,
+      comparisonKeys: result.comparisonKeys,
+      metrics: { ...result.metrics, totalRailMinutes: result.metrics.totalRailMinutes + 1 },
+      deltas: { totalTravelMinutes: 10, transferCount: -1 },
+    }];
+
+    expect(validateItinerary(result, constraints, repos)).toContainEqual(expect.objectContaining({
+      code: "METRIC_MISMATCH",
+      path: "verifiedAlternatives.0.metrics.totalRailMinutes",
+    }));
+  });
 });

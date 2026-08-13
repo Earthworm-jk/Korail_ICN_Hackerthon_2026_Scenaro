@@ -1,5 +1,6 @@
 import type { Repositories } from "../repositories/json";
 import type { ItineraryResult, TripConstraints } from "../engine/types";
+import { accessBufferMinutes } from "../types/schema";
 import type { EvaluationViolation } from "./types";
 
 const MIN_TRANSFER_MINUTES = 15;
@@ -145,6 +146,18 @@ export function validateItinerary(
       "metrics.totalRailMinutes",
     ));
   }
+  const localTravelMinutes = result.days.flatMap((day) => day.items).reduce(
+    (sum, item) => sum + 2 * (item.accessMinutes + accessBufferMinutes(item.accessMinutes)),
+    0,
+  );
+  const totalTravelMinutes = railMinutes + localTravelMinutes;
+  if (totalTravelMinutes !== result.metrics.totalTravelMinutes) {
+    violations.push(violation(
+      "METRIC_MISMATCH",
+      `reported totalTravelMinutes=${result.metrics.totalTravelMinutes}; measured=${totalTravelMinutes}`,
+      "metrics.totalTravelMinutes",
+    ));
+  }
   const verifiedHoursMismatchCount = result.warnings.filter(
     ({ detail }) => detail === "OUTSIDE_VERIFIED_HOURS",
   ).length;
@@ -154,6 +167,83 @@ export function validateItinerary(
       `verified hours mismatch count=${verifiedHoursMismatchCount}; comparison key=${result.comparisonKeys.verifiedHoursMismatchCount}`,
       "comparisonKeys.verifiedHoursMismatchCount",
     ));
+  }
+  const verifiedAlternatives = result.verifiedAlternatives ?? [];
+  if (verifiedAlternatives.length > 2) {
+    violations.push(violation(
+      "METRIC_MISMATCH",
+      `verified alternative count=${verifiedAlternatives.length}; max=2`,
+      "verifiedAlternatives",
+    ));
+  }
+  const alternativeSignatures = new Set<string>();
+  const recommendedSignature = JSON.stringify(result.days);
+  const recommendedVisitCount = result.days.reduce((count, day) => count + day.items.length, 0);
+  const recommendedCoveredGroups = [...result.selectionGroups.covered].sort();
+  for (const [index, alternative] of verifiedAlternatives.entries()) {
+    const path = `verifiedAlternatives.${index}`;
+    const signature = JSON.stringify(alternative.days);
+    if (signature === recommendedSignature || alternativeSignatures.has(signature)) {
+      violations.push(violation("METRIC_MISMATCH", "duplicate whole-itinerary alternative", path));
+    }
+    alternativeSignatures.add(signature);
+
+    const travelDelta = alternative.metrics.totalTravelMinutes - result.metrics.totalTravelMinutes;
+    const transferDelta = alternative.metrics.transferCount - result.metrics.transferCount;
+    if (alternative.deltas.totalTravelMinutes !== travelDelta
+      || alternative.deltas.transferCount !== transferDelta) {
+      violations.push(violation(
+        "METRIC_MISMATCH",
+        `alternative deltas=${JSON.stringify(alternative.deltas)}; measured=${JSON.stringify({ totalTravelMinutes: travelDelta, transferCount: transferDelta })}`,
+        `${path}.deltas`,
+      ));
+    }
+    const improvements = [
+      ...(travelDelta < 0 ? ["faster" as const] : []),
+      ...(transferDelta < 0 ? ["fewer_transfers" as const] : []),
+    ];
+    if (JSON.stringify(alternative.improvements) !== JSON.stringify(improvements)
+      || improvements.length === 0) {
+      violations.push(violation(
+        "METRIC_MISMATCH",
+        `alternative improvements=${JSON.stringify(alternative.improvements)}; measured=${JSON.stringify(improvements)}`,
+        `${path}.improvements`,
+      ));
+    }
+    const alternativeVisitCount = alternative.days.reduce(
+      (count, day) => count + day.items.length,
+      0,
+    );
+    const alternativeCoveredGroups = [...alternative.selectionGroups.covered].sort();
+    if (alternativeVisitCount !== recommendedVisitCount
+      || JSON.stringify(alternativeCoveredGroups) !== JSON.stringify(recommendedCoveredGroups)
+      || alternative.comparisonKeys.selectionGroupCoverageCount
+        !== result.comparisonKeys.selectionGroupCoverageCount
+      || alternative.comparisonKeys.selectedUnionPlaceCount
+        !== result.comparisonKeys.selectedUnionPlaceCount) {
+      violations.push(violation(
+        "METRIC_MISMATCH",
+        "alternative changed selection-group coverage or visited-place count",
+        `${path}.comparisonKeys`,
+      ));
+    }
+    const alternativeResult: ItineraryResult = {
+      status: "planned",
+      days: alternative.days,
+      rejectedPlaces: alternative.rejectedPlaces,
+      warnings: alternative.warnings,
+      selectionGroups: alternative.selectionGroups,
+      comparisonKeys: alternative.comparisonKeys,
+      metrics: alternative.metrics,
+    };
+    for (const nested of validateItinerary(alternativeResult, constraints, repos)) {
+      violations.push({
+        ...nested,
+        path: nested.path
+          ? `${path}.${nested.path}`
+          : path,
+      });
+    }
   }
   return violations;
 }

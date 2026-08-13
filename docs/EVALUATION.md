@@ -33,6 +33,7 @@ pnpm eval:golden:record
 - `warnings[].code/placeId/detail`
 - `comparisonKeys.verifiedHoursMismatchCount`
 - `metrics.totalRailMinutes`
+- `verifiedAlternatives[].improvements/deltas/days/metrics` — 필드가 있을 때 추천과 같은 validator로 전체 일정 재검증
 
 ## 하드 제약과 위반 코드
 
@@ -52,6 +53,10 @@ pnpm eval:golden:record
 | 파생 지표와 일정 원본 일치 | `METRIC_MISMATCH` |
 
 운영시간은 현재 제품 계약에서 하드 제외가 아닙니다. 검증된 운영시간 밖이거나 운영시간 미확인이어도 장소를 숨기지 않고 `ACTIVITY_WINDOW_MISMATCH` 경고를 내는 정책이므로, 하드 제약 충족률의 실패로 세지 않고 경고 대상·개수 정합만 검증합니다.
+
+검증 대안의 `더 빠름`·`환승 적음` 표시는 자연어 추정이 아니라 추천 대비 구조화된 분·횟수
+diff에서만 파생합니다. 대안은 추천과 같은 선택 그룹 충족 수·방문 수를 유지해야 하며, 합성 회귀
+fixture에서 대안의 전체 `days[]`를 독립 `ItineraryResult`로 다시 구성해 validator 위반 0건을 확인합니다.
 
 ## 지표 정의
 
