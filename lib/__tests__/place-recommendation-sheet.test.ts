@@ -30,7 +30,7 @@ const copy: Partial<Record<MessageKey, string>> = {
   "ai.recommendSheetTitle": "현재 동선에 맞는 촬영지",
   "ai.recommendSheetSubtitle": "추가 전에는 일정이 바뀌지 않습니다.",
   "map.placesTitle": "추천 장소 지도",
-  "step3.selectionState": "선택 {selected} · 일정 반영 {placed} · 미배치 {unplaced}",
+  "step3.selectionState": "일정 반영 {placed} · 미배치 {unplaced}",
   "step3.unplacedHint": "시간·동선 제약",
   "step3.chipKCulture": "K-컬처 {n}",
   "step3.chipThemeNone": "테마체험 추천 없음",
@@ -41,68 +41,34 @@ const copy: Partial<Record<MessageKey, string>> = {
 const tr = (key: MessageKey) => copy[key] ?? key;
 
 describe("지도 위 추천 장소 바텀시트", () => {
-  it("미리보기 없이 선택 수, 정렬, 전체 촬영지 진입을 제공한다", () => {
+  it("제목·전체 보기·접기 없이 정렬·상태·후보 목록을 한자리에 둔다", () => {
     const markup = renderToStaticMarkup(createElement(PlaceRecommendationSheet, {
       selectedCount: 3,
       totalCount: 8,
       placedCount: null,
       unplacedCount: null,
-      themeState: "none" as const,
       updating: false,
       updated: false,
-      sortBy: "relevance",
-      onSortChange: () => undefined,
-      onBrowseAll: () => undefined,
-      tr,
+        tr,
     }, createElement("li", { "data-recommendation-card": true }, "월정사")));
 
     expect(markup).toContain("data-place-sheet");
     expect(markup).toContain('data-sheet-mode="browser-entry"');
-    expect(markup).toContain('data-sheet-expanded="true"');
-    expect(markup).toContain("지도 위 추천 장소");
-    expect(markup).not.toContain("장소를 고르면 일정과 경로가 함께 바뀝니다.");
-    expect(markup).toContain("3/8곳 선택");
-    expect(markup).toContain('aria-label="장소 정렬 방식"');
-    expect(markup).toContain('<option value="relevance" selected="">추천순</option>');
-    expect(markup).not.toContain("data-place-sheet-controls");
-    expect(markup).toContain("전체 촬영지 보기");
-    expect(markup).toContain('aria-label="추천 장소 접기"');
-    expect(markup).toContain('aria-expanded="true"');
-    expect(markup).toContain("min-h-11");
-    expect(markup).toContain('aria-haspopup="dialog"');
-    expect(markup).toContain('aria-controls="place-browser-dialog"');
-    // 5개 미리보기는 구현에서 제거한다 (#207). 호출부가 넘겨도 표시하지 않는다.
-    expect(markup).not.toContain("월정사");
-    expect(markup).not.toContain("data-place-sheet-list");
-    expect(markup).not.toContain("data-place-sheet-more");
+    // 제목·선택 수·전체 보기·접기는 걷었다 (#146 후속 — 독 없애기)
+    expect(markup).not.toContain("지도 위 추천 장소");
+    expect(markup).not.toContain("전체 촬영지 보기");
+    expect(markup).not.toContain("추천 장소 접기");
+    expect(markup).not.toContain("추천 장소 펼치기");
+    expect(markup).not.toContain("data-sheet-expanded");
+    // 정렬은 좁히기와 같은 줄로 내려갔다 — 시트가 그리지 않는다
+    expect(markup).not.toContain('aria-label="장소 정렬 방식"');
+    // 후보 목록은 늘 보인다 — 호출부가 넘긴 카드가 그대로 실린다
+    expect(markup).toContain("월정사");
+    expect(markup).not.toContain("data-place-sheet-map");
     // 시트 안 촬영지 위치 지도는 지웠다 (#146) — 화면의 동선 지도와 중복이었다
     expect(markup).not.toContain("data-place-sheet-map");
     // 독으로 옮겨 갈 주 액션 자리는 시트가 제공한다
     expect(markup).toContain('id="stage-sheet-actions"');
-  });
-
-  it("다시 계산 없이 하단 추천 독을 접고 펼칠 수 있다", () => {
-    const markup = renderToStaticMarkup(createElement(PlaceRecommendationSheet, {
-      selectedCount: 3,
-      totalCount: 8,
-      placedCount: 3,
-      unplacedCount: 0,
-      themeState: "none" as const,
-      updating: false,
-      updated: false,
-      sortBy: "relevance" as const,
-      onSortChange: () => undefined,
-      onBrowseAll: () => undefined,
-      initialExpanded: false,
-      tr,
-    }));
-
-    expect(markup).toContain('data-sheet-expanded="false"');
-    expect(markup).toContain("추천 장소 펼치기");
-    expect(markup).toContain('aria-expanded="false"');
-    expect(markup).toContain("min-h-11");
-    expect(markup).not.toContain("전체 촬영지 보기");
-    expect(markup).not.toContain('id="stage-sheet-actions"');
   });
 
   it("열린 전체 촬영지 모달 안에 명시적인 닫기 버튼을 제공한다", () => {
@@ -158,13 +124,9 @@ describe("지도 위 추천 장소 바텀시트", () => {
       totalCount: 8,
       placedCount: null,
       unplacedCount: null,
-      themeState: "none" as const,
       updating: true,
       updated: false,
-      sortBy: "official",
-      onSortChange: () => undefined,
-      onBrowseAll: () => undefined,
-      tr,
+        tr,
     }));
 
     expect(markup).toContain("일정·경로 다시 그리는 중");
@@ -177,13 +139,9 @@ describe("지도 위 추천 장소 바텀시트", () => {
       totalCount: 8,
       placedCount: null,
       unplacedCount: null,
-      themeState: "none" as const,
       updating: false,
       updated: false,
-      sortBy: "relevance",
-      onSortChange: () => undefined,
-      onBrowseAll: () => undefined,
-      routeRecommendations: createElement("li", { "data-route-card": true }, "영진해변"),
+        routeRecommendations: createElement("li", { "data-route-card": true }, "영진해변"),
       tr,
     }));
 
@@ -199,13 +157,9 @@ describe("지도 위 추천 장소 바텀시트", () => {
       totalCount: 8,
       placedCount: null,
       unplacedCount: null,
-      themeState: "none" as const,
       updating: false,
       updated: true,
-      sortBy: "official",
-      onSortChange: () => undefined,
-      onBrowseAll: () => undefined,
-      tr,
+        tr,
     }));
 
     expect(markup).toContain("2/8곳 선택");
@@ -282,25 +236,24 @@ describe("지도 위 추천 장소 바텀시트", () => {
 describe("#146 ① 상태 요약과 분류", () => {
   const base = {
     selectedCount: 8, totalCount: 20, updating: false, updated: false,
-    sortBy: "relevance" as const, onSortChange: () => undefined,
-    onBrowseAll: () => undefined,
     tr,
   };
   const render = (over: Record<string, unknown>) =>
     renderToStaticMarkup(createElement(PlaceRecommendationSheet, { ...base, ...over } as never));
 
   /**
-   * 여행 기간과 무관하게 같은 구조를 쓴다. `일정 반영 + 미배치 = 선택` 관계가 유지되므로
-   * "왜 8곳을 골랐는데 7곳만 있지"가 화면에서 바로 풀린다.
+   * 여행 기간과 무관하게 같은 구조를 쓴다. 선택 수는 이 줄에서 뺐다 — 옆의 `K-컬처 n`
+   * 칩과 위 요약 막대가 이미 말한다. `일정 반영 + 미배치`가 곧 선택 수다.
    */
-  it("선택·일정 반영·미배치를 한 줄로 말한다", () => {
+  it("일정 반영·미배치를 한 줄로 말한다", () => {
     const html = render({ placedCount: 7, unplacedCount: 1, themeRecommended: false });
-    expect(html).toContain("선택 8 · 일정 반영 7 · 미배치 1");
+    expect(html).toContain("일정 반영 7 · 미배치 1");
+    expect(html).not.toContain("선택 8 ·");
   });
 
   it("미배치가 0이어도 같은 구조를 유지한다", () => {
     const html = render({ placedCount: 8, unplacedCount: 0, themeRecommended: false });
-    expect(html).toContain("선택 8 · 일정 반영 8 · 미배치 0");
+    expect(html).toContain("일정 반영 8 · 미배치 0");
     // 경고 강조만 뺀다
     expect(html).not.toContain("시간·동선 제약");
   });
@@ -317,50 +270,29 @@ describe("#146 ① 상태 요약과 분류", () => {
     expect(html).not.toContain("일정 반영");
   });
 
-  it("K-컬처 칩은 선택 수를 센다", () => {
+  /**
+   * `K-컬처 n`은 선택 수를 말했는데 같은 줄의 상태 요약과 위 요약 막대가 이미 같은
+   * 숫자를 말한다. 한 화면에 세 번이라 걷었다.
+   */
+  it("선택 수를 칩으로 다시 세지 않는다", () => {
     expect(render({ placedCount: 7, unplacedCount: 1, themeRecommended: false }))
-      .toContain("K-컬처 8");
-  });
-
-  /** 테마체험은 아직 선택할 수 없다 — 선택 수를 세면 언제나 0이라 의미가 없다 */
-  it("테마체험은 숫자 대신 추천 유무를 말한다", () => {
-    expect(render({ placedCount: 7, unplacedCount: 1, themeRecommended: false }))
-      .toContain("테마체험 추천 없음");
-    expect(render({ placedCount: 7, unplacedCount: 1, themeState: "available" }))
-      .toContain("테마체험 추천 있음");
-  });
-
-  /** 성격이 다른 숫자를 같은 줄에 섞으면 둘 다 무슨 뜻인지 흐려진다 */
-  it("상태 요약과 분류 칩은 다른 자리에 선다", () => {
-    const html = render({ placedCount: 7, unplacedCount: 1, themeRecommended: false });
-    expect(html.indexOf("data-selection-state")).toBeLessThan(html.indexOf("data-category-chips"));
-    expect(html).toMatch(/data-selection-state[\s\S]*?<\/span>[\s\S]*?data-category-chips/);
+      .not.toContain("K-컬처");
   });
 });
 
-describe("PR #156 리뷰 4 — 테마체험은 아는 것만 말한다", () => {
+describe("테마체험 대체 칩", () => {
   const base = {
     selectedCount: 8, totalCount: 20, updating: false, updated: false,
-    sortBy: "relevance" as const, onSortChange: () => undefined,
     onBrowseAll: () => undefined, tr,
     placedCount: 7, unplacedCount: 1,
   };
-  const render = (themeState: "available" | "none" | "unknown") =>
-    renderToStaticMarkup(createElement(PlaceRecommendationSheet, { ...base, themeState } as never));
 
   /**
-   * 재계산마다 조회 상태가 `null`로 초기화된다. 미조회를 "추천 없음"으로 합치면
-   * **매번 없다고 단언했다가 뒤집힌다.** 모르는 동안은 말하지 않는다.
+   * 추천이 없을 때 "추천 없음"이라고 말하던 대체 칩은 걷었다 — 고를 수도 없는 것의
+   * 부재를 알리는 칩이었다. 호출부가 칩을 주지 않으면 아무것도 그리지 않는다.
    */
-  it("조회 전·확인 불가에는 칩을 두지 않는다", () => {
-    const html = render("unknown");
+  it("호출부가 칩을 주지 않으면 테마체험을 말하지 않는다", () => {
+    const html = renderToStaticMarkup(createElement(PlaceRecommendationSheet, base as never));
     expect(html).not.toContain("테마체험");
-    // K-컬처 칩은 그대로 있다 — 선택 수는 지금도 아는 값이다
-    expect(html).toContain("K-컬처 8");
-  });
-
-  it("조회가 끝났을 때만 있음·없음을 말한다", () => {
-    expect(render("none")).toContain("테마체험 추천 없음");
-    expect(render("available")).toContain("테마체험 추천 있음");
   });
 });

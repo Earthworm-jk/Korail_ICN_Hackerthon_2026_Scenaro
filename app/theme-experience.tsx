@@ -56,15 +56,12 @@ export function ThemeExperienceChip({ result, stationName, locale, tr, mapVisibl
   onToggleMap: () => void;
 }) {
   const popoverRef = useRef<HTMLDivElement>(null);
-  // 조회 전·스냅샷 부재는 아는 게 없다 — 아무 말도 하지 않는다
-  if (result === null || result.status === "unavailable") return null;
+  // 조회 전·스냅샷 부재는 아는 게 없다 — 아무 말도 하지 않는다.
+  // 추천이 없을 때도 마찬가지다 — 고를 수도 없는 것의 부재를 칩으로 알리지 않는다.
+  if (result === null || result.status !== "ok") return null;
 
-  const label = tr(result.status === "ok" ? "step3.chipThemeAvailable" : "step3.chipThemeNone");
+  const label = tr("step3.chipThemeAvailable");
   const chipClass = "rounded-full border px-2 py-0.5 text-sc-muted";
-
-  if (result.status !== "ok") {
-    return <span className={chipClass} title={tr("theme.statusNone")}>{label}</span>;
-  }
 
   const popoverId = "theme-experience-detail";
   return (

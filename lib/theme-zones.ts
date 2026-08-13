@@ -10,7 +10,16 @@
  * 배지 기준을 넘은 검토 항목에는 reason과 sourceUrls를 함께 요구한다.
  */
 import { z } from "zod";
-import { HttpUrl, IsoDate, IsoDateTime, LocalizedText, NonEmptyId } from "./types/schema";
+import {
+  AccessEstimate,
+  HttpUrl,
+  IsoDate,
+  IsoDateTime,
+  LocalizedText,
+  NonEmptyId,
+  OpeningHours,
+  StayMetadata,
+} from "./types/schema";
 
 export const ThemeZone = z
   .object({
@@ -25,6 +34,21 @@ export const ThemeZone = z
     // 검증된 경계가 아니다. 근거를 확보하지 못한 권역은 비워 두고 지도에 그리지 않는다 (A3).
     latitude: z.number().min(-90).max(90).optional(),
     longitude: z.number().min(-180).max(180).optional(),
+    /*
+     * 일정 편입용 필드 (additive).
+     *
+     * 권역을 촬영지 목록에 섞어 놓고 고르면 일정에 장소처럼 들어간다. 엔진은 Place만
+     * 알기 때문에 그때 필요한 값을 여기 함께 기록한다 — **촬영 관계를 만들지는 않는다.**
+     * 작품↔권역 연결은 촬영이 아니라 테마 유사도이므로 work-place-relations로 옮기면
+     * 관계의 뜻이 달라진다. 연결은 지금처럼 랭킹 스냅샷에 남는다.
+     *
+     * 넷이 다 있는 권역만 일정에 들어간다. 하나라도 없으면 지도 추천으로만 남는다.
+     */
+    nearestStationId: NonEmptyId.optional(),
+    accessEstimate: AccessEstimate.optional(),
+    openingHours: OpeningHours.optional(),
+    stayMinutes: z.number().int().positive().optional(),
+    stayMetadata: StayMetadata.optional(),
   })
   .superRefine((zone, ctx) => {
     if ((zone.latitude === undefined) !== (zone.longitude === undefined)) {

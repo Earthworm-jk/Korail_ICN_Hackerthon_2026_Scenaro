@@ -6,7 +6,9 @@
   /* A wide app canvas, but cap ultrawide growth so the side rails stay readable. */
   body > main > div.mx-auto {
     max-width: 1680px !important;
-    padding: 14px 16px 20px !important;
+    /* 태블릿 가로(1024x768)에서 스테이지 상자가 화면 아래로 잘렸다. 바깥 여백이
+       34px을 먹고 있었다 — 상자 자체를 줄이지 않고 여백만 좁혀 상자를 화면에 넣는다 */
+    padding: 8px 16px 8px !important;
   }
 
   /* Step 3 heading becomes a compact workspace header rather than a page intro. */

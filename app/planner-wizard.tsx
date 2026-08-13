@@ -5,8 +5,8 @@
  * - 편집 = 촬영지 재선택·항공 시각 변경 후 전체 재계산 (무상태)
  * - 대안 시간표는 mock(#14 ⑨ 선행), 저장·내 일정은 in-memory 스텁(#25 선행) — 엔진·Supabase 연결 시 교체
  */
-import { useCallback, useEffect, useId, useMemo, useReducer, useRef, useState, useTransition } from "react";
-import { BusFront, Hourglass, Info, Sparkles, TrainFront, TriangleAlert, X } from "lucide-react";
+import { Fragment, useCallback, useEffect, useId, useMemo, useReducer, useRef, useState, useTransition, type ReactNode } from "react";
+import { ArrowUpDown, BusFront, Car, Check, Hourglass, Info, Search, Sparkles, TrainFront, TriangleAlert, Tv, UserRound, X } from "lucide-react";
 import { PlaceOrderMenu } from "./place-order-menu";
 import { StageUtilityPortal } from "./stage-utility-portal";
 import {
@@ -81,7 +81,6 @@ import {
   reduceItineraryView,
   rejectedPlaces as deriveRejectedPlaces,
   showEmpty,
-  themeChipState,
   type SelectableAlternative,
 } from "@/lib/itinerary-view";
 import { selectionResultIsCurrent } from "@/lib/selection-capacity";
@@ -111,7 +110,6 @@ import {
 } from "./itinerary-command-panel";
 import { ItineraryRouteMap, type MapPlace, type MapStation } from "./korea-map";
 import { PlaceRecommendationSheet, PlaceThumbnail } from "./place-recommendation-sheet";
-import { PlaceBrowser } from "./place-browser";
 import {
   filterPlaceBrowserCandidates,
   showsPlaceBrowserWorkFilter,
@@ -125,8 +123,7 @@ import {
   shouldNoteAirportRail,
   stationIdsOf,
 } from "@/lib/itinerary-rows";
-import { MoveRow } from "./move-row";
-import { ThemeExperienceChip, ThemeExperienceMapOverlay } from "./theme-experience";
+import { ThemeExperienceMapOverlay } from "./theme-experience";
 import { TrainLegModal, legDurationLabel, type TrainLegDetail } from "./train-leg-modal";
 import { getThemeExperience, type ThemeExperienceResult } from "@/lib/actions/theme-experience";
 import type { StationFacilitiesSnapshotT } from "@/lib/station-facilities";
@@ -146,6 +143,7 @@ import {
   type LookupCoordinator,
   type LookupPending,
 } from "@/lib/flight-lookup";
+import { laterDepartures, type LaterDeparture } from "@/lib/actions/later-departures";
 import type { DayPlan } from "@/lib/engine/types";
 import type { RegionWindowKind } from "@/lib/engine/region-windows";
 import { undoPointOf, type UndoPoint } from "@/lib/itinerary-undo";
@@ -176,9 +174,6 @@ type FlightField = {
 // #85 확정: 촬영지 선택과 일정 결과가 한 화면이라 스테퍼도 3단계다.
 // 무엇을 뺄지 판단하는 순간과 뺀 결과를 보는 순간이 같은 화면에 있어야 한다.
 const STEPS: MessageKey[] = ["nav.step1", "nav.step2", "nav.step3"];
-
-/** 3단계 후보 목록을 한 번에 보여주는 개수 — 나머지는 "더보기" */
-const PLACES_PAGE_SIZE = 5;
 
 /** #101 — 창 종류별 표현을 한곳에 모아 새 종류가 생기면 타입 검사가 누락을 잡는다. */
 const REGION_WINDOW_CARD = {
@@ -221,17 +216,6 @@ const REGION_WINDOW_CARD = {
  * 여러 곳을 연달아 끄는 조작에서 매번 돌지 않도록 마지막 토글만 계산한다.
  */
 const AUTO_PLAN_DEBOUNCE_MS = 400;
-
-/** #80 카드의 "OO 권역 일정과 연결" 문구 — 추천 권역과 같은 권역의 첫 일정 역 */
-function themeStationLabel(
-  days: DayPlan[],
-  result: ThemeExperienceResult | null,
-  stationName: (id: string) => string,
-): string | null {
-  if (result?.status !== "ok") return null;
-  const window = days.flatMap((day) => day.regionWindows).find((w) => w.regionId === result.regionId);
-  return window ? stationName(window.stationId) : null;
-}
 
 // #14 합의(2026-08-08): datetime-local은 시각 표기가 앱 locale이 아니라 브라우저 UI 언어를
 // 따라 영어 모드에 '오전/오후'가 남는다 — 날짜 input + 24시간제 시/분 select로 교체 (A6).
@@ -318,13 +302,29 @@ function fmtMonthDay(at: string): string {
   return `${Number(month)}.${Number(day)}`;
 }
 
-function SummarySidebar({ arrivalAt, departureAt, readyAt, deadlineAt, actors, works, placeCount, locale, tr, collapsed, onToggle }: {
+/**
+ * "사용 가능 시간" 한 줄. 1단계에서 고른 네 시각이 만드는 값이지만 그 화면에 다시
+ * 적지 않는다 — 사이드바가 단계 내내 이 값을 들고 있고, 본문과 사이드바에 같은 값을
+ * 두면 중복이다. 순서가 어긋난 입력(공항 도착이 출발보다 이르다)이면 "8.16 12:00–
+ * 8.15 14:00" 같은 불가능한 범위를 만들지 않고 null을 준다.
+ */
+function usableWindowText(readyAt: string, deadlineAt: string): string | null {
+  if (!readyAt || !deadlineAt) return null;
+  const from = Date.parse(fromLocalInput(readyAt));
+  const to = Date.parse(fromLocalInput(deadlineAt));
+  if (!Number.isFinite(from) || !Number.isFinite(to) || from >= to) return null;
+  return `${fmtMonthDay(readyAt)} ${readyAt.split("T")[1]} – ${fmtMonthDay(deadlineAt)} ${deadlineAt.split("T")[1]}`;
+}
+
+function SummarySidebar({ arrivalAt, departureAt, readyAt, deadlineAt, actors, works, themeZones, placeCount, locale, tr, collapsed, onToggle }: {
   arrivalAt: string;
   departureAt: string;
   readyAt: string;
   deadlineAt: string;
   actors: ActorSummary[];
   works: WorkSummary[];
+  /** 고른 테마체험 권역 — 촬영지가 아니라 권역이라 배우·작품과 다른 색으로 선다 */
+  themeZones: { id: string; name: { ko: string; en: string } }[];
   placeCount: number;
   locale: Locale;
   tr: (key: MessageKey) => string;
@@ -337,22 +337,35 @@ function SummarySidebar({ arrivalAt, departureAt, readyAt, deadlineAt, actors, w
   const nightsLabel = tr("summary.nights")
     .replace("{n}", String(nights))
     .replace("{d}", String(nights + 1));
-  const hasContent = actors.length > 0 || works.length > 0;
+  const hasContent = actors.length > 0 || works.length > 0 || themeZones.length > 0;
   return (
-    <aside aria-label={tr("summary.title")} className="border-b bg-sc-subtle px-5 py-4 md:border-b-0 md:border-r md:px-4 md:py-5">
-      <div className="flex items-center justify-between gap-2">
-        <h3 className="text-sm font-medium">{tr("summary.title")}</h3>
+    // 제목 줄("선택 요약")은 두지 않는다 — 각 항목이 제 이름을 달고 있어 한 겹 더
+    // 얹으면 좁은 열에서 자리만 먹는다. 이름은 aria-label로 남는다
+    <aside
+      aria-label={tr("summary.title")}
+      // 접기 버튼의 자리는 화면 방향에 따라 다르다. 모바일에서 요약은 가로 밴드라
+      // 아까운 건 높이 — 버튼을 띄워 빈 줄을 없앤다. 태블릿에서 요약은 세로 열이라
+      // 아까운 건 폭 — 버튼 자리를 옆에 비워 두면 글자가 서너 줄로 접힌다. 그래서
+      // 거기서는 흐름 안 한 줄로 되돌린다
+      className="relative border-b bg-sc-subtle py-4 pl-5 pr-14 md:flex md:flex-col md:border-b-0 md:border-r md:px-4 md:py-5"
+    >
+      {/* 헤더 자리. 제목은 걷었고 접기 버튼만 남았지만 이 칸 자체는 지운다고 없어지지
+          않는다 — 3단계 CSS가 `aside > div:first-child`를 헤더로, `div:nth-child(2)`를
+          항목 그리드로 잡는다. 사이에 래퍼를 끼우면 3단계 요약 막대가 무너진다 */}
+      <div className="flex items-center justify-end">
         <button
           type="button"
           aria-expanded={!collapsed}
-          className="rounded border px-1.5 py-0.5 text-xs text-sc-muted hover:border-sc-blue hover:text-sc-blue"
+          className="absolute right-4 top-4 rounded border px-1.5 py-0.5 text-xs text-sc-muted hover:border-sc-blue hover:text-sc-blue md:static md:mb-1"
           onClick={onToggle}
         >
           {collapsed ? "＋" : "－"}
           <span className="sr-only">{tr(collapsed ? "summary.expand" : "summary.collapse")}</span>
         </button>
       </div>
-      <div hidden={collapsed} className="mt-3 grid grid-cols-2 gap-3 md:grid-cols-1 md:gap-4">
+      {/* 접힘은 `hidden` 속성이 맡는다 — `grid` 유틸리티를 늘 붙이면 display:grid가
+          그 속성을 이겨 접기가 먹지 않는다. 펼쳤을 때만 붙인다 */}
+      <div hidden={collapsed} className={collapsed ? undefined : "grid grid-cols-2 gap-3 md:grid-cols-1 md:gap-4"}>
         <div>
           <span className="block text-xs text-sc-muted">{tr("summary.period")}</span>
           <strong className="mt-0.5 block text-sm font-medium">
@@ -361,20 +374,37 @@ function SummarySidebar({ arrivalAt, departureAt, readyAt, deadlineAt, actors, w
         </div>
         <div>
           <span className="block text-xs text-sc-muted">{tr("summary.window")}</span>
-          <strong className="mt-0.5 block text-sm font-medium">
-            {fmtMonthDay(readyAt)} {readyAt.split("T")[1]}–{fmtMonthDay(deadlineAt)} {deadlineAt.split("T")[1]}
+          {/* 한 줄로 붙여 둔다 — 시각 범위가 중간에서 접히면 두 날짜가 다른 값처럼
+              읽힌다. 열 폭(20%)은 이 문자열이 들어갈 만큼 잡아 두었고, 자릿수가
+              흔들리지 않게 tabular-nums를 쓴다 */}
+          <strong className="mt-0.5 block whitespace-nowrap text-sm font-medium tabular-nums">
+            {usableWindowText(readyAt, deadlineAt) ?? <span className="text-sc-muted/70">—</span>}
           </strong>
         </div>
         <div>
           <span className="block text-xs text-sc-muted">{tr("summary.content")}</span>
           {hasContent ? (
             <div className="mt-1 flex flex-wrap gap-1.5">
+              {/* 요약 칩은 색만 채운다 — 좁은 열이라 아이콘·유형 라벨을 얹으면 이름이 잘린다 */}
               {actors.map((a) => (
-                <span key={a.id} className="rounded-full bg-sc-blue-soft px-2 py-0.5 text-xs text-sc-blue">{a.name[locale]}</span>
+                <span key={a.id} className="rounded-full bg-sc-blue px-2 py-0.5 text-xs text-white">{a.name[locale]}</span>
               ))}
               {works.map((w) => (
-                <span key={w.id} className="rounded-full bg-sc-airport-soft px-2 py-0.5 text-xs text-sc-airport-text">{w.title[locale]}</span>
+                <span key={w.id} className="rounded-full bg-sc-airport px-2 py-0.5 text-xs text-white">{w.title[locale]}</span>
               ))}
+              {/* 권역은 촬영지가 아니라 성격이 다르다 — 보라로 갈라 놓는다.
+                  권역 이름이 아니라 분류를 적는다. 이름("정동·덕수궁 대한제국 근대문화
+                  권역")은 알약에 담기엔 길어 잘리고, 여기서 알려야 할 것은 어떤 권역인지가
+                  아니라 테마체험을 골랐다는 사실이다. 이름은 목록·일정에 그대로 있다 */}
+              {themeZones.length > 0 && (
+                <span
+                  className="rounded-full bg-sc-theme px-2 py-0.5 text-xs text-white"
+                  title={themeZones.map((z) => z.name[locale]).join(", ")}
+                >
+                  {tr("summary.themeZone")}
+                  {themeZones.length > 1 && ` ${themeZones.length}`}
+                </span>
+              )}
             </div>
           ) : (
             <strong className="mt-0.5 block text-sm font-medium text-sc-muted/70">—</strong>
@@ -389,7 +419,61 @@ function SummarySidebar({ arrivalAt, departureAt, readyAt, deadlineAt, actors, w
           </strong>
         </div>
       </div>
+      {/* 요약의 마지막 줄 — 이 값들이 무엇을 위한 것인지 말한다.
+          열 바닥(mt-auto)에 붙이지 않는다. 사이드바 열은 본문 높이만큼 늘어나므로
+          혼잡도 안내처럼 본문이 길어지는 순간 이 줄이 화면 밖으로 밀려났다.
+          모바일에서는 요약이 가로 밴드라 이 줄이 입력 화면을 밀어낸다. 거기서는
+          첫 진입 팝업(WindowHintDialog)이 같은 말을 대신한다.
+          3단계 가로 막대에서는 stage-v4.css가 이 줄을 숨긴다 */}
+      {!collapsed && (
+        <p className="mt-4 hidden whitespace-pre-line border-t pt-3 text-xs leading-relaxed text-sc-muted md:block">
+          {tr("step1.windowHint")}
+        </p>
+      )}
     </aside>
+  );
+}
+
+/**
+ * 모바일 첫 진입 안내 — 이 서비스가 무엇을 채워 주는지 한 번 말하고 비켜선다.
+ *
+ * 모바일에서는 선택 요약이 화면 위 가로 밴드라, 거기에 설명 줄을 두면 입력 화면이
+ * 그만큼 밀린다. 그래서 좁은 화면에서만 이 대화상자가 같은 말을 대신하고, 닫으면
+ * 입력 화면에는 남지 않는다. 태블릿 이상에서는 사이드바 바닥이 계속 들고 있으므로
+ * 띄우지 않는다.
+ *
+ * 저장소에 닫은 기록을 남기지 않는다 — 새로 열 때마다 다시 보여야 시연에서 재현된다.
+ *
+ * 화면 폭 판정은 CSS(`md:hidden`)에 맡긴다. 폭을 자바스크립트로 재서 상태로 들면
+ * 서버 렌더에는 폭이 없어 첫 그림이 어긋나고, 그 보정이 effect 안 setState가 된다.
+ * 상태는 "닫았는가" 하나뿐이다.
+ */
+function WindowHintDialog({ tr }: { tr: (key: MessageKey) => string }) {
+  const [dismissed, setDismissed] = useState(false);
+  if (dismissed) return null;
+  return (
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="window-hint-title"
+      className="fixed inset-0 z-50 grid place-items-center bg-black/40 p-6 md:hidden"
+    >
+      <div className="w-full max-w-sm rounded-2xl bg-sc-surface p-6 text-center shadow-2xl">
+        <div className="mx-auto grid size-12 place-items-center rounded-full bg-sc-blue-soft">
+          <Hourglass aria-hidden="true" className="size-6 text-sc-blue" />
+        </div>
+        <h2 id="window-hint-title" className="mt-4 text-base font-semibold">{tr("nav.step1")}</h2>
+        <p className="mt-2 text-sm leading-relaxed text-sc-muted">{tr("step1.windowHint")}</p>
+        <button
+          type="button"
+          autoFocus
+          className="mt-5 w-full rounded-lg bg-sc-blue px-4 py-2.5 text-sm font-medium text-white"
+          onClick={() => setDismissed(true)}
+        >
+          {tr("common.close")}
+        </button>
+      </div>
+    </div>
   );
 }
 
@@ -453,14 +537,25 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
     };
   }, []);
 
-  // step 1 — 여행 조건
-  const [arrival, setArrival] = useState<FlightField>({ flightNo: "", at: "2026-08-16T10:00", notFound: false });
-  const [departure, setDeparture] = useState<FlightField>({ flightNo: "", at: "2026-08-18T18:00", notFound: false });
+  /*
+   * step 1 — 여행 시간 기본값 (시연 고정값, 2026-08-13 인천공항 상세조회 실호출로 확인한 실제 운항 편)
+   *
+   * 대한항공 오사카(간사이) 왕복: KE724 8/14 14:25 도착(T2) / KE721 8/16 18:45 출발(T2).
+   *
+   * 날짜를 8/14로 당긴 이유는 **승객예고 혼잡도가 화면에 뜨게** 하기 위해서다 — 그 신호는
+   * 오늘·내일(D0/D+1)만 확인한다. 발표가 8/14라 그날이 D0가 된다.
+   *
+   * 시각도 임의가 아니다. 경고는 공항 출발 시각이 그날 상위 25% 시간대이고 여유가 120분
+   * 이하일 때만 뜬다. 14:25 도착 → 파생 공항 출발 16:25가 그 시간대에 들어간다. 발표(13시)
+   * 이후 도착이라 "지금부터 시작하는 여행"으로도 읽힌다.
+   */
+  const [arrival, setArrival] = useState<FlightField>({ flightNo: "KE724", at: "2026-08-14T14:25", notFound: false });
+  const [departure, setDeparture] = useState<FlightField>({ flightNo: "KE721", at: "2026-08-16T18:45", notFound: false });
   // #14 차단 2: 주 입력은 절대 시각 — 항공편 시각에서 파생한 기본 제안값을 두되,
   // 사용자가 직접 수정하면(touched) 항공편 변경에도 덮어쓰지 않는다.
   // 파생 여유는 #3 확정 기본값 유지: 입국 +120분, 출국 안전 버퍼 120분(PRD §8.1) — 표현만 절대 시각
-  const [airportReady, setAirportReady] = useState({ at: "2026-08-16T12:00", touched: false });
-  const [airportDeadline, setAirportDeadline] = useState({ at: "2026-08-18T16:00", touched: false });
+  const [airportReady, setAirportReady] = useState({ at: "2026-08-14T16:25", touched: false });
+  const [airportDeadline, setAirportDeadline] = useState({ at: "2026-08-16T16:45", touched: false });
   /*
    * 조회 진행 상태와 순번을 한 값으로 다룬다 (PR #205 재리뷰). 따로 두면 성공 응답의 시각
    * 반영이 자기 순번을 올려 버려 `finally`가 자기 진행 표시를 끄지 못하고 버튼이 굳는다.
@@ -495,6 +590,8 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<EntitySearchResult>({ actors: [], works: [] });
   const [searched, setSearched] = useState(false);
+  /** Escape로 제안 목록만 닫는다 — 입력한 글자는 남긴다 (다시 치면 열린다) */
+  const [suggestionsDismissed, setSuggestionsDismissed] = useState(false);
   const [selectedActors, setSelectedActors] = useState<ActorSummary[]>([]);
   const [selectedWorks, setSelectedWorks] = useState<WorkSummary[]>([]);
 
@@ -507,7 +604,6 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
   const [sortBy, setSortBy] = useState<"relevance" | "official">("relevance");
   // 후보 목록은 5곳씩 — 한 화면에 다 쏟으면 무엇을 고를지가 안 보인다. 표시 개수만 늘린다
   /** 전체 보기 안의 좁히기 상태. 시트 밖에 필터를 늘어놓으면 시트가 다시 무거워진다 */
-  const [browserOpen, setBrowserOpen] = useState(false);
   const [browserStation, setBrowserStation] = useState<string | null>(null);
   const [browserWork, setBrowserWork] = useState<string | null>(null);
   /** 같은 장소 선택 조합에서 사용자가 닫은 과다 일정 경고는 다시 띄우지 않는다. */
@@ -552,6 +648,34 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
   >(null);
   const [aiPending, startAiTransition] = useTransition();
   const planSequence = useRef(0); // 늦게 도착한 이전 요청의 공항버스 대안이 새 결과를 덮지 않게 한다.
+  /** 직전 계산이 쓴 여행 시작 경계 — 항공 지연으로 밀렸는지 판정하는 기준 (#103) */
+  const plannedStartAt = useRef<string | null>(null);
+  /**
+   * 공항을 나서는 편을 미루는 창 (#103 첫 구간 한정).
+   *
+   * 항공편이 늦어졌을 때 사용자가 1단계로 되돌아가 시각을 계산해 넣을 이유가 없다.
+   * 일정에서 그 열차를 짚어 "이 편으로 미룬다"고 고르면 된다. 고른 편의 출발 시각이
+   * 곧 공항을 나서는 시각이므로 기존 엔진 입력(`airportReadyAt`)으로 그대로 표현된다 —
+   * 중간 구간을 미루는 일은 별도 엔진 입력(#103 `transitOverrides`)이라 여기 없다.
+   */
+  const [delayPicker, setDelayPicker] = useState<{
+    fromStationId: string; toStationId: string; departAt: string;
+    options: LaterDeparture[] | null;
+  } | null>(null);
+
+  const openDelayPicker = useCallback(async (leg: {
+    fromStationId: string; toStationId: string; departAt: string;
+  }) => {
+    setDelayPicker({ ...leg, options: null });
+    const options = await laterDepartures({
+      fromStationId: leg.fromStationId,
+      toStationId: leg.toStationId,
+      afterIso: leg.departAt,
+    });
+    setDelayPicker((current) => (current && current.departAt === leg.departAt
+      ? { ...current, options }
+      : current));
+  }, []);
   // 계산이 끝난(성공·무효·실패 모두) 마지막 선택. 지금 선택과 다르면 화면은 아직 옛 결론이다.
   // 대기 플래그를 따로 두지 않고 여기서 파생한다 — effect에서 setState를 하지 않기 위해서다.
   const [settledSelectionKey, setSettledSelectionKey] = useState<string | null>(null);
@@ -584,15 +708,15 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
   // 입력은 표시 중인 일정의 권역과 선택 작품뿐이며, 런타임 OpenAI 호출은 없다.
   const [themeExperience, setThemeExperience] = useState<ThemeExperienceResult | null>(null);
   // #14 v0.6 — 지도 권역 표시는 기본 숨김. 카드 버튼과 지도 헤딩 버튼이 같은 상태를 쓴다.
-  const [themeMapVisible, setThemeMapVisible] = useState(false);
   // 인수인계 G — 열차 줄을 누르면 그 구간의 시각·출처를 팝업으로 본다 (화면 아래 카드 중복 제거)
   const [openTrainLeg, setOpenTrainLeg] = useState<TrainLegDetail | null>(null);
   // PR #82 리뷰 비차단 — 연속 재계산에서 먼저 보낸 요청의 늦은 응답이 최신 화면을 덮지 않게
   // 요청 순번을 붙이고, 자기 순번이 아니면 응답을 버린다.
+  /** 지도 팝업 — 본문에서는 버튼만 두고 누를 때만 띄운다 */
+  const [mapOpen, setMapOpen] = useState(false);
   const themeRequestRef = useRef(0);
   const refreshThemeExperience = useCallback(async (days: DayPlan[] | null, workIds: string[]) => {
     const seq = ++themeRequestRef.current;
-    setThemeMapVisible(false);
     const regionIds = [
       ...new Set((days ?? []).flatMap((day) => day.regionWindows.map((w) => w.regionId))),
     ];
@@ -813,7 +937,13 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
         selectedWorkIds: workIds,
       }),
       candidateIds: (data) => initialCandidateIds(data.candidates),
-      planFor: (data, selectedIds) => planItinerary(constraintsFor(data, selectedIds)),
+      planFor: (data, selectedIds) => {
+        const constraints = constraintsFor(data, selectedIds);
+        /* 첫 계산도 기준을 남긴다 — 여기서 안 남기면 나중에 열차를 미뤄도
+           "무엇에 견줘 늦어졌는가"를 알 수 없어 못 타게 된 편을 말하지 못한다 */
+        plannedStartAt.current = constraints.airportReadyAt;
+        return planItinerary(constraints);
+      },
       nextSelectedIds: (selectedIds, action) => {
         if (!action.ok || action.result.status !== "planned") return null;
         const next = initialPlaceIdsFromItinerary(selectedIds, action.result);
@@ -946,7 +1076,6 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
       settledSelectionKey,
       saveStatus: saveStub.saveStatus,
       themeExperience,
-      themeMapVisible,
     }));
     const sequence = ++planSequence.current;
     const scheduledPlaceIds = new Set(
@@ -999,7 +1128,7 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
     candidateData, selectedPlaceIds, saveStub, refreshThemeExperience,
     // 되돌리기 지점이 오래된 값을 잡지 않도록 스냅샷이 읽는 상태를 모두 넣는다
     view.result, view.selectedAlt, preferredVisitDates, lastItineraryDiff, settledSelectionKey,
-    themeExperience, themeMapVisible,
+    themeExperience,
   ]);
 
   /** 동선 추천은 카드를 누른 뒤에만 선택·방문일 선호로 반영한다. */
@@ -1119,6 +1248,19 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
   const plan = useCallback(async () => {
     const constraints = currentConstraints();
     if (!constraints) return;
+    /**
+     * 여행 시작 경계가 **뒤로 밀렸는가** (#103 · PR #105 계약).
+     *
+     * 항공편이 늦어져 공항을 나서는 시각이 밀리면, 그 전에 출발하는 열차는 탈 수 없다.
+     * `diffItineraries`는 그 범위를 선언해 줘야 `missed`를 채운다 — 안 주면 늘 빈
+     * 배열이다. 엔진은 조건이 바뀌면 전체를 다시 최적화하므로, 범위 없이 "놓쳤다"고
+     * 하면 **더 나은 조합으로 바뀐 편까지 놓친 것으로 말하게 된다.**
+     *
+     * 그래서 경계가 실제로 늦어졌을 때만 넘긴다. 앞당겨졌거나 그대로면 선언하지 않는다.
+     */
+    const previousStart = plannedStartAt.current;
+    const startPushedBack = previousStart !== null
+      && Date.parse(constraints.airportReadyAt) > Date.parse(previousStart);
     const sequence = ++planSequence.current;
     const requestedSelectionKey = selectionKey;
     // 계산 중에도 view.result는 직전 확정 결과를 유지한다. 다만 대안을 보고 있었다면 화면과
@@ -1142,7 +1284,12 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
       // 성공이든 무효든 "이 선택으로는 끝났다" — 실패에도 기록해야 갱신 표시가 남지 않는다
       setSettledSelectionKey(requestedSelectionKey);
       if (res.ok) {
-        setLastItineraryDiff(previousResult ? diffItineraries(previousResult, res.result) : null);
+        setLastItineraryDiff(previousResult
+          ? diffItineraries(previousResult, res.result, startPushedBack
+            ? { unusable: { kind: "trip_start", notBefore: constraints.airportReadyAt } }
+            : undefined)
+          : null);
+        plannedStartAt.current = constraints.airportReadyAt;
         dispatchView({ type: "PLAN_SUCCESS", result: res.result });
         saveStub.markDirty();
         if (res.result.status === "planned") {
@@ -1316,6 +1463,16 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
   const viewBanner = banner(view);
   const viewRejected = deriveRejectedPlaces(view);
   const viewWarnings = deriveWarnings(view);
+  /** 경고를 사유별로 묶는다 — 같은 문구가 장소 수만큼 반복되지 않게 */
+  const warningGroups = useMemo(
+    () => [...new Set(viewWarnings.map((warning) => warning.detail))].map((code) => ({
+      code,
+      placeIds: [...new Set(
+        viewWarnings.filter((warning) => warning.detail === code).map((warning) => warning.placeId),
+      )],
+    })),
+    [viewWarnings],
+  );
   const uncoveredSelectionGroups = view.result?.selectionGroups.uncovered ?? [];
   // #84: 추천안 또는 선택한 전체 교체 대안 중 현재 화면에 보이는 일정으로만 판정한다.
   // empty와 재열람은 displayedSelectionCapacity에서 과선택 패널 대상에서 제외한다.
@@ -1416,6 +1573,21 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
   }, [selectionCapacity, selectionStateShown, selectedPlaceIds, proposalEdit]);
 
   /**
+   * 빼는 걸 추천하는 장소 — 골랐지만 엔진이 일정에 못 넣은 것들.
+   *
+   * "N곳을 빼 주세요"만 있으면 어느 것을 뺄지는 사용자가 다시 찾아야 한다. 목록에서
+   * 바로 보이도록 카드에 같은 경고 표시를 단다.
+   */
+  const dropSuggestedPlaceIds = useMemo(() => {
+    // 안내 문구("N곳을 빼 주세요")와 **같은 조건**에서만 단다. 문구가 건수를 말하는데
+    // 카드가 조용하면 어느 것을 뺄지 다시 찾아야 한다 — 둘이 어긋나면 안 된다.
+    // `selectionStateShown`까지 요구하면 엔진이 사유 없이 못 넣은 장소가 하나라도
+    // 있을 때 표시가 통째로 사라진다 — 정작 그럴 때 표시가 가장 필요하다.
+    if (updating || selectionCapacity?.requiresAdjustment !== true) return new Set<string>();
+    return new Set(selectionCapacity.unscheduledPlaceIds);
+  }, [updating, selectionCapacity]);
+
+  /**
    * 선택이 적용 결과에서 벗어나면 **그 자리에서 버린다** (PR #185 리뷰 3회차).
    *
    * 숨기기만 하면 껐다 켜서 같은 집합으로 돌아왔을 때 오래된 되돌리기가 되살아난다.
@@ -1485,7 +1657,6 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
     setSettledSelectionKey(undoPoint.settledSelectionKey);
     setLastItineraryDiff(undoPoint.diff);
     setThemeExperience(undoPoint.themeExperience as ThemeExperienceResult | null);
-    setThemeMapVisible(undoPoint.themeMapVisible);
     dispatchView({ type: "PLAN_SUCCESS", result: undoPoint.result });
     dispatchView({ type: "SELECT_ALT", alt: undoPoint.selectedAlt });
     // markDirty로는 못 되돌린다 — 저장된 일정을 바꿨다 취소하면 dirty로 남는다
@@ -1725,13 +1896,9 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
     return sortCandidatePlaces(candidateData.candidates, sortBy === "relevance" ? "relevance" : "official_sources");
   }, [candidateData, sortBy]);
   const routeRecommendationFeedback = aiFeedback?.kind === "recommendations" ? aiFeedback : null;
-  const routeRecommendationIds = useMemo(
-    () => new Set(routeRecommendationFeedback?.outcome.recommendations.map(({ placeId }) => placeId) ?? []),
-    [routeRecommendationFeedback],
-  );
-  const regularCandidates = routeRecommendationIds.size > 0
-    ? sortedCandidates.filter(({ id }) => !routeRecommendationIds.has(id))
-    : sortedCandidates;
+  // AI 추천 카드는 시트 위쪽 별도 절에 서고, 아래 목록은 전체를 그대로 보여준다.
+  // 미리보기가 있던 시절엔 목록에서 그 장소들을 빼 중복을 피했지만, 지금 목록은
+  // "전체 촬영지"라 빼면 오히려 없는 것처럼 읽힌다.
 
   // #14 v0.6 지도 — 좌표가 확인된 장소만 찍는다. 좌표 없는 장소(라라무리·오크밸리)는
   // 임의 위치나 역 위치로 대체하지 않고 표시에서 빼되(A3), 몇 곳이 빠졌는지 지도 옆에 밝힌다.
@@ -1802,21 +1969,49 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
   );
 
   /**
+   * 고른 것 중 테마체험 권역만 — 요약의 "선택 콘텐츠"에 배우·작품과 나란히 선다.
+   * 촬영지는 "선택 장소"에서 수로 세고, 권역은 성격이 달라 이름으로 보여준다.
+   */
+  const selectedThemeZones = (candidateData?.candidates ?? [])
+    .filter((candidate) => candidate.placeType === "theme_zone" && selectedPlaceIds.has(candidate.id))
+    .map((candidate) => ({ id: candidate.id, name: candidate.name }));
+
+  /**
+   * 지도에 권역을 그리는가 — 골랐으면 그린다.
+   *
+   * 목록에 서는 권역과 지도가 그리는 권역은 같은 규칙(검토 완료 + 배지 기준)에서
+   * 나오므로, 고를 수 있는 권역은 곧 추천된 그 권역이다. 따로 맞춰 볼 필요가 없다.
+   */
+  const themeZoneOnMap = selectedThemeZones.length > 0;
+
+  /**
    * 미배치 목록 — **사유별로 묶는다** (#84 §2 · #171).
    *
    * 장소마다 한 줄이면 같은 문장이 11번 반복돼 읽히지 않고, 카탈로그가 늘면 더 나빠진다.
    * 사용자가 읽어야 하는 것은 "몇 가지 이유로 몇 곳이 빠졌는가"다.
    */
-  const renderRejectionGroups = (rejections: readonly { code: string; placeId: string }[]) => (
+  /**
+   * 장소별 배치 실패 사유 — 카드 배지에 붙인다.
+   *
+   * 사유 목록을 따로 쌓아 두면 목록·안내·사유 카드가 같은 말을 세 곳에서 한다.
+   * 사유는 그 장소에 붙어 있을 때가 가장 쓸모 있다.
+   */
+  const rejectionReasonByPlaceId = new Map(
+    viewRejected.map((reason) => [
+      reason.placeId,
+      tr(`reason.${displayRejectionCode(reason as never, outOfCoveragePlaceIds)}` as MessageKey),
+    ]),
+  );
+
+  /**
+   * 사유 한 줄 + 그 사유에 걸린 장소 나열.
+   *
+   * 장소마다 한 줄씩 쓰면 같은 문구가 다섯 번 반복돼 팝오버가 길어지기만 한다.
+   * 사유는 한 번만 쓰고 장소를 그 밑에 모은다.
+   */
+  const renderReasonGroups = (groups: readonly { code: string; placeIds: readonly string[] }[]) => (
     <ul className="mt-2 space-y-2 text-sm text-sc-orange-text">
-      {/* 묶기 전에 장소별로 표시 코드를 정한다 — 그룹 대표 하나로 문구를 정하면
-          커버리지 밖 장소가 자기 것이 아닌 사유를 달게 된다 (PR #172 리뷰) */}
-      {groupRejections(
-        rejections.map((reason) => ({
-          code: displayRejectionCode(reason as never, outOfCoveragePlaceIds),
-          placeId: reason.placeId,
-        })),
-      ).map((group) => (
+      {groups.map((group) => (
         <li key={group.code}>
           <span className="font-medium">{tr(`reason.${group.code}` as MessageKey)}</span>
           {" "}
@@ -1828,6 +2023,16 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
       ))}
     </ul>
   );
+
+  const renderRejectionGroups = (rejections: readonly { code: string; placeId: string }[]) =>
+    // 묶기 전에 장소별로 표시 코드를 정한다 — 그룹 대표 하나로 문구를 정하면
+    // 커버리지 밖 장소가 자기 것이 아닌 사유를 달게 된다 (PR #172 리뷰)
+    renderReasonGroups(groupRejections(
+      rejections.map((reason) => ({
+        code: displayRejectionCode(reason as never, outOfCoveragePlaceIds),
+        placeId: reason.placeId,
+      })),
+    ));
 
   /**
    * 표시 이름 조회 (#130).
@@ -1862,6 +2067,22 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
     saved: savedNames?.stations[id],
     fallback: tr("common.nameUnavailable"),
   }), [locale, candidateData, savedNames, tr]);
+  /**
+   * 역 이름에서 지명만 — `서울역` → `서울`, `Seoul Station` → `Seoul`.
+   *
+   * "이 권역에 머무는 시간"이 어렵다는 지적을 받았다. `서울에서 머무는 시간`처럼
+   * 지명을 쓰면 설명이 필요 없다. 역의 `regionId`(seoul_metro·gangwon)는 넓은
+   * 권역이라 `강릉역`이 `강원`이 되어 버린다 — 역 이름 쪽이 사용자가 아는 말이다.
+   *
+   * 규칙은 여기 한 곳에만 둔다. 부르는 곳마다 자르면 표기가 갈린다.
+   */
+  const stationAreaName = useCallback((id: string) => {
+    const full = stationName(id);
+    return locale === "ko"
+      ? full.replace(/역$/, "")
+      : full.replace(/\s*Station$/i, "");
+  }, [stationName, locale]);
+
   const placeName = (id: string) => resolveDisplayName({
     locale,
     current: candidateData?.candidates.find((c) => c.id === id)?.name,
@@ -1914,6 +2135,43 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
     set(list.some((x) => x.id === item.id) ? list.filter((x) => x.id !== item.id) : [...list, item]);
   };
 
+  /** 제안 목록이 떠 있는가 — 입력이 있고, 찾은 항목이 있고, 사용자가 닫지 않았을 때 */
+  const suggestionsOpen = query.trim().length > 0
+    && !suggestionsDismissed
+    && (results.actors.length > 0 || results.works.length > 0);
+
+  /**
+   * 제안에서 고르면 목록을 닫고 입력을 비운다.
+   *
+   * 목록은 입력창 위로 떠서 아래 "선택한 배우·작품"을 가린다. 열어 둔 채로 두면 방금
+   * 무엇을 골랐는지 확인할 수가 없다. 닫으면 고른 항목이 아래 칩으로 바로 보인다.
+   */
+  const selectSuggestion = <T extends { id: string }>(list: T[], set: (v: T[]) => void, item: T) => {
+    toggleChip(list, set, item);
+    setQuery("");
+    setSearched(false);
+    setSuggestionsDismissed(false);
+    setResults({ actors: [], works: [] });
+  };
+
+  /**
+   * 제안을 누르지 않고 끝까지 타이핑한 사용자를 위한 확정 경로 — 검색 버튼과 Enter가 같다.
+   *
+   * 이름을 다 적고 Enter를 쳤을 때 아무 일도 없으면 "검색이 안 되는 화면"으로 읽힌다.
+   * 정확히 일치하는 이름을 먼저 찾고, 없으면 맨 위 제안을 고른다.
+   */
+  const commitTopSuggestion = () => {
+    const typed = query.trim().toLowerCase();
+    const actor = results.actors.find((a) => a.name[locale].toLowerCase() === typed);
+    if (actor) return selectSuggestion(selectedActors, setSelectedActors, actor);
+    const work = results.works.find((w) => w.title[locale].toLowerCase() === typed);
+    if (work) return selectSuggestion(selectedWorks, setSelectedWorks, work);
+    if (results.actors[0]) return selectSuggestion(selectedActors, setSelectedActors, results.actors[0]);
+    if (results.works[0]) return selectSuggestion(selectedWorks, setSelectedWorks, results.works[0]);
+  };
+  const hasSuggestion = results.actors.length > 0 || results.works.length > 0;
+  const selectedCount = selectedActors.length + selectedWorks.length;
+
   // PR #30 리뷰 ③ + #14 차단 2: 필수값·입출국 순서·공항 경계 순서를 1단계에서 막는다.
   // 수록 범위까지 같은 함수가 판정한다 — 달력을 좁혀도 직접 입력이 통과하기 때문이다 (PR #202 리뷰)
   const ms = (at: string) => Date.parse(fromLocalInput(at));
@@ -1946,7 +2204,13 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
     // 220px 요약 사이드바와 함께 들어가려면 폭이 필요해 max-w-6xl로 넓힌다 — 좁으면
     // 지도 열이 시안의 minmax(320px) 아래로 눌린다.
     <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6">
-      <div data-app-shell className="overflow-hidden rounded-2xl border bg-sc-surface shadow-[0_18px_50px_var(--sc-shadow)]">
+      {/* 태블릿 이상에서 스테이지는 늘 화면 높이만큼이다. 내용이 적다는 이유로
+          단계마다 상자 크기가 달라지면(1단계 751px, 2단계 507px) 단계를 옮길 때마다
+          화면이 접혔다 펴진다. 세로 여백 16px(stage-v2.css의 위아래 8px)을 뺀 값 */}
+      <div
+        data-app-shell
+        className="flex flex-col overflow-hidden rounded-2xl border bg-sc-surface shadow-[0_18px_50px_var(--sc-shadow)] lg:min-h-[calc(100vh-1rem)]"
+      >
       {/* `flex-wrap`을 걷었다 (#146 모바일). 390px에서 버튼 묶음이 아래로 접혀
           제목 밑에 왼쪽 정렬로 한 줄을 더 쓰고 있었다. 한 줄에 두고 로고 쪽이
           줄어들게 한다 — 버튼은 늘 오른쪽 윗줄이다 */}
@@ -1959,7 +2223,6 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
           <p className="mt-0.5 hidden truncate text-xs text-sc-muted sm:block">{tr("app.tagline")}</p>
         </div>
         <div className="flex shrink-0 items-center gap-2">
-          <span className="rounded-full bg-sc-orange-soft px-2.5 py-1 text-xs text-sc-orange-text">{tr("app.snapshotBadge")}</span>
           <button className="rounded-[10px] border px-3 py-1.5 text-sm font-medium hover:border-sc-blue" onClick={saveStub.requestTrips}>
             {tr("trips.button")}
           </button>
@@ -1991,27 +2254,48 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
               disabled={!reachable}
               aria-current={current ? "step" : undefined}
               onClick={() => setStep(target)}
-              className={`flex min-h-[62px] items-center justify-center gap-2 border-r px-1 last:border-r-0 ${
-                current ? "bg-sc-blue-soft font-medium text-sc-blue" : "text-sc-muted"
+              // 52px — 터치 하한(44px)은 지키면서 태블릿 가로에서 스테이지가
+              // 화면 안에 들어오도록 단계 막대의 높이를 줄였다
+              // 지금 단계는 밑줄 막대 + 채운 번호로 세운다. 연한 배경만으로는 세 칸이
+              // 비슷해 보여 어디 있는지가 한눈에 안 들어왔다. 밑줄은 비활성일 때도
+              // 투명으로 자리를 잡아 둬 단계를 옮겨도 글자가 흔들리지 않는다
+              className={`flex min-h-[52px] items-center justify-center gap-2 border-b-2 border-r px-1 last:border-r-0 ${
+                current
+                  ? "border-b-sc-blue bg-sc-blue-soft font-semibold text-sc-blue"
+                  : "border-b-transparent text-sc-muted"
               } ${reachable && !current ? "hover:bg-sc-blue-soft/50 hover:text-sc-blue" : ""} ${
                 reachable ? "" : "cursor-default opacity-60"
               }`}
             >
-              <span aria-hidden className="grid h-7 w-7 shrink-0 place-items-center rounded-full border border-current text-sm">{target}</span>
+              <span
+                aria-hidden
+                className={`grid h-7 w-7 shrink-0 place-items-center rounded-full text-sm ${
+                  current ? "bg-sc-blue font-semibold text-white" : "border border-current"
+                }`}
+              >
+                {target}
+              </span>
               <span className="truncate">{tr(key)}</span>
             </button>
           );
         })}
       </nav>}
 
+      {/* 모바일 첫 진입에서만 뜨는 안내 — 사이드바가 못 들고 있는 설명을 대신한다 */}
+      {!showFinalItinerary && <WindowHintDialog tr={tr} />}
+
       {/* #14 v0.6 sc-layout — 좌측 선택 요약 + 본문 (md 미만은 상단 밴드) */}
-      <div className={showFinalItinerary ? "block" : `grid ${summaryCollapsed ? "md:grid-cols-[64px_minmax(0,1fr)]" : "md:grid-cols-[220px_minmax(0,1fr)]"}`}>
+      {/* 요약 열은 고정 220px이 아니라 비율이다 — 태블릿에서 본문이 그만큼 좁아져
+          입력이 밀리고, 넓은 화면에서는 남는 자리를 못 쓴다. 최소 폭은 지켜 글자가
+          한 자씩 끊기지 않게 한다 */}
+      <div className={`min-h-0 flex-1 ${showFinalItinerary ? "block" : `grid ${summaryCollapsed ? "md:grid-cols-[64px_minmax(0,1fr)]" : "md:grid-cols-[minmax(12rem,20%)_minmax(0,1fr)]"}`}`}>
       {!showFinalItinerary && <SummarySidebar
         arrivalAt={arrival.at}
         departureAt={departure.at}
         readyAt={airportReady.at}
         deadlineAt={airportDeadline.at}
         actors={selectedActors}
+        themeZones={selectedThemeZones}
         works={selectedWorks}
         placeCount={selectedPlaceIds.size}
         locale={locale}
@@ -2082,15 +2366,17 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
             <p className="mt-2 text-xs text-sc-muted">{tr("step1.guideBody")}</p>
             <p className="mt-2 border-t pt-2 text-xs text-sc-muted">{tr("step1.subtitle")}</p>
           </div>
-          <div className="mt-4 grid gap-4 sm:grid-cols-2">
+          {/* 태블릿까지는 세로로 쌓는다 — 사이드바 220px를 뺀 본문을 2열로 또 쪼개면
+              카드가 205px가 되어 날짜 입력이 `20:`까지만 보인다 (target: 태블릿·모바일) */}
+          <div className="mt-4 grid gap-4 lg:grid-cols-2">
             {([
               ["arrival", arrival, setArrival] as const,
               ["departure", departure, setDeparture] as const,
             ]).map(([direction, field, setField]) => (
               <div key={direction} className="rounded-lg border p-4">
+                {/* ICN 배지는 뺐다 — 제목이 이미 "인천공항"이라고 말한다 */}
                 <h3 className="font-medium">
                   {tr(direction === "arrival" ? "step1.arrival" : "step1.departure")}
-                  <span className="ml-2 rounded bg-sc-airport-soft px-1.5 py-0.5 text-xs text-sc-airport-text">ICN</span>
                 </h3>
                 <label className="mt-3 block text-xs text-sc-muted">{tr("step1.flightNo")}</label>
                 <div className="mt-1 flex gap-2">
@@ -2137,73 +2423,83 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
                     (direction === "arrival" ? setArrivalAtInput : setDepartureAtInput)(at);
                   }}
                 />
+                {/* 같은 방향의 공항 시각을 항공편과 한 카드에 — 입국편→공항 출발,
+                    출국편→공항 도착의 인과가 화면 배치로 드러난다 (멘토 지적 대응) */}
+                <div className="mt-4 border-t pt-3">
+                  {direction === "arrival" ? (
+                    <>
+                      <label htmlFor="airport-ready-date" className="block text-sm font-medium">{tr("step1.airportReady")}</label>
+                      <DateTimeField
+                        className="mt-2"
+                        dateInputId="airport-ready-date"
+                        hourInputId="airport-ready-hour"
+                        min={timetableWindow.firstDate}
+                        max={timetableWindow.lastDate}
+                        value={airportReady.at}
+                        onChange={(at) => setAirportReady({ at, touched: true })}
+                      />
+                      {readySlackMin !== null && readySlackMin >= 0 && (
+                        <p className="mt-1 text-xs text-sc-muted">
+                          {tr("step1.slackAfterArrival")}: {readySlackMin}{tr("step1.minutes")}
+                        </p>
+                      )}
+                      {showArrivalAdvisory && arrivalAdvisory && (
+                        <AirportAdvisoryAlert
+                          title={tr("step1.arrivalCrowdingTitle")}
+                          body={tr("step1.arrivalCrowdingBody")}
+                          sourceLabel={tr(arrivalAdvisory.source === "live" ? "step1.crowdingSourceLive" : "step1.crowdingSourceSnapshot")}
+                          changeLabel={tr("step1.changeTime")}
+                          keepLabel={tr("step1.keepTime")}
+                          onChange={() => focusAirportTime("airport-ready-hour")}
+                          onKeep={() => dismissAirportAdvisory(arrivalAdvisory.key)}
+                        />
+                      )}
+                    </>
+                  ) : (
+                    <>
+                      <label htmlFor="airport-deadline-date" className="block text-sm font-medium">{tr("step1.airportDeadline")}</label>
+                      <DateTimeField
+                        className="mt-2"
+                        dateInputId="airport-deadline-date"
+                        hourInputId="airport-deadline-hour"
+                        min={timetableWindow.firstDate}
+                        max={timetableWindow.lastDate}
+                        value={airportDeadline.at}
+                        onChange={(at) => setAirportDeadline({ at, touched: true })}
+                      />
+                      {deadlineSlackMin !== null && deadlineSlackMin >= 0 && (
+                        <p className="mt-1 text-xs text-sc-muted">
+                          {tr("step1.slackBeforeDeparture")}: {deadlineSlackMin}{tr("step1.minutes")}
+                        </p>
+                      )}
+                      {showDepartureAdvisory && departureAdvisory && (
+                        <AirportAdvisoryAlert
+                          title={tr("step1.departureCrowdingTitle")}
+                          body={tr("step1.departureCrowdingBody")}
+                          sourceLabel={tr(departureAdvisory.source === "live" ? "step1.crowdingSourceLive" : "step1.crowdingSourceSnapshot")}
+                          changeLabel={tr("step1.changeTime")}
+                          keepLabel={tr("step1.keepTime")}
+                          onChange={() => focusAirportTime("airport-deadline-hour")}
+                          onKeep={() => dismissAirportAdvisory(departureAdvisory.key)}
+                        />
+                      )}
+                    </>
+                  )}
+                </div>
               </div>
             ))}
           </div>
-          <p className="mt-3 text-xs text-sc-muted">
-            {tr("step1.timetableWindow")
-              .replace("{from}", timetableWindow.firstDate)
-              .replace("{to}", timetableWindow.lastDate)}
-          </p>
-          <div className="mt-4 grid gap-4 sm:grid-cols-2">
-            <div className="rounded-lg border p-4">
-              <label htmlFor="airport-ready-date" className="text-sm font-medium">{tr("step1.airportReady")}</label>
-              <DateTimeField
-                className="mt-2"
-                dateInputId="airport-ready-date"
-                hourInputId="airport-ready-hour"
-                min={timetableWindow.firstDate}
-                max={timetableWindow.lastDate}
-                value={airportReady.at}
-                onChange={(at) => setAirportReady({ at, touched: true })}
-              />
-              {readySlackMin !== null && readySlackMin >= 0 && (
-                <p className="mt-1 text-xs text-sc-muted">
-                  {tr("step1.slackAfterArrival")}: {readySlackMin}{tr("step1.minutes")}
-                </p>
-              )}
-              {showArrivalAdvisory && arrivalAdvisory && (
-                <AirportAdvisoryAlert
-                  title={tr("step1.arrivalCrowdingTitle")}
-                  body={tr("step1.arrivalCrowdingBody")}
-                  sourceLabel={tr(arrivalAdvisory.source === "live" ? "step1.crowdingSourceLive" : "step1.crowdingSourceSnapshot")}
-                  changeLabel={tr("step1.changeTime")}
-                  keepLabel={tr("step1.keepTime")}
-                  onChange={() => focusAirportTime("airport-ready-hour")}
-                  onKeep={() => dismissAirportAdvisory(arrivalAdvisory.key)}
-                />
-              )}
-            </div>
-            <div className="rounded-lg border p-4">
-              <label htmlFor="airport-deadline-date" className="text-sm font-medium">{tr("step1.airportDeadline")}</label>
-              <DateTimeField
-                className="mt-2"
-                dateInputId="airport-deadline-date"
-                hourInputId="airport-deadline-hour"
-                min={timetableWindow.firstDate}
-                max={timetableWindow.lastDate}
-                value={airportDeadline.at}
-                onChange={(at) => setAirportDeadline({ at, touched: true })}
-              />
-              {deadlineSlackMin !== null && deadlineSlackMin >= 0 && (
-                <p className="mt-1 text-xs text-sc-muted">
-                  {tr("step1.slackBeforeDeparture")}: {deadlineSlackMin}{tr("step1.minutes")}
-                </p>
-              )}
-              {showDepartureAdvisory && departureAdvisory && (
-                <AirportAdvisoryAlert
-                  title={tr("step1.departureCrowdingTitle")}
-                  body={tr("step1.departureCrowdingBody")}
-                  sourceLabel={tr(departureAdvisory.source === "live" ? "step1.crowdingSourceLive" : "step1.crowdingSourceSnapshot")}
-                  changeLabel={tr("step1.changeTime")}
-                  keepLabel={tr("step1.keepTime")}
-                  onChange={() => focusAirportTime("airport-deadline-hour")}
-                  onKeep={() => dismissAirportAdvisory(departureAdvisory.key)}
-                />
-              )}
-            </div>
-          </div>
-          {(arrivalAdvisory?.status === "out_of_range" || departureAdvisory?.status === "out_of_range") && (
+          {/* 수록 범위 날짜를 적지 않는다 — 열차와 공항버스의 수록 날짜가 서로 달라
+              한 범위로 뭉뚱그리면 어느 쪽이든 틀린 말이 된다. 달력의 min·max와
+              1단계 전이 검사가 범위를 실제로 막고, 이 줄은 이유만 말한다 */}
+          <p className="mt-3 text-xs text-sc-muted">{tr("step1.timetableWindow")}</p>
+          {/* 두 카드의 입력이 만드는 "사용 가능 시간"은 본문에 다시 적지 않는다 —
+              그건 요약 사이드바의 역할이고, 같은 값을 두 곳에 두면 중복이다 */}
+          {/* 승객예고를 언제 확인하는지 알리는 줄. 혼잡도 안내가 이미 떠 있으면 숨긴다 —
+              그 안내의 출처 줄("오늘/내일 시간대 비교")이 같은 말을 하고 있어서, 둘을
+              같이 두면 태블릿 가로에서 "다음" 버튼이 화면 밖으로 밀려난다 */}
+          {(arrivalAdvisory?.status === "out_of_range" || departureAdvisory?.status === "out_of_range")
+            && !showArrivalAdvisory && !showDepartureAdvisory && (
             <p className="mt-3 text-xs text-sc-muted">{tr("step1.crowdingRecheck")}</p>
           )}
           <div className="mt-4 flex items-center justify-end gap-3">
@@ -2260,17 +2556,100 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
             <p className="mt-2 text-xs text-sc-muted">{tr("step2.guideBody")}</p>
             <p className="mt-2 border-t pt-2 text-xs text-sc-muted">{tr("step2.subtitle")}</p>
           </div>
-          <input
-            className="mt-4 w-full rounded border px-3 py-2"
-            placeholder={tr("step2.placeholder")}
-            value={query}
-            onChange={(e) => {
-              const nextQuery = e.target.value;
-              setQuery(nextQuery);
-              setSearched(false);
-              if (!nextQuery.trim()) setResults({ actors: [], works: [] });
-            }}
-          />
+          {/*
+            검색창과 제안 목록 (#146 UI 정리).
+
+            전에는 결과 항목이 입력창과 **같은 클래스**(`w-full rounded border px-3 py-2`)
+            여서 "두 번째 입력칸"으로 보였다. 지금은 입력창에 붙여 띄우는 드롭다운이다 —
+            간격을 없애고 아래 모서리를 잇고 그림자를 줘 떠 있는 목록으로 읽히게 한다.
+            항목 테두리는 걷고 행 구분선만 남긴다.
+
+            아이콘으로 유형을 가른다. 배우는 사람, 작품은 TV — `Clapperboard`·`Video`·
+            `Drama`는 3단계 장소 유형(영화관·촬영세트장·문화시설)이 이미 쓰고 있어 피했다.
+            색은 아래 선택 칩과 같은 색을 써서 고른 항목이 어디로 갔는지 이어 보이게 한다.
+          */}
+          <div className="relative mt-4">
+            <Search
+              aria-hidden="true"
+              className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-sc-muted"
+            />
+            <input
+              role="combobox"
+              aria-expanded={suggestionsOpen}
+              aria-controls="entity-suggestions"
+              aria-autocomplete="list"
+              className={`w-full border py-2 pl-9 pr-20 ${suggestionsOpen ? "rounded-t" : "rounded"}`}
+              placeholder={tr("step2.placeholder")}
+              value={query}
+              onChange={(e) => {
+                const nextQuery = e.target.value;
+                setQuery(nextQuery);
+                setSearched(false);
+                setSuggestionsDismissed(false);
+                if (!nextQuery.trim()) setResults({ actors: [], works: [] });
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Escape" && suggestionsOpen) {
+                  e.stopPropagation();
+                  setSuggestionsDismissed(true);
+                  return;
+                }
+                // 제안을 누르지 않고 이름을 다 적은 뒤 Enter — 검색 버튼과 같은 동작
+                if (e.key === "Enter" && hasSuggestion) {
+                  e.preventDefault();
+                  commitTopSuggestion();
+                }
+              }}
+            />
+            <button
+              type="button"
+              className="absolute right-1.5 top-1/2 -translate-y-1/2 rounded bg-sc-blue px-2.5 py-1 text-xs font-medium text-white disabled:opacity-40"
+              disabled={!hasSuggestion}
+              onClick={commitTopSuggestion}
+            >
+              {tr("step2.searchButton")}
+            </button>
+            {suggestionsOpen && (
+              <ul
+                id="entity-suggestions"
+                role="listbox"
+                className="absolute inset-x-0 top-full z-30 max-h-72 overflow-y-auto rounded-b border border-t-0 bg-sc-surface shadow-lg"
+              >
+                {results.actors.map((a) => (
+                  <li key={a.id} role="option" aria-selected={selectedActors.some((x) => x.id === a.id)}>
+                    <button
+                      className="flex w-full items-center gap-2.5 border-b px-3 py-2.5 text-left text-sm last:border-b-0 hover:bg-sc-subtle"
+                      onClick={() => selectSuggestion(selectedActors, setSelectedActors, a)}
+                    >
+                      {/* 유형 라벨은 이름 바로 옆이다 — 행 끝으로 밀면 이름과 멀어져
+                          어느 항목의 유형인지 눈이 한 번 더 움직인다 */}
+                      <UserRound aria-hidden="true" className="size-4 shrink-0 text-sc-blue" strokeWidth={1.8} />
+                      <span className="min-w-0 truncate">{a.name[locale]}</span>
+                      <span className="shrink-0 text-xs text-sc-muted">{tr("step2.actor")}</span>
+                      {results.interpretedByAi && (
+                        <Sparkles aria-hidden="true" className="size-3.5 shrink-0 text-sc-airport-text" />
+                      )}
+                    </button>
+                  </li>
+                ))}
+                {results.works.map((w) => (
+                  <li key={w.id} role="option" aria-selected={selectedWorks.some((x) => x.id === w.id)}>
+                    <button
+                      className="flex w-full items-center gap-2.5 border-b px-3 py-2.5 text-left text-sm last:border-b-0 hover:bg-sc-subtle"
+                      onClick={() => selectSuggestion(selectedWorks, setSelectedWorks, w)}
+                    >
+                      <Tv aria-hidden="true" className="size-4 shrink-0 text-sc-airport-text" strokeWidth={1.8} />
+                      <span className="min-w-0 truncate">{w.title[locale]}</span>
+                      <span className="shrink-0 text-xs text-sc-muted">{tr("step2.work")}</span>
+                      {results.interpretedByAi && (
+                        <Sparkles aria-hidden="true" className="size-3.5 shrink-0 text-sc-airport-text" />
+                      )}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
           {searched && results.interpretedByAi && (
             <p
               aria-live="polite"
@@ -2285,50 +2664,54 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
               {tr("step2.noResult")}
             </p>
           )}
-          <ul className="mt-3 space-y-1">
-            {results.actors.map((a) => (
-              <li key={a.id}>
-                <button
-                  className="w-full rounded border px-3 py-2 text-left text-sm hover:bg-sc-subtle"
-                  onClick={() => toggleChip(selectedActors, setSelectedActors, a)}
-                >
-                  {a.name[locale]} <span className="ml-1 text-xs text-sc-muted/70">{tr("step2.actor")}</span>
-                </button>
-              </li>
-            ))}
-            {results.works.map((w) => (
-              <li key={w.id}>
-                <button
-                  className="w-full rounded border px-3 py-2 text-left text-sm hover:bg-sc-subtle"
-                  onClick={() => toggleChip(selectedWorks, setSelectedWorks, w)}
-                >
-                  {w.title[locale]} <span className="ml-1 text-xs text-sc-muted/70">{tr("step2.work")}</span>
-                </button>
-              </li>
-            ))}
-          </ul>
-          <div className="mt-4 rounded-lg border bg-sc-subtle p-3">
-            <h3 className="text-sm font-medium">{tr("step2.selected")}</h3>
-            {selectedActors.length === 0 && selectedWorks.length === 0 ? (
-              <p className="mt-1 text-sm text-sc-muted/70">{tr("step2.empty")}</p>
+          {/*
+            이 화면의 결과물이다. 회색 배경에 회색 테두리라 바로 위 흰 입력창에 밀려
+            뒤로 물러나 보였다 — 흰 표면으로 올리고 그림자로 띄운다.
+            칩은 제안 목록과 같은 아이콘·같은 색을 쓴다. 고른 항목이 같은 모양으로
+            여기 쌓여야 "내가 고른 게 어디로 갔는지"가 눈으로 이어진다.
+          */}
+          <div className="mt-4 rounded-lg border border-[color-mix(in_srgb,var(--sc-blue)_24%,var(--sc-line))] bg-[color-mix(in_srgb,var(--sc-blue-soft)_42%,var(--sc-surface))] p-4 shadow-sm">
+            <div className="flex items-center gap-2">
+              <h3 className="text-sm font-medium">{tr("step2.selected")}</h3>
+              {selectedCount > 0 && (
+                <span className="rounded-full bg-sc-blue-soft px-2 py-0.5 text-xs font-medium text-sc-blue">
+                  {selectedCount}
+                </span>
+              )}
+            </div>
+            {selectedCount === 0 ? (
+              <div className="mt-3 flex items-center gap-2.5 text-sm text-sc-muted">
+                <Search aria-hidden="true" className="size-4 shrink-0" />
+                <p>{tr("step2.empty")}</p>
+              </div>
             ) : (
-              <div className="mt-2 flex flex-wrap gap-2">
+              <div className="mt-3 flex flex-wrap gap-2">
+                {/* 채운 색 — 카드 자체가 옅은 파랑이라 연한 칩은 배경에 붙어 보인다.
+                    유형 라벨은 흰 글자를 옅게 깔아 이름과 구분한다 */}
                 {selectedActors.map((a) => (
                   <button
                     key={a.id}
-                    className="rounded-full bg-sc-blue-soft px-3 py-1 text-sm text-sc-blue"
+                    className="flex items-center gap-1.5 rounded-full bg-sc-blue py-1.5 pl-2.5 pr-2 text-sm font-medium text-white hover:opacity-90"
                     onClick={() => toggleChip(selectedActors, setSelectedActors, a)}
                   >
-                    {a.name[locale]} · {tr("step2.actor")} ×
+                    <UserRound aria-hidden="true" className="size-4 shrink-0" strokeWidth={1.8} />
+                    <span>{a.name[locale]}</span>
+                    <span className="text-xs text-white/75">{tr("step2.actor")}</span>
+                    <X aria-hidden="true" className="size-3.5 shrink-0 opacity-80" />
+                    <span className="sr-only">{tr("step2.remove").replace("{name}", a.name[locale])}</span>
                   </button>
                 ))}
                 {selectedWorks.map((w) => (
                   <button
                     key={w.id}
-                    className="rounded-full bg-sc-airport-soft px-3 py-1 text-sm text-sc-airport-text"
+                    className="flex items-center gap-1.5 rounded-full bg-sc-airport py-1.5 pl-2.5 pr-2 text-sm font-medium text-white hover:opacity-90"
                     onClick={() => toggleChip(selectedWorks, setSelectedWorks, w)}
                   >
-                    {w.title[locale]} · {tr("step2.work")} ×
+                    <Tv aria-hidden="true" className="size-4 shrink-0" strokeWidth={1.8} />
+                    <span>{w.title[locale]}</span>
+                    <span className="text-xs text-white/75">{tr("step2.work")}</span>
+                    <X aria-hidden="true" className="size-3.5 shrink-0 opacity-80" />
+                    <span className="sr-only">{tr("step2.remove").replace("{name}", w.title[locale])}</span>
                   </button>
                 ))}
               </div>
@@ -2367,121 +2750,20 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
             totalCount={sortedCandidates.length}
             placedCount={selectionStateShown ? selectionCapacity!.schedulableCount : null}
             unplacedCount={selectionStateShown ? selectionCapacity!.minimumExclusionCount : null}
-            themeState={themeChipState(themeExperience)}
-            themeChip={(
-              <ThemeExperienceChip
-                result={themeExperience}
-                stationName={themeStationLabel(displayedDays ?? [], themeExperience, stationName)}
-                locale={locale}
-                tr={tr}
-                mapVisible={themeMapVisible}
-                onToggleMap={() => setThemeMapVisible((visible) => !visible)}
-              />
-            )}
             updating={updating}
             updated={lastItineraryDiff?.changed === true && !updating}
-            sortBy={sortBy}
-            onSortChange={setSortBy}
-            onBrowseAll={() => setBrowserOpen(true)}
-            tr={tr}
-            routeRecommendations={routeRecommendationFeedback
-              && routeRecommendationFeedback.outcome.recommendations.length > 0
-              && candidateData
-              ? routeRecommendationFeedback.outcome.recommendations.map((recommendation) => {
-                const candidate = candidateData.candidates.find(({ id }) => id === recommendation.placeId);
-                return candidate ? (
-                  <RouteRecommendationCard
-                    key={recommendation.placeId}
-                    candidate={candidate}
-                    recommendation={recommendation}
-                    locale={locale}
-                    stationName={stationName}
-                    placeName={placeName}
-                    workTitles={workTitles}
-                    onAdd={() => applyRouteRecommendation(
-                      recommendation,
-                      routeRecommendationFeedback.submittedSequence,
-                    )}
-                    tr={tr}
-                  />
-                ) : null;
-              })
-              : undefined}
-          >
-          {candidateData ? (
-          <>
-          {sortedCandidates.length === 0 && (
-            <li className="rounded border border-sc-orange/30 bg-sc-orange-soft p-3 text-sm text-sc-orange-text">
-              {tr("step3.noCandidates")}
-            </li>
-          )}
-          {/* #43 확정: 미확인 후보도 같은 목록에서 선택 가능 — 카드에 경고 배지 */}
-          {regularCandidates.slice(0, PLACES_PAGE_SIZE).map((c) => (
-            <PlaceCard key={c.id} candidate={c} locale={locale} tr={tr}
-              selected={selectedPlaceIds.has(c.id)}
-              stationName={stationName} workTitles={workTitles}
-              aiReason={c.aiReason ?? null}
-              onToggle={() => togglePlace(c.id)}
-            />
-          ))}
-          </>
-          ) : (
-            <li className="rounded border border-sc-orange/30 bg-sc-orange-soft p-3 text-sm text-sc-orange-text" role="status">
-              {tr(reopenCandidateStatus === "failed" ? "trips.reopenCandidatesFailed" : "common.loading")}
-              {/* #130 — 실패는 대개 일시적이다. 다시 열기를 처음부터 하지 않고 후보만 다시 받는다 */}
-              {reopenCandidateStatus === "failed" && (
-                <button
-                  type="button"
-                  className="ml-2 rounded border border-sc-orange/50 bg-sc-surface px-2 py-1 text-xs font-medium"
-                  onClick={() => void retryReopenCandidates()}
-                >
-                  {tr("trips.reopenCandidatesRetry")}
-                </button>
-              )}
-            </li>
-          )}
-          </PlaceRecommendationSheet>
-
-          {/* 전체 보기 (#146 ①) — 좁히기는 이 안에서만 한다 */}
-          <PlaceBrowser
-            open={browserOpen}
-            onClose={() => setBrowserOpen(false)}
-            count={browsedCandidates.length}
-            stations={browserStations}
-            station={browserStation}
-            onStationChange={setBrowserStation}
-            works={browserWorks}
-            work={effectiveBrowserWork}
-            onWorkChange={setBrowserWork}
-            tr={tr}
-          >
-            {browsedCandidates.map((c) => (
-              <PlaceCard key={c.id} candidate={c} locale={locale} tr={tr}
-                selected={selectedPlaceIds.has(c.id)}
-                stationName={stationName} workTitles={workTitles}
-                aiReason={c.aiReason ?? null}
-                onToggle={() => togglePlace(c.id)}
-              />
-            ))}
-          </PlaceBrowser>
-
-          {/* 우측 열 — 계산 결과. 장소를 켜고 끄면 여기서 바로 갱신된다 */}
-          <div className="min-w-0" aria-busy={updating}>
-          <div className="flex flex-wrap items-center gap-2">
-            <h3 className="text-base font-semibold">{tr("step4.title")}</h3>
-              {/* #43 수용 기준: 경고 누락 0건 — 배치는 유지하되 방문 전 확인을 안내.
-              카드 한 통이 목록 옆에 늘 펼쳐져 있던 것을 DAY 헤더 아이콘들과 같은
-              방식으로 바꿨다 (#146) — 경고 아이콘 하나에 건수를 달고 팝오버로 연다.
-              경고가 없으면 아이콘도 없다: 없는 것을 자리로 알리지 않는다 */}
-            {viewWarnings.length > 0 && (
-              <div data-stage-warnings>
+            warnings={viewWarnings.length > 0 || viewRejected.length > 0 ? (
+              /* 감싸는 div를 두면 시트 머리글의 `.header > div { flex: 1 1 100% }`에
+                 걸려 경고만 한 줄을 통째로 쓴다 — 조각으로 두고 버튼에 훅을 단다 */
+              <>
               <button
                 type="button"
+                data-stage-warnings
                 popoverTarget="stage-warnings-popover"
                 aria-haspopup="dialog"
                 aria-controls="stage-warnings-popover"
-                aria-label={withValues(tr("step4.warningsCount"), { n: String(viewWarnings.length) })}
-                className="grid size-9 place-items-center rounded-full border border-sc-orange/40 bg-sc-orange-soft text-sc-orange-text hover:border-sc-orange"
+                aria-label={withValues(tr("step4.warningsCount"), { n: String(viewWarnings.length + viewRejected.length) })}
+                className="grid size-7 shrink-0 place-items-center rounded-full border border-sc-orange/40 bg-sc-orange-soft text-sc-orange-text hover:border-sc-orange"
               >
                 {/* 아이콘만 둔다 (#146). 건수는 이름으로만 남긴다 — 화면에서 세는
                     것보다 눌러서 무엇인지 보는 쪽이 빠르고, 줄이 짧아진다 */}
@@ -2508,17 +2790,161 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
                     <X aria-hidden="true" className="size-4" />
                   </button>
                 </div>
-                <ul className="mt-2 space-y-1 text-sm text-sc-orange-text">
-                  {viewWarnings.map((warning) => (
-                    <li key={warning.placeId} className="flex items-start gap-1.5">
-                      <TriangleAlert aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
-                      <span>{placeName(warning.placeId)} — {tr(`reason.${warning.detail}` as MessageKey)}</span>
-                    </li>
-                  ))}
-                </ul>
+                {warningGroups.length > 0 && renderReasonGroups(warningGroups)}
+                {/* 왜 빼라는지가 여기 있어야 한다 — 카드 배지만으로는 사유를 알 수 없다 */}
+                {viewRejected.length > 0 && (
+                  <>
+                    <h4 className="mt-4 text-sm font-semibold text-sc-orange-text">
+                      {tr("step3.dropSuggestedTitle")}
+                    </h4>
+                    {renderRejectionGroups(viewRejected)}
+                  </>
+                )}
               </div>
-              </div>
+              </>
+            ) : null}
+            tr={tr}
+            routeRecommendations={routeRecommendationFeedback
+              && routeRecommendationFeedback.outcome.recommendations.length > 0
+              && candidateData
+              ? routeRecommendationFeedback.outcome.recommendations.map((recommendation) => {
+                const candidate = candidateData.candidates.find(({ id }) => id === recommendation.placeId);
+                return candidate ? (
+                  <RouteRecommendationCard
+                    key={recommendation.placeId}
+                    candidate={candidate}
+                    recommendation={recommendation}
+                    locale={locale}
+                    stationName={stationName}
+                    placeName={placeName}
+                    workTitles={workTitles}
+                    onAdd={() => applyRouteRecommendation(
+                      recommendation,
+                      routeRecommendationFeedback.submittedSequence,
+                    )}
+                    tr={tr}
+                  />
+                ) : null;
+              })
+              : undefined}
+          >
+          {/*
+            후보 목록은 한 벌이다 (#146 후속 — 독 없애기).
+
+            전에는 시트에 5개 미리보기가 있고 `전체 촬영지 보기`가 같은 목록을 모달로
+            다시 열었다. 목록이 늘 펼쳐진 지금 미리보기는 같은 카드를 두 번 그리는
+            일이 된다 — 전체 목록 하나만 남긴다.
+          */}
+          {/* 좁히기·정렬 — 목록을 다루는 줄이라 머리글과 함께 붙여 둔다.
+              카드와 같이 흘러가면 아래쪽에서 좁히려 할 때 위로 되감아야 한다 */}
+          <div
+            data-place-list-controls
+            className="flex items-center gap-2 border-b bg-sc-surface px-3 py-2"
+          >
+            <label className="flex min-w-0 items-center gap-1.5 text-xs text-sc-muted">
+              <span className="shrink-0">{tr("step3.filterRegion")}</span>
+              <select
+                className="min-w-0 rounded border px-2 py-1 text-sm text-sc-text"
+                value={browserStation ?? ""}
+                onChange={(e) => setBrowserStation(e.target.value || null)}
+              >
+                <option value="">{tr("step3.filterAll")}</option>
+                {browserStations.map((s) => <option key={s.id} value={s.id}>{s.label}</option>)}
+              </select>
+            </label>
+            {browserWorks.length > 1 && (
+              <label className="flex min-w-0 items-center gap-1.5 text-xs text-sc-muted">
+                <span className="shrink-0">{tr("step3.filterContent")}</span>
+                <select
+                  className="min-w-0 rounded border px-2 py-1 text-sm text-sc-text"
+                  value={effectiveBrowserWork ?? ""}
+                  onChange={(e) => setBrowserWork(e.target.value || null)}
+                >
+                  <option value="">{tr("step3.filterAll")}</option>
+                  {browserWorks.map((w) => <option key={w.id} value={w.id}>{w.label}</option>)}
+                </select>
+              </label>
             )}
+            {/* 정렬도 목록 다루기다 — 좁히기와 같은 줄에 둔다.
+                아이콘만 그리고 select를 투명하게 덮는다 (#146) — "추천순"까지 적으면
+                이 줄이 두 줄이 된다. 값은 누른 순간 브라우저 목록에서 보인다 */}
+            <label className={`ml-auto shrink-0 ${sheetStyles.sortControl}`}>
+              <ArrowUpDown aria-hidden="true" className="size-4 shrink-0" />
+              <span className="sr-only">{tr("step3.sortLabel")}</span>
+              <select
+                aria-label={tr("step3.sortLabel")}
+                value={sortBy}
+                onPointerDown={(event) => { event.currentTarget.dataset.pointerFocus = "true"; }}
+                onKeyDown={(event) => { delete event.currentTarget.dataset.pointerFocus; }}
+                onBlur={(event) => { delete event.currentTarget.dataset.pointerFocus; }}
+                onChange={(e) => setSortBy(e.target.value as "relevance" | "official")}
+              >
+                <option value="relevance">{tr("step3.sortRelevance")}</option>
+                <option value="official">{tr("step3.sortOfficial")}</option>
+              </select>
+            </label>
+          </div>
+          <ul className="space-y-2 px-3 pb-3">
+            {!candidateData && (
+              <li className="rounded border border-sc-orange/30 bg-sc-orange-soft p-3 text-sm text-sc-orange-text" role="status">
+                {tr(reopenCandidateStatus === "failed" ? "trips.reopenCandidatesFailed" : "common.loading")}
+                {/* #130 — 실패는 대개 일시적이다. 다시 열기를 처음부터 하지 않고 후보만 다시 받는다 */}
+                {reopenCandidateStatus === "failed" && (
+                  <button
+                    type="button"
+                    className="ml-2 rounded border border-sc-orange/50 bg-sc-surface px-2 py-1 text-xs font-medium"
+                    onClick={() => void retryReopenCandidates()}
+                  >
+                    {tr("trips.reopenCandidatesRetry")}
+                  </button>
+                )}
+              </li>
+            )}
+            {candidateData && browsedCandidates.length === 0 && (
+              <li className="rounded border border-sc-orange/30 bg-sc-orange-soft p-3 text-sm text-sc-orange-text">
+                {tr(sortedCandidates.length === 0 ? "step3.noCandidates" : "step3.browserEmpty")}
+              </li>
+            )}
+            {browsedCandidates.map((c) => (
+              <PlaceCard key={c.id} candidate={c} locale={locale} tr={tr}
+                selected={selectedPlaceIds.has(c.id)}
+                stationName={stationName} workTitles={workTitles}
+                aiReason={c.aiReason ?? null}
+                dropSuggested={dropSuggestedPlaceIds.has(c.id)}
+                dropReason={rejectionReasonByPlaceId.get(c.id) ?? null}
+                onToggle={() => togglePlace(c.id)}
+              />
+            ))}
+          </ul>
+          </PlaceRecommendationSheet>
+
+          {/*
+            후보 목록은 시트 안에 늘 펼쳐 둔다 (#146 후속 — 독 없애기).
+
+            전에는 `전체 촬영지 보기`가 같은 목록을 모달로 열었다. 목록이 화면에 남아
+            있으면 그 버튼도, 시트를 접는 토글도 할 일이 없어 함께 걷었다. 좁히기(지역·
+            콘텐츠)는 여전히 목록 바로 위에 둔다 — 목록에서 멀어지면 무엇을 좁히는지 흐려진다.
+          */}
+
+          {/* 우측 열 — 계산 결과. 장소를 켜고 끄면 여기서 바로 갱신된다 */}
+          <div className="min-w-0" aria-busy={updating}>
+          <div className="flex flex-wrap items-center gap-2">
+            <h3 className="text-base font-semibold">{tr("step4.title")}</h3>
+            {/* 일정을 여는 주 액션은 일정 제목 옆이다 — 장소 목록 쪽에 두면 무엇을
+                여는 버튼인지가 자리에서 읽히지 않는다 */}
+            <button
+              type="button"
+              className="order-last ml-auto rounded bg-sc-blue px-3 py-1.5 text-sm font-semibold text-white disabled:opacity-40"
+              disabled={!displayedDays || updating || needsSelection || selectionCapacity?.requiresAdjustment}
+              onClick={() => setShowFinalItinerary(true)}
+              data-open-final
+            >
+              {tr("step4.openFinal")}
+            </button>
+              {/* #43 수용 기준: 경고 누락 0건 — 배치는 유지하되 방문 전 확인을 안내.
+              카드 한 통이 목록 옆에 늘 펼쳐져 있던 것을 DAY 헤더 아이콘들과 같은
+              방식으로 바꿨다 (#146) — 경고 아이콘 하나에 건수를 달고 팝오버로 연다.
+              경고가 없으면 아이콘도 없다: 없는 것을 자리로 알리지 않는다 */}
             <button
               type="button"
               popoverTarget="itinerary-info-popover"
@@ -2615,6 +3041,7 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
             disabledMessage={selectionCapacity?.requiresAdjustment
               ? "ai.disabledOverselection"
               : "ai.disabled"}
+            onPickOverselection={() => document.getElementById("place-picker")?.scrollIntoView({ block: "nearest" })}
             recommendDayCount={overselectionProposal ? 0 : displayedDays?.length ?? 0}
             onRecommendDay={(dayIndex) =>
               submitItineraryCommand(tr("ai.fillPrompt").replace("{day}", String(dayIndex)))}
@@ -2623,7 +3050,6 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
             onToggleKeep={toggleProposalKeep}
             onApplyGoal={applyGoalOutcome}
             onApplyOverselection={applyOverselectionProposal}
-            onPickOverselection={() => setBrowserOpen(true)}
             /* 완료형 문구는 재계산이 실제로 끝난 뒤에만 — 아직 계산 중이거나 실패했을 수 있다 */
             onUndoOverselection={
               selectionStateShown && liveSelectionUndo !== null
@@ -2691,12 +3117,17 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
               diff={lastItineraryDiff}
               placeName={placeName}
               reasonLabel={(reason) => tr(`reason.${reason}` as MessageKey)}
+              rideLabel={(ride) =>
+                `${ride.trainNo} · ${stationName(ride.fromStationId)} → ${stationName(ride.toStationId)} ${fmtTime(ride.departAt)}`}
               tr={tr}
             />
           )}
 
           {showOverselectionNotice && selectionCapacity && (
             <div
+              // 표식으로 겨냥한다 — 3단계에서 이 상자는 오른쪽 칸(시트 위)에 선다.
+              // 클래스 조합으로 잡으면 스타일을 손볼 때 조용히 어긋난다
+              data-overselection-notice
               className="relative mt-4 rounded-lg border border-sc-orange/40 bg-sc-orange-soft p-4 pr-12"
             >
               <button
@@ -2715,16 +3146,7 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
                     .replace("{schedulable}", String(selectionCapacity.schedulableCount))
                     .replace("{minimum}", String(selectionCapacity.minimumExclusionCount))}
                 </p>
-                <p className="mt-1 text-sm text-sc-orange-text">{tr("step4.overselectionDesc")}</p>
-                <p className="mt-1 text-xs text-sc-orange-text">{tr("step4.overselectionPreview")}</p>
               </div>
-              <button
-                type="button"
-                onClick={() => setBrowserOpen(true)}
-                className="mt-3 rounded border border-sc-orange/50 bg-sc-surface px-3 py-2 text-sm font-medium text-sc-orange-text"
-              >
-                {tr("step4.adjustPlaces")}
-              </button>
             </div>
           )}
 
@@ -2743,21 +3165,22 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
               {displayedDays.map((day, dayIndex) => {
                 const baseDay = baseDays?.find((d) => d.date === day.date);
                 const rows = itineraryRowsOf(day);
-                /**
-                 * 체류 카드가 놓일 칸 (#146).
-                 *
-                 * 두 타임라인이 같은 폭의 칸을 쓰므로 그냥 늘어놓으면 **N번째 체류가
-                 * N번째 이동 밑에 붙는다** - 광화문(서울) 아래에 진부 권역 체류가
-                 * 걸려 서로 관계가 있는 것처럼 읽혔다. 실제로 그렇게 보였다.
-                 *
-                 * 시각으로 맞춘다. 그 체류를 시작시킨 줄(도착) 밑에 세운다.
-                 */
-                const stayColumn = (startAt: string) => {
-                  const at = Date.parse(startAt);
-                  let last = 0;
-                  rows.forEach((row, index) => { if (row.at <= at) last = index; });
-                  return last + 1;
+                /* 권역 창을 **도착 시각으로** 찾는다 — 그 역에 내린 순간부터가 체류다.
+                   목록 아래 따로 있던 요약을 여기로 옮긴다: 무엇에 대한 시간인지
+                   붙어 있지 않으면 "체류 2시간 57분"이 어디의 시간인지 알 수 없다 */
+                const windowAtArrival = (stationId: string, arriveAt: string) => {
+                  /* 문자열 비교로 맞추면 표기(`+09:00`/`Z`)나 자정 분할에서 조용히 빗나간다.
+                     같은 역에서 도착 이후 **가장 먼저 시작하는** 창을 고른다 */
+                  const at = Date.parse(arriveAt);
+                  return day.regionWindows
+                    .filter((window) => window.stationId === stationId
+                      && Date.parse(window.startAt) >= at - 60_000)
+                    .sort((a, b) => Date.parse(a.startAt) - Date.parse(b.startAt))[0] ?? null;
                 };
+                /* 촬영지에서 역으로 돌아오는 구간은 **그 권역을 떠날 때 한 번만** 그린다.
+                   촬영지끼리 이동하는 시간은 우리에게 없으므로, 장소마다 왕복을 그리면
+                   있지도 않은 숫자를 만들어 내는 셈이다 */
+                const leavingRegionAfter = (index: number) => rows[index + 1]?.kind !== "place";
                 return (
                   <div
                     key={day.date}
@@ -2853,8 +3276,8 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
 
                   {/* 장소 목록과 이동 구간을 따로 그리면 "몇 시에 어디로 이동해 무엇을 보는가"라는
                       하루의 흐름이 끊긴다. 시각순 한 줄씩으로 세운다 (#146 2절) */}
-                  <ul className="mt-2 space-y-1.5 text-sm" data-day-rows>
-                    {rows.map((row) => {
+                  <ul className="mt-2 text-sm" data-day-rows data-timeline>
+                    {rows.map((row, rowIndex) => {
                       /* 선택 가능한 버스 대안이 없으면 선택기가 통째로 숨는다. 그때는
                          무엇으로 공항에 드나드는지 알 길이 없으므로 이동 행에 사실만
                          적는다 — 고를 수 없는 버튼을 흐리게 띄우는 것보다 낫다 (#146) */
@@ -2864,8 +3287,22 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
                       if (row.kind === "place") {
                         const item = row.item;
                         return (
+                          <Fragment key={rowKey(row)}>
+                          {/* 역에서 촬영지까지 — 네이버 길찾기의 도보 구간처럼 따로 세운다.
+                              장소 카드 안에 묻어 두면 "몇 시에 도착해 언제부터 볼 수 있나"가
+                              흐름 위에서 읽히지 않는다 */}
+                          {item.accessMinutes > 0 && (
+                            <li data-itinerary-row="access">
+                              <span data-rail-time />
+                              <span aria-hidden="true" data-rail>
+                                <span data-rail-icon><Car className="size-3.5" /></span>
+                              </span>
+                              <span className="text-xs text-sc-muted" data-row-main>
+                                {accessLabel(item.accessMinutes)}
+                              </span>
+                            </li>
+                          )}
                           <li
-                            key={rowKey(row)}
                             draggable={visitDateEditable}
                             onDragStart={(event) => {
                               setDraggingPlaceId(item.placeId);
@@ -2900,19 +3337,21 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
                               setDraggingPlaceId(null);
                               submitVisitOrderEdit(moving, item.placeId);
                             }}
-                            className={`rounded-lg border bg-sc-surface px-2 py-1.5 ${
+                            className={`${
                               draggingPlaceId === item.placeId ? "opacity-50" : ""
-                            } ${dragOverPlaceId === item.placeId ? "border-sc-blue bg-sc-blue-soft/40" : ""}`}
+                            } ${dragOverPlaceId === item.placeId ? "bg-sc-blue-soft/40" : ""}`}
                             data-itinerary-row="place"
                           >
                             {/* 카드 한 장의 구조는 어느 줄이든 같다 (#146):
                                 시각 / 아이콘 + 이름 / 소요·이동. 줄 수가 내용에 따라
                                 달라지면 카드 높이가 58-83px로 들쭉날쭉해진다 —
                                 이름은 두 줄에서 자른다 */}
-                            <span className="block tabular-nums text-xs text-sc-muted" data-row-time>
+                            <span className="tabular-nums text-xs text-sc-muted" data-rail-time>
                               {fmtTime(item.arriveAt)}
                             </span>
-                            <div className="mt-1 flex items-start gap-2" data-row-main>
+                            {/* 레일 — 시각과 내용 사이에 점 하나. 선은 CSS가 잇는다 */}
+                            <span aria-hidden="true" data-rail><span data-rail-dot /></span>
+                            <div className="flex items-start gap-2" data-row-main>
                               {/* 외국인 사용자는 지명만 보고 역인지 관광지인지 식당인지 모른다.
                                   추천 카드와 같은 유형 아이콘을 써서 두 화면이 저절로 일관된다 */}
                               <span className="grid size-7 shrink-0 place-items-center rounded-md bg-sc-blue-soft text-sc-blue">
@@ -2929,8 +3368,7 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
                                 동작하지 않는다. DAY 헤더가 쓰는 것과 같은 이동 메뉴를
                                 장소에도 둔다. 두 경로 모두 `submitVisitDateEdit`으로
                                 들어가므로 조작 방법에 따라 결과가 갈리지 않는다 */}
-                            <span className="mt-auto flex items-center justify-between gap-2 pt-1 text-xs text-sc-muted" data-row-meta>
-                              <span className="min-w-0 truncate">{accessLabel(item.accessMinutes)}</span>
+                            <span className="flex items-center justify-end gap-2 text-xs text-sc-muted" data-row-meta>
                               <span className="flex shrink-0 items-center gap-1">
                               {/* 드래그를 못 쓰는 경로(터치·키보드)를 위한 순서 진입점 (#145).
                                   드래그와 같은 `submitVisitOrderEdit`으로 들어간다 */}
@@ -2957,64 +3395,164 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
                               </span>
                             </span>
                           </li>
+                          {/* 권역을 떠나는 길 — 갈 때와 같은 접근 시간을 방향만 바꿔 쓴다 */}
+                          {item.accessMinutes > 0 && leavingRegionAfter(rowIndex) && (
+                            <li data-itinerary-row="access">
+                              <span data-rail-time />
+                              <span aria-hidden="true" data-rail>
+                                <span data-rail-icon><Car className="size-3.5" /></span>
+                              </span>
+                              <span className="text-xs text-sc-muted" data-row-main>
+                                {withValues(tr("access.backToStation"), { n: String(item.accessMinutes) })}
+                              </span>
+                            </li>
+                          )}
+                          </Fragment>
                         );
                       }
+                      /*
+                        이동은 **양 끝 역을 모두 세운다** (멘토 지적 반영).
+
+                        전에는 `A → B, 43분` 한 줄이라 도착 시각(데이터에는 있다)이
+                        화면에 없었다. 네이버 길찾기처럼 출발역·도착역을 각각 노드로
+                        두고 그 사이에 소요를 적는다.
+                      */
+                      const moveNodes = (input: {
+                        fromName: string; toName: string;
+                        departAt: string; arriveAt: string;
+                        fromStationId: string;
+                        toStationId: string;
+                        duration: string;
+                        note?: string;
+                        icon: ReactNode;
+                        detail?: { onOpen: () => void; label: string };
+                      }) => {
+                        const window = windowAtArrival(input.toStationId, input.arriveAt);
+                        const presentation = window ? regionWindowPresentationOf(window, day) : null;
+                        const card = presentation ? REGION_WINDOW_CARD[presentation.kind] : null;
+                        return (
+                          <Fragment key={rowKey(row)}>
+                            <li data-itinerary-row="station">
+                              <span className="tabular-nums text-xs text-sc-muted" data-rail-time>
+                                {fmtTime(input.departAt)}
+                              </span>
+                              <span aria-hidden="true" data-rail><span data-rail-node>{input.icon}</span></span>
+                              <span className="text-sc-text" data-row-main>
+                                <span data-row-name>{input.fromName}</span>
+                              </span>
+                            </li>
+                            <li data-itinerary-row="leg">
+                              <span data-rail-time />
+                              <span aria-hidden="true" data-rail><span data-rail-line /></span>
+                              <span className="flex flex-wrap items-center gap-1.5 text-xs text-sc-muted" data-row-main>
+                                <span className="font-medium text-sc-blue">{input.duration}</span>
+                                {input.note && (
+                                  <span className="rounded bg-sc-blue-soft px-1.5 py-0.5 text-sc-blue">{input.note}</span>
+                                )}
+                                {input.detail && (
+                                  <button
+                                    type="button"
+                                    className="rounded border px-1.5 py-0.5 text-sc-blue hover:border-sc-blue"
+                                    onClick={input.detail.onOpen}
+                                  >
+                                    {input.detail.label}
+                                  </button>
+                                )}
+                                {/* 공항을 나서는 편만 미룰 수 있다 — 중간 구간은 엔진 입력이 따로 필요하다 */}
+                                {airportStationIds.has(input.fromStationId) && (
+                                  <button
+                                    type="button"
+                                    data-delay-leg
+                                    className="rounded border border-sc-orange/50 px-1.5 py-0.5 text-sc-orange-text hover:border-sc-orange"
+                                    onClick={() => void openDelayPicker({
+                                      fromStationId: input.fromStationId,
+                                      toStationId: input.toStationId,
+                                      departAt: input.departAt,
+                                    })}
+                                  >
+                                    {tr("delay.pickLater")}
+                                  </button>
+                                )}
+                              </span>
+                            </li>
+                            <li data-itinerary-row="station">
+                              <span className="tabular-nums text-xs text-sc-muted" data-rail-time>
+                                {fmtTime(input.arriveAt)}
+                              </span>
+                              <span aria-hidden="true" data-rail><span data-rail-node>{input.icon}</span></span>
+                              <span className="text-sc-text" data-row-main>
+                                <span data-row-name>{input.toName}</span>
+                              </span>
+                            </li>
+                            {/* 체류·환승은 그 역에 내린 시각부터다 — 도착 노드 바로 밑에 붙인다 */}
+                            {presentation && card && (
+                              <li data-itinerary-row="window">
+                                <span data-rail-time />
+                                <span aria-hidden="true" data-rail><span data-rail-line /></span>
+                                <span className={`flex flex-wrap items-center gap-1.5 text-xs ${card.metaClass}`} data-row-main>
+                                  {/* 역 이름은 바로 위 노드가 말한다 — 여기서는 "이 역에서
+                                      다음 열차까지 얼마나 쓸 수 있나"만 말한다 */}
+                                  <span className="font-medium">
+                                    {card.detailKey === null
+                                      ? `${withValues(tr("region.stayHere"), { area: stationAreaName(input.toStationId) })} ${stayLabel(presentation.minutes)}`
+                                      : tr(card.detailKey).replace("{duration}", durationLabel(presentation.minutes))}
+                                  </span>
+                                  <span className="tabular-nums text-sc-muted">
+                                    {fmtTime(presentation.startAt)}-{fmtTime(presentation.endAt)}
+                                  </span>
+                                  <button
+                                    type="button"
+                                    popoverTarget={`stay-guide-${day.date}`}
+                                    aria-haspopup="dialog"
+                                    aria-controls={`stay-guide-${day.date}`}
+                                    aria-label={tr("region.stayGuideOpen")}
+                                    className="grid size-5 place-items-center rounded-full border text-sc-muted hover:border-sc-blue hover:text-sc-blue"
+                                  >
+                                    <Info aria-hidden="true" className="size-3" />
+                                  </button>
+                                </span>
+                              </li>
+                            )}
+                          </Fragment>
+                        );
+                      };
+
                       if (row.kind === "gateway") {
                         const leg = row.leg;
-                        const detail = (
-                          <>
-                            <span className="shrink-0 tabular-nums text-xs text-sc-muted">{fmtTime(leg.departAt)}</span>
-                            <span className="min-w-0 flex-1 text-sc-text/80">
-                              {leg.fromName[locale]} → {leg.toName[locale]}
-                            </span>
-                            <span className="shrink-0 text-xs text-sc-muted/70">{leg.serviceName[locale]}</span>
-                          </>
-                        );
-                        return (
-                          <li key={rowKey(row)} data-itinerary-row="gateway">
-                            <MoveRow
-                              collapsed={!reopened}
-                              icon={<BusFront aria-hidden="true" className="size-4" />}
-                              label={tr("step4.moveRow")}
-                              route={`${leg.fromName[locale]} → ${leg.toName[locale]}`}
-                              startAt={fmtTime(leg.departAt)}
-                              duration={leg.serviceName[locale]}
-                            >
-                              {detail}
-                            </MoveRow>
-                          </li>
-                        );
+                        return moveNodes({
+                          fromName: leg.fromName[locale],
+                          toName: leg.toName[locale],
+                          departAt: leg.departAt,
+                          arriveAt: leg.arriveAt,
+                          fromStationId: leg.fromStationId,
+                          toStationId: leg.toStationId,
+                          duration: legDurationLabel(leg.departAt, leg.arriveAt, tr),
+                          note: leg.serviceName[locale],
+                          icon: <BusFront aria-hidden="true" className="size-3.5" />,
+                        });
                       }
                       const ride = row.ride;
-                      return (
-                        <li key={rowKey(row)} data-itinerary-row="train">
-                          <MoveRow
-                            collapsed={!reopened}
-                            icon={<TrainFront aria-hidden="true" className="size-4" />}
-                            label={tr("step4.moveRow")}
-                            route={`${stationName(ride.fromStationId)} → ${stationName(ride.toStationId)}`}
-                            note={airportRailNote(ride) ? tr("step4.airportRailUsed") : undefined}
-                            startAt={fmtTime(ride.departAt)}
-                            duration={legDurationLabel(ride.departAt, ride.arriveAt, tr)}
-                            onOpenDetail={() => setOpenTrainLeg({
-                              trainNo: ride.trainNo,
-                              fromName: stationName(ride.fromStationId),
-                              toName: stationName(ride.toStationId),
-                              departAt: ride.departAt,
-                              arriveAt: ride.arriveAt,
-                            })}
-                            detailLabel={tr("step4.trainDetail")}
-                          >
-                            <span className="shrink-0 tabular-nums text-xs text-sc-muted">{fmtTime(ride.departAt)}</span>
-                            <span className="min-w-0 flex-1 text-sc-text/80">
-                              {stationName(ride.fromStationId)} → {stationName(ride.toStationId)}
-                            </span>
-                            <span className="shrink-0 text-xs text-sc-muted/70">
-                              {legDurationLabel(ride.departAt, ride.arriveAt, tr)}
-                            </span>
-                          </MoveRow>
-                        </li>
-                      );
+                      return moveNodes({
+                        fromName: stationName(ride.fromStationId),
+                        toName: stationName(ride.toStationId),
+                        departAt: ride.departAt,
+                        arriveAt: ride.arriveAt,
+                        fromStationId: ride.fromStationId,
+                        toStationId: ride.toStationId,
+                        duration: legDurationLabel(ride.departAt, ride.arriveAt, tr),
+                        note: airportRailNote(ride) ? tr("step4.airportRailUsed") : undefined,
+                        icon: <TrainFront aria-hidden="true" className="size-3.5" />,
+                        detail: {
+                          label: tr("step4.trainDetail"),
+                          onOpen: () => setOpenTrainLeg({
+                            trainNo: ride.trainNo,
+                            fromName: stationName(ride.fromStationId),
+                            toName: stationName(ride.toStationId),
+                            departAt: ride.departAt,
+                            arriveAt: ride.arriveAt,
+                          }),
+                        },
+                      });
                     })}
                   </ul>
                     {/*
@@ -3027,31 +3565,11 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
 
                       #33 — 엔진 값 포맷만, 경계·시각 재해석 금지
                     */}
+                    {/* 체류·환승 요약 카드 묶음은 걷었다 — 같은 값을 타임라인의 도착 노드
+                        밑에서 이미 말한다. 두 곳에서 말하면 어느 쪽이 그 역 이야기인지
+                        알 수 없다. 설명 팝오버만 남긴다 (타임라인의 (i)가 연다) */}
                     {day.regionWindows.length > 0 && (
                       <div className="mt-3">
-                        {/*
-                          숫자는 그대로 두고 (i)만 단다 (#84 P1). 이 값은 "역 경계 안에서
-                          확보된 분"이라 이동·접근이 포함돼 있는데, 화면에는 시간만 적혀
-                          있어 그만큼 자유시간이 있는 것으로 읽힌다. 엔진 쪽 경고
-                          (`region-windows.ts` 창의 성격)를 화면에도 옮긴다.
-
-                          제목은 `체류`를 유지한다 — 이 창은 실제로 그 권역에 있는
-                          시간이 맞고, `활용 가능`은 PR #107 리뷰에서 오해를 낳는다고
-                          판정된 표현이다.
-                        */}
-                        <div className="flex flex-wrap items-center gap-1.5">
-                          <h4 className="text-xs font-medium text-sc-muted">{tr("step4.stayTitle")}</h4>
-                          <button
-                            type="button"
-                            popoverTarget={`stay-guide-${day.date}`}
-                            aria-haspopup="dialog"
-                            aria-controls={`stay-guide-${day.date}`}
-                            aria-label={tr("region.stayGuideOpen")}
-                            className="flex size-6 items-center justify-center rounded-full border text-sc-muted hover:border-sc-blue hover:text-sc-blue"
-                          >
-                            <Info aria-hidden="true" className="size-3" />
-                          </button>
-                        </div>
                         <div
                           id={`stay-guide-${day.date}`}
                           popover="auto"
@@ -3076,43 +3594,6 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
                           <p className="mt-2 text-xs text-sc-muted">{tr("region.stayGuideBody")}</p>
                           <p className="mt-2 border-t pt-2 text-xs text-sc-muted">{tr("region.stayGuideWindow")}</p>
                         </div>
-                        <ul className="mt-2 space-y-1.5 text-sm" data-day-rows data-day-stays>
-                          {day.regionWindows.map((window) => {
-                            const presentation = regionWindowPresentationOf(window, day);
-                            const card = REGION_WINDOW_CARD[presentation.kind];
-                            const WindowIcon = card.icon;
-                            const title = `${stationName(window.stationId)} ${tr(card.titleKey)}`;
-                            const detail = card.detailKey === null
-                              ? stayLabel(presentation.minutes)
-                              : tr(card.detailKey).replace(
-                                "{duration}",
-                                durationLabel(presentation.minutes),
-                              );
-                            return (
-                              <li
-                                key={window.startAt}
-                                className={`rounded-lg border px-2 py-1.5 ${card.frameClass}`}
-                                data-itinerary-row={presentation.kind}
-                                style={{ gridColumnStart: stayColumn(window.startAt) }}
-                              >
-                                <span className="block tabular-nums text-xs text-sc-muted" data-row-time>
-                                  {fmtTime(presentation.startAt)}-{fmtTime(presentation.endAt)}
-                                </span>
-                                <span className="mt-1 flex items-start gap-2" data-row-main>
-                                  <span className={`grid size-7 shrink-0 place-items-center rounded-md ${card.iconClass}`}>
-                                    <WindowIcon aria-hidden="true" className="size-4" />
-                                  </span>
-                                  <span className="min-w-0 flex-1 text-sc-text/90" data-row-name>
-                                    {title}
-                                  </span>
-                                </span>
-                                <span className={`mt-auto block pt-1 text-xs ${card.metaClass}`} data-row-meta>
-                                  {detail}
-                                </span>
-                              </li>
-                            );
-                          })}
-                        </ul>
                       </div>
                     )}
                     {/* 재열람 화면은 저장 시점 일정 그대로 — mock 대안은 개발 플래그에서만 (PR #35 리뷰 2) */}
@@ -3133,30 +3614,25 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
 
               <div className="min-w-0 space-y-4">
               <ItineraryRouteMap
+                modal={{
+                  open: mapOpen,
+                  onOpen: () => setMapOpen(true),
+                  onClose: () => setMapOpen(false),
+                }}
                 days={displayedDays}
                 places={mappablePlaces}
                 stations={mapStations}
                 railLines={railGeometry.lines}
                 tr={tr}
                 sticky
-                // 기본 지도는 공항·철도·촬영지만 — 권역은 토글을 눌렀을 때만 나타난다 (#14 v0.6)
-                headingAction={
-                  themeExperience?.status === "ok" && themeExperience.point ? (
-                    <button
-                      type="button"
-                      aria-pressed={themeMapVisible}
-                      onClick={() => setThemeMapVisible((visible) => !visible)}
-                      className="rounded border px-2 py-0.5 text-xs text-sc-muted hover:border-sc-blue hover:text-sc-blue"
-                    >
-                      {tr(themeMapVisible ? "theme.mapFilterHide" : "theme.mapFilterShow")}
-                    </button>
-                  ) : undefined
-                }
+                /* 권역은 고르면 나타난다 (#80 후속).
+                   전에는 "테마체험 보기" 토글을 눌러야 보였다. 권역을 목록에서 직접
+                   고르게 된 뒤로 그 토글은 이미 한 선택을 한 번 더 확인하는 버튼이었다 */
                 experienceOverlay={
-                  <ThemeExperienceMapOverlay result={themeExperience} visible={themeMapVisible} />
+                  <ThemeExperienceMapOverlay result={themeExperience} visible={themeZoneOnMap} />
                 }
                 experienceLegend={
-                  themeMapVisible && themeExperience?.status === "ok" && themeExperience.point ? (
+                  themeZoneOnMap && themeExperience?.status === "ok" && themeExperience.point ? (
                     <span className="inline-flex items-center gap-1.5">
                       <span className="inline-block size-2 rounded-full border border-dashed border-sc-blue bg-sc-blue/15" />
                       {tr("theme.mapLegend")}
@@ -3165,7 +3641,7 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
                 }
                 // A3 — 원이 검증된 권역 경계로 읽히지 않도록 표시 중에는 항상 붙인다 (PR #88 리뷰)
                 experienceNotice={
-                  themeMapVisible && themeExperience?.status === "ok" && themeExperience.point ? (
+                  themeZoneOnMap && themeExperience?.status === "ok" && themeExperience.point ? (
                     <p className="mt-2 text-xs text-sc-muted">{tr("theme.mapPointNotice")}</p>
                   ) : undefined
                 }
@@ -3186,17 +3662,74 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
                   </ul>
                 </div>
               )}
-              {viewRejected.length > 0 && (
-                <div className="rounded-lg border border-sc-orange/30 bg-sc-orange-soft p-4">
-                  <h3 className="text-sm font-medium text-sc-orange-text">{tr("step4.rejectedTitle")}</h3>
-                  {renderRejectionGroups(viewRejected)}
-                </div>
-              )}
+              {/* 배치 실패 사유 카드는 걷었다 — 같은 말을 안내 문구·목록 배지와 셋이
+                  나눠 하고 있었다. 사유는 해당 장소 카드의 `제외 추천` 배지로 옮겼다 */}
               {/* #80 — 권역 단위 테마체험 제안. 일정에는 자동으로 포함되지 않는다 (#14 v0.6) */}
               {/* #24 A5 역 시설·짐 보관 카드는 DAY 헤더 팝오버로 옮겼다 (#146).
                   같은 정보가 두 곳에 있으면 어느 쪽이 그 날 이야기인지 알 수 없다 */}
               </div>
               </div>
+
+              {/*
+                열차 미루기 창 (#103 첫 구간).
+
+                시간표 스냅샷에 **실제로 실린 편**만 보여 준다. 고르면 그 편의 출발
+                시각이 공항을 나서는 시각이 되고, 남은 일정을 다시 계산한다.
+              */}
+              {delayPicker && (
+                <div
+                  role="dialog"
+                  aria-labelledby="delay-picker-title"
+                  data-delay-picker
+                  className="fixed left-1/2 top-1/2 z-[80] w-[min(400px,calc(100vw-32px))] -translate-x-1/2 -translate-y-1/2 rounded-2xl border bg-sc-surface p-4 shadow-2xl"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <h4 id="delay-picker-title" className="text-sm font-semibold text-sc-text">
+                      {tr("delay.title")}
+                    </h4>
+                    <button
+                      type="button"
+                      aria-label={tr("common.close")}
+                      onClick={() => setDelayPicker(null)}
+                      className="grid size-8 shrink-0 place-items-center rounded-full border text-sc-muted hover:border-sc-blue hover:text-sc-blue"
+                    >
+                      <X aria-hidden="true" className="size-4" />
+                    </button>
+                  </div>
+                  <p className="mt-1 text-xs text-sc-muted">{tr("delay.body")}</p>
+                  {delayPicker.options === null ? (
+                    <p className="mt-3 text-sm text-sc-muted">{tr("common.loading")}</p>
+                  ) : delayPicker.options.length === 0 ? (
+                    <p className="mt-3 text-sm text-sc-orange-text">{tr("delay.empty")}</p>
+                  ) : (
+                    <ul className="mt-3 space-y-1.5">
+                      {delayPicker.options.map((option) => (
+                        <li key={`${option.trainNo}-${option.departAt}`}>
+                          <button
+                            type="button"
+                            className="flex w-full items-center justify-between gap-3 rounded-lg border px-3 py-2 text-left text-sm hover:border-sc-blue"
+                            onClick={() => {
+                              /* 고른 편의 출발 시각 = 공항을 나서는 시각. 엔진은 그 시각
+                                 이후 첫 편을 고르므로 결과적으로 이 편을 탄다.
+
+                                 스냅샷은 `+09:00`이 붙은 KST 표기인데 이 입력은 1단계의
+                                 `YYYY-MM-DDTHH:mm`을 그대로 쓴다 — 오프셋째로 넣으면
+                                 "입력 조건이 올바르지 않습니다"가 된다 */
+                              setAirportReady({ at: option.departAt.slice(0, 16), touched: true });
+                              setDelayPicker(null);
+                            }}
+                          >
+                            <span className="tabular-nums font-medium">
+                              {fmtTime(option.departAt)} → {fmtTime(option.arriveAt)}
+                            </span>
+                            <span className="text-xs text-sc-muted">{option.trainNo}</span>
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              )}
 
               {openTrainLeg && (
                 <TrainLegModal leg={openTrainLeg} onClose={() => setOpenTrainLeg(null)} tr={tr} />
@@ -3216,9 +3749,12 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
           {/*
             액션 줄 (#146).
 
-            "항공편 시각 변경"은 뺐다 — 상단 `여행 조건` 탭이 같은 곳으로 가는 길이라
-            중복이었다. 남은 둘은 데스크톱에서 바닥 독(시트 헤더) 오른쪽 끝으로 간다.
-            순서는 왼쪽이 조작, 오른쪽 끝이 주 액션이다.
+            "항공편 시각 변경"은 뺐다 — 상단 `여행 시간` 탭이 같은 곳으로 가는 길이라
+            중복이었다.
+
+            둘은 서로 다른 것을 다룬다. `다시 계산`은 **장소를 바꾼 뒤** 누르는 것이라
+            추천 장소 목록 머리글에 남고, `최종 일정 한눈에 보기`는 일정을 여는 것이라
+            일정 제목(`추천일정`) 옆으로 간다.
           */}
           <StageUtilityPortal targetId="stage-sheet-actions">
             <div
@@ -3226,15 +3762,6 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
               data-stage-actions
             >
               <button className="rounded border px-3 py-2 text-sm" onClick={plan}>{tr("step4.recalculate")}</button>
-              <button
-                type="button"
-                className="rounded bg-sc-blue px-4 py-2 text-sm font-semibold text-white disabled:opacity-40"
-                disabled={!displayedDays || updating || needsSelection || selectionCapacity?.requiresAdjustment}
-                onClick={() => setShowFinalItinerary(true)}
-                data-open-final
-              >
-                {tr("step4.openFinal")}
-              </button>
             </div>
           </StageUtilityPortal>
           </div>
@@ -3349,7 +3876,7 @@ function RouteRecommendationCard({
   );
 }
 
-function PlaceCard({ candidate, locale, tr, selected, onToggle, stationName, workTitles, aiReason }: {
+function PlaceCard({ candidate, locale, tr, selected, onToggle, stationName, workTitles, aiReason, dropSuggested, dropReason }: {
   candidate: PlaceCandidate;
   locale: Locale;
   tr: (key: MessageKey) => string;
@@ -3358,6 +3885,10 @@ function PlaceCard({ candidate, locale, tr, selected, onToggle, stationName, wor
   stationName: (id: string) => string;
   workTitles: (ids: string[]) => string;
   aiReason?: { ko: string; en: string } | null; // #48 — 검증된 장면 근거(점수 비노출)
+  /** 골랐지만 일정에 못 들어가 빼는 걸 추천하는 장소 */
+  dropSuggested?: boolean;
+  /** 엔진이 못 넣은 사유 — 배지에 달아 준다 */
+  dropReason?: string | null;
 }) {
   // 카드는 고르는 데 필요한 요약만 유지한다. 작품·회차·장면·출처는 top-layer 팝오버로
   // 분리해 고정 높이 카드가 잘리거나 내부 스크롤을 만들지 않게 한다.
@@ -3390,9 +3921,15 @@ function PlaceCard({ candidate, locale, tr, selected, onToggle, stationName, wor
       className={`rounded-xl border ${selected ? "border-sc-blue ring-2 ring-sc-blue/40" : ""}`}
       data-recommendation-card
     >
-      {/* #146 1절 — 카드에는 사진과 이름만 둔다. 역·접근시간·운영시간·작품 근거는
-          전부 상세 팝업으로 넘겨 카드가 빡빡해지지 않게 한다 */}
-      <div className={sheetStyles.photoCard}>
+      {/*
+        가로형 카드 — 썸네일 왼쪽, 설명 오른쪽 (멘토 요청).
+
+        전에는 사진 위에 이름만 얹은 정사각 카드였다. "어느 드라마 몇 화의 무슨 장면인지"가
+        전부 상세 팝오버 안에 있어서, 고르는 사람이 카드만 보고는 알 수 없었다. 그 한 줄을
+        사진 옆으로 끌어낸다.
+      */}
+      <div className="flex gap-2 p-2 md:gap-3">
+      <div className={`${sheetStyles.photoCard} w-20 shrink-0 md:w-28`}>
         <PlaceThumbnail
           label={tr("step3.photoPlaceholder")}
           photo={photo}
@@ -3403,39 +3940,77 @@ function PlaceCard({ candidate, locale, tr, selected, onToggle, stationName, wor
           <PlaceTypeIcon placeType={candidate.placeType} />
         </PlaceThumbnail>
 
-        {/* 사진 위 이름은 어두운 그라디언트 없이도 읽혀야 한다 — CSS의 paint-order 참고.
-            우하단 상세 버튼 자리는 `.photoCardBar`가 버튼 기하에서 파생해 비워 둔다 */}
-        <div className={sheetStyles.photoCardBar}>
-          {/* 운영시간 미확인은 고르기 전에 알아야 한다 (#43). 좌상단은 사진 출처가 쓰므로
-              이름과 한 덩어리로 둔다 — 어차피 이 장소에 대한 단서다 */}
-          {!hoursLabel && (
-            <span className="inline-flex items-center gap-1 rounded bg-sc-orange-soft px-1.5 py-0.5 text-xs text-sc-orange-text shadow">
-              <TriangleAlert aria-hidden="true" className="size-3.5 shrink-0" />
-              {tr("step3.hoursUnverified")}
+
+      </div>
+
+      {/* 설명 칸 — 이름, 그리고 "어느 작품 몇 화의 무슨 장면인지" 한 줄 */}
+      <div className="min-w-0 flex-1 py-0.5">
+        <p className="flex items-center gap-1.5 text-sm font-semibold" data-place-card-name>
+          <span className="truncate">{candidate.name[locale]}</span>
+          {/* LLM이 근거를 붙여 준 곳만 "추천" 배지 — 근거는 상세 팝오버에 그대로 있다 */}
+          {aiReason && (
+            <span
+              data-ai-pick-badge
+              title={aiReason[locale]}
+              className="inline-flex shrink-0 items-center gap-0.5 rounded-full bg-sc-airport-soft px-1.5 py-0.5 text-[11px] font-medium text-sc-airport-text"
+            >
+              <Sparkles aria-hidden="true" className="size-3" />
+              {tr("step3.aiPickBadge")}
             </span>
           )}
-          <p
-            className={`text-sm font-semibold ${
-              // 사진 위에서만 흰 글자 + 검은 테두리를 쓴다. 플레이스홀더는 우리가 만든
-              // 밝은 배경이라 대비가 이미 보장되고, 흰 글자를 쓰면 오히려 안 읽힌다
-              photo ? sheetStyles.photoCardTitle : "text-sc-text"
-            }`}
-            data-place-card-title
-          >
-            {candidate.name[locale]}
-          </p>
-        </div>
+          {/* 운영시간 미확인은 고르기 전에 알아야 한다 (#43). 사진 위에 글자까지 얹으면
+              썸네일이 가려지므로 아이콘만 이름 옆에 둔다 — 문구는 상세 팝오버에 있다 */}
+          {!hoursLabel && (
+            <TriangleAlert
+              aria-label={tr("step3.hoursUnverified")}
+              className="size-3.5 shrink-0 text-sc-orange-text"
+            />
+          )}
+          {/* 어느 장소를 빼야 하는지 목록에서 바로 보이게 한다 — 안내 문구는 건수만 말한다 */}
+          {dropSuggested && (
+            <span
+              data-drop-suggested
+              title={dropReason ?? undefined}
+              className="inline-flex shrink-0 items-center gap-0.5 rounded-full bg-sc-orange-soft px-1.5 py-0.5 text-[11px] font-medium text-sc-orange-text"
+            >
+              <TriangleAlert aria-hidden="true" className="size-3" />
+              {tr("step3.dropSuggested")}
+            </span>
+          )}
+        </p>
+        {candidate.relationDetails.length > 0 ? (
+          candidate.relationDetails.slice(0, 1).map((detail) => {
+            const episode = formatEpisodeLabel(locale, detail.episodeLabel);
+            return (
+              <div key={detail.workId} className="mt-1">
+                <p className="truncate text-xs font-medium text-sc-airport-text">
+                  {workTitles([detail.workId])}{episode ? ` · ${episode}` : ""}
+                </p>
+                {detail.sceneNote && (
+                  <p className="mt-0.5 line-clamp-2 text-xs text-sc-muted">{detail.sceneNote[locale]}</p>
+                )}
+              </div>
+            );
+          })
+        ) : (
+          <p className="mt-1 truncate text-xs text-sc-muted">{workTitles(candidate.workIds)}</p>
+        )}
+      </div>
 
+      {/* 버튼은 사진 위가 아니라 카드 오른쪽 끝에 세로로 세운다 — 썸네일을 가리지 않는다 */}
+      <div className="flex shrink-0 flex-col items-center gap-1.5">
+        {/* 고르는 동작은 체크 버튼 하나 (멘토 요청) — 고른 곳은 파랑 채움 + 흰 체크 */}
         <button
           type="button"
-          className={`${sheetStyles.cornerButton} ${sheetStyles.cornerButtonSelect} text-sm shadow ${
-            selected ? "bg-sc-blue text-white" : "border bg-sc-surface/90"
+          data-place-select-toggle
+          className={`grid size-8 place-items-center rounded-lg ${
+            selected ? "bg-sc-blue text-white" : "border text-sc-muted hover:border-sc-blue hover:text-sc-blue"
           }`}
           onClick={onToggle}
           aria-label={tr(selected ? "step3.removePlace" : "step3.addPlace").replace("{place}", candidate.name[locale])}
           aria-pressed={selected}
         >
-          {selected ? "✓" : "+"}
+          <Check aria-hidden="true" className="size-4" />
         </button>
 
         <button
@@ -3445,10 +4020,11 @@ function PlaceCard({ candidate, locale, tr, selected, onToggle, stationName, wor
           aria-haspopup="dialog"
           aria-controls={detailPopoverId}
           aria-label={tr("step3.showDetail")}
-          className={`${sheetStyles.cornerButton} ${sheetStyles.cornerButtonDetail} border bg-sc-surface/90 text-sc-blue shadow`}
+          className="grid size-8 place-items-center rounded-lg border text-sc-blue hover:border-sc-blue"
         >
           <Info aria-hidden="true" className="size-4" />
         </button>
+      </div>
       </div>
 
       <div

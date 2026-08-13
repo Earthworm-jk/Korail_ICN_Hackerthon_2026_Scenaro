@@ -1,5 +1,17 @@
 [
   {
+    "flightNo": "KE724",
+    "direction": "arrival",
+    "scheduledAt": "2026-08-14T14:25:00+09:00",
+    "terminal": "T2"
+  },
+  {
+    "flightNo": "KE721",
+    "direction": "departure",
+    "scheduledAt": "2026-08-16T18:45:00+09:00",
+    "terminal": "T2"
+  },
+  {
     "flightNo": "AF264",
     "direction": "arrival",
     "scheduledAt": "2026-08-12T09:35:00+09:00",

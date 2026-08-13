@@ -29,6 +29,7 @@ function render(diff: ItineraryDiff) {
     diff,
     placeName,
     reasonLabel: () => "하루 방문 상한",
+    rideLabel: (ride) => `${ride.trainNo} · ${ride.fromStationId} → ${ride.toStationId}`,
     tr,
   }));
 }
@@ -58,7 +59,7 @@ describe("일정 변화 요약", () => {
     expect(markup).toContain("라라무리 · 일정에서 제외 · 사유: 하루 방문 상한");
   });
 
-  it("변경이 없으면 애니메이션의 대체 결과로 유지 사실을 알린다", () => {
+  it("변경이 없으면 화면에는 띄우지 않고 낭독기에만 알린다", () => {
     const markup = render({
       changed: false,
       places: { kept: [], added: [], moved: [], dropped: [] },
@@ -69,6 +70,8 @@ describe("일정 변화 요약", () => {
     expect(markup).toContain("현재 일정이 유지됐어요");
     expect(markup).toContain("기존 일정을 유지했습니다.");
     expect(markup).toContain("재검증 완료 · 변경 없음");
-    expect(markup).toContain("<details");
+    // 알릴 것이 없을 때 창을 띄우지 않는다 — 낭독기용 상태만 남는다
+    expect(markup).not.toContain("<details");
+    expect(markup).toContain("sr-only");
   });
 });

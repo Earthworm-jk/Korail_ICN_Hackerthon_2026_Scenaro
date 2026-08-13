@@ -9,6 +9,9 @@
   --sc-airport: #008f98;
   --sc-airport-soft: #e8f8f8;
   --sc-airport-text: #006d73;
+  /* 테마체험 권역 — 배우(파랑)·작품(청록)과 구분되고 경고색(주황·빨강)과 겹치지 않는 축 */
+  --sc-theme: #6d28d9;
+  --sc-theme-soft: #f3eefe;
   --sc-orange: #d97706;
   --sc-orange-soft: #fff4df;
   --sc-orange-text: #9a4d00;
@@ -30,6 +33,8 @@
   --color-sc-airport: var(--sc-airport);
   --color-sc-airport-soft: var(--sc-airport-soft);
   --color-sc-airport-text: var(--sc-airport-text);
+  --color-sc-theme: var(--sc-theme);
+  --color-sc-theme-soft: var(--sc-theme-soft);
   --color-sc-orange: var(--sc-orange);
   --color-sc-orange-soft: var(--sc-orange-soft);
   --color-sc-orange-text: var(--sc-orange-text);

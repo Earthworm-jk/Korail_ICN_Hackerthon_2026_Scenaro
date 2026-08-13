@@ -6,6 +6,7 @@ import {
   BusFront,
   CableCar,
   Clapperboard,
+  Compass,
   Coffee,
   Drama,
   Footprints,
@@ -50,6 +51,7 @@ const ICONS: Record<PlaceTypeIconKey, LucideIcon> = {
   "tree-pine": TreePine,
   drama: Drama,
   video: Video,
+  compass: Compass,
 };
 
 export function PlaceTypeIcon({ placeType }: { placeType: PlaceTypeT | undefined }) {

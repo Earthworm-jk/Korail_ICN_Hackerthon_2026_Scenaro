@@ -56,6 +56,7 @@ import {
   zoomByStep,
   type Viewport,
 } from "@/lib/map-viewport";
+import { Map as MapIcon, X } from "lucide-react";
 import { KOREA_OUTLINE_PATH } from "@/lib/korea-outline";
 import { tileZoomFor, tilesForView } from "@/lib/map-tiles";
 import {
@@ -566,6 +567,8 @@ export type KoreaMapPanelProps = {
   experienceLegend?: ReactNode;
   /** 대표 지점 표시 중일 때 지도 아래 붙는 안내 — 원을 권역 경계로 읽지 않도록 */
   experienceNotice?: ReactNode;
+  /** 팝업 모드 — 주면 닫힘일 때 버튼만, 열림일 때 화면 위 팝업으로 뜬다 */
+  modal?: { open: boolean; onOpen: () => void; onClose: () => void };
 };
 
 export function KoreaMapPanel({
@@ -582,6 +585,7 @@ export function KoreaMapPanel({
   experienceOverlay,
   experienceLegend,
   experienceNotice,
+  modal,
 }: KoreaMapPanelProps) {
   const isRoute = kind === "route";
   const stationById = new Map(stations.map((station) => [station.id, station]));
@@ -984,9 +988,35 @@ export function KoreaMapPanel({
   const [basemapShown, setBasemapShown] = useState(false);
   const showBasemap = useCallback(() => setBasemapShown(true), []);
 
+  /*
+   * 팝업 모드 (#146 후속).
+   *
+   * 지도를 본문에서 걷어내 눌렀을 때만 띄운다. **DOM은 옮기지 않는다** — 이 `aside`는
+   * `#place-picker + div[aria-busy] … > aside:first-child`를 전제로 한 규칙 96개가
+   * 걸려 있어, 다른 부모로 옮기거나 앞에 형제를 끼우면 우측 일정·경고가 통째로 무너진다.
+   * 그래서 같은 자리에서 **모습만** 바꾼다 — 닫혀 있으면 버튼 하나, 열면 화면 위 팝업.
+   */
+  if (modal && !modal.open) {
+    return (
+      <aside className="min-w-0" data-map-modal="closed">
+        <button
+          type="button"
+          onClick={modal.onOpen}
+          className="flex min-h-11 w-full items-center justify-center gap-2 rounded-2xl border bg-sc-surface px-4 text-sm font-medium hover:border-sc-blue hover:text-sc-blue"
+        >
+          <MapIcon aria-hidden="true" className="size-4 shrink-0" strokeWidth={1.8} />
+          {tr("map.openPopup")}
+        </button>
+      </aside>
+    );
+  }
+
   return (
     <aside
-      className={`min-w-0 rounded-2xl border bg-sc-surface p-4 sm:p-[18px] ${sticky ? "md:sticky md:top-4" : ""}`}
+      data-map-modal={modal ? "open" : undefined}
+      className={modal
+        ? "fixed inset-3 z-[80] min-w-0 overflow-auto rounded-2xl border bg-sc-surface p-4 shadow-2xl sm:inset-6 sm:p-[18px]"
+        : `min-w-0 rounded-2xl border bg-sc-surface p-4 sm:p-[18px] ${sticky ? "md:sticky md:top-4" : ""}`}
     >
       <div className="mb-2 flex flex-wrap items-center justify-between gap-x-2.5 gap-y-2">
         {/* 제목과 (i)를 한 묶음으로 (#146). `justify-between`인 줄에 셋을 늘어놓으면
@@ -1016,6 +1046,16 @@ export function KoreaMapPanel({
               한 줄을 쓰고 있었다. 스크린리더용 이름은 svg의 aria-label에 남아 있다 */}
           {headingAction}
           {hasPoints && <ZoomControls view={view} onZoom={zoomBy} onReset={resetView} tr={tr} />}
+          {modal?.open && (
+            <button
+              type="button"
+              onClick={modal.onClose}
+              aria-label={tr("map.closePopup")}
+              className="grid size-8 shrink-0 place-items-center rounded-full border text-sc-muted hover:border-sc-blue hover:text-sc-blue"
+            >
+              <X aria-hidden="true" className="size-4" />
+            </button>
+          )}
         </div>
       </div>
 
@@ -1234,6 +1274,7 @@ export function ItineraryRouteMap({
   experienceOverlay,
   experienceLegend,
   experienceNotice,
+  modal,
 }: {
   days: readonly ItineraryDayLike[];
   /** 좌표가 확인된 후보 장소 전체 — 이 안에서 일정 배치분만 걸러 쓴다 */
@@ -1247,6 +1288,7 @@ export function ItineraryRouteMap({
   experienceOverlay?: ReactNode;
   experienceLegend?: ReactNode;
   experienceNotice?: ReactNode;
+  modal?: { open: boolean; onOpen: () => void; onClose: () => void };
 }) {
   // #58 통합: 공항버스 대안을 선택한 일정도 화면 타임라인과 같은 순서로 그린다.
   // GatewayLeg를 빼면 지도 동선만 공항 구간이 사라져 일정과 모순된다.
@@ -1281,6 +1323,7 @@ export function ItineraryRouteMap({
       experienceOverlay={experienceOverlay}
       experienceLegend={experienceLegend}
       experienceNotice={experienceNotice}
+      modal={modal}
     />
   );
 }

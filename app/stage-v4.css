@@ -7,6 +7,9 @@
   /* ---- Step 3 trip summary continuity ---- */
   body > main div.grid:has(> aside[aria-label]):has(#place-picker) > aside[aria-label] {
     display: flex !important;
+    /* 세로 열에서 쓰는 `md:flex-col`이 여기까지 따라온다. 방향을 되돌리지 않으면
+       `align-items: center`가 내용을 가운데로 밀어 막대 왼쪽이 크게 빈다 */
+    flex-direction: row !important;
     align-items: center !important;
     gap: 16px !important;
     /* 3단계 제목 줄을 걷어 확보한 44px을 여기에 돌려준다 (#146) — 선택 요약은
@@ -18,18 +21,14 @@
     background: rgba(248, 250, 252, .94) !important;
   }
 
+  /* 헤더 칸은 "선택 요약" 제목을 걷은 뒤로 접기 버튼만 들고 있고, 이 화면은 그 버튼을
+     쓰지 않는다(막대는 늘 펼친 상태다). 74px을 비워 두지 말고 칸째로 접는다. */
   body > main div.grid:has(> aside[aria-label]):has(#place-picker) > aside[aria-label] > div:first-child {
-    flex: 0 0 auto;
-    min-width: 74px;
+    display: none !important;
   }
 
-  body > main div.grid:has(> aside[aria-label]):has(#place-picker) > aside[aria-label] > div:first-child h3 {
-    font-size: 11px !important;
-    font-weight: 700 !important;
-    color: var(--sc-muted);
-  }
-
-  body > main div.grid:has(> aside[aria-label]):has(#place-picker) > aside[aria-label] > div:first-child button {
+  /* 사이드바 맨 아래 안내는 세로 열에서만 쓴다 — 가로 막대에서는 자리를 뺏는다. */
+  body > main div.grid:has(> aside[aria-label]):has(#place-picker) > aside[aria-label] > p {
     display: none !important;
   }
 
@@ -106,9 +105,10 @@
 
   /* 경고는 아이콘 + 팝오버가 됐다 (#146) — 디스클로저 스타일은 겨냥할 대상이 없다 */
 
-  /* ---- Bottom utility dock ---- */
+  /* 시트가 흐름 안으로 들어와 바닥에 고정된 것이 없다 — 비워 둘 자리도 없다.
+     24px을 남겨 두면 그만큼 문서가 길어져 쓸데없는 바깥 스크롤이 생긴다 */
   body:has(#place-picker) main {
-    padding-bottom: calc(var(--sc-dock-h, 0px) + 24px);
+    padding-bottom: 0;
   }
 
   #stage-utility-dock:empty {
@@ -299,8 +299,13 @@
     grid-row: 2;
   }
 
+  /* 일정은 왼쪽 칸에서 제목 바로 아래부터 끝까지 쓴다 — 행 3에 묶어 두면 오른쪽
+     경고 높이만큼 아래로 밀려 위가 빈다 */
   #place-picker + div[aria-busy] > div[class*="space-y"] > div.grid > div:first-child {
-    grid-row: 3;
+    grid-row: 2 / 6;
+    height: 100% !important;
+    min-height: 0 !important;
+    overflow-y: auto !important;
     height: 100%;
     min-height: 0;
     max-height: none !important;
@@ -422,9 +427,8 @@
 @layer components {
 @media (min-width: 1024px) {
   body:has(div#place-picker[data-place-sheet]) main {
-    /* The fixed utility row still needs real document space. Without it the
-       final action row reaches the viewport edge and cannot be scrolled clear. */
-    padding-bottom: calc(var(--sc-dock-h, 0px) + 24px) !important;
+    /* 바닥 고정물이 없어졌다 — 예약 공간도 없앤다 (위 규칙과 같은 이유) */
+    padding-bottom: 0 !important;
   }
 
   /* 그리드 열·간격의 단독 소유자다 (#146). globals.css · stage.css · stage-v2에
@@ -434,45 +438,58 @@
   html body main section > div.grid:has(> div#place-picker[data-place-sheet]) {
     position: relative;
     display: grid !important;
-    grid-template-columns: minmax(560px, 1fr) minmax(285px, 340px) !important;
+    /* 시트가 흐름으로 내려오면서 오른쪽 칸이 카드 목록과 조작 네 개를 담아야 한다 —
+       독이던 시절의 285-340px로는 잘린다 */
+    grid-template-columns: minmax(0, 1fr) minmax(360px, 430px) !important;
+    /* 독을 걷어낸 뒤 격자가 내용 높이에서 멈춰 스테이지 바닥까지 123px이 비었다.
+       남은 높이를 마지막 행(일정)이 가져가게 해서 빈 띠를 없앤다 */
+    grid-template-rows: auto auto 1fr !important;
+    align-content: stretch !important;
+    /* 두 칸이 각자 안에서 스크롤한다 — 밖으로 흘리면 스테이지가 잘라 버려서
+       아래쪽 일정과 카드에 손이 닿지 않는다 */
+    overflow: hidden !important;
+    flex: 1 1 auto !important;
+    min-height: 0 !important;
     column-gap: 18px !important;
     row-gap: 8px !important;
   }
 
   /**
-   * 시트는 **바닥 독 자리에 고정한다** (#146).
+   * 시트는 **본문 오른쪽 칸에 선다** (#146 후속 — 독 없애기).
    *
-   * 원래 지시는 "바닥독에 지도 위 추천 장소를 넣어라"였는데, 독을 비운 채 시트를
-   * 그리드 안에 두고 위로 띄우니 펼칠 때마다 지도 338px 중 286px(85%)을 덮었다.
-   * 지도가 이 화면의 핵심인데 그걸 가린 것이다.
+   * 전에는 바닥에 `fixed`로 띄운 독이었다. 그때는 지도가 왼쪽 칸을 다 써서 시트를
+   * 격자에 넣으면 지도 338px 중 286px(85%)을 덮었기 때문이다. 지금은 지도가 팝업으로
+   * 빠져 덮을 것이 없다 — 흐름 안으로 되돌린다.
    *
-   * **DOM은 옮기지 않는다.** `#place-picker + div[aria-busy]`를 전제로 한 규칙이
-   * 다섯 파일에 88개 있다 - 포털로 독에 넣으면 형제 관계가 끊겨 우측 rail·지도·경고가
-   * 통째로 무너진다. 앞 세션의 시도가 깨진 것도 이 때문이다. 그래서 자리만 옮긴다:
-   * `#stage-utility-dock`과 같은 좌표에 `fixed`로 둔다. 화면 고정이라 그리드 높이를
-   * 전혀 먹지 않고, 그만큼 지도가 커진다.
+   * **DOM은 여전히 옮기지 않는다.** `#place-picker + div[aria-busy]`를 전제로 한 규칙이
+   * 다섯 파일에 96개 있다. 자리만 바꾼다.
    */
   div#place-picker[data-place-sheet] {
-    position: fixed !important;
-    /* 화면 폭을 다 쓴다. 옛 독은 우측 rail의 최종 CTA를 덮지 않으려고 462px을
-       비워 뒀지만, 시트가 바닥으로 내려간 지금 rail은 그리드 안(바닥 635)이고
-       시트는 그 아래(659)라 겹치지 않는다. 넓을수록 헤더가 한 줄에 들어간다.
-       `width` 대신 `left`/`right`를 쓴다 - 100vw는 스크롤바를 포함해 넘친다 */
-    left: 33px;
-    right: 33px;
-    bottom: 12px;
-    top: auto !important;
-    z-index: 60;
+    position: static !important;
+    grid-column: 2 !important;
+    /* 오른쪽 칸 세로 순서 — 지도 보기(1) · 과다선택 경고(2) · 시트(3).
+       셋 다 `1 / 6`이면 같은 자리에 겹쳐 그려진다 */
+    grid-row: 3 !important;
+    align-self: start !important;
     width: auto !important;
     height: auto !important;
     max-height: none !important;
     margin: 0 !important;
     overflow: visible !important;
+    border: 1px solid var(--sc-line) !important;
     border-radius: 13px !important;
     padding: 0 !important;
-    box-shadow: 0 12px 36px rgba(16, 24, 40, .16) !important;
+    box-shadow: none !important;
     transform: none !important;
+    /* 머리글·좁히기는 스크롤 밖에 두고 목록만 흐르게 한다 — 스크롤 영역 안에
+       `sticky`로 붙여 두면 카드가 그 뒤로 지나가며 비친다 */
+    display: flex !important;
+    flex-direction: column !important;
+    max-height: 100% !important;
+    min-height: 0 !important;
+    overflow: hidden !important;
   }
+
 
   /* 접으면 전체 폭 독을 남기지 않고, 다시 펼치는 작은 탭만 하단 중앙에 둔다. */
   div#place-picker[data-place-sheet][data-sheet-expanded="false"] {
@@ -487,34 +504,43 @@
   /* Reset the legacy sticky left-rail header from stage-v2. Its negative margin
      cancels the sheet padding and pins the title/toggle against the clipped edge. */
   div#place-picker[data-place-sheet] > [data-place-sheet-header] {
-    position: relative !important;
-    top: auto !important;
-    min-height: 0 !important;
+    /* 스크롤 밖에 선다 — 목록만 흐르므로 붙여 둘 필요가 없다 */
+    position: static !important;
+    flex: 0 0 auto !important;
+    background: var(--sc-surface) !important;
+    border-bottom: 1px solid var(--sc-line) !important;
+    /* 높이를 내용에 맞춘다 — 고정하면 두 줄로 접힌 뒤 아래 줄이 밖으로 새어
+       필터·카드와 겹친다. `min-height`만 터치 하한으로 잡고 나머지는 내용이 정한다 */
+    height: auto !important;
+    min-height: 44px !important;
+    max-height: none !important;
+    flex: 0 0 auto !important;
+    align-items: center !important;
+    row-gap: 6px !important;
     margin: 0 !important;
     padding: 8px 14px !important;
-    flex-wrap: nowrap !important;
+    flex-wrap: wrap !important;
   }
 
   /**
-   * 헤더를 한 줄로 (#146).
+   * 헤더는 줄을 바꾼다 (#146 후속 — 독 없애기).
    *
-   * 독은 가로로 길다 - 1024에서 562px, 1280에서 818px. 제목·상태 요약·분류 칩이
-   * 한 줄에 들어가므로 두 줄로 쌓을 이유가 없다. **쌓으면 그만큼 독이 높아지고,
-   * 펼친 카드 줄이 그만큼 위로 올라가 지도를 더 덮는다.** 여기서 아낀 높이가
-   * 그대로 지도가 보이는 높이다.
+   * 독이던 시절엔 가로로 길어서(1024에서 562px) 제목·상태·조작이 한 줄에 들어갔고,
+   * 쌓으면 독이 높아져 지도를 더 덮었다. 지금은 흐름 안 오른쪽 칸(430px)이라 반대다 —
+   * `nowrap`이면 제목 칸이 0px로 눌려 "지도 위 추천 장소"가 사라지고 버튼이 잘린다.
    */
-  div#place-picker[data-place-sheet] > [data-place-sheet-header] > div {
+  div#place-picker[data-place-sheet] > [data-place-sheet-header] > div:not([popover]) {
     display: flex !important;
     align-items: baseline !important;
-    flex-wrap: nowrap !important;
+    flex-wrap: wrap !important;
     gap: 14px !important;
     min-width: 0 !important;
   }
 
-  div#place-picker[data-place-sheet] > [data-place-sheet-header] > div > div,
+  div#place-picker[data-place-sheet] > [data-place-sheet-header] > div:not([popover]) > div,
   div#place-picker[data-place-sheet] > [data-place-sheet-header] [data-category-chips] {
     margin-top: 0 !important;
-    flex-wrap: nowrap !important;
+    flex-wrap: wrap !important;
   }
 
   /* 제목·상태·칩은 줄바꿈으로 헤더를 키우는 대신 한 줄에 붙어 있는다.
@@ -534,7 +560,7 @@
   }
 
   /* 글자 묶음이 남는 폭을 다 쓰고, 넘치면 잘린다 — 눌려서 세로로 쌓이지 않는다 */
-  div#place-picker[data-place-sheet] > [data-place-sheet-header] > div:first-of-type {
+  div#place-picker[data-place-sheet] > [data-place-sheet-header] > div:not([popover]):first-of-type {
     overflow: hidden !important;
   }
 
@@ -544,19 +570,63 @@
     display: none !important;
   }
 
-  /* All result prose and the itinerary rail move from the old third column to the right. */
+  /*
+   * 3단계 본문 칸을 세로 flex로 — stage.css가 요약 막대를 가로로 만들려고 이 컨테이너를
+   * `display: block`으로 바꿔 놨다. 블록이라 아래 본문이 남은 높이를 못 받아 격자가
+   * 626px 중 456px에서 멈췄다. 쌓이는 순서(막대 → 본문)는 그대로다.
+   */
+  body:has(div#place-picker[data-place-sheet]) main div.grid:has(> aside[aria-label]) {
+    display: flex !important;
+    flex-direction: column !important;
+  }
+
+  body:has(div#place-picker[data-place-sheet]) main div.grid:has(> aside[aria-label]) > div.min-w-0 {
+    flex: 1 1 auto !important;
+  }
+
+  /*
+   * 높이를 스테이지에서 격자까지 내려보낸다.
+   *
+   * 격자에 `min-height: 100%`만 줘도 안 늘어난다 — 사이 조상들의 높이가 정해져 있지
+   * 않아 백분율이 풀리지 않기 때문이다. 본문 칸부터 세로 flex로 바꿔 남은 높이가
+   * 격자까지 흘러가게 한다. 3단계에만 건다.
+   */
+  body:has(div#place-picker[data-place-sheet]) [data-app-shell] > div > div.min-w-0 {
+    display: flex !important;
+    flex-direction: column !important;
+    min-height: 0 !important;
+  }
+
+  body:has(div#place-picker[data-place-sheet]) [data-app-shell] > div > div.min-w-0 > section {
+    display: flex !important;
+    flex: 1 1 auto !important;
+    flex-direction: column !important;
+    min-height: 0 !important;
+  }
+
+  /* 과다선택 경고는 오른쪽 칸이다 — 이 경고의 "제외할 장소 선택"이 여는 곳이
+     바로 오른쪽 시트라, 둘이 같은 칸에 있어야 눈이 옮겨 가지 않는다 */
+  div#place-picker[data-place-sheet] + div[aria-busy] > [data-overselection-notice] {
+    grid-column: 2 !important;
+    grid-row: 2 !important;
+    align-self: start !important;
+    margin-top: 0 !important;
+  }
+
+  /* 일정과 결과 문구는 **왼쪽 칸**이다 (#146 후속). 시트가 흐름으로 내려오면서
+     오른쪽을 쓰고, 지도는 팝업으로 빠져 자리를 비웠다. */
   div#place-picker[data-place-sheet] + div[aria-busy] > *,
   div#place-picker[data-place-sheet] + div[aria-busy] > div[class*="space-y"] > section,
   div#place-picker[data-place-sheet] + div[aria-busy] > div[class*="space-y"] > div.grid > div:first-child,
   div#place-picker[data-place-sheet] + div[aria-busy] > div[class*="space-y"] > div.grid > div:nth-child(2) > :not(aside:first-child),
   div#place-picker[data-place-sheet] + div[aria-busy] > div[class*="flex-wrap"][class*="justify-between"] {
-    grid-column: 2 !important;
+    grid-column: 1 !important;
   }
 
-  /* The existing route map becomes the common map behind the recommendation sheet. */
+  /* 지도 보기 버튼은 오른쪽 칸 맨 위다 — 왼쪽은 일정만 남긴다 */
   div#place-picker[data-place-sheet] + div[aria-busy] > div[class*="space-y"] > div.grid > div:nth-child(2) > aside:first-child {
-    grid-column: 1 !important;
-    grid-row: 1 / 6 !important;
+    grid-column: 2 !important;
+    grid-row: 1 !important;
     z-index: 2;
     padding-bottom: 4px !important;
   }
@@ -572,8 +642,378 @@
 
 @media (min-width: 1280px) {
   html body main section > div.grid:has(> div#place-picker[data-place-sheet]) {
-    grid-template-columns: minmax(720px, 1fr) minmax(320px, 370px) !important;
+    grid-template-columns: minmax(0, 1fr) minmax(420px, 480px) !important;
     column-gap: 22px !important;
   }
 }
+
+}
+
+/*
+ * 좁히기·정렬 줄도 스크롤 밖이다 (#146 후속).
+ *
+ * 목록만 흐르므로 붙여 둘 필요가 없다. 스크롤 영역 안에 `sticky`로 두면 카드가
+ * 그 뒤를 지나가며 비쳤다.
+ */
+[data-place-list-controls] {
+  position: static;
+  flex: 0 0 auto;
+}
+
+/* 카드 목록만 흐른다 */
+#place-picker[data-place-sheet] > ul {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+/*
+ * 지도 팝업 (#146 후속) — 폭에 관계없이 적용한다.
+ *
+ * 지도 `aside`는 3단계에서 `position: sticky !important`로 격자에 묶여 있다(stage.css).
+ * 팝업으로 띄우려면 그 묶음을 이 상태에서만 푼다 — **DOM은 옮기지 않는다.** 이 aside를
+ * `aside:first-child`로 겨냥한 규칙이 96개라 부모를 바꾸면 우측 일정·경고가 무너진다.
+ */
+#place-picker + div[aria-busy] > div[class*="space-y"] > div.grid > div:nth-child(2) > aside[data-map-modal="open"],
+[data-map-modal="open"] {
+  position: fixed !important;
+  /* 화면 가운데 상자. `inset`만 주면 격자가 잡아 둔 height가 남아 아래로 넘친다 */
+  inset: auto !important;
+  top: 50% !important;
+  left: 50% !important;
+  transform: translate(-50%, -50%) !important;
+  width: min(960px, calc(100vw - 48px)) !important;
+  height: min(640px, calc(100vh - 48px)) !important;
+  max-height: none !important;
+  min-height: 0 !important;
+  z-index: 80 !important;
+  overflow: auto !important;
+  border: 1px solid var(--sc-line) !important;
+  border-radius: 16px !important;
+  background: var(--sc-surface) !important;
+  box-shadow: 0 24px 60px rgba(16, 24, 40, .28) !important;
+}
+
+/* 뒷면을 눌러 닫을 수는 없다(형제를 늘릴 수 없어 배경 요소를 못 둔다) — 대신 어둡게
+   깔아 팝업이 화면 위에 뜬 것임을 알린다. 닫기는 팝업 안 X 버튼이다 */
+body:has([data-map-modal="open"])::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 79;
+  background: rgba(16, 24, 40, .45);
+}
+
+/* 닫혀 있을 때는 버튼 하나다 — 격자가 잡아 두던 높이·여백을 풀어 준다 */
+#place-picker + div[aria-busy] > div[class*="space-y"] > div.grid > div:nth-child(2) > aside[data-map-modal="closed"],
+[data-map-modal="closed"] {
+  position: static !important;
+  grid-row: auto !important;
+  align-self: start !important;
+  height: auto !important;
+  min-height: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  background: transparent !important;
+}
+
+/**
+ * AI 조율 패널은 팝업으로 띄운다.
+ *
+ * 독을 없애면서 이 패널이 왼쪽 일정 칼럼 흐름의 **맨 끝**에 남았다. 그 칼럼은 안쪽
+ * 스크롤이라 패널이 2500px 아래에 그려졌고, `AI`를 눌러도 화면에는 아무 일도
+ * 일어나지 않는 것처럼 보였다.
+ *
+ * DOM은 그대로 두고 자리만 화면 가운데로 옮긴다 — 지도 팝업과 같은 방식이다.
+ */
+#itinerary-ai-panel {
+  position: fixed !important;
+  inset: auto !important;
+  top: 50% !important;
+  left: 50% !important;
+  transform: translate(-50%, -50%) !important;
+  margin: 0 !important;
+  width: min(400px, calc(100vw - 32px)) !important;
+  max-width: none !important;
+  max-height: min(80vh, 640px) !important;
+  z-index: 80 !important;
+  border-radius: 16px !important;
+  box-shadow: 0 24px 48px rgba(16, 24, 40, .28) !important;
+}
+
+body:has(#itinerary-ai-panel)::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 79;
+  background: rgba(16, 24, 40, .45);
+}
+
+/**
+ * 팝업이 떠 있는 동안 뒤는 움직이지 않는다.
+ *
+ * 어두운 배경은 `body::before`라 마우스 휠을 막지 못한다 — 흐려진 일정 위에서 굴리면
+ * 뒤쪽 칼럼이 그대로 스크롤됐다. 읽고 있던 자리가 사라지니 팝업을 닫았을 때 어디였는지
+ * 알 수 없다.
+ *
+ * `overflow: hidden`으로 잠그면 **스크롤 위치가 맨 위로 튄다** — 문제를 다른 문제로
+ * 바꾸는 셈이다. 대신 마우스를 안 받게 한다: 휠이 칼럼에 닿지 않으니 움직일 것이
+ * 없고, 보고 있던 자리는 그대로 남는다.
+ */
+body:has(#itinerary-ai-panel) #place-picker + div[aria-busy] > div[class*="space-y"] > div.grid > div:first-child,
+body:has(#itinerary-ai-panel) #place-picker[data-place-sheet] > ul,
+body:has([data-map-modal="open"]) #place-picker + div[aria-busy] > div[class*="space-y"] > div.grid > div:first-child,
+body:has([data-map-modal="open"]) #place-picker[data-place-sheet] > ul {
+  pointer-events: none !important;
+}
+
+/* 팝업 자체는 왼쪽 칼럼 안에 그려진다 — 위에서 막은 것을 여기서 되돌린다 */
+#itinerary-ai-panel,
+[data-map-modal="open"] {
+  pointer-events: auto !important;
+}
+
+/**
+ * 스테이지는 화면보다 커지지 않는다.
+ *
+ * 상자에 `min-height`만 있고 상한이 없었다. 안쪽에서 무엇 하나가 높이 계산을 놓치면
+ * 상자가 통째로 늘어나 **페이지 전체에 스크롤이 생긴다** — AI 창을 열고 흐려진 뒤쪽에
+ * 휠을 굴리면 일정이 아니라 화면 전체가 움직이던 것이 이것이다.
+ *
+ * 안쪽 두 칸은 각자 스크롤을 가지고 있으니 상한을 걸어도 잘리는 내용은 없다.
+ */
+@media (min-width: 1024px) {
+  [data-app-shell] {
+    max-height: calc(100vh - 1rem);
+  }
+}
+
+/**
+ * 하루 일정 = 세로 타임라인 (멘토 지적: 왼쪽 일정이 이해하기 어렵다).
+ *
+ * 전에는 장소도 이동도 각각 테두리 카드였다. 둘이 같은 무게로 보여 "어디를 보는가"와
+ * "어떻게 가는가"가 구분되지 않았고, 시각이 카드 **안쪽** 첫 줄이라 세로로 맞지도
+ * 않았다. 네이버 길찾기처럼 왼쪽에 시각·레일을 세우고 오른쪽에 내용만 둔다.
+ *
+ * 세 칸이다: `시각 | 레일 | 내용`. 레일이 하루를 잇고, 장소는 점, 이동은 아이콘이다.
+ */
+ul[data-day-rows][data-timeline] {
+  display: block !important;
+  background-image: none !important;
+}
+
+ul[data-day-rows][data-timeline] > li {
+  display: grid !important;
+  grid-template-columns: 40px 18px minmax(0, 1fr) auto;
+  column-gap: 8px;
+  align-items: start;
+  height: auto !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  padding: 0 0 12px !important;
+  border: 0 !important;
+  background: none !important;
+}
+
+/* 레일 — 점·아이콘 아래로 선이 이어진다. 마지막 줄에서만 끊는다 */
+ul[data-day-rows][data-timeline] [data-rail] {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  align-self: stretch;
+  padding-top: 4px;
+}
+
+ul[data-day-rows][data-timeline] [data-rail]::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  top: 4px;
+  bottom: -12px;
+  width: 2px;
+  background: var(--sc-line-strong, #c8d0dd);
+}
+
+/* 시각은 첫 칸, 레일은 둘째 칸에서 줄 전체를 세로로 관통한다 */
+ul[data-day-rows][data-timeline] > li > [data-rail-time] {
+  grid-column: 1;
+  grid-row: 1;
+}
+
+ul[data-day-rows][data-timeline] > li > [data-rail] {
+  grid-column: 2;
+  grid-row: 1 / -1;
+}
+
+/* 내용은 셋째 칸이다 — 칸을 지정하지 않으면 조작 줄이 다음 행 첫 칸(시각 자리)으로
+   흘러 들어가 레일 밑에 버튼이 쌓인다 */
+ul[data-day-rows][data-timeline] > li > [data-row-main],
+ul[data-day-rows][data-timeline] > li > [data-move-row] {
+  grid-column: 3;
+  grid-row: 1;
+}
+
+/* 순서·날짜 이동 버튼은 이름과 같은 줄 오른쪽 끝에 — 다음 줄로 내리면 이름과 떨어져
+   어느 장소의 조작인지 읽히지 않는다 */
+ul[data-day-rows][data-timeline] > li > [data-row-meta] {
+  grid-column: 4;
+  grid-row: 1;
+  align-self: start;
+}
+
+ul[data-day-rows][data-timeline] > li:last-child [data-rail]::before {
+  display: none;
+}
+
+ul[data-day-rows][data-timeline] [data-rail-dot] {
+  position: relative;
+  width: 11px;
+  height: 11px;
+  margin-top: 3px;
+  border: 2px solid var(--sc-blue);
+  border-radius: 999px;
+  background: var(--sc-surface);
+}
+
+ul[data-day-rows][data-timeline] [data-rail-icon] {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  background: var(--sc-subtle);
+  color: var(--sc-muted);
+}
+
+ul[data-day-rows][data-timeline] [data-rail-time] {
+  padding-top: 2px;
+  text-align: right;
+}
+
+/* 장소는 이름이 주인공이다 — 테두리 대신 글자 굵기로 세운다 */
+ul[data-day-rows][data-timeline] > li[data-itinerary-row="place"] [data-row-name] {
+  font-weight: 600;
+  color: var(--sc-text);
+}
+
+/* 이동 줄의 점선 상자를 걷는다 — 레일이 이미 "이동 중"을 말한다 */
+ul[data-day-rows][data-timeline] [data-move-row],
+ul[data-day-rows][data-timeline] [data-move-row] > * {
+  border: 0 !important;
+  background: none !important;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+ul[data-day-rows][data-timeline] [data-move-row] {
+  min-width: 0;
+}
+
+/* 이동에는 유형 아이콘 배지가 레일에 이미 있다 — 안쪽 배지는 중복이다 */
+ul[data-day-rows][data-timeline] [data-move-summary] > span:first-child {
+  display: none;
+}
+
+/* 이동 줄은 레일 아이콘·왼쪽 시각과 겹치는 것들을 걷고 두 줄로만 남긴다:
+   `구간` / `소요 · 수단`. 접기 삼각형과 안쪽 배지·라벨은 레일이 대신한다 */
+ul[data-day-rows][data-timeline] [data-move-summary] {
+  display: block !important;
+}
+
+ul[data-day-rows][data-timeline] [data-move-heading],
+ul[data-day-rows][data-timeline] [data-move-summary] [data-row-main] > span:first-child {
+  display: none !important;
+}
+
+ul[data-day-rows][data-timeline] [data-move-summary] [data-row-main],
+ul[data-day-rows][data-timeline] [data-move-summary] [data-row-meta] {
+  display: flex !important;
+  justify-self: start !important;
+  padding-top: 0 !important;
+}
+
+ul[data-day-rows][data-timeline] [data-move-summary] [data-row-name] {
+  color: var(--sc-text);
+}
+
+/* stage-v2가 그리던 예전 마커(왼쪽 주황 점 + 세로 테두리)는 새 레일과 겹친다.
+   레일이 같은 일을 더 정확히 하므로 여기서 끈다 */
+ul[data-day-rows][data-timeline] > li::before {
+  display: none !important;
+}
+
+ul[data-day-rows][data-timeline] > li {
+  border-left: 0 !important;
+}
+
+/* 역 노드 — 장소(파란 원)와 구분되는 회색 테두리 원 안에 수단 아이콘.
+   구간(`leg`)·체류(`window`)·접근(`access`)은 노드가 아니라 선 위의 설명이다 */
+ul[data-day-rows][data-timeline] [data-rail-node] {
+  display: grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  margin-top: 2px;
+  border-radius: 999px;
+  background: var(--sc-surface);
+  box-shadow: inset 0 0 0 2px var(--sc-line-strong, #c8d0dd);
+  color: var(--sc-muted);
+}
+
+/* 선만 지나가는 줄 — 점도 아이콘도 두지 않는다 */
+ul[data-day-rows][data-timeline] [data-rail-line] {
+  display: block;
+  width: 0;
+  height: 0;
+}
+
+/* 역 이름은 그 줄의 주인공이다 */
+ul[data-day-rows][data-timeline] > li[data-itinerary-row="station"] [data-row-name] {
+  font-weight: 600;
+}
+
+/* 구간·체류·접근 설명은 선에 붙어 한 칸 들여쓴다 */
+ul[data-day-rows][data-timeline] > li[data-itinerary-row="leg"],
+ul[data-day-rows][data-timeline] > li[data-itinerary-row="window"],
+ul[data-day-rows][data-timeline] > li[data-itinerary-row="access"] {
+  padding-bottom: 8px !important;
+}
+
+/**
+ * 바뀐 내용도 AI 창과 같은 팝업이다.
+ *
+ * 일정 옆에 얹혀 있으면 "무엇이 바뀌었나"를 읽기 전에 정작 그 일정을 가린다.
+ * 지연으로 열차를 놓쳤을 때 이 창이 답이므로, 읽고 닫는 물건으로 만든다.
+ */
+[data-itinerary-change="changed"] {
+  position: fixed !important;
+  inset: auto !important;
+  top: 50% !important;
+  left: 50% !important;
+  transform: translate(-50%, -50%) !important;
+  margin: 0 !important;
+  width: min(440px, calc(100vw - 32px)) !important;
+  max-height: min(80vh, 640px) !important;
+  overflow: auto !important;
+  z-index: 80 !important;
+  border-radius: 16px !important;
+  background: var(--sc-surface) !important;
+  box-shadow: 0 24px 48px rgba(16, 24, 40, .28) !important;
+  pointer-events: auto !important;
+}
+
+body:has([data-itinerary-change="changed"])::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 79;
+  background: rgba(16, 24, 40, .45);
+}
+
+/* 팝업 뒤는 움직이지 않는다 — AI 창과 같은 규칙 */
+body:has([data-itinerary-change="changed"]) #place-picker + div[aria-busy] > div[class*="space-y"] > div.grid > div:first-child,
+body:has([data-itinerary-change="changed"]) #place-picker[data-place-sheet] > ul {
+  pointer-events: none !important;
 }

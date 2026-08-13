@@ -41,7 +41,11 @@ describe("스테이지 버튼 높이 하한", () => {
     expect(css).not.toMatch(/#place-picker[^{]*button[^{]*\{\s*min-height:\s*4[0-9]px/);
   });
 
-  it("전체 촬영지의 유일한 진입점은 44px 터치 높이를 직접 선언한다", () => {
-    expect(sheet).toMatch(/styles\.openBrowser[^"`]*min-h-11/);
+  /**
+   * `전체 촬영지 보기` 버튼은 사라졌다 (#146 후속 — 독 없애기). 목록이 시트 안에 늘
+   * 펼쳐져 있어 열 것이 없다. 그래서 이 진입점의 터치 높이도 지킬 대상이 아니다.
+   */
+  it("전체 촬영지 진입 버튼은 더 이상 없다", () => {
+    expect(sheet).not.toContain("openBrowser");
   });
 });
