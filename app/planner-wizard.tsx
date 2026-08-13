@@ -504,7 +504,6 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
   /** 전체 보기 안의 좁히기 상태. 시트 밖에 필터를 늘어놓으면 시트가 다시 무거워진다 */
   const [browserOpen, setBrowserOpen] = useState(false);
   const [browserStation, setBrowserStation] = useState<string | null>(null);
-  const [browserWork, setBrowserWork] = useState<string | null>(null);
 
   // step 4 — 결과. 전이 규칙·파생은 lib/itinerary-view 순수 함수로 고정 (PR #35 리뷰 3)
   const [view, dispatchView] = useReducer(reduceItineraryView, initialItineraryView);
@@ -831,7 +830,6 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
       setCandidateData(data);
       setSelectedPlaceIds(new Set(selectedIds));
       setBrowserStation(null);
-      setBrowserWork(null);
       setSettledSelectionKey([...selectedIds].sort().join("|"));
       setLoadedPlanContextKey(submittedContextKey);
 
@@ -865,7 +863,6 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
       setCandidateData(data);
       setSelectedPlaceIds(new Set(allCandidateIds));
       setBrowserStation(null);
-      setBrowserWork(null);
       setSettledSelectionKey([...allCandidateIds].sort().join("|"));
       setLoadedPlanContextKey(submittedContextKey);
       dispatchView({ type: "PLAN_FAILED" });
@@ -1877,20 +1874,15 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
     setSelectedPlaceIds(next);
   };
 
-  /** 전체 보기의 좁히기 — 지역은 최인접역, 콘텐츠는 작품 */
+  /** 전체 보기는 지역으로만 좁힌다. 콘텐츠는 앞 단계에서 이미 후보 범위를 정한다. */
   const browserStations = useMemo(() => {
     const ids = [...new Set((candidateData?.candidates ?? []).map((c) => c.nearestStationId))];
     return ids.map((id) => ({ id, label: stationName(id) }))
       .sort((a, b) => a.label.localeCompare(b.label, locale));
   }, [candidateData, locale, stationName]);
-  const browserWorks = useMemo(
-    () => (candidateData?.works ?? []).map((w) => ({ id: w.id, label: w.title[locale] })),
-    [candidateData, locale],
-  );
   const browsedCandidates = useMemo(() => sortedCandidates.filter((c) =>
-    (browserStation === null || c.nearestStationId === browserStation)
-    && (browserWork === null || c.workIds.includes(browserWork))),
-  [sortedCandidates, browserStation, browserWork]);
+    browserStation === null || c.nearestStationId === browserStation),
+  [sortedCandidates, browserStation]);
 
   const workTitles = (ids: string[]) =>
     ids.map((id) => candidateData?.works.find((w) => w.id === id)?.title[locale] ?? id).join(" · ");
@@ -2434,11 +2426,8 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
             onClose={() => setBrowserOpen(false)}
             count={browsedCandidates.length}
             stations={browserStations}
-            works={browserWorks}
             station={browserStation}
-            work={browserWork}
             onStationChange={setBrowserStation}
-            onWorkChange={setBrowserWork}
             tr={tr}
           >
             {browsedCandidates.map((c) => (

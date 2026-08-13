@@ -20,11 +20,8 @@ export function PlaceBrowser({
   onClose,
   count,
   stations,
-  works,
   station,
-  work,
   onStationChange,
-  onWorkChange,
   children,
   tr,
 }: {
@@ -33,17 +30,14 @@ export function PlaceBrowser({
   /** 필터를 통과한 후보 수 */
   count: number;
   stations: { id: string; label: string }[];
-  works: { id: string; label: string }[];
   station: string | null;
-  work: string | null;
   onStationChange: (id: string | null) => void;
-  onWorkChange: (id: string | null) => void;
   children?: ReactNode;
   tr: (key: MessageKey) => string;
 }) {
   if (!open) return null;
   return <OpenBrowser {...{
-    onClose, count, stations, works, station, work, onStationChange, onWorkChange, children, tr,
+    onClose, count, stations, station, onStationChange, children, tr,
   }} />;
 }
 
@@ -55,11 +49,8 @@ function OpenBrowser({
   onClose,
   count,
   stations,
-  works,
   station,
-  work,
   onStationChange,
-  onWorkChange,
   children,
   tr,
 }: Omit<Parameters<typeof PlaceBrowser>[0], "open">) {
@@ -103,20 +94,13 @@ function OpenBrowser({
           </button>
         </div>
 
-        <div className="flex flex-wrap gap-2 border-b px-4 py-2.5">
+        <div className="flex flex-wrap gap-2 border-b px-4 py-2.5" data-place-browser-filters>
           <FilterSelect
             label={tr("step3.filterRegion")}
             value={station}
             options={stations}
             allLabel={tr("step3.filterAll")}
             onChange={onStationChange}
-          />
-          <FilterSelect
-            label={tr("step3.filterContent")}
-            value={work}
-            options={works}
-            allLabel={tr("step3.filterAll")}
-            onChange={onWorkChange}
           />
         </div>
 

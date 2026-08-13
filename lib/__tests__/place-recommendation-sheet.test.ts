@@ -23,7 +23,6 @@ const copy: Partial<Record<MessageKey, string>> = {
   "step3.browserCount": "후보 {n}곳",
   "step3.browserEmpty": "이 조건에 맞는 후보가 없습니다.",
   "step3.filterRegion": "지역",
-  "step3.filterContent": "콘텐츠",
   "step3.filterAll": "전체",
   "ai.recommendSheetTitle": "현재 동선에 맞는 촬영지",
   "ai.recommendSheetSubtitle": "추가 전에는 일정이 바뀌지 않습니다.",
@@ -85,12 +84,9 @@ describe("지도 위 추천 장소 바텀시트", () => {
         open: true,
         onClose: () => undefined,
         count: 1,
-        stations: [],
-        works: [],
+        stations: [{ id: "station-jinbu", label: "진부역" }],
         station: null,
-        work: null,
         onStationChange: () => undefined,
-        onWorkChange: () => undefined,
         tr,
       },
       createElement("li", null, "월정사"),
@@ -100,6 +96,10 @@ describe("지도 위 추천 장소 바텀시트", () => {
     expect(markup).toContain("전체 촬영지 닫기");
     expect(markup).toContain("lucide-x");
     expect(markup).toContain("data-place-browser-toggle");
+    expect(markup).toContain("data-place-browser-filters");
+    expect(markup).toContain("지역");
+    expect(markup).toContain("진부역");
+    expect(markup).not.toContain("콘텐츠");
   });
 
   it("재계산 중에도 선택 수를 유지하며 일정과 경로가 함께 갱신됨을 알린다", () => {
