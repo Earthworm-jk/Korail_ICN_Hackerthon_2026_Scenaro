@@ -2476,6 +2476,7 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
             <VerifiedItineraryAlternatives
               alternatives={view.result.verifiedAlternatives ?? []}
               recommendedMetrics={view.result.metrics}
+              placeName={placeName}
               selectedId={view.selectedAlt?.kind === "verified_itinerary" ? view.selectedAlt.id : null}
               onSelect={chooseAlternative}
               tr={tr}

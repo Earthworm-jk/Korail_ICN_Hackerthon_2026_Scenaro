@@ -180,8 +180,8 @@ export type VerifiedAlternativeImprovement = "faster" | "fewer_transfers";
 /**
  * #198 — 검증 시간표와 동일한 하드 제약을 통과한 전체 일정 대안.
  *
- * `improvements`와 `deltas`는 추천 원본 대비 구조화된 사실이다. UI는 이 값만으로
- * "더 빠름"·"환승 적음"을 말하며, 해당 개선이 없으면 문구도 만들지 않는다.
+ * `improvements`·`changes`·`deltas`는 추천 원본 대비 구조화된 사실이다. UI는 이 값만으로
+ * 개선과 맞교환되는 손실을 말하며, 해당 사실이 없으면 문구도 만들지 않는다.
  */
 export type VerifiedItineraryAlternative = {
   id: string;
@@ -193,9 +193,19 @@ export type VerifiedItineraryAlternative = {
   selectionGroups: SelectionGroupSummary;
   comparisonKeys: ComparisonKeys;
   metrics: ItineraryMetrics;
+  preferredDateOutcomes?: PreferredDateOutcome[];
+  preferredOrderOutcomes?: PreferredOrderOutcome[];
+  changes: {
+    removedPlaceIds: string[]; // 추천에는 있지만 대안에는 없는 장소
+    addedPlaceIds: string[]; // 대안에 새로 들어온 장소
+  };
   deltas: {
     totalTravelMinutes: number; // 대안 - 추천. 음수면 더 빠름
     transferCount: number; // 대안 - 추천. 음수면 환승 적음
+    verifiedHoursMismatchCount: number;
+    preferredDateMismatchCount: number;
+    preferredOrderMismatchCount: number;
+    warningCount: number;
   };
 };
 

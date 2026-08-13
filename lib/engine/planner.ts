@@ -660,6 +660,8 @@ export function planItinerary(
     selectedWorkIds,
     allCandidates,
     candidates,
+    preferredVisitDates,
+    preferredOrder,
   });
   return {
     status: "planned",
@@ -738,6 +740,8 @@ type VerifiedAlternativeContext = {
   selectedWorkIds: ReadonlySet<string>;
   allCandidates: readonly CandidatePlace[];
   candidates: readonly CandidatePlace[];
+  preferredVisitDates: ReadonlyMap<string, string>;
+  preferredOrder: readonly (readonly [string, string])[];
 };
 
 /**
@@ -746,6 +750,8 @@ type VerifiedAlternativeContext = {
  */
 function buildVerifiedAlternatives(input: VerifiedAlternativeContext): VerifiedItineraryAlternative[] {
   const { best } = input;
+  const bestPlaceIds = new Set(best.state.visits.map(({ place }) => place.id));
+  const bestWarningCount = best.state.visits.filter(({ warning }) => warning !== null).length;
   const bestSignature = completeScheduleSignature(best);
   const unique = new Map<string, CompleteSchedule>();
   for (const schedule of input.complete) {
@@ -789,6 +795,7 @@ function buildVerifiedAlternatives(input: VerifiedAlternativeContext): VerifiedI
     );
     const totalTravelMinutes = schedule.keys.totalTravelMinutes - best.keys.totalTravelMinutes;
     const transferCountDelta = schedule.keys.transferCount - best.keys.transferCount;
+    const alternativePlaceIds = new Set(schedule.state.visits.map(({ place }) => place.id));
     return {
       id: `verified-itinerary-${index + 1}`,
       kind: "verified_itinerary",
@@ -807,7 +814,39 @@ function buildVerifiedAlternatives(input: VerifiedAlternativeContext): VerifiedI
         rejectedPlaces,
       ),
       comparisonKeys: schedule.keys,
-      deltas: { totalTravelMinutes, transferCount: transferCountDelta },
+      ...(input.preferredVisitDates.size > 0
+        ? {
+          preferredDateOutcomes: preferredDateOutcomesOf(
+            input.preferredVisitDates, schedule.state.visits, input.ctx,
+          ),
+        }
+        : {}),
+      ...(input.preferredOrder.length > 0
+        ? {
+          preferredOrderOutcomes: preferredOrderOutcomesOf(
+            input.preferredOrder, schedule.state.visits,
+          ),
+        }
+        : {}),
+      changes: {
+        removedPlaceIds: [...bestPlaceIds]
+          .filter((placeId) => !alternativePlaceIds.has(placeId))
+          .sort((a, b) => a.localeCompare(b, "en")),
+        addedPlaceIds: [...alternativePlaceIds]
+          .filter((placeId) => !bestPlaceIds.has(placeId))
+          .sort((a, b) => a.localeCompare(b, "en")),
+      },
+      deltas: {
+        totalTravelMinutes,
+        transferCount: transferCountDelta,
+        verifiedHoursMismatchCount: schedule.keys.verifiedHoursMismatchCount
+          - best.keys.verifiedHoursMismatchCount,
+        preferredDateMismatchCount: schedule.keys.preferredDateMismatchCount
+          - best.keys.preferredDateMismatchCount,
+        preferredOrderMismatchCount: schedule.keys.preferredOrderMismatchCount
+          - best.keys.preferredOrderMismatchCount,
+        warningCount: presentation.warnings.length - bestWarningCount,
+      },
     };
   });
 }

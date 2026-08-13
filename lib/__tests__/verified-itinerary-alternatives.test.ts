@@ -18,7 +18,11 @@ const keys = {
 
 function alternative(
   improvements: VerifiedItineraryAlternative["improvements"],
-  deltas: VerifiedItineraryAlternative["deltas"],
+  deltas: Pick<VerifiedItineraryAlternative["deltas"], "totalTravelMinutes" | "transferCount">
+    & Partial<VerifiedItineraryAlternative["deltas"]>,
+  changes: VerifiedItineraryAlternative["changes"] = {
+    removedPlaceIds: [], addedPlaceIds: [],
+  },
 ): VerifiedItineraryAlternative {
   return {
     id: "verified-1",
@@ -35,7 +39,14 @@ function alternative(
       transferCount: 0,
       departureSlackMinutes: 90,
     },
-    deltas,
+    changes,
+    deltas: {
+      verifiedHoursMismatchCount: 0,
+      preferredDateMismatchCount: 0,
+      preferredOrderMismatchCount: 0,
+      warningCount: 0,
+      ...deltas,
+    },
   };
 }
 
@@ -52,6 +63,7 @@ describe("VerifiedItineraryAlternatives", () => {
     const markup = renderToStaticMarkup(createElement(VerifiedItineraryAlternatives, {
       alternatives: [alternative(["fewer_transfers"], { totalTravelMinutes: 60, transferCount: -2 })],
       recommendedMetrics,
+      placeName: (placeId) => placeId,
       selectedId: null,
       onSelect: () => undefined,
       tr,
@@ -66,8 +78,18 @@ describe("VerifiedItineraryAlternatives", () => {
 
   it("faster diff가 있을 때만 더 빠름 배지를 표시한다", () => {
     const markup = renderToStaticMarkup(createElement(VerifiedItineraryAlternatives, {
-      alternatives: [alternative(["faster"], { totalTravelMinutes: -20, transferCount: 1 })],
+      alternatives: [alternative(["faster"], {
+        totalTravelMinutes: -20,
+        transferCount: 1,
+        verifiedHoursMismatchCount: 1,
+        preferredDateMismatchCount: 1,
+        warningCount: 1,
+      }, {
+        removedPlaceIds: ["영진해변"],
+        addedPlaceIds: ["주문진해변"],
+      })],
       recommendedMetrics,
+      placeName: (placeId) => placeId,
       selectedId: "verified-1",
       onSelect: () => undefined,
       tr,
@@ -76,5 +98,10 @@ describe("VerifiedItineraryAlternatives", () => {
     expect(markup).toContain("더 빠름");
     expect(markup).toContain("추천보다 이동 20분 단축");
     expect(markup).toContain("추천보다 환승 1회 증가");
+    expect(markup).toContain("빠지는 곳: 영진해변");
+    expect(markup).toContain("대신 들어오는 곳: 주문진해변");
+    expect(markup).toContain("검증 운영시간 충돌 1건 증가");
+    expect(markup).toContain("선호 방문일 미반영 1건 증가");
+    expect(markup).toContain("확인 필요 경고 1건 증가");
   });
 });

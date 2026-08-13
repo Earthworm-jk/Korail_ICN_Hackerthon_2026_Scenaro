@@ -215,7 +215,18 @@ describe("generateItinerary", () => {
     expect(result.verifiedAlternatives).toHaveLength(1);
     const alternative = result.verifiedAlternatives?.[0];
     expect(alternative?.improvements).toEqual(["fewer_transfers"]);
-    expect(alternative?.deltas).toEqual({ totalTravelMinutes: 60, transferCount: -2 });
+    expect(alternative?.changes).toEqual({
+      removedPlaceIds: ["place-fast"],
+      addedPlaceIds: ["place-direct"],
+    });
+    expect(alternative?.deltas).toEqual({
+      totalTravelMinutes: 60,
+      transferCount: -2,
+      verifiedHoursMismatchCount: 0,
+      preferredDateMismatchCount: 0,
+      preferredOrderMismatchCount: 0,
+      warningCount: 0,
+    });
     expect(alternative?.days.flatMap((day) => day.items.map(({ placeId }) => placeId)))
       .toEqual(["place-direct"]);
     expect(alternative?.selectionGroups.covered).toEqual(result.selectionGroups.covered);
@@ -250,7 +261,18 @@ describe("generateItinerary", () => {
     expect(result.verifiedAlternatives).toHaveLength(1);
     expect(result.verifiedAlternatives?.[0]).toMatchObject({
       improvements: ["faster"],
-      deltas: { totalTravelMinutes: -60, transferCount: 2 },
+      changes: {
+        removedPlaceIds: ["place-direct"],
+        addedPlaceIds: ["place-fast"],
+      },
+      deltas: {
+        totalTravelMinutes: -60,
+        transferCount: 2,
+        verifiedHoursMismatchCount: 1,
+        preferredDateMismatchCount: 0,
+        preferredOrderMismatchCount: 0,
+        warningCount: 1,
+      },
       warnings: [{
         code: "ACTIVITY_WINDOW_MISMATCH",
         placeId: "place-fast",

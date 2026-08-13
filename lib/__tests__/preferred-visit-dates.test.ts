@@ -14,6 +14,7 @@ const SEOULLO = "place-seoullo-7017";
 const GATE = "place-gwanghwamun-gate";
 const SQUARE = "place-gwanghwamun-square";
 const BEXCO = "place-bexco"; // 부산 — 이 여행 조건에서는 열차로 닿지 않는다
+const YEONGJIN = "place-yeongjin-beach";
 
 function request(overrides: Partial<PlanRequest> = {}): PlanRequest {
   return {
@@ -135,6 +136,18 @@ describe("#139 못 지킨 선호 — 실패가 아니라 보고다", () => {
     // 미확인을 감점하지 않아 새 후보가 들어와도 비교 키 2번의 장소 수는 보존한다.
     expect(result.comparisonKeys.selectedUnionPlaceCount)
       .toBe(base.comparisonKeys.selectedUnionPlaceCount);
+  });
+
+  it("더 빠른 대안이 선호 장소를 바꾸면 손실 diff와 대안 고유 결과를 함께 낸다 (#198)", async () => {
+    const result = await plan({ preferredVisitDates: { [YEONGJIN]: "2026-08-13" } });
+    const faster = result.verifiedAlternatives?.find(({ improvements }) =>
+      improvements.includes("faster"));
+
+    expect(outcomeOf(result.preferredDateOutcomes, YEONGJIN)?.outcome).toBe("honored");
+    expect(faster?.changes.removedPlaceIds).toContain(YEONGJIN);
+    expect(faster?.deltas.preferredDateMismatchCount).toBe(1);
+    expect(faster?.deltas.warningCount).toBe(1);
+    expect(outcomeOf(faster?.preferredDateOutcomes, YEONGJIN)?.outcome).toBe("unplaced");
   });
 
   it("배치 불가 선호가 beam을 밀어내 기존 장소를 교체하지 않는다 (#139 6-2)", async () => {

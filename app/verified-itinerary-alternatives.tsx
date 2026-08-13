@@ -15,12 +15,14 @@ function values(message: string, entries: Record<string, string | number>): stri
 export function VerifiedItineraryAlternatives({
   alternatives,
   recommendedMetrics,
+  placeName,
   selectedId,
   onSelect,
   tr,
 }: {
   alternatives: VerifiedItineraryAlternative[];
   recommendedMetrics: ItineraryMetrics;
+  placeName: (placeId: string) => string;
   selectedId: string | null;
   onSelect: (alternative: VerifiedItineraryAlternative | null) => void;
   tr: (key: MessageKey) => string;
@@ -94,8 +96,60 @@ export function VerifiedItineraryAlternatives({
                     ? values(tr("verifiedAlt.transfersLess"), { n: Math.abs(alternative.deltas.transferCount) })
                     : alternative.deltas.transferCount > 0
                       ? values(tr("verifiedAlt.transfersMore"), { n: alternative.deltas.transferCount })
-                      : tr("verifiedAlt.transfersSame")}
+                    : tr("verifiedAlt.transfersSame")}
                 </span>
+                {(alternative.changes.removedPlaceIds.length > 0
+                  || alternative.changes.addedPlaceIds.length > 0
+                  || alternative.deltas.verifiedHoursMismatchCount > 0
+                  || alternative.deltas.preferredDateMismatchCount > 0
+                  || alternative.deltas.preferredOrderMismatchCount > 0
+                  || alternative.deltas.warningCount > 0) && (
+                  <span className="mt-2 block rounded bg-sc-orange-soft/70 px-2 py-1.5 text-xs text-sc-orange-text">
+                    <strong className="block font-medium">{tr("verifiedAlt.tradeoffs")}</strong>
+                    {alternative.changes.removedPlaceIds.length > 0 && (
+                      <span className="mt-0.5 block">
+                        {values(tr("verifiedAlt.removedPlaces"), {
+                          places: alternative.changes.removedPlaceIds.map(placeName).join(", "),
+                        })}
+                      </span>
+                    )}
+                    {alternative.changes.addedPlaceIds.length > 0 && (
+                      <span className="mt-0.5 block">
+                        {values(tr("verifiedAlt.addedPlaces"), {
+                          places: alternative.changes.addedPlaceIds.map(placeName).join(", "),
+                        })}
+                      </span>
+                    )}
+                    {alternative.deltas.verifiedHoursMismatchCount > 0 && (
+                      <span className="mt-0.5 block">
+                        {values(tr("verifiedAlt.verifiedHoursMore"), {
+                          n: alternative.deltas.verifiedHoursMismatchCount,
+                        })}
+                      </span>
+                    )}
+                    {alternative.deltas.preferredDateMismatchCount > 0 && (
+                      <span className="mt-0.5 block">
+                        {values(tr("verifiedAlt.preferredDateMore"), {
+                          n: alternative.deltas.preferredDateMismatchCount,
+                        })}
+                      </span>
+                    )}
+                    {alternative.deltas.preferredOrderMismatchCount > 0 && (
+                      <span className="mt-0.5 block">
+                        {values(tr("verifiedAlt.preferredOrderMore"), {
+                          n: alternative.deltas.preferredOrderMismatchCount,
+                        })}
+                      </span>
+                    )}
+                    {alternative.deltas.warningCount > 0 && (
+                      <span className="mt-0.5 block">
+                        {values(tr("verifiedAlt.warningsMore"), {
+                          n: alternative.deltas.warningCount,
+                        })}
+                      </span>
+                    )}
+                  </span>
+                )}
               </button>
             ))}
           </div>

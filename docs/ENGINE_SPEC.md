@@ -437,7 +437,7 @@ type ItineraryResult =
       comparisonKeys: ComparisonKeys;     // '왜 이 일정인가' 화면 재사용 (#3)
       metrics: ItineraryMetrics;
       gatewayAlternatives?: GatewayAlternative[]; // #58 비차단 후속 보강 전체 일정 대안
-      verifiedAlternatives?: VerifiedItineraryAlternative[]; // #198 실제 diff가 있는 검증 전체 일정
+      verifiedAlternatives?: VerifiedItineraryAlternative[]; // #198 개선과 손실 diff가 있는 검증 전체 일정
     }
   | {
       status: "empty";              // 정상 처리, 조건을 만족하는 일정 없음

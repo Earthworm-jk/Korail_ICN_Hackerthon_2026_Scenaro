@@ -129,7 +129,15 @@ describe("결과 화면 상태 전이", () => {
         selectionGroups: plannedA.status === "planned" ? plannedA.selectionGroups : { requested: [], covered: [], uncovered: [] },
         comparisonKeys: plannedA.status === "planned" ? plannedA.comparisonKeys : {} as never,
         metrics: { totalTravelMinutes: 180, totalRailMinutes: 120, transferCount: 0, departureSlackMinutes: 120 },
-        deltas: { totalTravelMinutes: 30, transferCount: -1 },
+        changes: { removedPlaceIds: [], addedPlaceIds: [] },
+        deltas: {
+          totalTravelMinutes: 30,
+          transferCount: -1,
+          verifiedHoursMismatchCount: 0,
+          preferredDateMismatchCount: 0,
+          preferredOrderMismatchCount: 0,
+          warningCount: 0,
+        },
       },
     });
     expect(displayedDays(verified)).toEqual([dayB]);

@@ -64,12 +64,42 @@ describe("#181 independent hard-constraint validator", () => {
       selectionGroups: result.selectionGroups,
       comparisonKeys: result.comparisonKeys,
       metrics: { ...result.metrics, totalRailMinutes: result.metrics.totalRailMinutes + 1 },
-      deltas: { totalTravelMinutes: 10, transferCount: -1 },
+      changes: { removedPlaceIds: [], addedPlaceIds: [] },
+      deltas: {
+        totalTravelMinutes: 10,
+        transferCount: -1,
+        verifiedHoursMismatchCount: 0,
+        preferredDateMismatchCount: 0,
+        preferredOrderMismatchCount: 0,
+        warningCount: 0,
+      },
     }];
 
     expect(validateItinerary(result, constraints, repos)).toContainEqual(expect.objectContaining({
       code: "METRIC_MISMATCH",
       path: "verifiedAlternatives.0.metrics.totalRailMinutes",
     }));
+  });
+
+  it("대안의 장소 교체·상위 비교 키·선호 결과를 days에서 다시 검증한다 (#198 리뷰)", () => {
+    const preferredConstraints: TripConstraints = {
+      ...constraints,
+      preferredVisitDates: { "place-yeongjin-beach": "2026-08-13" },
+    };
+    const result = generateItinerary(preferredConstraints, repos);
+    if (result.status !== "planned") throw new Error("preferred fixture must be planned");
+    const faster = result.verifiedAlternatives?.find(({ improvements }) =>
+      improvements.includes("faster"));
+    if (!faster) throw new Error("preferred fixture must contain a faster alternative");
+
+    faster.changes.removedPlaceIds = [];
+    faster.deltas.preferredDateMismatchCount = 0;
+    faster.preferredDateOutcomes = result.preferredDateOutcomes;
+
+    const paths = validateItinerary(result, preferredConstraints, repos)
+      .map(({ path }) => path);
+    expect(paths).toContain("verifiedAlternatives.0.changes");
+    expect(paths).toContain("verifiedAlternatives.0.deltas");
+    expect(paths).toContain("verifiedAlternatives.0.preferredDateOutcomes");
   });
 });
