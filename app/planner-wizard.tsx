@@ -2383,7 +2383,6 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
             sortBy={sortBy}
             onSortChange={setSortBy}
             onBrowseAll={() => setBrowserOpen(true)}
-            initialExpanded={false}
             tr={tr}
             routeRecommendations={routeRecommendationFeedback
               && routeRecommendationFeedback.outcome.recommendations.length > 0

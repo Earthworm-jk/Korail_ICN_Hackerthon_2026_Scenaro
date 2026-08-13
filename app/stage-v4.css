@@ -474,6 +474,16 @@
     transform: none !important;
   }
 
+  /* 접으면 전체 폭 독을 남기지 않고, 다시 펼치는 작은 탭만 하단 중앙에 둔다. */
+  div#place-picker[data-place-sheet][data-sheet-expanded="false"] {
+    left: 50%;
+    right: auto;
+    width: max-content !important;
+    max-width: calc(100vw - 32px) !important;
+    overflow: hidden !important;
+    transform: translateX(-50%) !important;
+  }
+
   /* Reset the legacy sticky left-rail header from stage-v2. Its negative margin
      cancels the sheet padding and pins the title/toggle against the clipped edge. */
   div#place-picker[data-place-sheet] > [data-place-sheet-header] {
