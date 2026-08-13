@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   banner,
   displayedDays,
+  displayedMetrics,
   displayedSelectionCapacity,
   initialItineraryView,
   itineraryWarnings,
@@ -90,6 +91,33 @@ describe("경고 보존 (#43 경고 누락 0건 — PR #44 리뷰 2)", () => {
 });
 
 describe("결과 화면 상태 전이", () => {
+  it("추천·검증 공항 대안은 해당 측정값을 쓰고 재열람은 값을 추정하지 않는다", () => {
+    const planned = reduceItineraryView(initialItineraryView, { type: "PLAN_SUCCESS", result: plannedA });
+    expect(displayedMetrics(planned)).toEqual({ totalTravelMinutes: 150, transferCount: 0 });
+
+    const reopened = reduceItineraryView(planned, { type: "REOPEN", record: recordA });
+    expect(displayedMetrics(reopened)).toBeNull();
+
+    const mock = reduceItineraryView(planned, {
+      type: "SELECT_ALT",
+      alt: {
+        kind: "mock", id: "mock-metrics", date: dayB.date, shiftMinutes: 60, days: [dayB],
+        effects: { localUseDeltaMinutes: -60, excludedPlaceIds: [] },
+      },
+    });
+    expect(displayedMetrics(mock)).toBeNull();
+
+    const gateway = reduceItineraryView(planned, {
+      type: "SELECT_ALT",
+      alt: {
+        kind: "gateway_bus",
+        days: [dayB],
+        metrics: { totalTravelMinutes: 1021, totalRailMinutes: 556, transferCount: 0, departureSlackMinutes: 90 },
+      } as never,
+    });
+    expect(displayedMetrics(gateway)).toEqual({ totalTravelMinutes: 1021, transferCount: null });
+  });
+
   it("과선택 수치와 저장 판정은 추천 원본이 아니라 화면의 전체 교체 대안을 따른다", () => {
     const selected = ["p1", "p2"];
     const recommendedDay = {

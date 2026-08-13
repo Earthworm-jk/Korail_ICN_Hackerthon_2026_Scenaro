@@ -64,6 +64,7 @@ import {
   displayedSelectionCapacity,
   type ItineraryView,
   displayedDays as deriveDisplayedDays,
+  displayedMetrics as deriveDisplayedMetrics,
   initialItineraryView,
   itineraryWarnings as deriveWarnings,
   recommendedDays,
@@ -1155,6 +1156,7 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
     [baseDays],
   );
   const displayedDays = deriveDisplayedDays(view);
+  const displayedMetrics = deriveDisplayedMetrics(view);
   // 고른 장소가 없는 상태 — 결과 열은 "선택 필요"만 보여주고 저장도 막는다 (PR #99 리뷰 2)
   const needsSelection = candidateData !== null && selectedPlaceIds.size === 0 && !view.reopened;
   /**
@@ -1839,6 +1841,7 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
       {showFinalItinerary && displayedDays && (
         <FinalItineraryPage
           days={displayedDays}
+          metrics={displayedMetrics}
           locale={locale}
           placeName={placeName}
           stationName={stationName}

@@ -94,6 +94,35 @@ export function displayedDays(view: ItineraryView): DayPlan[] | null {
 }
 
 /**
+ * 화면 일정에 대응하는 엔진 측정값.
+ *
+ * 저장 레코드는 아직 metrics를 보존하지 않으므로 재열람에서 값을 재구성하지 않는다. 특히
+ * 환승 횟수는 DayPlan만으로 원래 route 경계를 정확히 복원할 수 없어 추정하면 사실과 달라진다.
+ * mock 대안은 검증 지표를 만들지 않으므로 추천 원본의 값을 그 대안의 값처럼 표시하지 않는다.
+ */
+export type ItineraryDisplayMetrics = {
+  totalTravelMinutes: number;
+  /** 공항 이동편을 포함한 환승 계약이 없으면 표시하지 않는다. */
+  transferCount: number | null;
+};
+
+export function displayedMetrics(view: ItineraryView): ItineraryDisplayMetrics | null {
+  if (view.reopened || view.result?.status !== "planned") return null;
+  if (view.selectedAlt?.kind === "mock") return null;
+  if (view.selectedAlt?.kind === "gateway_bus") {
+    return {
+      totalTravelMinutes: view.selectedAlt.metrics.totalTravelMinutes,
+      // 엔진 transferCount는 열차↔열차만 세므로 버스↔열차가 있는 대안에는 쓸 수 없다.
+      transferCount: null,
+    };
+  }
+  return {
+    totalTravelMinutes: view.result.metrics.totalTravelMinutes,
+    transferCount: view.result.metrics.transferCount,
+  };
+}
+
+/**
  * #84 과선택 수치는 추천 원본이 아니라 현재 화면의 전체 교체 일정 기준이다.
  * empty에는 미리볼 일정이 없고, 재열람은 이미 저장된 레코드라 현재 확정 차단에서 제외한다.
  */
