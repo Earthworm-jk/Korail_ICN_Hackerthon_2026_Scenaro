@@ -91,7 +91,7 @@ describe("경고 보존 (#43 경고 누락 0건 — PR #44 리뷰 2)", () => {
 });
 
 describe("결과 화면 상태 전이", () => {
-  it("추천·검증 공항 대안은 해당 측정값을 쓰고 재열람은 값을 추정하지 않는다", () => {
+  it("추천·검증 전체 일정 대안은 해당 측정값을 쓰고 재열람은 값을 추정하지 않는다", () => {
     const planned = reduceItineraryView(initialItineraryView, { type: "PLAN_SUCCESS", result: plannedA });
     expect(displayedMetrics(planned)).toEqual({ totalTravelMinutes: 150, transferCount: 0 });
 
@@ -116,6 +116,33 @@ describe("결과 화면 상태 전이", () => {
       } as never,
     });
     expect(displayedMetrics(gateway)).toEqual({ totalTravelMinutes: 1021, transferCount: null });
+
+    const verified = reduceItineraryView(planned, {
+      type: "SELECT_ALT",
+      alt: {
+        kind: "verified_itinerary",
+        id: "verified-1",
+        improvements: ["fewer_transfers"],
+        days: [dayB],
+        rejectedPlaces: [],
+        warnings: [],
+        selectionGroups: plannedA.status === "planned" ? plannedA.selectionGroups : { requested: [], covered: [], uncovered: [] },
+        comparisonKeys: plannedA.status === "planned" ? plannedA.comparisonKeys : {} as never,
+        metrics: { totalTravelMinutes: 180, totalRailMinutes: 120, transferCount: 0, departureSlackMinutes: 120 },
+        changes: { removedPlaceIds: [], addedPlaceIds: [] },
+        deltas: {
+          totalTravelMinutes: 30,
+          transferCount: -1,
+          verifiedHoursMismatchCount: 0,
+          preferredDateMismatchCount: 0,
+          preferredOrderMismatchCount: 0,
+          warningCount: 0,
+        },
+      },
+    });
+    expect(displayedDays(verified)).toEqual([dayB]);
+    expect(displayedMetrics(verified)).toEqual({ totalTravelMinutes: 180, transferCount: 0 });
+    expect(banner(verified)).toBe("verified");
   });
 
   it("과선택 수치와 저장 판정은 추천 원본이 아니라 화면의 전체 교체 대안을 따른다", () => {

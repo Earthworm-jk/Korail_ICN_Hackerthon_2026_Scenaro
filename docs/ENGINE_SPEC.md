@@ -219,7 +219,8 @@ const GatewayLeg = z.object({
                          maxPlacesPerDay·일자별 dailySlackMinutes 반영
 5. 열차 선택           — 공항철도를 포함한 시간표 스냅샷에서 연결 가능한 편 탐색
 6. 후보 일정 생성·비교   — 사전식 비교(아래 6.)로 최선 일정 선택
-7. 결과 조립           — days, rejectedPlaces(사유 코드), comparisonKeys, metrics
+7. 결과 조립           — days, rejectedPlaces(사유 코드), comparisonKeys, metrics,
+                         같은 탐색의 검증된 전체 일정 대안 최대 2개
 ```
 
 철도 추천 일정과 별도로, 같은 `routeId`의 outbound/inbound `GatewayLeg` 쌍마다
@@ -236,6 +237,13 @@ const GatewayLeg = z.object({
 않고 공항버스 후보만 생성한다. baseline은 권한·저장 판단의 신뢰 입력이 아니다.
 늦게 도착한 이전 요청의 대안은 요청 순번으로 폐기한다. 순수 엔진 회귀에서는
 `generateItineraryWithGatewayAlternatives()`로 결합 결과를 검증한다.
+
+철도 시간표 기반 `verifiedAlternatives`는 별도 플래너를 다시 돌리지 않는다. 핵심 탐색에서 이미
+귀환·공항 도착 마감까지 통과한 완성 후보만 재사용한다. 추천과 선택 그룹 충족 수 및 방문 수가
+같은 후보 중 실제 `totalTravelMinutes`가 줄거나 `transferCount`가 줄 때만 대안이 된다. 각 축의
+최선 후보를 결정적으로 고르고 같은 전체 일정은 합쳐 최대 2개로 제한한다. 따라서 같은 대안이
+`faster`와 `fewer_transfers`를 동시에 가질 수 있고, 개선 후보가 없으면 필드 자체를 생략한다.
+대안의 `days`·경고·미배치 사유·측정값도 추천과 같은 조립 경로에서 만들며 부분 구간 패치는 없다.
 
 현재 GatewayLeg는 미래 운행을 보장하는 예약 데이터가 아니라 공식 당일 API·예매처에서
 특정 편을 확인한 `observed_snapshot`이다. 결과에는 가장 오래된 `verifiedAt`을 보수적으로
@@ -429,6 +437,7 @@ type ItineraryResult =
       comparisonKeys: ComparisonKeys;     // '왜 이 일정인가' 화면 재사용 (#3)
       metrics: ItineraryMetrics;
       gatewayAlternatives?: GatewayAlternative[]; // #58 비차단 후속 보강 전체 일정 대안
+      verifiedAlternatives?: VerifiedItineraryAlternative[]; // #198 개선과 손실 diff가 있는 검증 전체 일정
     }
   | {
       status: "empty";              // 정상 처리, 조건을 만족하는 일정 없음

@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "issue": 181,
-  "generatedAt": "2026-08-13T01:14:19.763Z",
+  "generatedAt": "2026-08-13T01:47:52.788Z",
   "scenarioCount": 20,
   "passedCount": 20,
   "failedCount": 0,
@@ -44,8 +44,8 @@
     },
     "recomputationTimeMs": {
       "sampleCount": 14,
-      "p50": 100.74,
-      "p95": 361.71
+      "p50": 110.8,
+      "p95": 334.52
     }
   },
   "deferredMetrics": [
@@ -62,7 +62,7 @@
       "expectedStatus": "planned",
       "actualStatus": "planned",
       "passed": true,
-      "durationMs": 364.15,
+      "durationMs": 339.2,
       "invariants": [
         "hard_constraints_zero",
         "selected_group_covered"
@@ -84,7 +84,7 @@
       "expectedStatus": "planned",
       "actualStatus": "planned",
       "passed": true,
-      "durationMs": 102.28,
+      "durationMs": 114.54,
       "invariants": [
         "hard_constraints_zero",
         "selected_group_covered"
@@ -106,7 +106,7 @@
       "expectedStatus": "planned",
       "actualStatus": "planned",
       "passed": true,
-      "durationMs": 249.84,
+      "durationMs": 271.06,
       "invariants": [
         "hard_constraints_zero",
         "selected_group_covered"
@@ -128,7 +128,7 @@
       "expectedStatus": "planned",
       "actualStatus": "planned",
       "passed": true,
-      "durationMs": 12.62,
+      "durationMs": 11.04,
       "invariants": [
         "hard_constraints_zero",
         "selected_group_covered"
@@ -150,7 +150,7 @@
       "expectedStatus": "planned",
       "actualStatus": "planned",
       "passed": true,
-      "durationMs": 5.91,
+      "durationMs": 21.14,
       "invariants": [
         "hard_constraints_zero",
         "selected_group_covered"
@@ -172,7 +172,7 @@
       "expectedStatus": "planned",
       "actualStatus": "planned",
       "passed": true,
-      "durationMs": 5.35,
+      "durationMs": 12.43,
       "invariants": [
         "hard_constraints_zero",
         "selected_group_covered"
@@ -194,7 +194,7 @@
       "expectedStatus": "planned",
       "actualStatus": "planned",
       "passed": true,
-      "durationMs": 8.18,
+      "durationMs": 15.31,
       "invariants": [
         "hard_constraints_zero",
         "selected_group_covered"
@@ -216,7 +216,7 @@
       "expectedStatus": "planned",
       "actualStatus": "planned",
       "passed": true,
-      "durationMs": 3.05,
+      "durationMs": 9.75,
       "invariants": [
         "hard_constraints_zero",
         "selected_group_covered"
@@ -238,7 +238,7 @@
       "expectedStatus": "invalid",
       "actualStatus": "invalid",
       "passed": true,
-      "durationMs": 0.37,
+      "durationMs": 0.45,
       "invariants": [
         "no_forced_itinerary",
         "structured_invalid_result"
@@ -261,7 +261,7 @@
       "expectedStatus": "invalid",
       "actualStatus": "invalid",
       "passed": true,
-      "durationMs": 0.04,
+      "durationMs": 0.06,
       "invariants": [
         "no_forced_itinerary",
         "structured_invalid_result"
@@ -327,7 +327,7 @@
       "expectedStatus": "empty",
       "actualStatus": "empty",
       "passed": true,
-      "durationMs": 0.74,
+      "durationMs": 1.3,
       "invariants": [
         "valid_input",
         "no_forced_itinerary",
@@ -348,7 +348,7 @@
       "expectedStatus": "changed_and_feasible",
       "actualStatus": "changed_and_feasible",
       "passed": true,
-      "durationMs": 577.73,
+      "durationMs": 535.58,
       "invariants": [
         "both_results_hard_constraints_zero",
         "structured_diff_changed",
@@ -373,7 +373,7 @@
       "expectedStatus": "elevated_to_clear",
       "actualStatus": "elevated_to_clear",
       "passed": true,
-      "durationMs": 23.94,
+      "durationMs": 19.99,
       "invariants": [
         "relative_signal_only",
         "slack_threshold_120_minutes"
@@ -395,7 +395,7 @@
       "expectedStatus": "elevated_to_clear",
       "actualStatus": "elevated_to_clear",
       "passed": true,
-      "durationMs": 0.24,
+      "durationMs": 0.18,
       "invariants": [
         "same_date_direction_terminal_bucket",
         "non_peak_is_clear"
@@ -417,7 +417,7 @@
       "expectedStatus": "elevated_to_out_of_range",
       "actualStatus": "elevated_to_out_of_range",
       "passed": true,
-      "durationMs": 0.16,
+      "durationMs": 0.15,
       "invariants": [
         "d_day_and_d_plus_1_only",
         "no_future_congestion_inference"
@@ -434,7 +434,7 @@
       "expectedStatus": "deterministic",
       "actualStatus": "deterministic",
       "passed": true,
-      "durationMs": 893.37,
+      "durationMs": 764.5,
       "invariants": [
         "byte_equivalent_structured_output"
       ],
@@ -453,7 +453,7 @@
       "expectedStatus": "snapshot_planned",
       "actualStatus": "snapshot_planned",
       "passed": true,
-      "durationMs": 344.62,
+      "durationMs": 275.83,
       "invariants": [
         "no_live_request_without_search_date",
         "snapshot_to_planner_completion"
@@ -474,7 +474,7 @@
       "expectedStatus": "deterministic_elevated",
       "actualStatus": "deterministic_elevated",
       "passed": true,
-      "durationMs": 0.56,
+      "durationMs": 0.48,
       "invariants": [
         "same_fixture_same_advisory",
         "d_plus_1_supported"

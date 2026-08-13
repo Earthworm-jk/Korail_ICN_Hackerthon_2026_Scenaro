@@ -1,5 +1,12 @@
 import type { Repositories } from "../repositories/json";
-import type { ItineraryResult, TripConstraints } from "../engine/types";
+import type {
+  DayPlan,
+  ItineraryResult,
+  PreferredDateOutcome,
+  PreferredOrderOutcome,
+  TripConstraints,
+} from "../engine/types";
+import { accessBufferMinutes } from "../types/schema";
 import type { EvaluationViolation } from "./types";
 
 const MIN_TRANSFER_MINUTES = 15;
@@ -10,6 +17,48 @@ const violation = (
   message: string,
   path?: string,
 ): EvaluationViolation => ({ code, message, ...(path ? { path } : {}) });
+
+function preferredDateOutcomesOf(
+  days: readonly DayPlan[],
+  constraints: TripConstraints,
+): PreferredDateOutcome[] {
+  const excluded = new Set(constraints.excludedPlaceIds);
+  const scheduledDate = new Map(days.flatMap((day) =>
+    day.items.map((item) => [item.placeId, day.date] as const)));
+  return Object.entries(constraints.preferredVisitDates ?? {})
+    .filter(([placeId]) => !excluded.has(placeId))
+    .sort(([a], [b]) => a.localeCompare(b, "en"))
+    .map(([placeId, requestedDate]) => {
+      const actualDate = scheduledDate.get(placeId);
+      if (actualDate === undefined) return { placeId, requestedDate, outcome: "unplaced" as const };
+      return actualDate === requestedDate
+        ? { placeId, requestedDate, outcome: "honored" as const }
+        : { placeId, requestedDate, outcome: "adjusted" as const, scheduledDate: actualDate };
+    });
+}
+
+function preferredOrderOutcomesOf(
+  days: readonly DayPlan[],
+  constraints: TripConstraints,
+): PreferredOrderOutcome[] {
+  const excluded = new Set(constraints.excludedPlaceIds);
+  const positions = new Map(days.flatMap((day) => day.items)
+    .map((item, index) => [item.placeId, index] as const));
+  return (constraints.preferredOrder ?? [])
+    .filter(([first, second]) => !excluded.has(first) && !excluded.has(second))
+    .map(([first, second]) => [first, second] as const)
+    .sort((a, b) => a[0].localeCompare(b[0], "en") || a[1].localeCompare(b[1], "en"))
+    .map(([firstPlaceId, secondPlaceId]) => {
+      const first = positions.get(firstPlaceId);
+      const second = positions.get(secondPlaceId);
+      if (first === undefined || second === undefined) {
+        return { firstPlaceId, secondPlaceId, outcome: "unplaced" as const };
+      }
+      return first < second
+        ? { firstPlaceId, secondPlaceId, outcome: "honored" as const }
+        : { firstPlaceId, secondPlaceId, outcome: "adjusted" as const };
+    });
+}
 
 /**
  * Planner 밖에서 결과만 다시 읽는 하드 제약 validator다.
@@ -145,6 +194,18 @@ export function validateItinerary(
       "metrics.totalRailMinutes",
     ));
   }
+  const localTravelMinutes = result.days.flatMap((day) => day.items).reduce(
+    (sum, item) => sum + 2 * (item.accessMinutes + accessBufferMinutes(item.accessMinutes)),
+    0,
+  );
+  const totalTravelMinutes = railMinutes + localTravelMinutes;
+  if (totalTravelMinutes !== result.metrics.totalTravelMinutes) {
+    violations.push(violation(
+      "METRIC_MISMATCH",
+      `reported totalTravelMinutes=${result.metrics.totalTravelMinutes}; measured=${totalTravelMinutes}`,
+      "metrics.totalTravelMinutes",
+    ));
+  }
   const verifiedHoursMismatchCount = result.warnings.filter(
     ({ detail }) => detail === "OUTSIDE_VERIFIED_HOURS",
   ).length;
@@ -154,6 +215,138 @@ export function validateItinerary(
       `verified hours mismatch count=${verifiedHoursMismatchCount}; comparison key=${result.comparisonKeys.verifiedHoursMismatchCount}`,
       "comparisonKeys.verifiedHoursMismatchCount",
     ));
+  }
+  const preferredDateOutcomes = preferredDateOutcomesOf(result.days, constraints);
+  const preferredDateMismatchCount = preferredDateOutcomes.filter(
+    ({ outcome }) => outcome !== "honored",
+  ).length;
+  if (JSON.stringify(result.preferredDateOutcomes ?? []) !== JSON.stringify(preferredDateOutcomes)
+    || preferredDateMismatchCount !== result.comparisonKeys.preferredDateMismatchCount) {
+    violations.push(violation(
+      "METRIC_MISMATCH",
+      "preferred-date outcomes or mismatch comparison key do not match the scheduled itinerary",
+      "preferredDateOutcomes",
+    ));
+  }
+  const preferredOrderOutcomes = preferredOrderOutcomesOf(result.days, constraints);
+  const preferredOrderMismatchCount = preferredOrderOutcomes.filter(
+    ({ outcome }) => outcome !== "honored",
+  ).length;
+  if (JSON.stringify(result.preferredOrderOutcomes ?? []) !== JSON.stringify(preferredOrderOutcomes)
+    || preferredOrderMismatchCount !== result.comparisonKeys.preferredOrderMismatchCount) {
+    violations.push(violation(
+      "METRIC_MISMATCH",
+      "preferred-order outcomes or mismatch comparison key do not match the scheduled itinerary",
+      "preferredOrderOutcomes",
+    ));
+  }
+  const verifiedAlternatives = result.verifiedAlternatives ?? [];
+  if (verifiedAlternatives.length > 2) {
+    violations.push(violation(
+      "METRIC_MISMATCH",
+      `verified alternative count=${verifiedAlternatives.length}; max=2`,
+      "verifiedAlternatives",
+    ));
+  }
+  const alternativeSignatures = new Set<string>();
+  const recommendedSignature = JSON.stringify(result.days);
+  const recommendedVisitCount = result.days.reduce((count, day) => count + day.items.length, 0);
+  const recommendedCoveredGroups = [...result.selectionGroups.covered].sort();
+  for (const [index, alternative] of verifiedAlternatives.entries()) {
+    const path = `verifiedAlternatives.${index}`;
+    const signature = JSON.stringify(alternative.days);
+    if (signature === recommendedSignature || alternativeSignatures.has(signature)) {
+      violations.push(violation("METRIC_MISMATCH", "duplicate whole-itinerary alternative", path));
+    }
+    alternativeSignatures.add(signature);
+
+    const travelDelta = alternative.metrics.totalTravelMinutes - result.metrics.totalTravelMinutes;
+    const transferDelta = alternative.metrics.transferCount - result.metrics.transferCount;
+    const measuredDeltas = {
+      totalTravelMinutes: travelDelta,
+      transferCount: transferDelta,
+      verifiedHoursMismatchCount: alternative.comparisonKeys.verifiedHoursMismatchCount
+        - result.comparisonKeys.verifiedHoursMismatchCount,
+      preferredDateMismatchCount: alternative.comparisonKeys.preferredDateMismatchCount
+        - result.comparisonKeys.preferredDateMismatchCount,
+      preferredOrderMismatchCount: alternative.comparisonKeys.preferredOrderMismatchCount
+        - result.comparisonKeys.preferredOrderMismatchCount,
+      warningCount: alternative.warnings.length - result.warnings.length,
+    };
+    if (JSON.stringify(alternative.deltas) !== JSON.stringify(measuredDeltas)) {
+      violations.push(violation(
+        "METRIC_MISMATCH",
+        `alternative deltas=${JSON.stringify(alternative.deltas)}; measured=${JSON.stringify(measuredDeltas)}`,
+        `${path}.deltas`,
+      ));
+    }
+    const recommendedPlaceIds = [...new Set(result.days.flatMap((day) =>
+      day.items.map(({ placeId }) => placeId)))].sort((a, b) => a.localeCompare(b, "en"));
+    const alternativePlaceIds = [...new Set(alternative.days.flatMap((day) =>
+      day.items.map(({ placeId }) => placeId)))].sort((a, b) => a.localeCompare(b, "en"));
+    const measuredChanges = {
+      removedPlaceIds: recommendedPlaceIds.filter((placeId) => !alternativePlaceIds.includes(placeId)),
+      addedPlaceIds: alternativePlaceIds.filter((placeId) => !recommendedPlaceIds.includes(placeId)),
+    };
+    if (JSON.stringify(alternative.changes) !== JSON.stringify(measuredChanges)) {
+      violations.push(violation(
+        "METRIC_MISMATCH",
+        `alternative changes=${JSON.stringify(alternative.changes)}; measured=${JSON.stringify(measuredChanges)}`,
+        `${path}.changes`,
+      ));
+    }
+    const improvements = [
+      ...(travelDelta < 0 ? ["faster" as const] : []),
+      ...(transferDelta < 0 ? ["fewer_transfers" as const] : []),
+    ];
+    if (JSON.stringify(alternative.improvements) !== JSON.stringify(improvements)
+      || improvements.length === 0) {
+      violations.push(violation(
+        "METRIC_MISMATCH",
+        `alternative improvements=${JSON.stringify(alternative.improvements)}; measured=${JSON.stringify(improvements)}`,
+        `${path}.improvements`,
+      ));
+    }
+    const alternativeVisitCount = alternative.days.reduce(
+      (count, day) => count + day.items.length,
+      0,
+    );
+    const alternativeCoveredGroups = [...alternative.selectionGroups.covered].sort();
+    if (alternativeVisitCount !== recommendedVisitCount
+      || JSON.stringify(alternativeCoveredGroups) !== JSON.stringify(recommendedCoveredGroups)
+      || alternative.comparisonKeys.selectionGroupCoverageCount
+        !== result.comparisonKeys.selectionGroupCoverageCount
+      || alternative.comparisonKeys.selectedUnionPlaceCount
+        !== result.comparisonKeys.selectedUnionPlaceCount) {
+      violations.push(violation(
+        "METRIC_MISMATCH",
+        "alternative changed selection-group coverage or visited-place count",
+        `${path}.comparisonKeys`,
+      ));
+    }
+    const alternativeResult: ItineraryResult = {
+      status: "planned",
+      days: alternative.days,
+      rejectedPlaces: alternative.rejectedPlaces,
+      warnings: alternative.warnings,
+      selectionGroups: alternative.selectionGroups,
+      comparisonKeys: alternative.comparisonKeys,
+      metrics: alternative.metrics,
+      ...(alternative.preferredDateOutcomes
+        ? { preferredDateOutcomes: alternative.preferredDateOutcomes }
+        : {}),
+      ...(alternative.preferredOrderOutcomes
+        ? { preferredOrderOutcomes: alternative.preferredOrderOutcomes }
+        : {}),
+    };
+    for (const nested of validateItinerary(alternativeResult, constraints, repos)) {
+      violations.push({
+        ...nested,
+        path: nested.path
+          ? `${path}.${nested.path}`
+          : path,
+      });
+    }
   }
   return violations;
 }

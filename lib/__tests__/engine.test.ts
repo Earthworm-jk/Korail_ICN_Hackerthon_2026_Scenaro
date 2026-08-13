@@ -7,6 +7,7 @@ import {
 import { gatewayPlanningBaselineOf } from "../engine/gateway-baseline";
 import { overnightSilenceFloorOf } from "../engine/planner";
 import type { TripConstraints } from "../engine/types";
+import { validateItinerary } from "../evaluation/validator";
 import { loadRepositories, type Repositories } from "../repositories/json";
 
 const localized = (ko: string, en = ko) => ({ ko, en });
@@ -166,7 +167,119 @@ function constraints(
   };
 }
 
+function alternativeRepositories(fastHours: Repositories["places"][number]["openingHours"]): Repositories {
+  const repos = repositories();
+  repos.stations.push(
+    { id: "station-mid", name: localized("환승역"), lineType: "KTX", regionId: "seoul_metro" },
+    { id: "station-fast", name: localized("빠른역"), lineType: "KTX", regionId: "honam" },
+    { id: "station-direct", name: localized("직행역"), lineType: "KTX", regionId: "yeongnam" },
+  );
+  replacePlaces(repos, [
+    place("place-fast", "work-1", "station-fast", fastHours),
+    place("place-direct", "work-1", "station-direct", {
+      type: "always_open", source: "fixture", verifiedAt: "2026-08-08",
+    }),
+  ]);
+  repos.trainLegs = [
+    leg("FAST-A", "station-seoul", "station-mid", "2026-08-12T08:00:00+09:00", "2026-08-12T08:20:00+09:00"),
+    leg("FAST-B", "station-mid", "station-fast", "2026-08-12T08:40:00+09:00", "2026-08-12T09:00:00+09:00"),
+    leg("FAST-C", "station-fast", "station-mid", "2026-08-12T10:40:00+09:00", "2026-08-12T11:00:00+09:00"),
+    leg("FAST-D", "station-mid", "station-seoul", "2026-08-12T11:20:00+09:00", "2026-08-12T11:40:00+09:00"),
+    leg("DIRECT-A", "station-seoul", "station-direct", "2026-08-12T08:00:00+09:00", "2026-08-12T09:10:00+09:00"),
+    leg("DIRECT-B", "station-direct", "station-seoul", "2026-08-12T10:40:00+09:00", "2026-08-12T11:50:00+09:00"),
+  ];
+  return repos;
+}
+
+const alternativeConstraints = (): TripConstraints => constraints({
+  departureAt: "2026-08-12T15:00:00+09:00",
+  airportArrivalDeadline: "2026-08-12T13:00:00+09:00",
+  selectedActorIds: ["actor-a"],
+  selectedWorkIds: ["work-1"],
+  maxPlacesPerDay: 1,
+  dailySlackMinutes: 0,
+});
+
 describe("generateItinerary", () => {
+  it("같은 선택 충족·방문 수에서 환승이 실제로 적은 검증 전체 일정만 대안으로 낸다 (#198)", () => {
+    const repos = alternativeRepositories({
+      type: "always_open", source: "fixture", verifiedAt: "2026-08-08",
+    });
+    const input = alternativeConstraints();
+    const result = generateItinerary(input, repos);
+
+    expect(result.status).toBe("planned");
+    if (result.status !== "planned") return;
+    expect(result.days.flatMap((day) => day.items.map(({ placeId }) => placeId)))
+      .toEqual(["place-fast"]);
+    expect(result.verifiedAlternatives).toHaveLength(1);
+    const alternative = result.verifiedAlternatives?.[0];
+    expect(alternative?.improvements).toEqual(["fewer_transfers"]);
+    expect(alternative?.changes).toEqual({
+      removedPlaceIds: ["place-fast"],
+      addedPlaceIds: ["place-direct"],
+    });
+    expect(alternative?.deltas).toEqual({
+      totalTravelMinutes: 60,
+      transferCount: -2,
+      verifiedHoursMismatchCount: 0,
+      preferredDateMismatchCount: 0,
+      preferredOrderMismatchCount: 0,
+      warningCount: 0,
+    });
+    expect(alternative?.days.flatMap((day) => day.items.map(({ placeId }) => placeId)))
+      .toEqual(["place-direct"]);
+    expect(alternative?.selectionGroups.covered).toEqual(result.selectionGroups.covered);
+    expect(alternative?.comparisonKeys.selectedUnionPlaceCount)
+      .toBe(result.comparisonKeys.selectedUnionPlaceCount);
+
+    const alternativeResult = alternative && {
+      ...result,
+      days: alternative.days,
+      rejectedPlaces: alternative.rejectedPlaces,
+      warnings: alternative.warnings,
+      selectionGroups: alternative.selectionGroups,
+      comparisonKeys: alternative.comparisonKeys,
+      metrics: alternative.metrics,
+      verifiedAlternatives: undefined,
+    };
+    expect(alternativeResult ? validateItinerary(alternativeResult, input, repos) : ["missing"])
+      .toEqual([]);
+    expect(generateItinerary(input, repos)).toEqual(result);
+  });
+
+  it("검증 충돌 때문에 추천에서 밀렸어도 실제 이동이 짧을 때만 더 빠름으로 표시한다 (#198)", () => {
+    const repos = alternativeRepositories({
+      type: "hours", open: "12:30", close: "13:00", source: "fixture", verifiedAt: "2026-08-08",
+    });
+    const result = generateItinerary(alternativeConstraints(), repos);
+
+    expect(result.status).toBe("planned");
+    if (result.status !== "planned") return;
+    expect(result.days.flatMap((day) => day.items.map(({ placeId }) => placeId)))
+      .toEqual(["place-direct"]);
+    expect(result.verifiedAlternatives).toHaveLength(1);
+    expect(result.verifiedAlternatives?.[0]).toMatchObject({
+      improvements: ["faster"],
+      changes: {
+        removedPlaceIds: ["place-direct"],
+        addedPlaceIds: ["place-fast"],
+      },
+      deltas: {
+        totalTravelMinutes: -60,
+        transferCount: 2,
+        verifiedHoursMismatchCount: 1,
+        preferredDateMismatchCount: 0,
+        preferredOrderMismatchCount: 0,
+        warningCount: 1,
+      },
+      warnings: [{
+        code: "ACTIVITY_WINDOW_MISMATCH",
+        placeId: "place-fast",
+        detail: "OUTSIDE_VERIFIED_HOURS",
+      }],
+    });
+  });
   it("공항버스는 TrainLeg로 가장하지 않고 전체 일정 대안으로 생성된다 (#58)", () => {
     const repos = repositories();
     repos.stations.push({

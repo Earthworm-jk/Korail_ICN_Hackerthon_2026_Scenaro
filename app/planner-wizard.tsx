@@ -87,6 +87,7 @@ import { PlaceTypeIcon } from "./place-type-icon";
 import { diffItineraries, type ItineraryDiff } from "@/lib/itinerary-diff";
 import { gatewayPlanningBaselineOf } from "@/lib/engine/gateway-baseline";
 import { AlternativeTimetables } from "./alternative-timetables";
+import { VerifiedItineraryAlternatives } from "./verified-itinerary-alternatives";
 import { AuthModal, TripsModal, useSaveStub, type SaveStatus } from "./save-stub";
 import { FinalItineraryPage } from "./final-itinerary-page";
 import { DayStationFacilities } from "./day-context";
@@ -2461,8 +2462,25 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
 
           {viewBanner && (
             <div className="mt-4 rounded-lg border border-sc-airport/30 bg-sc-airport-soft p-3 text-sm text-sc-airport-text">
-              {tr(viewBanner === "reopened" ? "trips.reopened" : viewBanner === "gateway" ? "gateway.swapped" : "alt.swapped")}
+              {tr(viewBanner === "reopened"
+                ? "trips.reopened"
+                : viewBanner === "gateway"
+                  ? "gateway.swapped"
+                  : viewBanner === "verified"
+                    ? "verifiedAlt.swapped"
+                    : "alt.swapped")}
             </div>
+          )}
+
+          {view.result?.status === "planned" && !view.reopened && (
+            <VerifiedItineraryAlternatives
+              alternatives={view.result.verifiedAlternatives ?? []}
+              recommendedMetrics={view.result.metrics}
+              placeName={placeName}
+              selectedId={view.selectedAlt?.kind === "verified_itinerary" ? view.selectedAlt.id : null}
+              onSelect={chooseAlternative}
+              tr={tr}
+            />
           )}
 
           {lastItineraryDiff && !updating && !view.reopened && (

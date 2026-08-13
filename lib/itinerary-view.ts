@@ -16,7 +16,12 @@
  * - 선택이 0곳이 되면 직전 일정을 남기지 않는다 (SELECTION_CLEARED). 고를 게 없는데
  *   이전 선택의 결과가 남아 있으면 그걸 저장할 수 있게 된다.
  */
-import type { DayPlan, GatewayAlternative, ItineraryResult } from "./engine/types";
+import type {
+  DayPlan,
+  GatewayAlternative,
+  ItineraryResult,
+  VerifiedItineraryAlternative,
+} from "./engine/types";
 import type { MockAlternative } from "./alternatives-mock";
 import type { SavedItineraryStub } from "./saved-itineraries-stub";
 import { summarizeSelectionCapacity } from "./selection-capacity";
@@ -29,7 +34,7 @@ export type ItineraryView = {
   selectedAlt: SelectableAlternative | null; // 전체 교체 — 동시에 하나만 (#14 §7)
 };
 
-export type SelectableAlternative = MockAlternative | GatewayAlternative;
+export type SelectableAlternative = MockAlternative | GatewayAlternative | VerifiedItineraryAlternative;
 
 export const initialItineraryView: ItineraryView = {
   planning: false,
@@ -116,6 +121,12 @@ export function displayedMetrics(view: ItineraryView): ItineraryDisplayMetrics |
       transferCount: null,
     };
   }
+  if (view.selectedAlt?.kind === "verified_itinerary") {
+    return {
+      totalTravelMinutes: view.selectedAlt.metrics.totalTravelMinutes,
+      transferCount: view.selectedAlt.metrics.transferCount,
+    };
+  }
   return {
     totalTravelMinutes: view.result.metrics.totalTravelMinutes,
     transferCount: view.result.metrics.transferCount,
@@ -143,7 +154,8 @@ export function showEmpty(view: ItineraryView): boolean {
 /** 배치 제외 사유 목록 — 추천 결과 화면에서만. 일정을 유지하면 사유도 같이 유지한다 */
 export function rejectedPlaces(view: ItineraryView) {
   if (view.reopened || view.result?.status !== "planned") return [];
-  if (view.selectedAlt?.kind === "gateway_bus") return view.selectedAlt.rejectedPlaces;
+  if (view.selectedAlt?.kind === "gateway_bus"
+    || view.selectedAlt?.kind === "verified_itinerary") return view.selectedAlt.rejectedPlaces;
   return view.result.rejectedPlaces;
 }
 
@@ -152,13 +164,15 @@ export function itineraryWarnings(view: ItineraryView) {
   // 계산 중에도 유지한다 — 일정만 남고 경고가 사라지면 없는 안전성을 보여주는 셈이다
   if (view.reopened) return view.reopened.warnings ?? [];
   if (view.result?.status !== "planned") return [];
-  if (view.selectedAlt?.kind === "gateway_bus") return view.selectedAlt.warnings;
+  if (view.selectedAlt?.kind === "gateway_bus"
+    || view.selectedAlt?.kind === "verified_itinerary") return view.selectedAlt.warnings;
   return view.result.warnings;
 }
 
-export function banner(view: ItineraryView): "reopened" | "swapped" | "gateway" | null {
+export function banner(view: ItineraryView): "reopened" | "swapped" | "gateway" | "verified" | null {
   if (view.reopened) return "reopened";
   if (view.selectedAlt?.kind === "gateway_bus") return "gateway";
+  if (view.selectedAlt?.kind === "verified_itinerary") return "verified";
   if (view.selectedAlt) return "swapped";
   return null;
 }

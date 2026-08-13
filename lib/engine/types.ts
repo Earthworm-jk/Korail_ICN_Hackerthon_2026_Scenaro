@@ -175,6 +175,40 @@ export type GatewayAlternative = {
   };
 };
 
+export type VerifiedAlternativeImprovement = "faster" | "fewer_transfers";
+
+/**
+ * #198 — 검증 시간표와 동일한 하드 제약을 통과한 전체 일정 대안.
+ *
+ * `improvements`·`changes`·`deltas`는 추천 원본 대비 구조화된 사실이다. UI는 이 값만으로
+ * 개선과 맞교환되는 손실을 말하며, 해당 사실이 없으면 문구도 만들지 않는다.
+ */
+export type VerifiedItineraryAlternative = {
+  id: string;
+  kind: "verified_itinerary";
+  improvements: VerifiedAlternativeImprovement[];
+  days: DayPlan[];
+  rejectedPlaces: CandidateRejection[];
+  warnings: CandidateWarning[];
+  selectionGroups: SelectionGroupSummary;
+  comparisonKeys: ComparisonKeys;
+  metrics: ItineraryMetrics;
+  preferredDateOutcomes?: PreferredDateOutcome[];
+  preferredOrderOutcomes?: PreferredOrderOutcome[];
+  changes: {
+    removedPlaceIds: string[]; // 추천에는 있지만 대안에는 없는 장소
+    addedPlaceIds: string[]; // 대안에 새로 들어온 장소
+  };
+  deltas: {
+    totalTravelMinutes: number; // 대안 - 추천. 음수면 더 빠름
+    transferCount: number; // 대안 - 추천. 음수면 환승 적음
+    verifiedHoursMismatchCount: number;
+    preferredDateMismatchCount: number;
+    preferredOrderMismatchCount: number;
+    warningCount: number;
+  };
+};
+
 /**
  * #139 — 선호 날짜 하나하나의 반영 결과. 실패 분기 대신 이 목록으로 알린다.
  *
@@ -217,6 +251,7 @@ export type ItineraryResult =
       comparisonKeys: ComparisonKeys; // '왜 이 일정인가' 표시 재사용 (#3)
       metrics: ItineraryMetrics; // 편집 전후 비교(diff)는 앱 계층이 metrics로 계산 (PR #9 리뷰)
       gatewayAlternatives?: GatewayAlternative[]; // #58 검증 직행버스 전체 일정 대안
+      verifiedAlternatives?: VerifiedItineraryAlternative[]; // #198 검증 시간표 기반 전체 일정 대안
       // #139 — 선호 입력이 있을 때만. 요청한 placeId 사전순. 선호가 없으면 필드 자체가 없다
       preferredDateOutcomes?: PreferredDateOutcome[];
       // #145 — 순서 선호가 있을 때만. `[먼저, 나중]` 사전순
