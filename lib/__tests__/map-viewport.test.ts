@@ -2,6 +2,9 @@ import { describe, expect, it } from "vitest";
 import {
   BASE_VIEWPORT,
   BASE_ASPECT,
+  autoViewportFor,
+  baseViewportFor,
+  withAspect,
   COASTLINE_DETAIL_SCALE,
   ROUTE_FIT_SCALE,
   aspectOf,
@@ -420,5 +423,50 @@ describe("상자 비율 맞춤", () => {
     const zoomed = zoomByStep(view, ZOOM_STEP);
     expect(aspectOf(zoomed)).toBeCloseTo(WIDE, 6);
     expect(aspectOf(panBy(zoomed, 3, 3))).toBeCloseTo(WIDE, 6);
+  });
+});
+
+
+/**
+ * 상자 비율은 자동 맞춤 여부와 무관하게 유지된다 (PR #206 리뷰)
+ *
+ * 초판은 경로 자동 맞춤 경로에만 비율을 붙여서, 촬영지 지도·오버레이 등록·해제·키보드
+ * 초기화에서 기본 세로 비율 창이 다시 들어가 좌우 빈 띠가 되살아났다. 갈래마다 따로
+ * 처리하지 않고 한 함수로 모은다.
+ */
+describe("상자 비율 유지", () => {
+  const WIDE = 799 / 341;
+  const TALL = 390 / 700; // 모바일 세로
+  const 경로 = [{ x: 150, y: 250 }, { x: 205, y: 262 }];
+  const 오버레이 = [{ x: 180, y: 300 }];
+
+  it("담을 지점이 없어도 기본 창이 상자 비율을 쓴다 — 촬영지 지도의 첫 창", () => {
+    expect(aspectOf(autoViewportFor([], WIDE))).toBeCloseTo(WIDE, 6);
+    expect(aspectOf(baseViewportFor(WIDE))).toBeCloseTo(WIDE, 6);
+  });
+
+  it("오버레이를 켤 때도 상자 비율이다", () => {
+    expect(aspectOf(fitTo(오버레이, FOCUS_SCALE, WIDE))).toBeCloseTo(WIDE, 6);
+  });
+
+  it("오버레이를 끄면 경로 창으로 돌아가고 비율은 그대로다", () => {
+    const 해제후 = autoViewportFor(경로, WIDE);
+    expect(aspectOf(해제후)).toBeCloseTo(WIDE, 6);
+    for (const point of 경로) expect(contains(해제후, point)).toBe(true);
+  });
+
+  /** 회전·반응형으로 상자가 바뀌었다고 보던 자리를 잃으면 안 된다 */
+  it("사용자가 옮긴 창은 중심과 배율을 지키고 비율만 바꾼다", () => {
+    const moved = panBy(zoomByStep(fitTo(경로, ROUTE_FIT_SCALE, WIDE), ZOOM_STEP), 4, 3);
+    const rotated = withAspect(moved, TALL);
+    expect(aspectOf(rotated)).toBeCloseTo(TALL, 6);
+    expect(scaleOf(rotated)).toBeCloseTo(scaleOf(moved), 6);
+    expect(rotated.x + rotated.width / 2).toBeCloseTo(moved.x + moved.width / 2, 6);
+  });
+
+  it("초기화는 한 경로다 — 버튼과 키보드가 같은 창을 만든다", () => {
+    // 화면은 둘 다 autoViewportFor(현재 맞춤 대상, 현재 상자 비율)을 부른다
+    expect(autoViewportFor(경로, WIDE)).toEqual(autoViewportFor(경로, WIDE));
+    expect(autoViewportFor([], WIDE)).toEqual(baseViewportFor(WIDE));
   });
 });

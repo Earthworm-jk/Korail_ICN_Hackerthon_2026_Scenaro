@@ -343,3 +343,41 @@ export function pointFromClient(
     y: view.y + ((clientY - rect.top) / rect.height) * view.height,
   };
 }
+
+// ---------------------------------------------------------------------------
+// 상자 비율 유지와 자동 맞춤 (PR #206 리뷰)
+//
+// 둘은 다른 규칙이다. **비율은 언제나 상자를 따른다** — 안 그러면 좌우에 빈 띠가 생긴다.
+// **자동 맞춤은 사용자가 창을 옮기지 않았을 때만** 한다 — 조작을 덮으면 지도가 말을 안 듣는다.
+// 이 둘을 한 곳에서 처리하지 않으면 오버레이·키보드 초기화·회전처럼 갈래가 늘어날 때마다
+// 한쪽만 빠뜨린다(실제로 이 PR 초판이 경로 맞춤에만 비율을 붙였다).
+// ---------------------------------------------------------------------------
+
+/** 상자 비율에 맞춘 기본 창 — 남한 전체가 보이는 축소 한계 */
+export function baseViewportFor(aspect: number): Viewport {
+  return clampViewport({ ...BASE_VIEWPORT, width: BASE_VIEWPORT.height * aspect });
+}
+
+/**
+ * 자동으로 잡아야 할 창 — 담을 지점이 있으면 거기에, 없으면 기본 창에 맞춘다.
+ * 화면 초기화·오버레이 해제·경로 변경이 모두 이 한 함수를 쓴다.
+ */
+export function autoViewportFor(
+  points: readonly { x: number; y: number }[],
+  aspect: number,
+  maxScale = ROUTE_FIT_SCALE,
+): Viewport {
+  return points.length > 0 ? fitTo(points, maxScale, aspect) : baseViewportFor(aspect);
+}
+
+/**
+ * 중심과 배율은 그대로 두고 창 비율만 상자에 맞춘다.
+ *
+ * 사용자가 이미 확대·팬한 뒤에 상자가 바뀌었을 때(회전·반응형) 쓴다. 배율은 높이로 재므로
+ * 높이를 보존하면 확대 정도가 유지되고, 폭만 새 비율로 다시 잡힌다.
+ */
+export function withAspect(view: Viewport, aspect: number): Viewport {
+  const centerX = view.x + view.width / 2;
+  const width = view.height * aspect;
+  return clampViewport({ x: centerX - width / 2, y: view.y, width, height: view.height });
+}
