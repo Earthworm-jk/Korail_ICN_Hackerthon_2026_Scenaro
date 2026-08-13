@@ -10,8 +10,9 @@ const css = readFileSync(
 
 describe("DAY 시간 요약 표현", () => {
   it("체류·환승을 별도 일정 카드가 아닌 시간 요약으로 부른다", () => {
-    expect(messages.ko["step4.stayTitle"]).toBe("시간 요약");
-    expect(messages.en["step4.stayTitle"]).toBe("Time summary");
+    expect(messages.ko["step4.stayTitle"]).toBe("체류·환승 시간 요약");
+    expect(messages.en["step4.stayTitle"]).toBe("Stop & transfer time summary");
+    expect(messages.ko["region.stayGuideOpen"]).toContain("체류·환승");
   });
 
   it("노란 경고 카드 대신 중립색 한 줄 통계로 표시한다", () => {

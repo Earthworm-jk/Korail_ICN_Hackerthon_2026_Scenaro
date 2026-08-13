@@ -391,6 +391,8 @@
 }
 
 [data-move-summary] {
+  /* 관람 카드와 같은 레일 폭을 유지해 타임라인과 `stayColumn` 정렬을 보존한다.
+     이동의 낮은 위계는 가로폭 차이가 아니라 78px 높이·중립색·점선 테두리로 표현한다. */
   display: grid;
   width: 100%;
   grid-template-columns: auto minmax(0, 1fr);

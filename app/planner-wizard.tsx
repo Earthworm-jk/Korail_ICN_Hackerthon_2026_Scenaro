@@ -2251,8 +2251,7 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
             updated={lastItineraryDiff?.changed === true && !updating}
             sortBy={sortBy}
             onSortChange={setSortBy}
-            browserOpen={browserOpen}
-            onBrowseAll={() => setBrowserOpen((open) => !open)}
+            onBrowseAll={() => setBrowserOpen(true)}
             initialExpanded={false}
             tr={tr}
             routeRecommendations={routeRecommendationFeedback

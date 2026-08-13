@@ -18,7 +18,7 @@ const copy: Partial<Record<MessageKey, string>> = {
   "step3.sortRelevance": "추천순",
   "step3.sortOfficial": "공식 출처순",
   "step3.openBrowser": "전체 촬영지 보기",
-  "step3.closeBrowser": "전체 촬영지 접기",
+  "step3.closeBrowser": "전체 촬영지 닫기",
   "step3.browserTitle": "전체 촬영지",
   "step3.browserCount": "후보 {n}곳",
   "step3.browserEmpty": "이 조건에 맞는 후보가 없습니다.",
@@ -64,7 +64,7 @@ describe("지도 위 추천 장소 바텀시트", () => {
     expect(markup).toContain('<option value="relevance" selected="">추천순</option>');
     expect(markup).not.toContain("data-place-sheet-controls");
     expect(markup).toContain("전체 촬영지 보기");
-    expect(markup).toContain('aria-expanded="false"');
+    expect(markup).not.toContain("aria-expanded");
     expect(markup).toContain("min-h-11");
     expect(markup).toContain('aria-haspopup="dialog"');
     expect(markup).toContain('aria-controls="place-browser-dialog"');
@@ -78,28 +78,7 @@ describe("지도 위 추천 장소 바텀시트", () => {
     expect(markup).toContain('id="stage-sheet-actions"');
   });
 
-  it("전체 촬영지가 활성화되면 같은 버튼을 접기 상태로 바꾼다", () => {
-    const markup = renderToStaticMarkup(createElement(PlaceRecommendationSheet, {
-      selectedCount: 3,
-      totalCount: 8,
-      placedCount: 3,
-      unplacedCount: 0,
-      themeState: "none" as const,
-      updating: false,
-      updated: false,
-      sortBy: "relevance",
-      onSortChange: () => undefined,
-      browserOpen: true,
-      onBrowseAll: () => undefined,
-      tr,
-    }));
-
-    expect(markup).toContain("전체 촬영지 접기");
-    expect(markup).toContain('aria-expanded="true"');
-    expect(markup).not.toContain(">전체 촬영지 보기<");
-  });
-
-  it("열린 전체 촬영지 안에서도 접기 버튼을 제공한다", () => {
+  it("열린 전체 촬영지 모달 안에 명시적인 닫기 버튼을 제공한다", () => {
     const markup = renderToStaticMarkup(createElement(
       PlaceBrowser,
       {
@@ -118,7 +97,8 @@ describe("지도 위 추천 장소 바텀시트", () => {
     ));
 
     expect(markup).toContain('id="place-browser-dialog"');
-    expect(markup).toContain("전체 촬영지 접기");
+    expect(markup).toContain("전체 촬영지 닫기");
+    expect(markup).toContain("lucide-x");
     expect(markup).toContain("data-place-browser-toggle");
   });
 

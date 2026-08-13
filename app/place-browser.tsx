@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, type ReactNode } from "react";
-import { ChevronUp } from "lucide-react";
+import { X } from "lucide-react";
 import { withValues, type MessageKey } from "@/lib/i18n/messages";
 import { useModalDismiss } from "./use-modal-dismiss";
 
@@ -98,7 +98,7 @@ function OpenBrowser({
             className="inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-lg border px-3 text-sm font-semibold hover:border-sc-blue hover:text-sc-blue"
             data-place-browser-toggle
           >
-            <ChevronUp aria-hidden="true" className="size-4" />
+            <X aria-hidden="true" className="size-4" />
             {tr("step3.closeBrowser")}
           </button>
         </div>
