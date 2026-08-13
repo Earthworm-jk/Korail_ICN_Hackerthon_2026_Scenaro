@@ -43,7 +43,7 @@ describe("재질문 조각 잇기", () => {
 
     it("조각을 이으면 완성된 명령이 된다", () => {
       const slots = pendingSlotsFrom(firstTurn);
-      expect(slots).toEqual({ intent: "move_place", placeName: "영진해변" });
+      expect(slots).toEqual({ requested: "day", intent: "move_place", placeName: "영진해변" });
 
       const merged = completeWithSlots(slots, parseCommand("둘째 날"), "둘째 날");
       expect(merged).toEqual({ intent: "move_place", placeName: "영진해변", dayIndex: 2 });
@@ -79,7 +79,7 @@ describe("재질문 조각 잇기", () => {
   });
 
   describe("언제 잇고 언제 안 잇는가", () => {
-    const slots: PendingCommandSlots = { intent: "move_place", placeName: "영진해변" };
+    const slots: PendingCommandSlots = { requested: "day", intent: "move_place", placeName: "영진해변" };
 
     /**
      * **이번 문장만으로 읽혔으면 그것이 새 요청이다.** 옛 조각이 끼어들면 사용자가 말하지
@@ -119,7 +119,7 @@ describe("재질문 조각 잇기", () => {
    * ```
    */
   describe("날짜 답변만 이어 붙인다", () => {
-    const slots: PendingCommandSlots = { intent: "move_place", placeName: "영진해변" };
+    const slots: PendingCommandSlots = { requested: "day", intent: "move_place", placeName: "영진해변" };
 
     it("날짜 답변으로 읽는 표현들", () => {
       for (const [text, day] of [
@@ -197,7 +197,7 @@ describe("재질문 조각 잇기", () => {
   });
 
   describe("조각은 재질문 피드백에만 산다", () => {
-    const slots: PendingCommandSlots = { intent: "move_place", placeName: "영진해변" };
+    const slots: PendingCommandSlots = { requested: "day", intent: "move_place", placeName: "영진해변" };
     const basis = keyOf();
     const clarify = { kind: "clarify", pendingSlots: slots, basisKey: basis };
 
@@ -226,7 +226,7 @@ describe("재질문 조각 잇기", () => {
    * 그래서 실제 `clarify` 객체를 그대로 두고 검사한다.
    */
   describe("기준이 바뀌면 조각을 쓰지 않는다", () => {
-    const slots: PendingCommandSlots = { intent: "move_place", placeName: "영진해변" };
+    const slots: PendingCommandSlots = { requested: "day", intent: "move_place", placeName: "영진해변" };
     const madeAt = keyOf();
     const clarify = { kind: "clarify", pendingSlots: slots, basisKey: madeAt };
 

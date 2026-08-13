@@ -140,6 +140,7 @@ describe("#171 재질문에서 얻은 조각을 다음 발화에 잇는다", () 
     expect(result.outcome.kind).toBe("clarify");
     if (result.outcome.kind !== "clarify") return;
     expect(result.outcome.pendingSlots).toEqual({
+      requested: "day",
       intent: "add_place",
       placeName: "영진해변",
     });
@@ -199,7 +200,7 @@ describe("#171 재질문에서 얻은 조각을 다음 발화에 잇는다", () 
     const result = await runItineraryCommand({
       sentence: "둘째 날 일정 설명해줘",
       request,
-      pendingSlots: { intent: "add_place", placeName: "영진해변" },
+      pendingSlots: { requested: "day", intent: "add_place", placeName: "영진해변" },
     });
 
     expect(result.ok).toBe(true);
@@ -212,7 +213,7 @@ describe("#171 재질문에서 얻은 조각을 다음 발화에 잇는다", () 
     const result = await runItineraryCommand({
       sentence: "월정사를 셋째 날 일정에 넣어줘",
       request,
-      pendingSlots: { intent: "add_place", placeName: "영진해변" },
+      pendingSlots: { requested: "day", intent: "add_place", placeName: "영진해변" },
     });
 
     expect(result.ok).toBe(true);
