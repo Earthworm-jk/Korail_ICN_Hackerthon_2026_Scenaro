@@ -45,7 +45,11 @@ import {
   stateAfterRouteRecommendation,
   pendingSlotsOf,
   itineraryBasisKey,
+  editResponseOpensPanel,
+  planContextKey,
+  stepReachable,
 } from "@/lib/itinerary-command-ui";
+import { EngineEditNotice } from "./engine-edit-notice";
 import { sortCandidatePlaces } from "@/lib/place-ranking";
 import { getFlightInfo } from "@/lib/actions/flights";
 import { getAirportPassengerAdvisories } from "@/lib/actions/airport-passenger-advisory";
@@ -539,6 +543,18 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
   // 계산이 끝난(성공·무효·실패 모두) 마지막 선택. 지금 선택과 다르면 화면은 아직 옛 결론이다.
   // 대기 플래그를 따로 두지 않고 여기서 파생한다 — effect에서 setState를 하지 않기 위해서다.
   const [settledSelectionKey, setSettledSelectionKey] = useState<string | null>(null);
+  /**
+   * 지금 후보·선택·일정이 파생된 배우·작품 집합 (#207 3번).
+   *
+   * 현재 칩 집합과 다르면 3단계의 모든 상태는 **이전 계획 컨텍스트의 파생물**이다 —
+   * 단계 표시로의 재진입을 막고, `다음: 추천일정`(loadCandidates)만이 새 컨텍스트를 연다.
+   */
+  const [loadedPlanContextKey, setLoadedPlanContextKey] = useState<string | null>(null);
+  /**
+   * 결정적 편집의 비차단 완료 알림 (#207 2번). 값은 제출 순번 — 연속 편집에서 key로 쓰여
+   * 알림 타이머가 변경마다 새로 시작한다. null이면 알림이 없다.
+   */
+  const [engineEditNoticeKey, setEngineEditNoticeKey] = useState<number | null>(null);
 
   // #80 테마체험 권역 — 일정이 확정된 시점(생성 성공·재열람)에만 조회한다.
   // 입력은 표시 중인 일정의 권역과 선택 작품뿐이며, 런타임 OpenAI 호출은 없다.
@@ -571,6 +587,10 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
   const reopenRecord = useCallback(async (record: SavedItineraryStub) => {
     setLastItineraryDiff(null);
     setAiFeedback(null);
+    // 재열람도 계획 컨텍스트 교체다 (#207 3번) — 조율 중이던 실행 취소·패널을 넘기지 않는다
+    setUndoPoint(null);
+    setAiPanelOpen(false);
+    setEngineEditNoticeKey(null);
     const c = record.constraints;
     const inputs = tripInputsFromConstraints(c);
     setArrival((f) => ({ ...f, at: inputs.arrivalAt }));
@@ -597,6 +617,7 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
         selectedWorkIds: c.selectedWorkIds,
       });
       setCandidateData(data);
+      setLoadedPlanContextKey(planContextKey(c.selectedActorIds, c.selectedWorkIds));
       const excluded = new Set(c.excludedPlaceIds);
       // 재열람은 현재 엄격 후보 중 저장 당시 excluded의 여집합을 복원한다.
       setSelectedPlaceIds(new Set(initialCandidateIds(data.candidates).filter((id) => !excluded.has(id))));
@@ -709,6 +730,15 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
     setShowFinalItinerary(false);
     setPreferredVisitDates({});
     setAiFeedback(null);
+    /**
+     * 계획 컨텍스트 격리 (#207 3번) — 배우·작품 집합이 바뀌었을 수 있는 유일한 재진입
+     * 지점이 여기다. 이전 컨텍스트에서 파생된 실행 취소 지점을 들고 오면, 새 집합의
+     * 일정 위에서 되돌리기가 **이전 집합의 일정을 복원한다.** 패널·알림도 함께 걷는다 —
+     * 열려 있던 확인·완료 표시는 전부 이전 일정에 대한 말이다.
+     */
+    setUndoPoint(null);
+    setAiPanelOpen(false);
+    setEngineEditNoticeKey(null);
     const actorIds = selectedActors.map((a) => a.id);
     const workIds = selectedWorks.map((w) => w.id);
     const data = await getCandidatePlaces({
@@ -769,6 +799,7 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
       setBrowserStation(null);
       setBrowserWork(null);
       setSettledSelectionKey([...selectedIds].sort().join("|"));
+      setLoadedPlanContextKey(planContextKey(actorIds, workIds));
 
       if (!finalAction.ok) {
         dispatchView({ type: "PLAN_INVALID" });
@@ -799,6 +830,7 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
       setBrowserStation(null);
       setBrowserWork(null);
       setSettledSelectionKey([...allCandidateIds].sort().join("|"));
+      setLoadedPlanContextKey(planContextKey(actorIds, workIds));
       dispatchView({ type: "PLAN_FAILED" });
       setStep(3);
     }
@@ -1179,6 +1211,10 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
         selectedWorkIds: draft.context.works.map((w) => w.id),
       });
       setCandidateData(data);
+      setLoadedPlanContextKey(planContextKey(
+        draft.context.actors.map((a) => a.id),
+        draft.context.works.map((w) => w.id),
+      ));
       const restorable = new Set(initialCandidateIds(data.candidates));
       const places = draft.selectedPlaceIds.filter((id) => restorable.has(id));
       setSelectedPlaceIds(new Set(places));
@@ -1214,6 +1250,17 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
   const displayedMetrics = deriveDisplayedMetrics(view);
   // 고른 장소가 없는 상태 — 결과 열은 "선택 필요"만 보여주고 저장도 막는다 (PR #99 리뷰 2)
   const needsSelection = candidateData !== null && selectedPlaceIds.size === 0 && !view.reopened;
+  /**
+   * 배우·작품 칩이 후보를 불러온 집합에서 벗어났는가 (#207 3번).
+   *
+   * 참이면 3단계의 후보·선택·일정은 이전 계획 컨텍스트의 파생물이다 — 단계 표시 재진입을
+   * 막아 `다음: 추천일정`(loadCandidates)으로만 들어가게 한다. 거기서 전체 초기화가 돈다.
+   */
+  const planContextStale = candidateData !== null
+    && loadedPlanContextKey !== planContextKey(
+      selectedActors.map((a) => a.id),
+      selectedWorks.map((w) => w.id),
+    );
   /**
    * 갱신 표시 (PR #99 리뷰 비차단).
    *
@@ -1375,9 +1422,14 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
     return () => window.removeEventListener("keydown", onKey);
   }, [aiPanelOpen, closeAiPanel]);
 
+  // 알림의 만료 타이머가 부모 렌더마다 리셋되지 않도록 식별자를 고정한다 (#207 2번)
+  const expireEngineEditNotice = useCallback(() => setEngineEditNoticeKey(null), []);
+
   /** 즉시 적용을 한 번에 되돌린다 — 역방향 명령이 아니라 상태 복원이다 (#145) */
   const undoLastCommand = useCallback(() => {
     if (!undoPoint) return;
+    // 되돌린 변경의 완료 알림이 남아 있으면 거짓말이 된다 — 함께 걷는다 (#207 2번)
+    setEngineEditNoticeKey(null);
     ++planSequence.current;
     // 적용 때 시작한 테마 조회가 늦게 끝나 되돌린 일정 위에 덮이지 않게 무효화한다
     ++themeRequestRef.current;
@@ -1401,35 +1453,47 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
     if (!request || !visitDateEditable) return;
     const submittedSequence = ++planSequence.current;
     setAiFeedback(null);
-    // 결과가 패널 안에만 있다 — 열지 않으면 확인 창도 실행 취소도 닿지 않는다
-    setAiPanelOpen(true);
+    setEngineEditNoticeKey(null);
+    /**
+     * 결과를 받기 전에 패널을 열지 않는다 (#207 2번). `ready`는 조용히 적용하고 완료
+     * 알림만 띄운다 — 요청대로 됐는데 패널이 열리면 날짜 이동까지 AI 작업처럼 보인다.
+     * 확인·불가능·오류만 엔진 머리글(`일정 변경 확인`)로 패널을 연다. 확인 창·실행
+     * 취소·diff가 패널 경로에 붙어 있다는 구조(#118 결정 2)는 그대로다.
+     */
     startAiTransition(async () => {
       try {
         const result = await runVisitDateEdit({ placeId, targetDate, request });
         if (!commandResponseIsCurrent(submittedSequence, planSequence.current)) {
-          setAiFeedback({ kind: "cancelled" });
+          setAiFeedback({ kind: "cancelled", origin: "engine" });
           return;
         }
         if (!result.ok) {
-          setAiFeedback({ kind: "error" });
+          setAiFeedback({ kind: "error", origin: "engine" });
+          setAiPanelOpen(editResponseOpensPanel("error"));
           return;
         }
         setAiFeedback({
           kind: "proposal",
+          origin: "engine",
           outcome: result.outcome,
           applied: false,
           submittedSequence,
         });
         if (result.outcome.proposal.decision === "ready") {
           applyCommandOutcome(result.outcome, submittedSequence);
+          // 사라지는 것은 알림뿐이다 — 실행 취소 지점은 패널에서 계속 유효하다
+          setEngineEditNoticeKey(submittedSequence);
+        } else if (editResponseOpensPanel(result.outcome.proposal.decision)) {
+          setAiPanelOpen(true);
         }
       } catch {
         // 늦게 도착한 실패가 현재 화면에 옛 오류를 띄우지 않게 한다
         if (!commandResponseIsCurrent(submittedSequence, planSequence.current)) {
-          setAiFeedback({ kind: "cancelled" });
+          setAiFeedback({ kind: "cancelled", origin: "engine" });
           return;
         }
-        setAiFeedback({ kind: "error" });
+        setAiFeedback({ kind: "error", origin: "engine" });
+        setAiPanelOpen(editResponseOpensPanel("error"));
       }
     });
   }, [currentConstraints, visitDateEditable, applyCommandOutcome]);
@@ -1449,33 +1513,40 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
     if (!request || !visitDateEditable) return;
     const submittedSequence = ++planSequence.current;
     setAiFeedback(null);
-    setAiPanelOpen(true);
+    setEngineEditNoticeKey(null);
+    // #207 2번 — 선제 패널 열기 없음. 분기 규칙은 submitVisitDateEdit과 같다
     startAiTransition(async () => {
       try {
         const result = await runVisitOrderEdit({ firstPlaceId, secondPlaceId, request });
         if (!commandResponseIsCurrent(submittedSequence, planSequence.current)) {
-          setAiFeedback({ kind: "cancelled" });
+          setAiFeedback({ kind: "cancelled", origin: "engine" });
           return;
         }
         if (!result.ok) {
-          setAiFeedback({ kind: "error" });
+          setAiFeedback({ kind: "error", origin: "engine" });
+          setAiPanelOpen(editResponseOpensPanel("error"));
           return;
         }
         setAiFeedback({
           kind: "proposal",
+          origin: "engine",
           outcome: result.outcome,
           applied: false,
           submittedSequence,
         });
         if (result.outcome.proposal.decision === "ready") {
           applyCommandOutcome(result.outcome, submittedSequence);
+          setEngineEditNoticeKey(submittedSequence);
+        } else if (editResponseOpensPanel(result.outcome.proposal.decision)) {
+          setAiPanelOpen(true);
         }
       } catch {
         if (!commandResponseIsCurrent(submittedSequence, planSequence.current)) {
-          setAiFeedback({ kind: "cancelled" });
+          setAiFeedback({ kind: "cancelled", origin: "engine" });
           return;
         }
-        setAiFeedback({ kind: "error" });
+        setAiFeedback({ kind: "error", origin: "engine" });
+        setAiPanelOpen(editResponseOpensPanel("error"));
       }
     });
   }, [currentConstraints, visitDateEditable, applyCommandOutcome]);
@@ -1492,33 +1563,40 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
     if (!request || !visitDateEditable || placeIds.length === 0) return;
     const submittedSequence = ++planSequence.current;
     setAiFeedback(null);
-    setAiPanelOpen(true);
+    setEngineEditNoticeKey(null);
+    // #207 2번 — 선제 패널 열기 없음. 분기 규칙은 submitVisitDateEdit과 같다
     startAiTransition(async () => {
       try {
         const result = await runDayMove({ placeIds, targetDate, request });
         if (!commandResponseIsCurrent(submittedSequence, planSequence.current)) {
-          setAiFeedback({ kind: "cancelled" });
+          setAiFeedback({ kind: "cancelled", origin: "engine" });
           return;
         }
         if (!result.ok) {
-          setAiFeedback({ kind: "error" });
+          setAiFeedback({ kind: "error", origin: "engine" });
+          setAiPanelOpen(editResponseOpensPanel("error"));
           return;
         }
         setAiFeedback({
           kind: "proposal",
+          origin: "engine",
           outcome: result.outcome,
           applied: false,
           submittedSequence,
         });
         if (result.outcome.proposal.decision === "ready") {
           applyCommandOutcome(result.outcome, submittedSequence);
+          setEngineEditNoticeKey(submittedSequence);
+        } else if (editResponseOpensPanel(result.outcome.proposal.decision)) {
+          setAiPanelOpen(true);
         }
       } catch {
         if (!commandResponseIsCurrent(submittedSequence, planSequence.current)) {
-          setAiFeedback({ kind: "cancelled" });
+          setAiFeedback({ kind: "cancelled", origin: "engine" });
           return;
         }
-        setAiFeedback({ kind: "error" });
+        setAiFeedback({ kind: "error", origin: "engine" });
+        setAiPanelOpen(editResponseOpensPanel("error"));
       }
     });
   }, [currentConstraints, visitDateEditable, applyCommandOutcome]);
@@ -1554,6 +1632,7 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
         selectedWorkIds: c.selectedWorkIds,
       });
       setCandidateData(data);
+      setLoadedPlanContextKey(planContextKey(c.selectedActorIds, c.selectedWorkIds));
       const excluded = new Set(c.excludedPlaceIds);
       setSelectedPlaceIds(new Set(initialCandidateIds(data.candidates).filter((id) => !excluded.has(id))));
       setReopenCandidateStatus(null);
@@ -1852,7 +1931,9 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
         {STEPS.map((key, i) => {
           const target = i + 1;
           const current = step === target;
-          const reachable = target <= furthestStep;
+          // #207 3번 — 칩을 바꾼 뒤에는 3단계 재진입을 막는다. 이전 컨텍스트의 일정이
+          // 새 칩 옆에 현재 결과처럼 앉는 것을 여기서 끊는다
+          const reachable = stepReachable({ target, furthestStep, planContextStale });
           return (
             <button
               key={key}
@@ -2464,6 +2545,18 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
               </span>
             )}
           </div>
+
+          {/* #207 2번 — ready로 조용히 적용된 변경의 비차단 완료 알림. 패널이 열리면
+              같은 내용(적용됨·실행 취소)이 패널에 있으므로 겹쳐 띄우지 않는다 */}
+          {engineEditNoticeKey !== null && !aiPanelOpen && (
+            <EngineEditNotice
+              key={engineEditNoticeKey}
+              canUndo={undoPoint !== null}
+              onUndo={undoLastCommand}
+              onExpire={expireEngineEditNotice}
+              tr={tr}
+            />
+          )}
 
           {aiPanelOpen && (
           <ItineraryCommandPanel
