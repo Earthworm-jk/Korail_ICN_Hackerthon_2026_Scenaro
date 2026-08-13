@@ -114,14 +114,15 @@ describe("환승 대기·통과 정차·체류 구분 (#101)", () => {
   });
 });
 
-describe("실시드 회귀 — 서울역 빈 체류의 정체 (#101)", () => {
+describe("실시드 회귀 — 환승역 빈 체류의 정체 (#101)", () => {
   const base: PlanRequest = {
     arrivalAt: "2026-08-12T10:00:00+09:00",
     departureAt: "2026-08-14T18:00:00+09:00",
     airportReadyAt: "2026-08-12T12:00:00+09:00",
     airportArrivalDeadline: "2026-08-14T16:00:00+09:00",
-    selectedActorIds: ["actor-kim-go-eun"],
-    selectedWorkIds: [],
+    selectedActorIds: [],
+    // 현재 시드에서 서로 다른 열차 사이의 환승 대기를 실제로 만드는 안정 입력이다.
+    selectedWorkIds: ["work-the-king"],
     excludedPlaceIds: [],
   };
 
@@ -130,9 +131,12 @@ describe("실시드 회귀 — 서울역 빈 체류의 정체 (#101)", () => {
     expect(res.ok).toBe(true);
     if (!res.ok || res.result.status !== "planned") return;
     const allRides = res.result.days.flatMap((day) => day.rides);
-
-    // 선택 일정은 비교 정책에 따라 달라질 수 있어 환승 대기 존재 자체는 단위 fixture가 고정한다.
-    // 실시드 회귀는 화면에 환승이라고 주장한 창이 실제 방문과 겹치지 않는지만 검증한다.
+    const waits = res.result.days.flatMap((day) => day.regionWindows.filter(
+      (window) => classifyRegionWindow(window, day.items, allRides) === "transfer_wait",
+    ));
+    // 루프가 비어도 초록이 되지 않게 실제 시드 리프네스를 먼저 고정한다.
+    expect(waits.length).toBeGreaterThan(0);
+    expect(waits.some((window) => window.stationId === "station-seoul")).toBe(true);
 
     // 환승 대기로 판정된 창에는 방문이 하나도 없어야 한다
     for (const day of res.result.days) {
@@ -151,6 +155,7 @@ describe("실시드 회귀 — 서울역 빈 체류의 정체 (#101)", () => {
     const res = await planItinerary(base);
     if (!res.ok || res.result.status !== "planned") return;
     const allRides = res.result.days.flatMap((day) => day.rides);
+    let trainTransferCount = 0;
 
     for (const day of res.result.days) {
       for (const w of day.regionWindows) {
@@ -163,9 +168,11 @@ describe("실시드 회귀 — 서울역 빈 체류의 정체 (#101)", () => {
             && Date.parse(r.departAt) === Date.parse(w.endAt));
         // 공항 진입편은 rides에 없으므로 도착편을 못 찾는 것이 정상이다
         if (!arriving || !departing) continue;
+        trainTransferCount += 1;
         expect(arriving.trainNo, `${day.date} ${w.stationId}`).not.toBe(departing.trainNo);
       }
     }
+    expect(trainTransferCount).toBeGreaterThan(0);
   });
 
   it("방문이 배치된 권역 창은 환승으로 오분류되지 않는다", async () => {

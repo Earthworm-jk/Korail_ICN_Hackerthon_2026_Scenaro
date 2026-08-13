@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "issue": 181,
-  "generatedAt": "2026-08-12T15:08:43.654Z",
+  "generatedAt": "2026-08-13T01:14:19.763Z",
   "scenarioCount": 20,
   "passedCount": 20,
   "failedCount": 0,
@@ -44,8 +44,8 @@
     },
     "recomputationTimeMs": {
       "sampleCount": 14,
-      "p50": 86.42,
-      "p95": 318.03
+      "p50": 100.74,
+      "p95": 361.71
     }
   },
   "deferredMetrics": [
@@ -62,7 +62,7 @@
       "expectedStatus": "planned",
       "actualStatus": "planned",
       "passed": true,
-      "durationMs": 321.26,
+      "durationMs": 364.15,
       "invariants": [
         "hard_constraints_zero",
         "selected_group_covered"
@@ -74,7 +74,7 @@
       "details": {
         "visitedPlaceCount": 9,
         "rejectedPlaceCount": 11,
-        "warningCount": 5
+        "warningCount": 8
       }
     },
     {
@@ -84,7 +84,7 @@
       "expectedStatus": "planned",
       "actualStatus": "planned",
       "passed": true,
-      "durationMs": 88.33,
+      "durationMs": 102.28,
       "invariants": [
         "hard_constraints_zero",
         "selected_group_covered"
@@ -106,7 +106,7 @@
       "expectedStatus": "planned",
       "actualStatus": "planned",
       "passed": true,
-      "durationMs": 183.68,
+      "durationMs": 249.84,
       "invariants": [
         "hard_constraints_zero",
         "selected_group_covered"
@@ -116,9 +116,9 @@
       ],
       "violations": [],
       "details": {
-        "visitedPlaceCount": 8,
-        "rejectedPlaceCount": 11,
-        "warningCount": 2
+        "visitedPlaceCount": 9,
+        "rejectedPlaceCount": 10,
+        "warningCount": 8
       }
     },
     {
@@ -128,7 +128,7 @@
       "expectedStatus": "planned",
       "actualStatus": "planned",
       "passed": true,
-      "durationMs": 7.45,
+      "durationMs": 12.62,
       "invariants": [
         "hard_constraints_zero",
         "selected_group_covered"
@@ -150,7 +150,7 @@
       "expectedStatus": "planned",
       "actualStatus": "planned",
       "passed": true,
-      "durationMs": 5.27,
+      "durationMs": 5.91,
       "invariants": [
         "hard_constraints_zero",
         "selected_group_covered"
@@ -172,7 +172,7 @@
       "expectedStatus": "planned",
       "actualStatus": "planned",
       "passed": true,
-      "durationMs": 4.89,
+      "durationMs": 5.35,
       "invariants": [
         "hard_constraints_zero",
         "selected_group_covered"
@@ -194,7 +194,7 @@
       "expectedStatus": "planned",
       "actualStatus": "planned",
       "passed": true,
-      "durationMs": 12.32,
+      "durationMs": 8.18,
       "invariants": [
         "hard_constraints_zero",
         "selected_group_covered"
@@ -216,7 +216,7 @@
       "expectedStatus": "planned",
       "actualStatus": "planned",
       "passed": true,
-      "durationMs": 2.92,
+      "durationMs": 3.05,
       "invariants": [
         "hard_constraints_zero",
         "selected_group_covered"
@@ -238,7 +238,7 @@
       "expectedStatus": "invalid",
       "actualStatus": "invalid",
       "passed": true,
-      "durationMs": 0.34,
+      "durationMs": 0.37,
       "invariants": [
         "no_forced_itinerary",
         "structured_invalid_result"
@@ -261,7 +261,7 @@
       "expectedStatus": "invalid",
       "actualStatus": "invalid",
       "passed": true,
-      "durationMs": 0.05,
+      "durationMs": 0.04,
       "invariants": [
         "no_forced_itinerary",
         "structured_invalid_result"
@@ -327,7 +327,7 @@
       "expectedStatus": "empty",
       "actualStatus": "empty",
       "passed": true,
-      "durationMs": 0.7,
+      "durationMs": 0.74,
       "invariants": [
         "valid_input",
         "no_forced_itinerary",
@@ -348,7 +348,7 @@
       "expectedStatus": "changed_and_feasible",
       "actualStatus": "changed_and_feasible",
       "passed": true,
-      "durationMs": 474.1,
+      "durationMs": 577.73,
       "invariants": [
         "both_results_hard_constraints_zero",
         "structured_diff_changed",
@@ -361,9 +361,9 @@
       "violations": [],
       "details": {
         "missedRideCount": 1,
-        "replacementRideCount": 3,
-        "movedPlaceCount": 1,
-        "droppedPlaceCount": 1
+        "replacementRideCount": 4,
+        "movedPlaceCount": 4,
+        "droppedPlaceCount": 0
       }
     },
     {
@@ -373,7 +373,7 @@
       "expectedStatus": "elevated_to_clear",
       "actualStatus": "elevated_to_clear",
       "passed": true,
-      "durationMs": 7.04,
+      "durationMs": 23.94,
       "invariants": [
         "relative_signal_only",
         "slack_threshold_120_minutes"
@@ -395,7 +395,7 @@
       "expectedStatus": "elevated_to_clear",
       "actualStatus": "elevated_to_clear",
       "passed": true,
-      "durationMs": 0.21,
+      "durationMs": 0.24,
       "invariants": [
         "same_date_direction_terminal_bucket",
         "non_peak_is_clear"
@@ -434,7 +434,7 @@
       "expectedStatus": "deterministic",
       "actualStatus": "deterministic",
       "passed": true,
-      "durationMs": 688.54,
+      "durationMs": 893.37,
       "invariants": [
         "byte_equivalent_structured_output"
       ],
@@ -453,7 +453,7 @@
       "expectedStatus": "snapshot_planned",
       "actualStatus": "snapshot_planned",
       "passed": true,
-      "durationMs": 234.16,
+      "durationMs": 344.62,
       "invariants": [
         "no_live_request_without_search_date",
         "snapshot_to_planner_completion"
@@ -474,7 +474,7 @@
       "expectedStatus": "deterministic_elevated",
       "actualStatus": "deterministic_elevated",
       "passed": true,
-      "durationMs": 0.58,
+      "durationMs": 0.56,
       "invariants": [
         "same_fixture_same_advisory",
         "d_plus_1_supported"

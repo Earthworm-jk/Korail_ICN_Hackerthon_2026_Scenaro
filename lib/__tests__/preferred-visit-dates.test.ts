@@ -136,6 +136,15 @@ describe("#139 못 지킨 선호 — 실패가 아니라 보고다", () => {
     expect(result.comparisonKeys.selectedUnionPlaceCount)
       .toBe(base.comparisonKeys.selectedUnionPlaceCount);
   });
+
+  it("배치 불가 선호가 beam을 밀어내 기존 장소를 교체하지 않는다 (#139 6-2)", async () => {
+    const base = await plan();
+    const result = await plan({ preferredVisitDates: { [BEXCO]: "2026-08-12" } });
+
+    expect(outcomeOf(result.preferredDateOutcomes, BEXCO)?.outcome).toBe("unplaced");
+    expect(result.days.map((day) => day.items.map((item) => item.placeId)))
+      .toEqual(base.days.map((day) => day.items.map((item) => item.placeId)));
+  });
 });
 
 describe("#139 입력 계약 (7절)", () => {
