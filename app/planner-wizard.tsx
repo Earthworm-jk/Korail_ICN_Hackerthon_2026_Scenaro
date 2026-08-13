@@ -139,6 +139,8 @@ type FlightField = {
   flightNo: string;
   at: string; // "YYYY-MM-DDTHH:mm" (KST) — 위젯 교체 후에도 직렬화 형식 유지 (#14)
   notFound: boolean;
+  /** 조회 자체가 실패했다 — 편명이 없는 것(notFound)과 구분한다 */
+  lookupFailed?: boolean;
   source?: "live" | "snapshot"; // 조회 출처 — 폴백 여부 표시 (API_SPEC 2.1)
   status?: string; // 운항 상태 문구 — live 조회 시
   terminal?: string;
@@ -432,6 +434,7 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
   // 파생 여유는 #3 확정 기본값 유지: 입국 +120분, 출국 안전 버퍼 120분(PRD §8.1) — 표현만 절대 시각
   const [airportReady, setAirportReady] = useState({ at: "2026-08-16T12:00", touched: false });
   const [airportDeadline, setAirportDeadline] = useState({ at: "2026-08-18T16:00", touched: false });
+  const [lookingUp, setLookingUp] = useState<"arrival" | "departure" | null>(null);
   const [airportAdvisories, setAirportAdvisories] = useState<AirportPassengerAdvisoryPair | null>(null);
   const [dismissedAirportAdvisories, setDismissedAirportAdvisories] = useState<Set<string>>(new Set());
   const airportAdvisoryRequest = useRef(0);
@@ -588,21 +591,36 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
     const field = direction === "arrival" ? arrival : departure;
     const setField = direction === "arrival" ? setArrival : setDeparture;
     if (!field.flightNo.trim()) return;
-    const res = await getFlightInfo(field.flightNo, direction, field.at); // 날짜부 → searchday (#46)
-    if (res.ok) {
-      setField({
-        ...field,
-        notFound: false,
-        source: res.source,
-        status: res.flight.status,
-        terminal: res.flight.terminal,
-      });
-      // live 조회는 변경(예상) 시각이 있으면 그 값을 쓴다 — 예선 약속(지연 반영) 서사
-      (direction === "arrival" ? setArrivalAtInput : setDepartureAtInput)(
-        toLocalInput(res.flight.estimatedAt ?? res.flight.scheduledAt),
-      );
-    } else {
-      setField({ ...field, notFound: true, source: undefined, status: undefined, terminal: undefined });
+    /*
+     * 실호출은 최대 5초다. 그동안 화면이 멈춰 있으면 눌린 건지 렉인지 알 수 없고, 누를 때마다
+     * 서버 액션이 또 나간다. 그리고 서버 액션 자체가 실패하면 부동 프로미스라 아무 문구도
+     * 뜨지 않았다 — 행사장 네트워크에서 그대로 드러나는 경로다 (QA 실측).
+     * AI 패널이 처리 중 입력을 잠그는 것과 같은 규칙을 여기에도 적용한다.
+     */
+    setLookingUp(direction);
+    try {
+      const res = await getFlightInfo(field.flightNo, direction, field.at); // 날짜부 → searchday (#46)
+      if (res.ok) {
+        setField({
+          ...field,
+          notFound: false,
+          lookupFailed: false,
+          source: res.source,
+          status: res.flight.status,
+          terminal: res.flight.terminal,
+        });
+        // live 조회는 변경(예상) 시각이 있으면 그 값을 쓴다 — 예선 약속(지연 반영) 서사
+        (direction === "arrival" ? setArrivalAtInput : setDepartureAtInput)(
+          toLocalInput(res.flight.estimatedAt ?? res.flight.scheduledAt),
+        );
+      } else {
+        setField({ ...field, notFound: true, lookupFailed: false, source: undefined, status: undefined, terminal: undefined });
+      }
+    } catch {
+      // 편명이 없는 것과 조회가 안 된 것은 다르다 — 사용자가 할 일이 다르므로 문구를 나눈다
+      setField({ ...field, notFound: false, lookupFailed: true });
+    } finally {
+      setLookingUp(null);
     }
   }, [arrival, departure, setArrivalAtInput, setDepartureAtInput]);
 
@@ -1922,11 +1940,17 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
                     placeholder="KE123"
                     onChange={(e) => setField({ ...field, flightNo: e.target.value, notFound: false })}
                   />
-                  <button className="rounded border px-2 py-1 text-sm" onClick={() => lookup(direction)}>
-                    {tr("step1.lookup")}
+                  <button
+                    type="button"
+                    className="rounded border px-2 py-1 text-sm disabled:opacity-50"
+                    disabled={lookingUp !== null || !field.flightNo.trim()}
+                    onClick={() => lookup(direction)}
+                  >
+                    {tr(lookingUp === direction ? "step1.lookupPending" : "step1.lookup")}
                   </button>
                 </div>
                 {field.notFound && <p className="mt-1 text-xs text-sc-red">{tr("step1.notFound")}</p>}
+                {field.lookupFailed && <p className="mt-1 text-xs text-sc-red">{tr("step1.lookupFailed")}</p>}
                 {field.source && (
                   <p className="mt-1 text-xs">
                     <span className={field.source === "live" ? "rounded bg-sc-airport-soft px-1.5 py-0.5 text-sc-airport-text" : "rounded bg-sc-orange-soft px-1.5 py-0.5 text-sc-orange-text"}>
@@ -2884,7 +2908,7 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
                                 style={{ gridColumnStart: stayColumn(window.startAt) }}
                               >
                                 <span className="block tabular-nums text-xs text-sc-muted" data-row-time>
-                                  {fmtTime(window.startAt)}
+                                  {fmtTime(presentation.startAt)}-{fmtTime(presentation.endAt)}
                                 </span>
                                 <span className="mt-1 flex items-start gap-2" data-row-main>
                                   <span className={`grid size-7 shrink-0 place-items-center rounded-md ${card.iconClass}`}>

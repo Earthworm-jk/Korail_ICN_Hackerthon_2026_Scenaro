@@ -162,6 +162,8 @@ describe("#101 — 권역 창 화면 표시", () => {
     expect(regionWindowPresentationOf(transferWindow, day({ rides }))).toEqual({
       kind: "transfer_wait",
       minutes: 90,
+      startAt: transferWindow.startAt,
+      endAt: transferWindow.endAt,
     });
   });
 
@@ -170,7 +172,31 @@ describe("#101 — 권역 창 화면 표시", () => {
     expect(regionWindowPresentationOf(stayWindow, day({ rides }))).toEqual({
       kind: "stay",
       minutes: 30,
+      // 분량과 같은 기준으로 자른 구간 — 20:30에서 시작해 21:00에 끝난다
+      startAt: "2026-08-12T20:30:00+09:00",
+      endAt: "2026-08-12T21:00:00+09:00",
     });
+  });
+
+  /**
+   * QA 실측: 1일차에 강릉역에 도착해 다음 열차까지 머무는 창이 자정에서 잘려 2일차 조각이
+   * 00:00에 시작했다. 분량은 09:00-21:00으로 클리핑한 값이라 `00:00 · 약 3시간 23분`으로
+   * 읽혔고 "00:00부터 3시간 23분"으로 오해됐다. 두 값이 같은 기준을 쓰는지 고정한다.
+   */
+  it("자정에서 잘린 체류 창은 활동 시작 이후를 구간으로 보여준다", () => {
+    const afterMidnight: RegionWindow = {
+      stationId: "s1",
+      regionId: "r1",
+      startAt: "2026-08-13T00:00:00+09:00",
+      endAt: "2026-08-13T12:23:00+09:00",
+      availableMinutes: 203, // 09:00 - 12:23
+      startBoundary: "DAY_START",
+      endBoundary: "TRAIN_DEPARTURE",
+    };
+    const presentation = regionWindowPresentationOf(afterMidnight, day({ rides: [] }));
+    expect(presentation.kind).toBe("stay");
+    expect(presentation.startAt).toBe("2026-08-13T09:00:00+09:00");
+    expect(presentation.endAt).toBe("2026-08-13T12:23:00+09:00");
   });
 
   it("같은 열차의 연속 구간은 환승이 아니라 통과 정차로 표시한다", () => {
@@ -182,6 +208,8 @@ describe("#101 — 권역 창 화면 표시", () => {
     expect(presentation).toEqual({
       kind: "through_stop",
       minutes: 90,
+      startAt: transferWindow.startAt,
+      endAt: transferWindow.endAt,
     });
   });
 });
