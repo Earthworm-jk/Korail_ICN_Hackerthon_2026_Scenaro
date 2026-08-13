@@ -117,6 +117,7 @@ import { getThemeExperience, type ThemeExperienceResult } from "@/lib/actions/th
 import type { StationFacilitiesSnapshotT } from "@/lib/station-facilities";
 import type { StationCoordinatesSnapshotT } from "@/lib/station-coordinates";
 import type { RailGeometrySnapshotT } from "@/lib/rail-geometry";
+import { step1ErrorOf, type TimetableWindow } from "@/lib/timetable-window";
 import type { DayPlan } from "@/lib/engine/types";
 import type { RegionWindowKind } from "@/lib/engine/region-windows";
 import { undoPointOf, type UndoPoint } from "@/lib/itinerary-undo";
@@ -209,12 +210,15 @@ const pad2 = (n: number) => String(n).padStart(2, "0");
 const HOURS = Array.from({ length: 24 }, (_, i) => pad2(i));
 const MINUTES = Array.from({ length: 60 }, (_, i) => pad2(i));
 
-function DateTimeField({ value, onChange, className, dateInputId, hourInputId }: {
+function DateTimeField({ value, onChange, className, dateInputId, hourInputId, min, max }: {
   value: string;
   onChange: (value: string) => void;
   className?: string;
   dateInputId?: string;
   hourInputId?: string;
+  /** 열차 스냅샷 수록 범위 — 밖을 고르면 선택 장소가 전부 미배치가 되므로 달력에서 막는다 */
+  min?: string;
+  max?: string;
 }) {
   const [date = "", time = ""] = value.split("T");
   const [hour = "00", minute = "00"] = time.split(":");
@@ -225,6 +229,8 @@ function DateTimeField({ value, onChange, className, dateInputId, hourInputId }:
         id={dateInputId}
         type="date"
         className="min-w-0 flex-1 rounded border px-2 py-1 text-sm"
+        min={min}
+        max={max}
         value={date}
         onChange={(e) => emit(e.target.value, hour, minute)}
       />
@@ -362,10 +368,11 @@ function dateOfPlace(days: DayPlan[] | null, placeId: string): string | undefine
   return days?.find((day) => day.items.some((item) => item.placeId === placeId))?.date;
 }
 
-export default function PlannerWizard({ stationFacilities, stationCoordinates, railGeometry }: {
+export default function PlannerWizard({ stationFacilities, stationCoordinates, railGeometry, timetableWindow }: {
   stationFacilities: StationFacilitiesSnapshotT;
   stationCoordinates: StationCoordinatesSnapshotT;
   railGeometry: RailGeometrySnapshotT;
+  timetableWindow: TimetableWindow;
 }) {
   const [locale, setLocale] = useState<Locale>("ko");
   /**
@@ -417,13 +424,13 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
   }, []);
 
   // step 1 — 여행 조건
-  const [arrival, setArrival] = useState<FlightField>({ flightNo: "", at: "2026-08-12T10:00", notFound: false });
-  const [departure, setDeparture] = useState<FlightField>({ flightNo: "", at: "2026-08-14T18:00", notFound: false });
+  const [arrival, setArrival] = useState<FlightField>({ flightNo: "", at: "2026-08-16T10:00", notFound: false });
+  const [departure, setDeparture] = useState<FlightField>({ flightNo: "", at: "2026-08-18T18:00", notFound: false });
   // #14 차단 2: 주 입력은 절대 시각 — 항공편 시각에서 파생한 기본 제안값을 두되,
   // 사용자가 직접 수정하면(touched) 항공편 변경에도 덮어쓰지 않는다.
   // 파생 여유는 #3 확정 기본값 유지: 입국 +120분, 출국 안전 버퍼 120분(PRD §8.1) — 표현만 절대 시각
-  const [airportReady, setAirportReady] = useState({ at: "2026-08-12T12:00", touched: false });
-  const [airportDeadline, setAirportDeadline] = useState({ at: "2026-08-14T16:00", touched: false });
+  const [airportReady, setAirportReady] = useState({ at: "2026-08-16T12:00", touched: false });
+  const [airportDeadline, setAirportDeadline] = useState({ at: "2026-08-18T16:00", touched: false });
   const [airportAdvisories, setAirportAdvisories] = useState<AirportPassengerAdvisoryPair | null>(null);
   const [dismissedAirportAdvisories, setDismissedAirportAdvisories] = useState<Set<string>>(new Set());
   const airportAdvisoryRequest = useRef(0);
@@ -1730,18 +1737,15 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
     set(list.some((x) => x.id === item.id) ? list.filter((x) => x.id !== item.id) : [...list, item]);
   };
 
-  // PR #30 리뷰 ③ + #14 차단 2: 필수값·입출국 순서·공항 경계 순서를 1단계에서 막는다
+  // PR #30 리뷰 ③ + #14 차단 2: 필수값·입출국 순서·공항 경계 순서를 1단계에서 막는다.
+  // 수록 범위까지 같은 함수가 판정한다 — 달력을 좁혀도 직접 입력이 통과하기 때문이다 (PR #202 리뷰)
   const ms = (at: string) => Date.parse(fromLocalInput(at));
-  const step1Error: MessageKey | null =
-    !arrival.at || !departure.at || !airportReady.at || !airportDeadline.at
-      ? "step1.errRequired"
-      : ms(departure.at) <= ms(arrival.at)
-        ? "step1.errOrder"
-        : ms(airportReady.at) < ms(arrival.at)
-          ? "step1.errReadyRange"
-          : ms(airportDeadline.at) > ms(departure.at) || ms(airportDeadline.at) <= ms(airportReady.at)
-            ? "step1.errDeadlineRange"
-            : null;
+  const step1Error: MessageKey | null = step1ErrorOf({
+    arrivalAt: arrival.at,
+    departureAt: departure.at,
+    airportReadyAt: airportReady.at,
+    airportArrivalDeadline: airportDeadline.at,
+  }, timetableWindow);
   const readySlackMin =
     arrival.at && airportReady.at ? Math.round((ms(airportReady.at) - ms(arrival.at)) / 60_000) : null;
   const deadlineSlackMin =
@@ -1936,12 +1940,19 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
                 <label className="mt-3 block text-xs text-sc-muted">{tr("step1.scheduledAt")}</label>
                 <DateTimeField
                   className="mt-1"
+                  min={timetableWindow.firstDate}
+                  max={timetableWindow.lastDate}
                   value={field.at}
                   onChange={direction === "arrival" ? setArrivalAtInput : setDepartureAtInput}
                 />
               </div>
             ))}
           </div>
+          <p className="mt-3 text-xs text-sc-muted">
+            {tr("step1.timetableWindow")
+              .replace("{from}", timetableWindow.firstDate)
+              .replace("{to}", timetableWindow.lastDate)}
+          </p>
           <div className="mt-4 grid gap-4 sm:grid-cols-2">
             <div className="rounded-lg border p-4">
               <label htmlFor="airport-ready-date" className="text-sm font-medium">{tr("step1.airportReady")}</label>
@@ -1949,6 +1960,8 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
                 className="mt-2"
                 dateInputId="airport-ready-date"
                 hourInputId="airport-ready-hour"
+                min={timetableWindow.firstDate}
+                max={timetableWindow.lastDate}
                 value={airportReady.at}
                 onChange={(at) => setAirportReady({ at, touched: true })}
               />
@@ -1975,6 +1988,8 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
                 className="mt-2"
                 dateInputId="airport-deadline-date"
                 hourInputId="airport-deadline-hour"
+                min={timetableWindow.firstDate}
+                max={timetableWindow.lastDate}
                 value={airportDeadline.at}
                 onChange={(at) => setAirportDeadline({ at, touched: true })}
               />

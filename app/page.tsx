@@ -2,6 +2,7 @@ import PlannerWizard from "./planner-wizard";
 import { loadStationFacilities } from "@/lib/station-facilities";
 import { loadStationCoordinates } from "@/lib/station-coordinates";
 import { loadRailGeometry } from "@/lib/rail-geometry";
+import { loadTimetableWindow } from "@/lib/timetable-window-snapshot";
 
 // 서버 진입점 — 상호작용 화면은 Client Component로 분리 (#18 원칙)
 // 역 편의시설 스냅샷은 서버에서 읽어 검증 후 내린다 (#24 A5, 런타임 실호출 없음)
@@ -13,12 +14,15 @@ export default function Home() {
   const stationFacilities = loadStationFacilities();
   const stationCoordinates = loadStationCoordinates();
   const railGeometry = loadRailGeometry();
+  // 수록 범위 밖 날짜를 고르면 선택 장소가 전부 미배치가 된다 — 화면에서 아예 막는다
+  const timetableWindow = loadTimetableWindow();
   return (
     <main className="flex-1">
       <PlannerWizard
         stationFacilities={stationFacilities}
         stationCoordinates={stationCoordinates}
         railGeometry={railGeometry}
+        timetableWindow={timetableWindow}
       />
     </main>
   );
