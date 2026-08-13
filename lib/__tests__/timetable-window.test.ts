@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { loadRepositories } from "../repositories/json";
-import { loadTimetableWindow } from "../timetable-window";
+import { loadTimetableWindow } from "../timetable-window-snapshot";
 
 /**
  * 수록 범위는 화면이 고를 수 있는 날짜의 상한·하한이다 (#160 · QA 실측)

@@ -117,7 +117,7 @@ import { getThemeExperience, type ThemeExperienceResult } from "@/lib/actions/th
 import type { StationFacilitiesSnapshotT } from "@/lib/station-facilities";
 import type { StationCoordinatesSnapshotT } from "@/lib/station-coordinates";
 import type { RailGeometrySnapshotT } from "@/lib/rail-geometry";
-import type { TimetableWindow } from "@/lib/timetable-window";
+import { step1ErrorOf, type TimetableWindow } from "@/lib/timetable-window";
 import type { DayPlan } from "@/lib/engine/types";
 import type { RegionWindowKind } from "@/lib/engine/region-windows";
 import { undoPointOf, type UndoPoint } from "@/lib/itinerary-undo";
@@ -1737,18 +1737,15 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
     set(list.some((x) => x.id === item.id) ? list.filter((x) => x.id !== item.id) : [...list, item]);
   };
 
-  // PR #30 리뷰 ③ + #14 차단 2: 필수값·입출국 순서·공항 경계 순서를 1단계에서 막는다
+  // PR #30 리뷰 ③ + #14 차단 2: 필수값·입출국 순서·공항 경계 순서를 1단계에서 막는다.
+  // 수록 범위까지 같은 함수가 판정한다 — 달력을 좁혀도 직접 입력이 통과하기 때문이다 (PR #202 리뷰)
   const ms = (at: string) => Date.parse(fromLocalInput(at));
-  const step1Error: MessageKey | null =
-    !arrival.at || !departure.at || !airportReady.at || !airportDeadline.at
-      ? "step1.errRequired"
-      : ms(departure.at) <= ms(arrival.at)
-        ? "step1.errOrder"
-        : ms(airportReady.at) < ms(arrival.at)
-          ? "step1.errReadyRange"
-          : ms(airportDeadline.at) > ms(departure.at) || ms(airportDeadline.at) <= ms(airportReady.at)
-            ? "step1.errDeadlineRange"
-            : null;
+  const step1Error: MessageKey | null = step1ErrorOf({
+    arrivalAt: arrival.at,
+    departureAt: departure.at,
+    airportReadyAt: airportReady.at,
+    airportArrivalDeadline: airportDeadline.at,
+  }, timetableWindow);
   const readySlackMin =
     arrival.at && airportReady.at ? Math.round((ms(airportReady.at) - ms(arrival.at)) / 60_000) : null;
   const deadlineSlackMin =
