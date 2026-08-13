@@ -75,7 +75,8 @@ type Props = {
     dropCount: number;
     selectedCount: number;
   } | null;
-  onApplyOverselection?: () => void;
+  /** 항상 표시되는 두 결정 버튼은 모두 실제 동작을 필수로 받는다. */
+  onApplyOverselection: () => void;
   /** 전체 촬영지 선택창을 열어 사용자가 직접 제외 대상을 고른다. */
   onPickOverselection: () => void;
   onUndoOverselection?: () => void;

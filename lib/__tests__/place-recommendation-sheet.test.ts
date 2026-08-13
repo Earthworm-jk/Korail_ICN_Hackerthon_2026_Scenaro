@@ -23,6 +23,7 @@ const copy: Partial<Record<MessageKey, string>> = {
   "step3.browserCount": "후보 {n}곳",
   "step3.browserEmpty": "이 조건에 맞는 후보가 없습니다.",
   "step3.filterRegion": "지역",
+  "step3.filterContent": "콘텐츠",
   "step3.filterAll": "전체",
   "ai.recommendSheetTitle": "현재 동선에 맞는 촬영지",
   "ai.recommendSheetSubtitle": "추가 전에는 일정이 바뀌지 않습니다.",
@@ -100,6 +101,28 @@ describe("지도 위 추천 장소 바텀시트", () => {
     expect(markup).toContain("지역");
     expect(markup).toContain("진부역");
     expect(markup).not.toContain("콘텐츠");
+  });
+
+  it("선택 작품이 둘 이상일 때만 콘텐츠 필터를 제공한다", () => {
+    const markup = renderToStaticMarkup(createElement(PlaceBrowser, {
+      open: true,
+      onClose: () => undefined,
+      count: 9,
+      stations: [],
+      station: null,
+      onStationChange: () => undefined,
+      works: [
+        { id: "goblin", label: "도깨비" },
+        { id: "the-king", label: "더 킹" },
+      ],
+      work: null,
+      onWorkChange: () => undefined,
+      tr,
+    }));
+
+    expect(markup).toContain("콘텐츠");
+    expect(markup).toContain("도깨비");
+    expect(markup).toContain("더 킹");
   });
 
   it("재계산 중에도 선택 수를 유지하며 일정과 경로가 함께 갱신됨을 알린다", () => {

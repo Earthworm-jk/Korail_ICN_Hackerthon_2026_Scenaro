@@ -112,6 +112,10 @@ import {
 import { ItineraryRouteMap, type MapPlace, type MapStation } from "./korea-map";
 import { PlaceRecommendationSheet, PlaceThumbnail } from "./place-recommendation-sheet";
 import { PlaceBrowser } from "./place-browser";
+import {
+  filterPlaceBrowserCandidates,
+  showsPlaceBrowserWorkFilter,
+} from "@/lib/place-browser-filter";
 import sheetStyles from "./place-recommendation-sheet.module.css";
 import {
   airportLegsOf,
@@ -505,6 +509,7 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
   /** 전체 보기 안의 좁히기 상태. 시트 밖에 필터를 늘어놓으면 시트가 다시 무거워진다 */
   const [browserOpen, setBrowserOpen] = useState(false);
   const [browserStation, setBrowserStation] = useState<string | null>(null);
+  const [browserWork, setBrowserWork] = useState<string | null>(null);
   /** 같은 장소 선택 조합에서 사용자가 닫은 과다 일정 경고는 다시 띄우지 않는다. */
   const [dismissedOverselectionKey, setDismissedOverselectionKey] = useState<string | null>(null);
 
@@ -833,6 +838,7 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
       setCandidateData(data);
       setSelectedPlaceIds(new Set(selectedIds));
       setBrowserStation(null);
+      setBrowserWork(null);
       setSettledSelectionKey([...selectedIds].sort().join("|"));
       setLoadedPlanContextKey(submittedContextKey);
 
@@ -866,6 +872,7 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
       setCandidateData(data);
       setSelectedPlaceIds(new Set(allCandidateIds));
       setBrowserStation(null);
+      setBrowserWork(null);
       setSettledSelectionKey([...allCandidateIds].sort().join("|"));
       setLoadedPlanContextKey(submittedContextKey);
       dispatchView({ type: "PLAN_FAILED" });
@@ -1882,15 +1889,23 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
     setSelectedPlaceIds(next);
   };
 
-  /** 전체 보기는 지역으로만 좁힌다. 콘텐츠는 앞 단계에서 이미 후보 범위를 정한다. */
+  /** 한 작품에서는 지역만, 여러 작품을 섞었을 때는 작품까지 좁힐 수 있다. */
   const browserStations = useMemo(() => {
     const ids = [...new Set((candidateData?.candidates ?? []).map((c) => c.nearestStationId))];
     return ids.map((id) => ({ id, label: stationName(id) }))
       .sort((a, b) => a.label.localeCompare(b.label, locale));
   }, [candidateData, locale, stationName]);
-  const browsedCandidates = useMemo(() => sortedCandidates.filter((c) =>
-    browserStation === null || c.nearestStationId === browserStation),
-  [sortedCandidates, browserStation]);
+  const browserWorks = useMemo(() => (candidateData?.works ?? []).map((work) => ({
+    id: work.id,
+    label: work.title[locale] ?? work.id,
+  })), [candidateData, locale]);
+  // 작품이 하나로 줄었을 때 이전 필터가 보이지 않는 상태로 후보를 계속 숨기지 않게 한다.
+  const effectiveBrowserWork = showsPlaceBrowserWorkFilter(browserWorks.length) ? browserWork : null;
+  const browsedCandidates = useMemo(() => filterPlaceBrowserCandidates(
+    sortedCandidates,
+    browserStation,
+    effectiveBrowserWork,
+  ), [sortedCandidates, browserStation, effectiveBrowserWork]);
 
   const workTitles = (ids: string[]) =>
     ids.map((id) => candidateData?.works.find((w) => w.id === id)?.title[locale] ?? id).join(" · ");
@@ -1931,7 +1946,7 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
     // 220px 요약 사이드바와 함께 들어가려면 폭이 필요해 max-w-6xl로 넓힌다 — 좁으면
     // 지도 열이 시안의 minmax(320px) 아래로 눌린다.
     <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6">
-      <div className="overflow-hidden rounded-2xl border bg-sc-surface shadow-[0_18px_50px_var(--sc-shadow)]">
+      <div data-app-shell className="overflow-hidden rounded-2xl border bg-sc-surface shadow-[0_18px_50px_var(--sc-shadow)]">
       {/* `flex-wrap`을 걷었다 (#146 모바일). 390px에서 버튼 묶음이 아래로 접혀
           제목 밑에 왼쪽 정렬로 한 줄을 더 쓰고 있었다. 한 줄에 두고 로고 쪽이
           줄어들게 한다 — 버튼은 늘 오른쪽 윗줄이다 */}
@@ -2346,7 +2361,7 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
           */}
 
           {/* #85 — 좌: 후보 선택 / 우: 계산 결과. 왕복 없이 같은 화면에서 판단한다 */}
-          <div className="mt-3 grid gap-[18px] lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
+          <div data-planner-stage className="mt-3 grid gap-[18px] lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
           <PlaceRecommendationSheet
             selectedCount={selectedPlaceIds.size}
             totalCount={sortedCandidates.length}
@@ -2436,6 +2451,9 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
             stations={browserStations}
             station={browserStation}
             onStationChange={setBrowserStation}
+            works={browserWorks}
+            work={effectiveBrowserWork}
+            onWorkChange={setBrowserWork}
             tr={tr}
           >
             {browsedCandidates.map((c) => (
@@ -2678,10 +2696,9 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
             />
           )}
 
-          {selectionCapacity?.requiresAdjustment && showOverselectionNotice && (
+          {showOverselectionNotice && selectionCapacity && (
             <div
               className="relative mt-4 rounded-lg border border-sc-orange/40 bg-sc-orange-soft p-4 pr-12"
-              role="status"
             >
               <button
                 type="button"
@@ -2691,15 +2708,17 @@ export default function PlannerWizard({ stationFacilities, stationCoordinates, r
               >
                 <X aria-hidden="true" className="size-4" />
               </button>
-              <h3 className="font-medium text-sc-orange-text">{tr("step4.overselectionTitle")}</h3>
-              <p className="mt-2 font-medium text-sc-orange-text">
-                {tr("step4.overselectionSummary")
-                  .replace("{selected}", String(selectionCapacity.selectedCount))
-                  .replace("{schedulable}", String(selectionCapacity.schedulableCount))
-                  .replace("{minimum}", String(selectionCapacity.minimumExclusionCount))}
-              </p>
-              <p className="mt-1 text-sm text-sc-orange-text">{tr("step4.overselectionDesc")}</p>
-              <p className="mt-1 text-xs text-sc-orange-text">{tr("step4.overselectionPreview")}</p>
+              <div role="status">
+                <h3 className="font-medium text-sc-orange-text">{tr("step4.overselectionTitle")}</h3>
+                <p className="mt-2 font-medium text-sc-orange-text">
+                  {tr("step4.overselectionSummary")
+                    .replace("{selected}", String(selectionCapacity.selectedCount))
+                    .replace("{schedulable}", String(selectionCapacity.schedulableCount))
+                    .replace("{minimum}", String(selectionCapacity.minimumExclusionCount))}
+                </p>
+                <p className="mt-1 text-sm text-sc-orange-text">{tr("step4.overselectionDesc")}</p>
+                <p className="mt-1 text-xs text-sc-orange-text">{tr("step4.overselectionPreview")}</p>
+              </div>
               <button
                 type="button"
                 onClick={() => setBrowserOpen(true)}
